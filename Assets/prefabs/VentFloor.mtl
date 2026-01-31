@@ -1,0 +1,8 @@
+newmtl Metal
+map_Kd Metal055A_2K-PNG_Color.png
+map_Pm Metal055A_2K-PNG_Metalness.png
+bump Metal055A_2K-PNG_NormalDX.png
+disp Metal055A_2K-PNG_Displacement.png
+Kd 1 1 1
+d 1
+
