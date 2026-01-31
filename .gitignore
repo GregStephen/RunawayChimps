@@ -25,6 +25,7 @@
 .DS_Store
 Thumbs.db
 
-
-
-*.dll
+*~
+*.tmp
+*.bak
+*.pdb
