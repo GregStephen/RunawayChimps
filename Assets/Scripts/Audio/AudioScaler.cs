@@ -54,12 +54,21 @@ public class AudioScaler : MonoBehaviour
             Debug.LogWarning($"{name}: AudioScaler has no AudioSource assigned.");
             return;
         }
+        if (debugLogs)
+        {
+            Debug.Log($"[AudioScaler] {name}: SetProximity called: proximity={proximity:F2}, playThreshold={playThreshold:F2}, mode={mode}, onlyWhenPlayerInVent={onlyWhenPlayerInVent}");
+        }
         source.mute = false;
         if (!source.loop) source.loop = true;
+
+        if (source.clip == null && !source.isPlaying)
+        {
+            if (debugLogs) Debug.LogWarning($"{name}: AudioSource has no AudioClip assigned and is not playing.");
+        }
         // 1) Optional: only when local player is in a vent
         if (onlyWhenPlayerInVent && !PlayerVentState.LocalPlayerInVent)
         {
-           // if (debugLogs) Debug.Log($"{name}: Player not in vent → stopping.");
+            if (debugLogs) Debug.Log($"{name}: Player not in vent -> gating audio off.");
             StopIfPlaying();
             return;
         }
@@ -71,14 +80,14 @@ public class AudioScaler : MonoBehaviour
 
             if (mode == AudioMode.WanderOnly && isChasing)
             {
-                if (debugLogs) Debug.Log($"{name}: WanderOnly, but IsChasing=true → stopping.");
+                if (debugLogs) Debug.Log($"{name}: WanderOnly, but IsChasing=true → gating audio off.");
                 StopIfPlaying();
                 return;
             }
 
             if (mode == AudioMode.ChaseOnly && !isChasing)
             {
-                if (debugLogs) Debug.Log($"{name}: ChaseOnly, but IsChasing=false → stopping.");
+                if (debugLogs) Debug.Log($"{name}: ChaseOnly, but IsChasing=false → gating audio off.");
                 StopIfPlaying();
                 return;
             }

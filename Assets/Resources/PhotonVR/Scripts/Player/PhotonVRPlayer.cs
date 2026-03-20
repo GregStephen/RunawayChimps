@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using Photon.Pun;
+using Photon.Realtime;
 
 using TMPro;
 
@@ -30,6 +31,9 @@ namespace Photon.VR.Player
             if (photonView.IsMine)
             {
                 PhotonVRManager.Manager.LocalPlayer = this;
+                Debug.Log($"[PhotonVRPlayer] Awake (IsMine). Head={(Head!=null?Head.name:"null")}, Body={(Body!=null?Body.name:"null")}, HideLocalPlayer={HideLocalPlayer}");
+                // Do NOT notify PhotonVRManager with this prefab's visual head transform —
+                // the manager should be bound to the actual tracking rig (via PhotonVRRigBinder).
                 if (HideLocalPlayer)
                 {
                     Head.gameObject.SetActive(false);
@@ -38,6 +42,7 @@ namespace Photon.VR.Player
                     LeftHand.gameObject.SetActive(false);
                     NameText.gameObject.SetActive(false);
                 }
+                // Debug visual state now and next frame (in case something else toggles it on Start)
             }
 
             // It will delete automatically when you leave the room
