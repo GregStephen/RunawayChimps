@@ -5,19 +5,26 @@ public class GameBootstrap : MonoBehaviour
     [Header("Config")]
     [SerializeField] private PlayFabConfig playFabConfig;
 
-    [Header("Shipping")]
-    [Tooltip("Enable to require Meta entitlement + identity on Quest builds.")]
-    [SerializeField] private bool enforceQuestAuth = false;
-
     private void Awake()
     {
         DontDestroyOnLoad(gameObject);
+
         AppState.I?.ResetReady();
         AppState.I?.SetStatus("Logging in...");
-        var playFab = new PlayFabAuthService();
-        playFab.Initialize(playFabConfig != null ? playFabConfig.TitleId : null);
 
-        var orchestrator = new AuthOrchestrator(playFab, enforceQuestAuth);
+        // Ensure PlayFab TitleId is set once
+        if (playFabConfig != null && !string.IsNullOrWhiteSpace(playFabConfig.TitleId))
+        {
+            PlayFab.PlayFabSettings.staticSettings.TitleId = playFabConfig.TitleId;
+        }
+
+        // Find the ONE AuthOrchestrator in the scene
+        var orchestrator = FindObjectOfType<AuthOrchestrator>();
+        if (orchestrator == null)
+        {
+            Debug.LogError("GameBootstrap: AuthOrchestrator not found in scene!");
+            return;
+        }
 
         orchestrator.Run(
             this,
@@ -28,12 +35,12 @@ public class GameBootstrap : MonoBehaviour
                 AppState.I?.SetStatus("Connecting to multiplayer...");
                 Photon.VR.PhotonVRManager.Connect();
             },
-
             onFatal: err =>
             {
                 Debug.LogError(err);
+                AppState.I?.SetStatus("Login failed");
 
-                // In shipping, you might show a UI, then quit:
+                // Optional for shipping:
                 // Application.Quit();
             }
         );

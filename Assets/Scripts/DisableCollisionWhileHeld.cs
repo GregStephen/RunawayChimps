@@ -2,43 +2,44 @@ using UnityEngine;
 using UnityEngine.XR.Interaction.Toolkit;
 
 [RequireComponent(typeof(XRGrabInteractable))]
-public class DisableCollisionWhileHeld : MonoBehaviour
+public class HeldItemCollisionMode : MonoBehaviour
 {
-    private XRGrabInteractable grab;
-    private Collider col;
-    private Rigidbody rb;
+    public string heldLayerName = "HeldItem";
 
-    private void Awake()
+    int originalLayer;
+
+    XRGrabInteractable grab;
+
+    void Awake()
     {
         grab = GetComponent<XRGrabInteractable>();
-        col = GetComponent<Collider>();
-        rb = GetComponent<Rigidbody>();
-
         grab.selectEntered.AddListener(OnGrab);
         grab.selectExited.AddListener(OnRelease);
     }
 
-    private void OnDestroy()
+    void OnDestroy()
     {
         grab.selectEntered.RemoveListener(OnGrab);
         grab.selectExited.RemoveListener(OnRelease);
     }
 
-    private void OnGrab(SelectEnterEventArgs args)
+    void OnGrab(SelectEnterEventArgs args)
     {
-        if (rb != null)
-            rb.isKinematic = true;      // no physics forces while held
-
-        if (col != null)
-            col.isTrigger = true;       // no physical collisions while held
+        originalLayer = gameObject.layer;
+        int heldLayer = LayerMask.NameToLayer(heldLayerName);
+        if (heldLayer != -1)
+            SetLayerRecursively(transform, heldLayer);
     }
 
-    private void OnRelease(SelectExitEventArgs args)
+    void OnRelease(SelectExitEventArgs args)
     {
-        if (rb != null)
-            rb.isKinematic = false;
+        SetLayerRecursively(transform, originalLayer);
+    }
 
-        if (col != null)
-            col.isTrigger = false;
+    static void SetLayerRecursively(Transform t, int layer)
+    {
+        t.gameObject.layer = layer;
+        for (int i = 0; i < t.childCount; i++)
+            SetLayerRecursively(t.GetChild(i), layer);
     }
 }

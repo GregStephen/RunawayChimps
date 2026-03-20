@@ -14,7 +14,7 @@ TagManager:
   - 
   - Water
   - UI
-  - 
+  - HeldItem
   - 
   - 
   - 
@@ -37,7 +37,7 @@ TagManager:
   - Right Hand
   - NonCollidable
   - Trigger
-  - 
+  - FingerTip
   - 
   - 
   m_SortingLayers:

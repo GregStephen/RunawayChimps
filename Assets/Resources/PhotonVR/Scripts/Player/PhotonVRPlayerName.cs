@@ -15,6 +15,10 @@ namespace Photon.VR.Player
 
         private void Update()
         {
+            var mgr = PhotonVRManager.Manager;
+            if (mgr == null || mgr.Head == null)
+                return;
+
             transform.position = Head.position + new Vector3(0, Offset, 0);
 
             Vector3 direction = PhotonVRManager.Manager.Head.position - transform.position;

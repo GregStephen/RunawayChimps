@@ -1,12 +1,17 @@
-﻿using Photon.VR;
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.Events;
+using RunawayChimps.Zones;
 
-[RequireComponent(typeof(Renderer))]
 public class ProximityReactor : MonoBehaviour
 {
+    [Header("Zone (optional but recommended)")]
+    [Tooltip("If set, ProximityManager can ignore this reactor when the local player is in another zone.")]
+    public ZoneId ZoneId = ZoneId.None;
+
     [Header("Settings")]
     public float triggerDistance = 3f;
+
+    [Tooltip("Extra distance beyond triggerDistance required to fire exit (prevents flicker).")]
     public float exitBuffer = 0.5f;
 
     [Header("Events")]
@@ -17,60 +22,86 @@ public class ProximityReactor : MonoBehaviour
     private bool inRange;
     private bool registered;
 
-    private void Awake() => TryRegister();
-    private void Start() => TryRegister();
-    private void OnEnable() => TryRegister();
+    private void OnEnable()
+    {
+        TryRegister();
+    }
+    private void Update()
+    {
+        if (!registered)
+            TryRegister();
+    }
+
 
     private void OnDisable()
     {
-        if (registered && ProximityManager.Instance != null)
-        {
-            ProximityManager.Instance.Unregister(this);
-            registered = false;
-        }
+        Unregister();
+    }
+
+    private void OnDestroy()
+    {
+        Unregister();
     }
 
     private void TryRegister()
     {
         if (registered) return;
 
-        if (ProximityManager.Instance != null)
+        var mgr = ProximityManager.Instance;
+        if (mgr == null)
         {
-            ProximityManager.Instance.Register(this);
-            registered = true;
-            Debug.Log($"{name} successfully registered with ProximityManager.");
+            // No spam logs; it will register next enable / when manager exists.
+            return;
         }
-        else
-        {
-            Debug.LogWarning($"{name} cannot register: ProximityManager.Instance is null. Will retry.");
-        }
+
+        mgr.Register(this);
+        registered = true;
+    }
+
+    private void Unregister()
+    {
+        if (!registered) return;
+
+        var mgr = ProximityManager.Instance;
+        if (mgr != null)
+            mgr.Unregister(this);
+
+        registered = false;
     }
 
     /// <summary>
-    /// Called by ProximityManager each frame with distance and player transform.
+    /// Called by ProximityManager on its interval with distance and local player transform.
     /// </summary>
     public void UpdateProximity(float distance, Transform playerTransform)
     {
+
         bool nowInRange = distance <= triggerDistance;
 
         if (nowInRange && !inRange)
         {
             inRange = true;
-            OnEnterRange.Invoke();
+            OnEnterRange?.Invoke();
         }
         else if (!nowInRange && inRange && distance > triggerDistance + exitBuffer)
         {
             inRange = false;
-            OnExitRange.Invoke();
+            OnExitRange?.Invoke();
         }
 
-        float normalized = Mathf.Clamp01(1f - (distance / triggerDistance));
-        OnProximityValue.Invoke(normalized);
+        float normalized = (triggerDistance <= 0.0001f)
+            ? 0f
+            : Mathf.Clamp01(1f - (distance / triggerDistance));
+        Debug.Log($"[ProximityReactor] {name} dist={distance:F2} norm={normalized:F2} registered={registered}");
+
+        OnProximityValue?.Invoke(normalized);
     }
 
     private void OnDrawGizmosSelected()
     {
         Gizmos.color = Color.red;
         Gizmos.DrawWireSphere(transform.position, triggerDistance);
+
+        Gizmos.color = new Color(1f, 0.5f, 0f);
+        Gizmos.DrawWireSphere(transform.position, triggerDistance + exitBuffer);
     }
 }

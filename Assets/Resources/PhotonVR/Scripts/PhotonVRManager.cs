@@ -7,7 +7,7 @@ using Photon.VR.Player;
 using Photon.Pun;
 using Photon.Realtime;
 
-using ExitGames.Client.Photon;
+using RunawayChimps.Zones;
 using Photon.VR.Saving;
 
 namespace Photon.VR
@@ -363,7 +363,26 @@ namespace Photon.VR
         {
             Debug.Log($"JoinedRoom: {(PhotonNetwork.InRoom ? PhotonNetwork.CurrentRoom.Name : "(null)")}");
             _state = ConnectionState.InRoom;
+            ZoneStateService.Instance?.HandleJoinedRoom();
         }
+        public override void OnPlayerEnteredRoom(Realtime.Player newPlayer)
+        {
+            base.OnPlayerEnteredRoom(newPlayer);
+            ZoneStateService.Instance?.HandlePlayerEntered(newPlayer);
+        }
+
+        public override void OnPlayerLeftRoom(Realtime.Player otherPlayer)
+        {
+            base.OnPlayerLeftRoom(otherPlayer);
+            ZoneStateService.Instance?.HandlePlayerLeft(otherPlayer);
+        }
+
+        public override void OnPlayerPropertiesUpdate(Realtime.Player targetPlayer, ExitGames.Client.Photon.Hashtable changedProps)
+        {
+            base.OnPlayerPropertiesUpdate(targetPlayer, changedProps);
+            ZoneStateService.Instance?.HandlePlayerPropertiesUpdated(targetPlayer, changedProps);
+        }
+
 
         public override void OnDisconnected(DisconnectCause cause)
         {

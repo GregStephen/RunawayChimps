@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-
 using Photon.Pun;
 
 using TMPro;
@@ -49,6 +48,9 @@ namespace Photon.VR.Player
 
         private void Update()
         {
+            var mgr = PhotonVRManager.Manager; // or PhotonVRManager.Manager if you have the using
+            if (mgr == null || mgr.Head == null)
+                return;
             if (photonView.IsMine)
             {
                 Head.transform.position = PhotonVRManager.Manager.Head.transform.position;

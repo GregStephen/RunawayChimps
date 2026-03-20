@@ -1,9 +1,7 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.XR;
 using Photon.Pun;
-using Photon.Realtime;
 
 public enum HandType
 {
@@ -15,6 +13,7 @@ public class XRHandController : MonoBehaviour
 {
     public HandType handType;
     public float thumbMoveSpeed = 0.1f;
+    public PhotonView view;
 
     private Animator animator;
     private InputDevice inputDevice;
@@ -23,43 +22,76 @@ public class XRHandController : MonoBehaviour
     private float pose2Value;
     private float pose3Value;
 
-    public PhotonView view;
-    // Start is called before the first frame update
-    void Start()
+    private float retryTimer;
+    private const float RetryInterval = 0.5f;
+
+    private void Awake()
     {
         animator = GetComponent<Animator>();
-        inputDevice = GetInputDevice();
     }
 
-    // Update is called once per frame
-    void Update()
+    private void OnEnable()
     {
-        if (view.IsMine)
-        {
-            AnimateHand();
-        }
+        TryAcquireDevice();
+        InputDevices.deviceConnected += OnDeviceChanged;
+        InputDevices.deviceDisconnected += OnDeviceChanged;
     }
 
-    InputDevice GetInputDevice()
+    private void OnDisable()
     {
-        InputDeviceCharacteristics controllerCharacteristic = InputDeviceCharacteristics.HeldInHand | InputDeviceCharacteristics.Controller;
-
-        if (handType == HandType.Left)
-        {
-            controllerCharacteristic = controllerCharacteristic | InputDeviceCharacteristics.Left;
-        }
-        else
-        {
-            controllerCharacteristic = controllerCharacteristic | InputDeviceCharacteristics.Right;
-        }
-
-        List<InputDevice> inputDevices = new List<InputDevice>();
-        InputDevices.GetDevicesWithCharacteristics(controllerCharacteristic, inputDevices);
-
-        return inputDevices[0];
+        InputDevices.deviceConnected -= OnDeviceChanged;
+        InputDevices.deviceDisconnected -= OnDeviceChanged;
     }
 
-    void AnimateHand()
+    private void Update()
+    {
+        // Only animate local hand
+        if (view != null && !view.IsMine)
+            return;
+
+        if (!inputDevice.isValid)
+        {
+            retryTimer -= Time.deltaTime;
+            if (retryTimer <= 0f)
+            {
+                retryTimer = RetryInterval;
+                TryAcquireDevice();
+            }
+            return;
+        }
+
+        AnimateHand();
+    }
+
+    private void OnDeviceChanged(InputDevice _)
+    {
+        // Re-acquire whenever devices change
+        TryAcquireDevice();
+    }
+
+    private void TryAcquireDevice()
+    {
+        // Most reliable path in OpenXR
+        XRNode node = (handType == HandType.Left) ? XRNode.LeftHand : XRNode.RightHand;
+        inputDevice = InputDevices.GetDeviceAtXRNode(node);
+
+        if (inputDevice.isValid)
+            return;
+
+        // Fallback search by characteristics
+        InputDeviceCharacteristics controllerCharacteristic =
+            InputDeviceCharacteristics.HeldInHand |
+            InputDeviceCharacteristics.Controller |
+            ((handType == HandType.Left) ? InputDeviceCharacteristics.Left : InputDeviceCharacteristics.Right);
+
+        var devices = new List<InputDevice>();
+        InputDevices.GetDevicesWithCharacteristics(controllerCharacteristic, devices);
+
+        if (devices.Count > 0)
+            inputDevice = devices[0];
+    }
+
+    private void AnimateHand()
     {
         inputDevice.TryGetFeatureValue(CommonUsages.trigger, out pose1Value);
         inputDevice.TryGetFeatureValue(CommonUsages.grip, out pose2Value);
@@ -67,14 +99,8 @@ public class XRHandController : MonoBehaviour
         inputDevice.TryGetFeatureValue(CommonUsages.primaryTouch, out bool primaryTouched);
         inputDevice.TryGetFeatureValue(CommonUsages.secondaryTouch, out bool secondaryTouched);
 
-        if (primaryTouched || secondaryTouched)
-        {
-            pose3Value += thumbMoveSpeed;
-        }
-        else
-        {
-            pose3Value -= thumbMoveSpeed;
-        }
+        if (primaryTouched || secondaryTouched) pose3Value += thumbMoveSpeed;
+        else pose3Value -= thumbMoveSpeed;
 
         pose3Value = Mathf.Clamp(pose3Value, 0, 1);
 

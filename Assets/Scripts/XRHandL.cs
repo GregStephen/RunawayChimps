@@ -27,7 +27,7 @@ public class XRHandL : MonoBehaviour
     void Start()
     {
         animator = GetComponent<Animator>();
-        inputDevice = GetInputDevice();
+       // inputDevice = GetInputDevice();
     }
 
     // Update is called once per frame
@@ -38,7 +38,44 @@ public class XRHandL : MonoBehaviour
             AnimateHand();
         }
     }
+    private void OnEnable()
+    {
+        TryAcquireDevice();
+        InputDevices.deviceConnected += OnDeviceChanged;
+        InputDevices.deviceDisconnected += OnDeviceChanged;
+    }
 
+    private void OnDisable()
+    {
+        InputDevices.deviceConnected -= OnDeviceChanged;
+        InputDevices.deviceDisconnected -= OnDeviceChanged;
+    }
+    private void OnDeviceChanged(InputDevice _)
+    {
+        // Re-acquire whenever devices change
+        TryAcquireDevice();
+    }
+    private void TryAcquireDevice()
+    {
+        // Most reliable path in OpenXR
+        XRNode node = XRNode.LeftHand;
+        inputDevice = InputDevices.GetDeviceAtXRNode(node);
+
+        if (inputDevice.isValid)
+            return;
+
+        // Fallback search by characteristics
+        InputDeviceCharacteristics controllerCharacteristic =
+            InputDeviceCharacteristics.HeldInHand |
+            InputDeviceCharacteristics.Controller |
+            InputDeviceCharacteristics.Left;
+
+        var devices = new List<InputDevice>();
+        InputDevices.GetDevicesWithCharacteristics(controllerCharacteristic, devices);
+
+        if (devices.Count > 0)
+            inputDevice = devices[0];
+    }
     InputDevice GetInputDevice()
     {
         InputDeviceCharacteristics controllerCharacteristic = InputDeviceCharacteristics.HeldInHand | InputDeviceCharacteristics.Controller;

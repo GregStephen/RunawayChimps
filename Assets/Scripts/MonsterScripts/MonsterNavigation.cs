@@ -48,14 +48,9 @@ public class MonsterNavigation : MonoBehaviour
 
     private void Update()
     {
-        if (!PhotonNetwork.IsMasterClient)
-        {
-            agent.enabled = false;
-            return;
-        }
+        bool isMaster = PhotonNetwork.IsMasterClient;
 
-        agent.enabled = true;
-
+        // Always compute chasing state (or at least update IsChasing)
         detectionTimer -= Time.deltaTime;
         if (detectionTimer <= 0f)
         {
@@ -63,6 +58,18 @@ public class MonsterNavigation : MonoBehaviour
             currentTarget = FindClosestPlayer();
         }
 
+        IsChasing = (currentTarget != null);
+        isChasingDebug = IsChasing;
+
+        if (!isMaster)
+        {
+            agent.enabled = false;
+            return;
+        }
+
+        agent.enabled = true;
+
+        // Only master drives movement
         if (currentTarget != null)
         {
             agent.speed = MonsterSpeedChase;
@@ -74,11 +81,9 @@ public class MonsterNavigation : MonoBehaviour
             Wander();
         }
 
-        IsChasing = (currentTarget != null);
-        isChasingDebug = IsChasing; // show in inspector
-
         RotateTowardsMovement();
     }
+
 
     private GameObject FindClosestPlayer()
     {

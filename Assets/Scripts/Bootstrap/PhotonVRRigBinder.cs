@@ -3,53 +3,47 @@ using Photon.VR;
 
 public class PhotonVRRigBinder : MonoBehaviour
 {
-    [Header("Optional: assign these if you want (recommended).")]
-    public Transform head;
-    public Transform leftHand;
-    public Transform rightHand;
+    [Header("Assign these from your Gorilla Rig")]
+    public Transform Head;       // Main Camera transform
+    public Transform LeftHand;   // LeftHand Controller transform (XR tracked)
+    public Transform RightHand;  // RightHand Controller transform (XR tracked)
 
-    private void Start()
+    private bool _bound;
+
+    private void Awake()
     {
-        Bind();
+        // Try immediately (Bootstrap case)
+        TryBind();
     }
 
-    private void Bind()
+    private void OnEnable()
     {
-        if (PhotonVRManager.Manager == null)
+        // Try again when enabled (scene transitions)
+        TryBind();
+    }
+
+    private void Update()
+    {
+        // Keep trying until the manager exists
+        if (!_bound) TryBind();
+    }
+
+    private void TryBind()
+    {
+        var mgr = PhotonVRManager.Manager;
+        if (mgr == null) return;
+
+        if (Head == null || LeftHand == null || RightHand == null)
         {
-            Debug.LogWarning("[PhotonVRRigBinder] PhotonVRManager.Manager is null.");
+            Debug.LogError("[PhotonVRRigBinder] Missing Head/LeftHand/RightHand references.");
             return;
         }
 
-        // If not assigned in inspector, try to find common XR transforms.
-        if (head == null)
-        {
-            var cam = Camera.main;
-            if (cam != null) head = cam.transform;
-        }
+        mgr.Head = Head;
+        mgr.LeftHand = LeftHand;
+        mgr.RightHand = RightHand;
 
-        // Try to auto-find hands if not assigned (best effort).
-        if (leftHand == null || rightHand == null)
-        {
-            // Common names in XR rigs (we'll catch your Gorilla Rig too)
-            var all = FindObjectsOfType<Transform>(true);
-
-            foreach (var t in all)
-            {
-                var n = t.name.ToLowerInvariant();
-
-                if (leftHand == null && (n.Contains("left") && (n.Contains("hand") || n.Contains("controller"))))
-                    leftHand = t;
-
-                if (rightHand == null && (n.Contains("right") && (n.Contains("hand") || n.Contains("controller"))))
-                    rightHand = t;
-            }
-        }
-
-        PhotonVRManager.Manager.Head = head;
-        PhotonVRManager.Manager.LeftHand = leftHand;
-        PhotonVRManager.Manager.RightHand = rightHand;
-
-        Debug.Log($"[PhotonVRRigBinder] Bound rig. Head={head?.name}, Left={leftHand?.name}, Right={rightHand?.name}");
+        _bound = true;
+        Debug.Log("[PhotonVRRigBinder] Bound PhotonVRManager to local rig transforms.");
     }
 }
