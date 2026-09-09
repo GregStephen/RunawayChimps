@@ -7,11 +7,13 @@ public class ZoneTrigger : MonoBehaviour
 
     [Tooltip("If true, will also re-apply zone when you re-enter (even if same zone).")]
     public bool reapplyEvenIfSame = true;
+    public bool debugLogs = false;
 
     private void OnTriggerEnter(Collider other)
     {
+        var travel = RunawayChimps.Travel.SectorTravelService.I;
+        if (travel != null && (travel.IsBusy || gameObject.scene != UnityEngine.SceneManagement.SceneManager.GetActiveScene())) return;
         var marker = other.GetComponentInParent<LocalRigMarker>();
-        Debug.Log($"[ZoneTrigger] Checking trigger for: {other.name}");
         if (marker == null)
             return;
 
@@ -25,21 +27,14 @@ public class ZoneTrigger : MonoBehaviour
         if (!reapplyEvenIfSame && zs.LocalZone == zone)
             return;
 
-        Debug.Log($"[ZoneTrigger] ENTER trigger={name} zone={zone} other={other.name} previousZone={zs.LocalZone}");
+        if (debugLogs)
+            Debug.Log($"[ZoneTrigger] ENTER trigger={name} zone={zone} other={other.name} previousZone={zs.LocalZone}");
         zs.SetLocalZone(zone);
-    }
-
-    private void OnTriggerStay(Collider other)
-    {
-        var marker = other.GetComponentInParent<LocalRigMarker>();
-        if (marker == null)
-            return;
-
-        Debug.Log($"[ZoneTrigger] STAY trigger={name} zone={zone} other={other.name}");
     }
 
     private void OnTriggerExit(Collider other)
     {
+        if (!debugLogs) return;
         var marker = other.GetComponentInParent<LocalRigMarker>();
         if (marker == null)
             return;

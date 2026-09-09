@@ -19,7 +19,9 @@ public class RebindInteractorsToSceneManager : MonoBehaviour
 
     private void Rebind()
     {
-        var manager = Object.FindFirstObjectByType<XRInteractionManager>(FindObjectsInactive.Exclude);
+        var travel = RunawayChimps.Travel.SectorTravelService.I;
+        var manager = travel != null ? travel.InteractionManager :
+            Object.FindFirstObjectByType<XRInteractionManager>(FindObjectsInactive.Exclude);
         if (!manager) return;
 
         foreach (var interactor in GetComponentsInChildren<XRBaseInteractor>(true))

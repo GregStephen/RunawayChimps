@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using RunawayChimps.Travel;
 
 public class HandImpactAudio : MonoBehaviour
 {
@@ -39,6 +40,7 @@ public class HandImpactAudio : MonoBehaviour
     private float _lockoutUntil = 0f;
 
     private readonly Dictionary<int, float> _perColliderNext = new(64);
+    private readonly Vector3[] _fallbackDirections = new Vector3[5];
 
     private void Awake()
     {
@@ -52,8 +54,34 @@ public class HandImpactAudio : MonoBehaviour
         _prevPos = transform.position;
     }
 
+    private void OnEnable() => ResetContact();
+
+    private void OnDisable()
+    {
+        if (_src != null) _src.Stop();
+        ResetContact();
+    }
+
+    private void ResetContact()
+    {
+        _prevPos = transform.position;
+        _armed = false;
+        _offSurfaceTimer = 0f;
+        _lockoutUntil = Time.time + slapLockout;
+        _perColliderNext.Clear();
+    }
+
     private void Update()
     {
+        // Scene travel and capture move the rig without a physical hand impact.
+        // Keep the velocity sample current and require a fresh contact afterward.
+        if (SectorTravelService.I != null && SectorTravelService.I.IsBusy)
+        {
+            if (_src.isPlaying) _src.Stop();
+            ResetContact();
+            return;
+        }
+
         float dt = Mathf.Max(Time.deltaTime, 0.0001f);
         Vector3 pos = transform.position;
         Vector3 v = (pos - _prevPos) / dt;   // hand velocity
@@ -70,10 +98,10 @@ public class HandImpactAudio : MonoBehaviour
         RaycastHit bestHit = default;
         float bestInto = 0f;
 
-        // 1) Primary cast: in the impact direction (opposite velocity)
+        // 1) Probe toward the surface the hand is approaching.
         if (speed > 0.001f)
         {
-            Vector3 impactDir = (-v).normalized;
+            Vector3 impactDir = v.normalized;
 
             if (Physics.SphereCast(origin, probeRadius, impactDir, out RaycastHit hit, probeDistance, surfaceLayers, QueryTriggerInteraction.Ignore))
             {
@@ -96,16 +124,15 @@ public class HandImpactAudio : MonoBehaviour
         if (enableFallback)
         {
             // Down (floors), forward/back (walls), right/left (walls)
-            Vector3[] dirs =
-            {
-                Vector3.down,
-                transform.forward, -transform.forward,
-                transform.right, -transform.right
-            };
+            _fallbackDirections[0] = Vector3.down;
+            _fallbackDirections[1] = transform.forward;
+            _fallbackDirections[2] = -transform.forward;
+            _fallbackDirections[3] = transform.right;
+            _fallbackDirections[4] = -transform.right;
 
-            for (int i = 0; i < dirs.Length; i++)
+            for (int i = 0; i < _fallbackDirections.Length; i++)
             {
-                if (Physics.SphereCast(origin, probeRadius, dirs[i], out RaycastHit hit, probeDistance, surfaceLayers, QueryTriggerInteraction.Ignore))
+                if (Physics.SphereCast(origin, probeRadius, _fallbackDirections[i], out RaycastHit hit, probeDistance, surfaceLayers, QueryTriggerInteraction.Ignore))
                 {
                     if (IsIgnored(hit.collider))
                         continue;
@@ -175,11 +202,10 @@ public class HandImpactAudio : MonoBehaviour
 
     private void PlaySlap(Collider surface, float into)
     {
-        if (defaultProfile == null || defaultProfile.clips == null || defaultProfile.clips.Length == 0)
-            return;
-
         var sa = surface.GetComponentInParent<SurfaceAudio>();
         var profile = (sa != null && sa.profile != null) ? sa.profile : defaultProfile;
+        if (profile == null || profile.clips == null || profile.clips.Length == 0)
+            profile = defaultProfile;
         if (profile == null || profile.clips == null || profile.clips.Length == 0)
             return;
 

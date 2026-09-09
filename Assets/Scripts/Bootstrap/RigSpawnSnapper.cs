@@ -40,6 +40,9 @@ public class RigSpawnSnapper : MonoBehaviour
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
+        // The travel coordinator selects the hallway or computer return marker.
+        if (RunawayChimps.Travel.SectorTravelService.I != null &&
+            RunawayChimps.Travel.SectorTravelService.I.IsBusy) return;
         if (scene.name != HubSceneName)
             return;
 

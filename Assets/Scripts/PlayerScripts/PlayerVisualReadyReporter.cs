@@ -1,5 +1,7 @@
 using System.Collections;
 using UnityEngine;
+using Photon.Pun;
+using Photon.Realtime;
 
 public class PlayerVisualReadyReporter : MonoBehaviour
 {
@@ -10,15 +12,36 @@ public class PlayerVisualReadyReporter : MonoBehaviour
     public float extraSecondsAfterStable = 0.1f;
 
     private Renderer[] _renderers;
+    private PhotonView ownerView;
+    private Room reportingRoom;
 
     private void Awake()
     {
         _renderers = GetComponentsInChildren<Renderer>(true);
+        ownerView = GetComponentInParent<PhotonView>();
     }
 
     private void Start()
     {
+        reportingRoom = PhotonNetwork.CurrentRoom;
+        if (!CanReportReady()) return;
         StartCoroutine(CoWaitForVisualsToSettle());
+    }
+
+    private bool CanReportReady() => isActiveAndEnabled && ownerView != null && ownerView.IsMine &&
+        PhotonNetwork.InRoom && ReferenceEquals(reportingRoom, PhotonNetwork.CurrentRoom);
+
+    private void MarkReady()
+    {
+        if (!CanReportReady()) return;
+        AppState.I?.MarkPlayerVisualsReady();
+        AppState.I?.TryMarkReady();
+    }
+
+    private void OnDisable()
+    {
+        StopAllCoroutines();
+        reportingRoom = null;
     }
 
     private IEnumerator CoWaitForVisualsToSettle()
@@ -26,11 +49,11 @@ public class PlayerVisualReadyReporter : MonoBehaviour
         // Give PhotonVR a moment to run its own Start/Awake and apply initial values
         yield return null;
         yield return new WaitForEndOfFrame();
+        if (!CanReportReady()) yield break;
 
         if (_renderers == null || _renderers.Length == 0)
         {
-            AppState.I?.MarkPlayerVisualsReady();
-            AppState.I?.TryMarkReady();
+            MarkReady();
             yield break;
         }
 
@@ -40,6 +63,7 @@ public class PlayerVisualReadyReporter : MonoBehaviour
         while (stable < stableFramesRequired)
         {
             yield return null;
+            if (!CanReportReady()) yield break;
 
             int hash = ComputeMaterialsHash();
             if (hash == lastHash)
@@ -54,11 +78,11 @@ public class PlayerVisualReadyReporter : MonoBehaviour
         }
 
         if (extraSecondsAfterStable > 0f)
-            yield return new WaitForSeconds(extraSecondsAfterStable);
+            yield return new WaitForSecondsRealtime(extraSecondsAfterStable);
 
+        if (!CanReportReady()) yield break;
         Debug.Log("[PlayerVisualReadyReporter] Visuals stable. Marking ready.");
-        AppState.I?.MarkPlayerVisualsReady();
-        AppState.I?.TryMarkReady();
+        MarkReady();
     }
 
     private int ComputeMaterialsHash()

@@ -74,6 +74,19 @@
             velocityIndex = 0;
             lastPosition = transform.position;
         }
+        public void ResetAfterTeleport()
+        {
+            bodyCollider.transform.eulerAngles = new Vector3(0, headCollider.transform.eulerAngles.y, 0);
+            // Followers can be siblings of the moving body; realign them explicitly.
+            leftHandFollower.position = CurrentLeftHandPosition();
+            rightHandFollower.position = CurrentRightHandPosition();
+            InitializeValues();
+            currentVelocity = Vector3.zero;
+            denormalizedVelocityAverage = Vector3.zero;
+            wasLeftHandTouching = false;
+            wasRightHandTouching = false;
+        }
+
         private Vector3 ArmRootPosition()
         {
             // Slightly below and behind the head

@@ -3,6 +3,10 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
 using Photon.Pun;
+using Photon.VR;
+using Photon.VR.Player;
+using RunawayChimps.Travel;
+using RunawayChimps.Zones;
 
 public class MonsterNavigation : MonoBehaviour
 {
@@ -36,19 +40,49 @@ public class MonsterNavigation : MonoBehaviour
     [SerializeField] private bool isChasingDebug;
 
     private float detectionTimer;
-    private GameObject currentTarget;
+    private Transform currentTarget;
+    private SectorMonsterSync sectorSync;
+    private bool hadAuthority;
+    private bool warnedNoNavMesh;
 
     private void Awake()
     {
         agent = GetComponent<NavMeshAgent>();
+        sectorSync = GetComponent<SectorMonsterSync>();
+        if (agent == null) { enabled = false; return; }
         agent.speed = MonsterSpeedWander;
         agent.updateRotation = false;
-        Wander();
     }
 
     private void Update()
     {
-        bool isMaster = PhotonNetwork.IsMasterClient;
+        bool isMaster = sectorSync != null ? sectorSync.HasAuthority : PhotonNetwork.IsMasterClient;
+
+        if (!isMaster)
+        {
+            agent.enabled = false;
+            hadAuthority = false;
+            return;
+        }
+        if (!hadAuthority)
+        {
+            agent.enabled = true;
+            var filter = new NavMeshQueryFilter { agentTypeID = agent.agentTypeID, areaMask = agent.areaMask };
+            if (!NavMesh.SamplePosition(transform.position, out var hit, 1f, filter) || !agent.Warp(hit.position))
+            {
+                if (!warnedNoNavMesh) Debug.LogError("Monster cannot reach its baked NavMesh. Check the containment NavMeshSurface.", this);
+                warnedNoNavMesh = true;
+                agent.enabled = false;
+                return;
+            }
+            hadAuthority = true;
+            currentTarget = null;
+            detectionTimer = 0;
+            agent.speed = MonsterSpeedWander;
+            Wander();
+        }
+        if (!agent.isOnNavMesh) return;
+        bool wasChasing = IsChasing;
 
         // Always compute chasing state (or at least update IsChasing)
         detectionTimer -= Time.deltaTime;
@@ -61,21 +95,13 @@ public class MonsterNavigation : MonoBehaviour
         IsChasing = (currentTarget != null);
         isChasingDebug = IsChasing;
 
-        if (!isMaster)
-        {
-            agent.enabled = false;
-            return;
-        }
-
-        agent.enabled = true;
-
-        // Only master drives movement
+        // Only the controller actually present in this sector drives movement.
         if (currentTarget != null)
         {
             agent.speed = MonsterSpeedChase;
-            agent.destination = currentTarget.transform.position;
+            agent.destination = currentTarget.position;
         }
-        else if (!agent.pathPending && agent.remainingDistance < 0.5f)
+        else if (wasChasing || (!agent.pathPending && agent.remainingDistance < 0.5f))
         {
             agent.speed = MonsterSpeedWander;
             Wander();
@@ -85,18 +111,36 @@ public class MonsterNavigation : MonoBehaviour
     }
 
 
-    private GameObject FindClosestPlayer()
+    public void ApplyRemoteChasing(bool chasing)
     {
-        GameObject[] players = GameObject.FindGameObjectsWithTag(tagString);
-        if (players == null || players.Length == 0)
-            return null;
+        IsChasing = chasing;
+        isChasingDebug = chasing;
+    }
 
-        GameObject closest = null;
+    private Transform FindClosestPlayer()
+    {
+        var targets = new List<Transform>();
+        if (sectorSync != null)
+        {
+            var zones = ZoneStateService.Instance;
+            foreach (var avatar in FindObjectsOfType<PhotonVRPlayer>())
+            {
+                var owner = avatar.photonView.Owner;
+                if (owner == null || SectorPresence.Get(owner) != sectorSync.sector || zones == null ||
+                    !zones.TryGetZone(owner.ActorNumber, out var zone) || zone != ZoneId.Level1_Vents) continue;
+                var head = owner.IsLocal && PhotonVRManager.Manager != null ? PhotonVRManager.Manager.Head : avatar.Head;
+                if (head != null) targets.Add(head);
+            }
+        }
+        else
+            foreach (var target in GameObject.FindGameObjectsWithTag(tagString)) targets.Add(target.transform);
+
+        Transform closest = null;
         float minDistance = float.MaxValue;
 
         bool hasVentGraph = useVentGraph && VentGraph.Instance != null;
 
-        foreach (GameObject player in players)
+        foreach (Transform player in targets)
         {
             if (player == null) continue;
 
@@ -106,7 +150,7 @@ public class MonsterNavigation : MonoBehaviour
             {
                 distance = VentGraph.Instance.GetPathDistance(
                     transform.position,
-                    player.transform.position
+                    player.position
                 );
 
                 if (float.IsInfinity(distance))
@@ -114,7 +158,7 @@ public class MonsterNavigation : MonoBehaviour
             }
             else
             {
-                distance = Vector3.Distance(transform.position, player.transform.position);
+                distance = Vector3.Distance(transform.position, player.position);
             }
 
             if (distance < DetectionRange && distance < minDistance)

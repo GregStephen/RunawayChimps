@@ -32,6 +32,8 @@ public class LoadingFallbackCamera : MonoBehaviour
     private void Apply(string activeSceneName)
     {
         // Enabled only while Loading is active
-        _cam.enabled = activeSceneName == loadingSceneName;
+        _cam.enabled = activeSceneName == loadingSceneName &&
+            !(RunawayChimps.Travel.SectorTravelService.I != null &&
+              RunawayChimps.Travel.SectorTravelService.I.IsBusy);
     }
 }

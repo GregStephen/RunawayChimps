@@ -7,6 +7,7 @@ using PlayFab;
 using PlayFab.ClientModels;
 using TMPro;
 using UnityEngine;
+using RunawayChimps.Travel;
 
 public class ComputerTerminalUI : MonoBehaviourPunCallbacks
 {
@@ -29,13 +30,14 @@ public class ComputerTerminalUI : MonoBehaviourPunCallbacks
 
     private float nextStatusRefreshTime = 0f;
     private const float statusRefreshInterval = 0.5f;
-    private enum MenuOption { RoomCode, Name, Color }
+    private enum MenuOption { RoomCode, Name, Color, Level1 }
     private MenuOption selected = MenuOption.RoomCode;
 
     // We keep separate edit buffers for fields that type text.
     private string editRoomCode = "";
     private string playerName;
     private string editName = "";
+    private bool nameSavePending;
 
     // Terminal status / errors
     private string nameStatusLine = "";
@@ -53,12 +55,13 @@ public class ComputerTerminalUI : MonoBehaviourPunCallbacks
         editRoomCode = roomCode;
         playerName = PlayerPrefs.GetString("Username", "Player");
         editName = playerName;
+        if (PhotonVRManager.Manager != null) playerColor = PhotonVRManager.Manager.Colour;
         Render();
     }
  
     private string SanitizeDisplayName(string s)
     {
-        if (string.IsNullOrWhiteSpace(s)) return "Player";
+        if (string.IsNullOrWhiteSpace(s)) return string.Empty;
 
         s = s.Trim();
 
@@ -136,34 +139,36 @@ public class ComputerTerminalUI : MonoBehaviourPunCallbacks
 
     private void SaveNameToPlayFab(string newName, Action<string> onSuccess, Action<string> onFail)
     {
+        if (!PlayFabClientAPI.IsClientLoggedIn())
+        {
+            onFail?.Invoke("Please wait until you are signed in, then try again.");
+            return;
+        }
+
         var req = new UpdateUserTitleDisplayNameRequest
         {
             DisplayName = newName
         };
 
-        PlayFabClientAPI.UpdateUserTitleDisplayName(
-            req,
-            result =>
-            {
-                Debug.Log($"[ComputerTerminal] PlayFab display name saved: {result.DisplayName}");
-                onSuccess?.Invoke(result.DisplayName);
-            },
-            error =>
-            {
-                // Turn PlayFab error into something player-friendly
-                string userMsg = error.ErrorMessage;
-
-                // Common cases you may see:
-                // - "Name not available" (if unique required)
-                // - "Invalid input" / profanity / too short / invalid chars (depends on title settings)
-                // We'll fall back to the provided message but keep it readable.
-                if (string.IsNullOrEmpty(userMsg))
-                    userMsg = "Name rejected.";
-
-                Debug.LogError($"[ComputerTerminal] Name save failed. HTTP={error.HttpCode} Code={error.Error} Msg={error.ErrorMessage}\n{error.GenerateErrorReport()}");
-                onFail?.Invoke(userMsg);
-            }
-        );
+        try
+        {
+            PlayFabClientAPI.UpdateUserTitleDisplayName(
+                req,
+                result => onSuccess?.Invoke(result.DisplayName),
+                error =>
+                {
+                    string userMsg = string.IsNullOrEmpty(error.ErrorMessage)
+                        ? "Please try again." : error.ErrorMessage;
+                    Debug.LogError($"[ComputerTerminal] Name save failed. Code={error.Error} Msg={error.ErrorMessage}");
+                    onFail?.Invoke(userMsg);
+                }
+            );
+        }
+        catch (Exception exception)
+        {
+            Debug.LogException(exception);
+            onFail?.Invoke("Could not start the save. Please try again.");
+        }
     }
 
 
@@ -233,6 +238,12 @@ public class ComputerTerminalUI : MonoBehaviourPunCallbacks
             case MenuOption.Color:
                 HandleColor(key);
                 break;
+
+            case MenuOption.Level1:
+                if (key == KeyboardKey.Key.Enter &&
+                    (SectorTravelService.I == null || !SectorTravelService.I.TravelTo("Level1_Containment")))
+                    SetNameStatus("Please wait until you are connected, then try again.");
+                break;
         }
     }
 
@@ -274,6 +285,12 @@ public class ComputerTerminalUI : MonoBehaviourPunCallbacks
 
     private void HandleName(KeyboardKey.Key key)
     {
+        if (nameSavePending)
+        {
+            SetNameStatus("Saving name...");
+            return;
+        }
+
         if (key == KeyboardKey.Key.Backspace)
         {
             if (editName.Length > 0)
@@ -286,20 +303,36 @@ public class ComputerTerminalUI : MonoBehaviourPunCallbacks
         {
             var desired = SanitizeDisplayName(editName);
 
-            // Optional: early local check
             if (string.IsNullOrWhiteSpace(desired))
             {
-                SetNameStatus("Name cannot be empty ❌");
+                SetNameStatus("Enter a name before saving.");
                 return;
             }
 
+            if (PhotonVRManager.Manager == null)
+            {
+                SetNameStatus("Player setup is still loading. Please try again.");
+                return;
+            }
+
+            nameSavePending = true;
             SetNameStatus("Saving name...");
 
             SaveNameToPlayFab(
                 desired,
                 savedName =>
                 {
-                    PhotonVRManager.SetUsername(savedName);
+                    // Persist a successful request even if travel has destroyed
+                    // this terminal while PlayFab was responding.
+                    if (PhotonVRManager.Manager != null)
+                        PhotonVRManager.SetUsername(savedName);
+                    else
+                    {
+                        PlayerPrefs.SetString("Username", savedName);
+                        PlayerPrefs.Save();
+                    }
+                    if (this == null) return;
+                    nameSavePending = false;
                     playerName = savedName;
                     editName = savedName;
 
@@ -307,10 +340,9 @@ public class ComputerTerminalUI : MonoBehaviourPunCallbacks
                 },
                 failMsg =>
                 {
-                    SetNameStatus($"Name not allowed ❌ ({failMsg})");
-
-                    // Optionally snap edit buffer back to current saved name
-                    editName = playerName;
+                    if (this == null) return;
+                    nameSavePending = false;
+                    SetNameStatus($"Name not saved ({failMsg})");
                 }
             );
 
@@ -361,21 +393,17 @@ public class ComputerTerminalUI : MonoBehaviourPunCallbacks
 
         if (key == KeyboardKey.Key.Enter)
         {
-            Debug.Log($"[ComputerTerminal] Color applied: RGB({playerColor.r:F2}, {playerColor.g:F2}, {playerColor.b:F2})");
-
-            // Hook: if you have a player avatar script, call it here.
-            // Example:
-            // GetComponent<PlayerAppearance>()?.SetColor(playerColor);
-
-            Render();
+            if (PhotonVRManager.Manager == null)
+            {
+                SetNameStatus("Player setup is still loading. Please try again.");
+                return;
+            }
+            PhotonVRManager.SetColour(playerColor);
+            SetNameStatus("Color saved.");
             return;
         }
 
-        // Use Up/Down to adjust the current channel too (you said up/down selects menu;
-        // but we already consume Up/Down for menu navigation globally, so we need another method).
-        //
-        // We'll use Num1/Num2 for -/+ as a simple placeholder, OR you can add dedicated keys later.
-        // If you want Up/Down to adjust color only while Color is selected, tell me and we’ll change it.
+        // Up/Down navigate the menu; Num1/Num2 adjust the selected channel.
         if (key == KeyboardKey.Key.Num1) AdjustColor(-colorStep);
         if (key == KeyboardKey.Key.Num2) AdjustColor(+colorStep);
     }
@@ -407,6 +435,7 @@ public class ComputerTerminalUI : MonoBehaviourPunCallbacks
         sb.AppendLine(MenuLine(MenuOption.RoomCode, "Room Code"));
         sb.AppendLine(MenuLine(MenuOption.Name, "Name"));
         sb.AppendLine(MenuLine(MenuOption.Color, "Color"));
+        sb.AppendLine(MenuLine(MenuOption.Level1, "Level 1"));
         sb.AppendLine("------------------------------");
         sb.AppendLine();
 
@@ -417,33 +446,34 @@ public class ComputerTerminalUI : MonoBehaviourPunCallbacks
                 sb.AppendLine($"Enter code (max {roomCodeMaxChars}):");
                 sb.AppendLine($"{editRoomCode}_");
                 sb.AppendLine();
-                sb.AppendLine("Enter = Join (log)");
+                sb.AppendLine("Enter = Join");
                 sb.AppendLine("Backspace = delete");
                 break;
 
             case MenuOption.Name:
-                if (string.IsNullOrEmpty(nameStatusLine))
-                {
-                    sb.AppendLine($"Current: {playerName}");
-                    sb.AppendLine($"Edit: {editName}_");
-                }
-                if (!string.IsNullOrEmpty(nameStatusLine))
-                {
-                    sb.AppendLine();
-                    sb.AppendLine(nameStatusLine);
-                }
+                sb.AppendLine($"Current: {playerName}");
+                sb.AppendLine($"Edit: {editName}_");
+                sb.AppendLine(nameSavePending ? "Saving name..." : nameStatusLine);
                 sb.AppendLine();
-                sb.AppendLine("Enter = Save");
+                sb.AppendLine(nameSavePending ? "Please wait" : "Enter = Save");
                 sb.AppendLine("Backspace = delete");
                 break;
 
             case MenuOption.Color:
                 sb.AppendLine("Left/Right = select channel");
                 sb.AppendLine("Num1 = -    Num2 = +");
-                sb.AppendLine("Enter = Apply (log)");
+                sb.AppendLine("Enter = Apply");
                 sb.AppendLine("Backspace = reset");
-                sb.AppendLine();
+                string colorHex = ColorUtility.ToHtmlStringRGB(playerColor);
+                sb.AppendLine($"Preview: <color=#{colorHex}>COLOR</color>  #{colorHex}");
                 sb.AppendLine(ColorLine());
+                if (!string.IsNullOrEmpty(nameStatusLine)) sb.AppendLine(nameStatusLine);
+                break;
+
+            case MenuOption.Level1:
+                sb.AppendLine("Primate Containment");
+                sb.AppendLine("Enter = Travel to the safe room");
+                if (!string.IsNullOrEmpty(nameStatusLine)) sb.AppendLine(nameStatusLine);
                 break;
         }
 
@@ -476,15 +506,17 @@ public class ComputerTerminalUI : MonoBehaviourPunCallbacks
     {
         MenuOption.RoomCode => MenuOption.Name,
         MenuOption.Name => MenuOption.Color,
-        MenuOption.Color => MenuOption.RoomCode,
+        MenuOption.Color => MenuOption.Level1,
+        MenuOption.Level1 => MenuOption.RoomCode,
         _ => MenuOption.RoomCode
     };
 
     private static MenuOption Prev(MenuOption o) => o switch
     {
-        MenuOption.RoomCode => MenuOption.Color,
+        MenuOption.RoomCode => MenuOption.Level1,
         MenuOption.Name => MenuOption.RoomCode,
         MenuOption.Color => MenuOption.Name,
+        MenuOption.Level1 => MenuOption.Color,
         _ => MenuOption.RoomCode
     };
 
