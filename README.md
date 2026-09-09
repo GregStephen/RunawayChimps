@@ -2,6 +2,14 @@
 
 A Photon PUN VR horror game about escaping a laboratory. Open this project with **Unity 2022.3.55f1**. Cheeky Chimps is a separate Unity 6 project.
 
+## Project documentation
+
+- [Design and lore](docs/design-and-lore.md): maintained game rules, level concepts, images, proposals, and decision corrections.
+- [Repository improvement plan](docs/repository-improvement-plan.md): review evidence, implementation status, priorities, and acceptance checks.
+- [AGENTS.md](AGENTS.md): instructions to read and update the relevant documents when decisions, implementation, or test results meaningfully change.
+
+The repository documents are the maintained versions; earlier Word documents are downloadable snapshots. Confirmed design, implemented code, and completed testing are separate statuses. The current reliability fixes remain pending Unity and headset validation.
+
 ## Current project layout
 
 Start from `Assets/Scenes/Bootstrap.unity`. The enabled build scenes are Bootstrap, Loading, and Hub_Base. Hub_Base currently contains the starting area, shop, and Primate Containment gameplay under Level1Root.
