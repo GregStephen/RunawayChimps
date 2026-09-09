@@ -14,12 +14,13 @@ On `level1split`, commit `ac69718` contains `Assets/Scenes/Level1_Containment.un
 
 The gameplay rules below describe the intended game. Reported local behavior is identified separately from what the repository review established.
 
-The combined `level1split-travel.patch` also includes focused source cleanup for terminal color saving/preview and name-save handling, local startup readiness, cancelled/timeout player spawning, button release state, logging, material bindings, hand-impact audio, and held-item collision-layer restoration. The held-item script filename now matches its existing component class with its asset GUID preserved. GitHub upload of this patch did not complete; apply the latest patch before testing. These changes add no Level 1 terminal or new gameplay/progression rules; Unity and headset validation remain pending.
+The combined `level1split-travel.patch` also includes focused source cleanup for terminal color saving/preview and name-save handling, local startup readiness, cancelled/timeout player spawning, button release state, logging, material bindings, hand-impact audio, and held-item collision-layer restoration. The held-item script filename now matches its existing component class with its asset GUID preserved. The Level 1 travel/cleanup work is now on main through merged PR #3; no separate patch application is needed. These changes add no Level 1 terminal or new gameplay/progression rules; Unity and headset validation remain pending.
 
 ## Decision and correction record
 
 | Recorded | Decision or correction | Status |
 | --- | --- | --- |
+| 2026-09-09 | Wire Level 1 completion and Hub selection to Level 2's safe entry; the future Level 2 terminal returns to Level 1's safe cage room or the Hub computer. | Confirmed; code and scene wiring on PR #4, Unity/headset validation pending |
 | 2026-09-09 | Add optional locked reward rooms opened by a card discovered on a different level, using the smaller Level 1 entrance door. Rewards may be a collectible, in-game currency, or both. Level 4 supplying Level 2 is an example, not a fixed assignment. | Confirmed direction; gameplay planned |
 | 2026-09-09 | Put Level 2's reward room in the bottom-right area to spread out points of interest. This supersedes the assistant's suggested space between the exit and repair room. | Confirmed correction; blockout v0.3 on codex/level2-blockout |
 | 2026-09-09 | Reuse scaled sci-fi gate frames for open passages and the complete Level 1 exit gate at its existing scale for exits. | Confirmed; linked assets in blockout v0.3, Unity validation pending |
@@ -56,6 +57,16 @@ These dates record migration and clarification, not the original date of every e
 ### Latest flow change
 
 Winning leads forward into the next level. Returning to the hub is an available choice from the next safe starting room, rather than the automatic result of a win. Direct travel from a future starting-room terminal is now confirmed direction; additional destination scenes and terminal UI remain planned.
+
+### Level 2 travel implementation
+
+**Implemented on `codex/level2-blockout`, PR #4; not merged:** Hub's existing computer menu includes Level 2. `SectorTravelService` accepts the registered Level 2 scene, reuses fade/Loading and destination floor/body/head checks, and publishes the Conditioning sector for avatar/voice presentation. Both Hub selection and personal Level 1 completion use `Level2EntrySpawn` at `(3, 0.05, -2.4)`, facing into the hall. Level 2's arrival context uses existing `ZoneId.Level2`; the Listener and its safety logic remain unimplemented.
+
+The existing Level 1 two-card requirement is preserved. The keybox counts each local-picked card once and requests completion travel after the final card. Its completion gate stays solid instead of opening a passage, including during rollback. If loading fails, completed source-scene state remains available and locally selecting the keybox retries; leaving/re-entering the scene still resets the visit. Completion sound/animation polish and the broader capture/drop lifecycle remain pending.
+
+`LevelTerminalActions` is attached to the entry's `HubReturnControlMarker`. Its `ReturnToLevelOne()` and `ReturnToHub()` methods are ready for the future terminal's local button events. Both enforce being in the Level 2 safe-entry volume and reuse the guarded travel flow. The UI/model is deliberately unbuilt. Play Mode component context menus allow testing these actions before the terminal is designed. Level 1 return arrives in the cage room; Hub return arrives at the computer. The existing Level 1 door-to-Hub hallway route is unchanged.
+
+**Validated at source level:** C# syntax, card script GUID preservation after matching filenames to classes, scene IDs/references, one Level 2 build registration, two Level 1 card instances, and safe-entry/terminal bindings. **Pending:** Unity compilation/import, Editor validator execution, all four travel routes, failed-load retry, two-client independent completion and visibility/voice, headset spawning and clearance. These are implemented routes, not claimed playtested behavior.
 
 ## Optional reward rooms and replay
 
@@ -112,9 +123,12 @@ Confirmed travel routes (Greg’s latest clarification supersedes the earlier al
 | Hub computer: select Level 1 | Level1EntrySpawn | Level 1 safe cage room |
 | Hub hallway door or its button | Level1EntrySpawn | Same Level 1 safe cage room |
 | Level 1 entrance door: return | HubDoorReturnSpawn | Hub hallway, on the Hub side of the door |
+| Hub computer: select Level 2 | Level2EntrySpawn | Level 2 safe entry room |
+| Complete the personal Level 1 keybox | Level2EntrySpawn | Same Level 2 safe entry room |
+| Future Level 2 terminal: return to Level 1 | Level1EntrySpawn | Level 1 safe cage room |
 | Future level terminal: return to Hub | HubReturnSpawn | In front of the Hub computer |
 
-Every route fades to black, displays the Loading scene, then fades into the destination. Travel is an explicit interaction; walking into the door does not automatically transition. Both the existing Hub button and XR door selection are wired for testing while the final control choice remains open. The future terminal can use `SectorTravelService.ReturnToHub()`; that API does not mean its UI or Level 2 travel is built. Arrival markers exist in the scene assets; verify their clear floor space, facing, and reach in Unity and on a headset.
+Every route fades to black, displays the Loading scene, then fades into the destination. Travel is an explicit interaction; walking into the door does not automatically transition. Both the existing Hub button and XR door selection are wired for testing while the final control choice remains open. The future terminal can use `SectorTravelService.ReturnToHub()`; the Level 2 route is now wired in PR #4, while the terminal UI remains unbuilt. Arrival markers exist in the scene assets; verify their clear floor space, facing, and reach in Unity and on a headset.
 
 A player who finishes Level 1 first can wait in the safe Level 2 starting room for a friend. Travel affects the interacting player only. Changing sectors, returning to the hub, or following a friend must preserve membership of the same 10-player Photon room.
 
@@ -307,7 +321,7 @@ The inspected Level 1 objective exit is `Level2_Entrance_Door`, an instance of `
 
 ![Level 2 blockout with the optional reward room at bottom right](images/level2-blockout-floorplan.png)
 
-**Confirmed request:** an editable rough map based on the saved Level 2 repair-room plan. The standalone scene and matching reusable prefab are on review branch `codex/level2-blockout`, rebased onto `main` at `c388d87`. The original map base was `level1split` commit `6443fd0`. They are not merged or connected to live travel. This map task does not promote proposed gameplay rules to confirmed status.
+**Confirmed request:** an editable rough map based on the saved Level 2 repair-room plan. The standalone scene and matching reusable prefab are on review branch `codex/level2-blockout`, rebased onto `main` at `c388d87`. The original map base was `level1split` commit `6443fd0`. They are not merged. The travel follow-up in the same PR connects Hub selection and Level 1 completion to the safe entry; runtime validation remains pending. This map task does not promote proposed gameplay rules to confirmed status.
 
 **Implemented asset:** `Assets/RunawayChimps/Level2Blockout/Scenes/Level2_BehavioralConditioning_Blockout.unity` and `Prefabs/Level2_Blockout.prefab` contain independently editable floors, walls, ceilings, two solid obstacles, bypass, two repair passages, repair bench/hammer/conduit placeholders, linked sci-fi gates, the bottom-right reward room, scanner/sign and reward placeholders, and named gameplay markers. Entry and completed exit remain the intended safe rooms; marker triggers do not enforce safety. Static exit and reward barriers remain until the respective personal qualification logic is wired.
 
@@ -315,7 +329,7 @@ The inspected Level 1 objective exit is `Level2_Entrance_Door`, an instance of `
 
 **Validated outside Unity, September 9, 2026:** generated YAML parses; local references and source-prefab object IDs resolve; all five linked gate instances have the expected scale and panel-visibility overrides. The 0.10 m box-layout grid connects the entry, exit approach, both repair passages and lower bypass for 0.35 m and 1.375 m radius proxies. Either repair opening can be blocked while the other route remains available. Closed barriers isolate the exit and reward room; removing the reward barrier connects the player proxy through its wall gap. These checks exclude the linked gate meshes and do not prove actual doorway, NavMesh or animated clearance. The overhead diagram uses schematic door symbols. Earlier Blender models and perspective images remain v0.1 references without the new reward room or gate revision.
 
-**Pending:** Unity 2022.3.55f1 import, gate/frame/threshold fitting, Gorilla hand/body collision, Listener turning and reach, safe-room exclusion, NavMesh, headset scale and performance, repair and capture rules, cross-level cards and saving, scanner/door interaction, personal rewards, exit qualification, sector travel and Photon PUN integration. The map adds no runtime scripts, player rig, camera, Photon objects or Build Settings entry.
+**Pending validation:** Unity 2022.3.55f1 import, gate/frame/threshold fitting, Gorilla hand/body collision, Listener turning and reach, safe-room exclusion, NavMesh, headset scale and performance, repair and capture rules, cross-level cards and saving, scanner/door interaction, personal rewards, exit qualification, sector travel and Photon PUN integration. The travel follow-up adds a SectorScene context, LevelTerminalActions binding and one enabled Build Settings entry. It reuses the persistent Bootstrap rig and adds no scene-owned rig, camera or Photon avatar.
 
 ## Future levels and remaining decisions
 

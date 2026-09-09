@@ -1,31 +1,41 @@
 using UnityEngine;
+using UnityEngine.XR.Interaction.Toolkit;
 
-public class VRKeyCard : MonoBehaviour
+public class KeyCard : MonoBehaviour
 {
-    public string keyCardID = "KeyCard";
+    private bool isInserted = false;
+    private XRGrabInteractable grab;
+    public bool IsInserted => isInserted;
+    public bool WasHeldByLocalPlayer { get; private set; }
 
     private void OnEnable()
     {
-        var grab = GetComponent<UnityEngine.XR.Interaction.Toolkit.XRGrabInteractable>();
-        if (grab != null)
-            grab.selectEntered.AddListener(OnGrab);
+        grab = GetComponent<XRGrabInteractable>();
+        if (grab != null) grab.selectEntered.AddListener(Selected);
+    }
+
+    private void Selected(SelectEnterEventArgs args)
+    {
+        if (args.interactorObject.transform.GetComponentInParent<LocalRigMarker>() != null)
+            WasHeldByLocalPlayer = true;
     }
 
     private void OnDisable()
     {
-        var grab = GetComponent<UnityEngine.XR.Interaction.Toolkit.XRGrabInteractable>();
-        if (grab != null)
-            grab.selectEntered.RemoveListener(OnGrab);
+        if (grab != null) grab.selectEntered.RemoveListener(Selected);
     }
 
-    private void OnGrab(UnityEngine.XR.Interaction.Toolkit.SelectEnterEventArgs args)
+    private void OnTriggerEnter(Collider other)
     {
-        // Get the local player's inventory and add the keycard
-        PlayerInventory.LocalInventory?.CollectKeyCard(keyCardID);
+        if (isInserted) return;
 
-        Debug.Log($"[KeyCard] {keyCardID} collected locally.");
+        KeyBox box = other.GetComponent<KeyBox>();
+        if (box != null && box.TryAddKey(this))
+        {
+            isInserted = true;
 
-        // Destroy ONLY the local copy
-        Destroy(gameObject);
+            // Remove the card (destroy locally)
+            Destroy(gameObject);
+        }
     }
 }

@@ -2,12 +2,14 @@
 
 Editable layout for Unity 2022.3.55f1, based on the noisy-repair plan. The optional
 reward room is now at the bottom right beneath the bypass, as requested. This is
-an environment blockout; interactions, progression, AI and networking are unwired.
+an environment blockout with Level 1 completion, Hub selection and safe-entry
+travel actions wired in code. Repair, reward interactions and AI remain unwired.
 
 ## Open the map
 
-1. Import `RunawayChimps_Level2_Blockout.unitypackage` into the existing Runaway
-   Chimps project using **Assets > Import Package > Custom Package**.
+1. Check out the complete `codex/level2-blockout` branch in the Runaway Chimps
+   project. The earlier downloadable map package predates this travel update;
+   importing that package alone does not install the new runtime code.
 2. Open `Assets/RunawayChimps/Level2Blockout/Scenes/Level2_BehavioralConditioning_Blockout.unity`.
 3. Select `Level2_Blockout_v03`, hover over Scene view and press **F**.
 4. Toggle `03_Ceilings__Toggle_for_Top_View` for an overhead look.
@@ -83,9 +85,11 @@ gap. These checks exclude linked gate meshes and do not prove Unity clearance.
 
 Unity import, Play Mode, headset scale, hand/body collision, giant clearance,
 NavMesh, AI, repair and capture rules, personal exit qualification, cross-level
-cards/saving/rewards, travel, Photon PUN and Quest performance remain pending.
-There is no rig, camera, AudioListener, runtime script or Build Settings entry.
-Use a copy of the established XR test setup for movement checks, keeping one rig.
+cards/saving/rewards, travel runtime behavior, Photon PUN and Quest performance
+remain pending. The scene has a SectorScene arrival context and terminal action
+component, and is registered once at enabled build index 4. It has no extra rig,
+camera or AudioListener. Start from Bootstrap for travel tests; opening Level 2
+and pressing Play alone does not create the persistent rig or Photon session.
 
 The current overhead plan is a schematic derived from this geometry. The complete
 bundle labels older Blender/perspective assets as `Reference_v01`; those files
@@ -94,4 +98,40 @@ scene/prefab. Materials use the inspected project's built-in Standard shader.
 
 Review branch: `codex/level2-blockout`, rebased onto `main` at `c388d87`.
 The original map was built from `level1split` at `6443fd0`. The blockout is not
-merged or connected to the live travel flow.
+merged. Its travel wiring is implemented in this branch and awaits Unity testing.
+
+## Travel wiring and future terminal
+
+| Action | Arrival |
+| --- | --- |
+| Hub computer: Level 2, then Enter | Level2EntrySpawn in the safe entry |
+| Insert both personal Level 1 cards | Same Level 2 entry, for the completing player |
+| Future terminal: ReturnToLevelOne | Level1EntrySpawn in the safe cage room |
+| Future terminal: ReturnToHub | HubReturnSpawn in front of the Hub computer |
+
+All routes reuse SectorTravelService's fade, Loading scene, grounding, collision
+checks and existing rig, while keeping the same Photon room. Level 1's existing
+door return still uses the Hub hallway arrival. Level 2 uses sector Conditioning
+and ZoneId.Level2; this does not implement Listener safe-room exclusion.
+
+The `LevelTerminalActions` component is already attached to
+`08_Gameplay_Markers__Not_Wired/HubReturnControlMarker`. Bind the future terminal's
+local button UnityEvents to `ReturnToLevelOne()` and `ReturnToHub()`. It checks
+that the local player's head is inside the assigned safe-entry area. No terminal
+model or UI is generated. To test before the UI exists, start from Bootstrap,
+travel to Level 2, stay in the safe room, and use this component's Play Mode
+context-menu actions.
+
+The Level 1 keybox keeps its existing two-card requirement. Each accepted card
+must have been picked up by the local rig. Repeated collider contacts cannot
+count a card twice. Completion starts travel; the gate remains a solid barrier
+if loading fails. After a failed attempt, select the completed keybox again to
+retry (or use its Play Mode context menu); no replacement cards are needed.
+Completion door sound/animation polish is still pending. Leaving Level 1 and
+returning starts a new scene visit with fresh cards and objective state. The
+broader capture/drop/recovery behavior remains separate work.
+
+Run **Tools > Runaway Chimps > Validate Sector Travel**, then test these four
+routes, repeated input, rollback and keybox retry, two players finishing at
+different times, and sector avatar/voice visibility. Source checks in
+`Tools/Level2Blockout/travel_validation.json` are not Unity runtime validation.

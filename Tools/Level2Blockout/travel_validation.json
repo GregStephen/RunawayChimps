@@ -1,0 +1,32 @@
+{
+  "csharp_syntax_files": 9,
+  "card_script_guid_preserved": true,
+  "enabled_destinations": [
+    "Assets/Scenes/Bootstrap.unity",
+    "Assets/Scenes/Loading.unity",
+    "Assets/Scenes/Hub_Base.unity",
+    "Assets/Scenes/Level1_Containment.unity",
+    "Assets/RunawayChimps/Level2Blockout/Scenes/Level2_BehavioralConditioning_Blockout.unity"
+  ],
+  "serialized_reference_counts": {
+    "Assets/Scenes/Level1_Containment.unity": 2193,
+    "Assets/RunawayChimps/Level2Blockout/Scenes/Level2_BehavioralConditioning_Blockout.unity": 868,
+    "Assets/RunawayChimps/Level2Blockout/Prefabs/Level2_Blockout.prefab": 867
+  },
+  "level2_arrival": [
+    3,
+    0.05,
+    -2.4
+  ],
+  "terminal_area_contains_spawn": true,
+  "level1_required_cards": 2,
+  "level1_card_instances": 2,
+  "pending": [
+    "Unity compilation/import",
+    "Editor validator execution",
+    "Play Mode and travel rollback",
+    "Local card interaction and completion retry",
+    "Two-client sector visibility/voice",
+    "Headset arrival clearance"
+  ]
+}

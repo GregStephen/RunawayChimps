@@ -1,7 +1,8 @@
 """Generate an isolated Unity 2022.3 greybox using the project's existing gates.
 
 All dimensions are metres. Unity axes are X/right, Y/up, Z/north.
-No runtime scripts, scene travel, safety, objective, or AI behaviour is installed.
+Includes the sector arrival context and future-terminal travel actions.
+Repair, reward, safety enforcement and AI behaviour remain unimplemented.
 """
 from pathlib import Path
 import json, hashlib, math, re, tarfile, io, argparse
@@ -208,6 +209,16 @@ for name,c in COLORS.items():
 ''')
     write(p,s); meta(p)
 
+def travel_component(n):
+    byname={v['name']:v for v in nodes}
+    if n['id']==root:
+        return ('f5804367cdd64d9988009ed4d4e40bb0',
+                '  sector: 3\n  entryZone: 4\n  arrivalSpawn: {fileID: '+str(byname['Level2EntrySpawn']['id']+1)+'}\n  doorArrivalSpawn: {fileID: 0}\n')
+    if n['name']=='HubReturnControlMarker':
+        return ('0a4725352759d7255301e5b06df6157b',
+                '  safeEntryArea: {fileID: '+str(byname['Entry_Safe_Volume__Marker_Only']['id']+4)+'}\n')
+    return None
+
 def serialize_nodes():
     blocks=[]
     for n in nodes:
@@ -215,6 +226,8 @@ def serialize_nodes():
         if n['material']: comps += [i+2,i+3]
         if n['collider']: comps += [i+4]
         if n['kind']=='light': comps += [i+5]
+        travel=travel_component(n)
+        if travel:comps += [i+6]
         cs=''.join(f'  - component: {{fileID: {c}}}\n' for c in comps)
         blocks.append(block(1,i,'GameObject',f'''  m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {{fileID: 0}}
@@ -241,6 +254,14 @@ def serialize_nodes():
   m_Children:{ch}  m_Father: {{fileID: {n['parent']+1 if n['parent'] else 0}}}
   m_LocalEulerAnglesHint: {{x: 0, y: 0, z: 0}}
 '''))
+        if travel:
+            script_guid,fields=travel
+            blocks.append(block(114,i+6,'MonoBehaviour',base(i+6,n)+f'''  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {{fileID: 11500000, guid: {script_guid}, type: 3}}
+  m_Name:
+  m_EditorClassIdentifier:
+'''+fields))
         if n['material']:
             blocks.append(block(33,i+2,'MeshFilter',base(i+2,n)+f'  m_Mesh: {{fileID: 10202, guid: {BUILTIN}, type: 0}}\n'))
             mg=guid(relative(ASSET/'Materials'/f'{n["material"]}.mat'))

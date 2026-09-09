@@ -75,7 +75,7 @@ namespace RunawayChimps.Travel
             if (!PhotonNetwork.InRoom || (AppState.I != null && !AppState.I.IsReady)) return false;
             source = SceneManager.GetActiveScene();
             if (SectorScene.Find(source) == null || source.name == sceneName) return false;
-            if (sceneName != "Hub_Base" && sceneName != "Level1_Containment")
+            if (!SectorDestinations.IsSupported(sceneName) || !Application.CanStreamedLevelBeLoaded(sceneName))
             {
                 ShowError("That destination is not available yet.");
                 return false;
@@ -90,8 +90,18 @@ namespace RunawayChimps.Travel
 
         // A future level terminal can bind these methods directly to UnityEvents.
         [ContextMenu("Travel/Return to Hub terminal spawn")]
-        public void ReturnToHub() => TravelTo("Hub_Base", ArrivalRoute.Terminal);
-        public void EnterLevelOne() => TravelTo("Level1_Containment", ArrivalRoute.Terminal);
+        public void ReturnToHub() => TravelTo(SectorDestinations.Hub, ArrivalRoute.Terminal);
+        public void EnterLevelOne() => TravelTo(SectorDestinations.LevelOne, ArrivalRoute.Terminal);
+        public void EnterLevelTwo() => TravelTo(SectorDestinations.LevelTwo, ArrivalRoute.Terminal);
+
+        // Completion is local to this scene visit; never broadcast travel or a group win.
+        public bool CompleteLevelOne(KeyBox objective)
+        {
+            if (objective == null || !objective.travelToLevelTwoOnComplete || !objective.IsComplete ||
+                CurrentSector != SectorId.Containment ||
+                objective.gameObject.scene != SceneManager.GetActiveScene()) return false;
+            return TravelTo(SectorDestinations.LevelTwo, ArrivalRoute.Terminal);
+        }
 
         public bool RespawnAt(Transform spawn)
         {
@@ -180,7 +190,8 @@ namespace RunawayChimps.Travel
             CheckConnection();
             PlaceRig(spawn, source);
             committed = true;
-            Publish(oldSector, ZoneId.Level1_Antechamber);
+            var context = SectorScene.Find(source);
+            Publish(oldSector, context != null ? context.entryZone : oldZone);
             yield return Fade(0);
         }
 

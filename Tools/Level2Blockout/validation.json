@@ -1,18 +1,20 @@
 {
   "Level2_BehavioralConditioning_Blockout.unity": {
-    "serialized_objects": 866,
+    "serialized_objects": 868,
     "yaml_parse": true,
     "local_references_resolve": true
   },
   "Level2_Blockout.prefab": {
-    "serialized_objects": 865,
+    "serialized_objects": 867,
     "yaml_parse": true,
     "local_references_resolve": true
   },
   "external_dependencies": {
     "22d2c44fed4ffa743aac7afe4d993905": "Assets/MASH Virtual/Sci Fi Doors/Prefab/Sci Fi Gates.prefab",
     "b581fdbd127292d44ab21c4b16d91d05": "Assets/MASH Virtual/Sci Fi Doors/Prefab/Gate_Small.prefab",
-    "eca90685bd7c0e14c985891ef5c0a3f3": "Assets/MASH Virtual/Sci Fi Doors/Mesh/Sci Fi Gates.fbx"
+    "eca90685bd7c0e14c985891ef5c0a3f3": "Assets/MASH Virtual/Sci Fi Doors/Mesh/Sci Fi Gates.fbx",
+    "f5804367cdd64d9988009ed4d4e40bb0": "Assets/Scripts/Travel/SectorScene.cs",
+    "0a4725352759d7255301e5b06df6157b": "Assets/Scripts/Travel/LevelTerminalActions.cs"
   },
   "linked_gates": {
     "count": 5,

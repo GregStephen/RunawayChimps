@@ -11,10 +11,12 @@ assets=ROOT/'Assets/RunawayChimps/Level2Blockout'
 results={}
 manifest=json.loads((HERE/'gate_manifest.json').read_text())
 external={}
-for path in [manifest['prefab_path'],manifest['small_prefab_path'],'Assets/MASH Virtual/Sci Fi Doors/Mesh/Sci Fi Gates.fbx']:
-    md=subprocess.check_output(['git','show','HEAD:'+path+'.meta'],cwd=ROOT,text=True)
+for path in [manifest['prefab_path'],manifest['small_prefab_path'],'Assets/MASH Virtual/Sci Fi Doors/Mesh/Sci Fi Gates.fbx',
+             'Assets/Scripts/Travel/SectorScene.cs','Assets/Scripts/Travel/LevelTerminalActions.cs']:
+    meta_path=ROOT/(path+'.meta')
+    md=meta_path.read_text() if meta_path.exists() else subprocess.check_output(['git','show','HEAD:'+path+'.meta'],cwd=ROOT,text=True)
     guid=re.search(r'^guid: (\w+)',md,re.M)[1]
-    source=subprocess.check_output(['git','show','HEAD:'+path],cwd=ROOT)
+    source=(ROOT/path).read_bytes() if (ROOT/path).exists() else subprocess.check_output(['git','show','HEAD:'+path],cwd=ROOT)
     ids=set(re.findall(rb'^--- !u!\d+ &(\d+)',source,re.M)) if path.endswith('.prefab') else set(re.findall(rb'first:.*?(430\d+)',md.encode()))
     external[guid]={'path':path,'ids':{int(i) for i in ids}|{100100000}}
 def enabled(n):

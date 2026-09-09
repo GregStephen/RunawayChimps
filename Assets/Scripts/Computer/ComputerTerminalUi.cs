@@ -30,7 +30,7 @@ public class ComputerTerminalUI : MonoBehaviourPunCallbacks
 
     private float nextStatusRefreshTime = 0f;
     private const float statusRefreshInterval = 0.5f;
-    private enum MenuOption { RoomCode, Name, Color, Level1 }
+    private enum MenuOption { RoomCode, Name, Color, Level1, Level2 }
     private MenuOption selected = MenuOption.RoomCode;
 
     // We keep separate edit buffers for fields that type text.
@@ -241,7 +241,13 @@ public class ComputerTerminalUI : MonoBehaviourPunCallbacks
 
             case MenuOption.Level1:
                 if (key == KeyboardKey.Key.Enter &&
-                    (SectorTravelService.I == null || !SectorTravelService.I.TravelTo("Level1_Containment")))
+                    (SectorTravelService.I == null || !SectorTravelService.I.TravelTo(SectorDestinations.LevelOne)))
+                    SetNameStatus("Please wait until you are connected, then try again.");
+                break;
+
+            case MenuOption.Level2:
+                if (key == KeyboardKey.Key.Enter &&
+                    (SectorTravelService.I == null || !SectorTravelService.I.TravelTo(SectorDestinations.LevelTwo)))
                     SetNameStatus("Please wait until you are connected, then try again.");
                 break;
         }
@@ -436,6 +442,7 @@ public class ComputerTerminalUI : MonoBehaviourPunCallbacks
         sb.AppendLine(MenuLine(MenuOption.Name, "Name"));
         sb.AppendLine(MenuLine(MenuOption.Color, "Color"));
         sb.AppendLine(MenuLine(MenuOption.Level1, "Level 1"));
+        sb.AppendLine(MenuLine(MenuOption.Level2, "Level 2"));
         sb.AppendLine("------------------------------");
         sb.AppendLine();
 
@@ -475,6 +482,12 @@ public class ComputerTerminalUI : MonoBehaviourPunCallbacks
                 sb.AppendLine("Enter = Travel to the safe room");
                 if (!string.IsNullOrEmpty(nameStatusLine)) sb.AppendLine(nameStatusLine);
                 break;
+
+            case MenuOption.Level2:
+                sb.AppendLine("Behavioral Conditioning");
+                sb.AppendLine("Enter = Travel to the safe room");
+                if (!string.IsNullOrEmpty(nameStatusLine)) sb.AppendLine(nameStatusLine);
+                break;
         }
 
         // Optional: If useColorHighlight is on, we’ll use TMP rich text for the selected line color.
@@ -507,16 +520,18 @@ public class ComputerTerminalUI : MonoBehaviourPunCallbacks
         MenuOption.RoomCode => MenuOption.Name,
         MenuOption.Name => MenuOption.Color,
         MenuOption.Color => MenuOption.Level1,
-        MenuOption.Level1 => MenuOption.RoomCode,
+        MenuOption.Level1 => MenuOption.Level2,
+        MenuOption.Level2 => MenuOption.RoomCode,
         _ => MenuOption.RoomCode
     };
 
     private static MenuOption Prev(MenuOption o) => o switch
     {
-        MenuOption.RoomCode => MenuOption.Level1,
+        MenuOption.RoomCode => MenuOption.Level2,
         MenuOption.Name => MenuOption.RoomCode,
         MenuOption.Color => MenuOption.Name,
         MenuOption.Level1 => MenuOption.Color,
+        MenuOption.Level2 => MenuOption.Level1,
         _ => MenuOption.RoomCode
     };
 
