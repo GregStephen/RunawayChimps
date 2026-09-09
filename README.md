@@ -12,9 +12,11 @@ The repository documents are the maintained versions; earlier Word documents are
 
 ## Current project layout
 
-Start from `Assets/Scenes/Bootstrap.unity`. The enabled build scenes are Bootstrap, Loading, and Hub_Base. Hub_Base currently contains the starting area, shop, and Primate Containment gameplay under Level1Root.
+Start from `Assets/Scenes/Bootstrap.unity`. On `level1split`, the enabled build scenes are Bootstrap (0), Loading (1), Hub_Base (2), and Level1_Containment (3). The new containment scene and its metadata are committed at `ac69718`; Greg reports the extraction and doors are added. Geometry, references, and runtime behavior still need validation.
 
-Level1, Level1_2_Hall, and the other disabled scene iterations are experiments. The planned map split extracts containment from Hub_Base into a new Level01_Containment scene at the Security Gate. The split and runtime travel are not implemented by this branch.
+Level1, Level1_2_Hall, and the other disabled scene iterations are experiments. Use `Assets/Scenes/Level1_Containment.unity` for the new destination; the earlier planned name `Level01_Containment` is superseded. All Return to Hub actions should arrive at `HubReturnSpawn` in front of the computer. Scene registration alone does not implement the runtime transition; safe loading, spawn placement, cleanup, and multiplayer travel remain pending.
+
+To add a scene through Unity 2022.3, drag its `.unity` asset from the Project window into **File > Build Settings > Scenes In Build**, or open it and click **Add Open Scenes**. Keep the intended scene checked and Bootstrap first. Commit `ProjectSettings/EditorBuildSettings.asset` after changing this list.
 
 MiniGamesKidFirstRig is the current level monster. The inactive Zombie Crawl object is the chosen visual replacement. Monster synchronization, rig integration, and the personal keycard lifecycle remain separate work.
 
@@ -27,7 +29,7 @@ MiniGamesKidFirstRig is the current level monster. The inactive Zombie Crawl obj
 - Proximity checks use the existing typed `ZoneId` field and reuse their snapshot collection instead of allocating an array and looking up the field by reflection every tick.
 - `PhotonVRManager.DefaultRoomLimit` is ten. The current manager prefab and Bootstrap instance have no serialized override. New rooms use this default; existing sixteen-player rooms are not resized, and public matching filters by the requested capacity.
 
-No component names, public serialized fields, scene files, prefab files, or asset GUIDs were changed. Existing Inspector event bindings remain applicable. The current keycard count and monster target-selection rules are unchanged.
+The earlier reliability change did not change component names, public serialized fields, scene files, prefab files, or asset GUIDs. The subsequent `level1split` work changes scenes; this follow-up changes build registration and documentation. Existing Inspector event bindings remain applicable. The current keycard count and monster target-selection rules are unchanged.
 
 ## Checks before merging
 

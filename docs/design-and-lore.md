@@ -10,6 +10,8 @@ Design approval is separate from implementation and testing. **Confirmed** recor
 
 As of 2026-09-09, [PR #2](https://github.com/GregStephen/RunawayChimps/pull/2) contains the local vent-audio, proximity-reset, material-safety, and ten-player default changes in commit `d4ee616`. Unity compilation, Play Mode, Photon sessions, and headset checks are pending. These changes do not implement the scene split, shared monster synchronization, Zombie Crawl integration, or personal-card lifecycle. Follow [Checks before merging](../README.md#checks-before-merging).
 
+On `level1split`, commit `ac69718` contains `Assets/Scenes/Level1_Containment.unity` and its metadata. Greg reports that the new scene and doors are committed. The follow-up build-settings change enables this scene after Bootstrap, Loading, and Hub_Base. File presence and registration do not establish correct extraction, door wiring, safe spawning, or multiplayer travel; Unity and headset validation remain pending.
+
 The gameplay rules below describe the intended game. Reported local behavior is identified separately from what the repository review established.
 
 ## Decision and correction record
@@ -17,11 +19,14 @@ The gameplay rules below describe the intended game. Reported local behavior is 
 | Recorded | Decision or correction | Status |
 | --- | --- | --- |
 | 2026-09-09 | Runaway Chimps uses Unity 2022.3.55f1 and Photon PUN. Unity 6 belongs to the separate, non-horror Cheeky Chimps project. | Confirmed correction from the source document |
-| 2026-09-09 | Use Hub_Base as the source for a split at the Security Gate. Disabled Level1 and Level1_2_Hall scenes are experiments. | Confirmed direction; extraction pending |
+| 2026-09-09 | Use Hub_Base as the source for a split at the Security Gate. Disabled Level1 and Level1_2_Hall scenes are experiments. | Confirmed direction; scene committed on level1split; extraction validation pending |
 | 2026-09-09 | Replace MiniGamesKidFirstRig with Zombie Crawl while preserving and repairing the existing monster systems. | Confirmed direction; integration pending |
 | 2026-09-09 | Personal cards start at fixed locations; completion affects one player and leads to the next level. Separate room families, randomized card starts, group wins, automatic hub return, and monitor audio are superseded. | Recorded from the current design; runtime implementation still needs verification |
 | 2026-09-09 | Prototype one card; two remain an option if gameplay and story justify them. Do not treat the active two-card keybox as a defect solely because of its count. | Prototype recommendation; final count open |
 | 2026-09-09 | Maintain the design and improvement plan in the repository; update relevant sections after confirmed decisions, corrections, implementation, or meaningful test results. Keep Word exports as snapshots. | Confirmed workflow |
+
+| 2026-09-09 | All Return to Hub actions arrive at HubReturnSpawn in front of the hub computer. This supersedes the hallway/gate return-spawn recommendation. | Confirmed correction; placement and runtime validation pending |
+| 2026-09-09 | Use the committed scene name Level1_Containment, replacing the earlier planned spelling Level01_Containment. Greg reports the scene split and doors committed on level1split at ac69718. | Scene asset and metadata verified; geometry, door wiring, and runtime travel pending validation |
 
 These dates record migration and clarification, not the original date of every earlier decision. Future corrections should name the superseded rule and update its affected sections.
 
@@ -76,6 +81,8 @@ The next level begins in a safe room where a player can regroup or choose to ret
 
 Recommendation for review: offer Return to Hub and Select Sector at this terminal. A player can continue the story by walking into the current level, or jump elsewhere without an extra trip through the hub. Keep selection confined to safe starting rooms so it does not become an escape button during a chase.
 
+Confirmed return destination: every Return to Hub action places the local player at `HubReturnSpawn` in front of the hub computer. The earlier hallway/gate placement is superseded. Check clear floor space and arrival orientation in Unity; the correction records intended behavior, not a verified scene placement.
+
 A player who finishes Level 1 first can wait in the safe Level 2 starting room for a friend. Travel affects the interacting player only. Changing sectors, returning to the hub, or following a friend must preserve membership of the same 10-player Photon room.
 
 ### The cosmetic shop
@@ -101,7 +108,7 @@ Confirmed editor: Unity 2022.3.55f1. Unity 6 belongs to Cheeky Chimps, the separ
 | Bootstrap | Initialize persistent game systems once at startup. |
 | Loading | Provide the existing startup loading environment. A persistent fade or loading overlay can serve later transitions. |
 | Hub_Base | Retain the starting space, shop, computer, surveillance previews, and approach to the Security Gate. |
-| Level01_Containment | Cage room, vent maze, crawler, keycard objective, and exit to Level 2. |
+| Level1_Containment | Cage room, vent maze, crawler, keycard objective, and exit to Level 2. |
 | Level02 and later | Each sector has its own safe entry, monster, objective, exit, and return control. |
 | Persistent session systems | Keep room membership and player identity stable while local environments change. Avoid duplicate VR rigs and cameras. |
 
@@ -135,7 +142,7 @@ Current map reference supplied by Greg. Door placement remains to be verified in
 
 ### Scene boundary
 
-Hub_Base is the source map. Keep the starting area, shop, and approach up to the Security Gate in that scene. Extract the containment content into a new Level01_Containment scene. Level1, Level1_2_Hall, and disabled scene iterations are experiments, not destination scenes to restore.
+Hub_Base is the source map. Keep the starting area, shop, and approach up to the Security Gate in that scene. Extract the containment content into a new Level1_Containment scene. Level1, Level1_2_Hall, and disabled scene iterations are experiments, not destination scenes to restore.
 
 Level1Root already groups most level content: cages, vent system, objective, respawn, navigation, and current monster. Check floors, walls, and ceilings at the gate before moving the group; shared meshes may need a physical split. Keep a complete threshold and matching arrival doorway on each side, with a fade covering travel.
 
@@ -270,7 +277,7 @@ Place the mechanism away from the door openings. The two exits let players leave
 
 Prototype with the hub, Level 1, and a placeholder Level 2 safe room.
 
-1. Split the current Hub_Base at the Security Gate into Hub_Base and Level01_Containment; verify each side has complete geometry and colliders.
+1. Split the current Hub_Base at the Security Gate into Hub_Base and Level1_Containment; verify each side has complete geometry and colliders.
 
 1. Verify that two clients share one Photon room while one stays in the hub and the other plays Level 1.
 
