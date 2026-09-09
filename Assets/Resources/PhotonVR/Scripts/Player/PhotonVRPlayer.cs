@@ -32,7 +32,7 @@ namespace Photon.VR.Player
             {
                 PhotonVRManager.Manager.LocalPlayer = this;
                 Debug.Log($"[PhotonVRPlayer] Awake (IsMine). Head={(Head!=null?Head.name:"null")}, Body={(Body!=null?Body.name:"null")}, HideLocalPlayer={HideLocalPlayer}");
-                // Do NOT notify PhotonVRManager with this prefab's visual head transform —
+                // Do NOT notify PhotonVRManager with this prefab's visual head transform â€”
                 // the manager should be bound to the actual tracking rig (via PhotonVRRigBinder).
                 if (HideLocalPlayer)
                 {
@@ -47,6 +47,8 @@ namespace Photon.VR.Player
 
             // It will delete automatically when you leave the room
             DontDestroyOnLoad(gameObject);
+            if (GetComponent<RunawayChimps.Travel.SectorAvatarVisibility>() == null)
+                gameObject.AddComponent<RunawayChimps.Travel.SectorAvatarVisibility>();
 
             _RefreshPlayerValues();
         }

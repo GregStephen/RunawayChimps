@@ -10,6 +10,13 @@ public class LoadingFlow : MonoBehaviour
 
     private void Start()
     {
+        // Reuse the Loading scene for travel without restarting login or room setup.
+        if (RunawayChimps.Travel.SectorTravelService.I != null &&
+            RunawayChimps.Travel.SectorTravelService.I.IsBusy)
+        {
+            if (statusText != null) statusText.text = "Loading...";
+            return;
+        }
         AppState.I?.ResetReady();
         SetStatus("Loading hub...");
         StartCoroutine(CoPreloadHubThenEnter());
@@ -46,6 +53,7 @@ public class LoadingFlow : MonoBehaviour
         // 4) NOW activate hub
         var hubScene = SceneManager.GetSceneByName(hubSceneName);
         SceneManager.SetActiveScene(hubScene);
+        RunawayChimps.Travel.SectorTravelService.I?.NotifySceneReady(hubScene);
 
         // 5) Unload Loading
         yield return SceneManager.UnloadSceneAsync("Loading");

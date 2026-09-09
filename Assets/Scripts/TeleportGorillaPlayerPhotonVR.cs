@@ -24,6 +24,19 @@ public class TeleportGorillaPlayerPhotonVR : MonoBehaviour
         if (!other.CompareTag("MainCamera"))
             return;
 
+        var travel = RunawayChimps.Travel.SectorTravelService.I;
+        if (travel != null)
+        {
+            if (other.GetComponentInParent<LocalRigMarker>() == null || travel.IsBusy) return;
+            Vector3 capturePosition = other.transform.position;
+            if (travel.RespawnAt(TeleportLocation))
+            {
+                PlayerInventory.LocalInventory?.DropAllKeyCards(capturePosition);
+                if (TeleportSound != null) TeleportSound.Play();
+            }
+            return;
+        }
+
         var localPlayer = PhotonVRManager.Manager.LocalPlayer;
         if (localPlayer == null)
         {

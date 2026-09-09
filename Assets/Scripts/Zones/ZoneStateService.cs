@@ -13,6 +13,7 @@ namespace RunawayChimps.Zones
         public static ZoneStateService Instance { get; private set; }
 
         public const string ZonePropKey = "zone";
+        public bool debugLogs = false;
 
         public event Action<ZoneId> OnLocalZoneChanged;
         public event Action<int, ZoneId> OnRemoteZoneChanged;
@@ -38,13 +39,13 @@ namespace RunawayChimps.Zones
 
         public void SetLocalZone(ZoneId zone)
         {
-            if (!PhotonNetwork.InRoom || zone == ZoneId.None)
+            if (!PhotonNetwork.InRoom)
             {
-                Debug.Log($"[ZoneStateService] SetLocalZone early-return: InRoom={PhotonNetwork.InRoom} zone={zone}");
+                if (debugLogs) Debug.Log($"[ZoneStateService] Ignoring zone {zone} outside a room.");
                 return;
             }
 
-            Debug.Log($"[ZoneStateService] Setting local zone to {zone}");
+            if (debugLogs) Debug.Log($"[ZoneStateService] Setting local zone to {zone}");
             ApplyZone(PhotonNetwork.LocalPlayer.ActorNumber, zone, true);
 
             var props = new PhotonHashtable
@@ -61,6 +62,7 @@ namespace RunawayChimps.Zones
 
         public void HandleJoinedRoom()
         {
+            _zonesByActor.Clear();
             // Default zone if not set
             var current = GetZoneFromProps(PhotonNetwork.LocalPlayer.CustomProperties);
             if (current == ZoneId.None)
@@ -89,9 +91,15 @@ namespace RunawayChimps.Zones
             if (changedProps != null && changedProps.ContainsKey(ZonePropKey))
             {
                 var zone = GetZoneFromProps(player.CustomProperties);
-                if (zone != ZoneId.None)
-                    ApplyZone(player.ActorNumber, zone, player.IsLocal);
+                ApplyZone(player.ActorNumber, zone, player.IsLocal);
             }
+        }
+
+        public void ResetSession()
+        {
+            _zonesByActor.Clear();
+            LocalZone = ZoneId.None;
+            OnLocalZoneChanged?.Invoke(ZoneId.None);
         }
 
         // -------- INTERNAL --------

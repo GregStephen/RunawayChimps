@@ -45,9 +45,12 @@ public class PhysicalButton : MonoBehaviour
     [SerializeField] private string requiredTag = "HandTag";
     [SerializeField] private bool requireTag = false;
     [SerializeField] private bool ignoreTriggerColliders = false; // your fingertips are triggers, so keep false
+    [SerializeField] private bool requireLocalRig = false;
 
     private void Awake()
     {
+        // Terminal input belongs to this client, including its level selection.
+        if (GetComponentInParent<KeyboardController>() != null) requireLocalRig = true;
         if (buttonVisual == null)
         {
             Debug.LogError("PhysicalButton: ButtonVisual not assigned.");
@@ -63,6 +66,10 @@ public class PhysicalButton : MonoBehaviour
 
     private void Update()
     {
+        // Disabling a hand collider during travel need not produce OnTriggerExit.
+        if (isPressed && (pressingCollider == null || !pressingCollider.enabled ||
+                          !pressingCollider.gameObject.activeInHierarchy))
+            Release();
         // Smoothly return to original position
         if (!isPressed)
         {
@@ -76,6 +83,7 @@ public class PhysicalButton : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
+        if (requireLocalRig && other.GetComponentInParent<LocalRigMarker>() == null) return;
         if (pressingCollider != null) return;
         if (Time.time < nextPressTime) return;
 
@@ -97,8 +105,19 @@ public class PhysicalButton : MonoBehaviour
         // Only release if the SAME collider that pressed is leaving
         if (other != pressingCollider) return;
 
+        Release();
+    }
+
+    private void Release()
+    {
         pressingCollider = null;
         isPressed = false;
+    }
+
+    private void OnDisable()
+    {
+        Release();
+        if (buttonVisual != null) buttonVisual.localPosition = initialLocalPos;
     }
 
     private void Press()

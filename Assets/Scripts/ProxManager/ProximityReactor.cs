@@ -16,6 +16,7 @@ public class ProximityReactor : MonoBehaviour
 
     [Tooltip("Extra distance beyond triggerDistance required to fire exit (prevents flicker).")]
     public float exitBuffer = 0.5f;
+    public bool debugLogs = false;
 
     [Header("Events")]
     public UnityEvent OnEnterRange;
@@ -96,7 +97,8 @@ public class ProximityReactor : MonoBehaviour
             ? 0f
             : Mathf.Clamp01(1f - (distance / triggerDistance));
 #if UNITY_EDITOR
-        Debug.Log($"[ProximityReactor] {name} dist={distance:F2} norm={normalized:F2} registered={registered}");
+        if (debugLogs)
+            Debug.Log($"[ProximityReactor] {name} dist={distance:F2} norm={normalized:F2} registered={registered}");
 #endif
 
         OnProximityValue?.Invoke(normalized);

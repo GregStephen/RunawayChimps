@@ -1069,6 +1069,7 @@ GameObject:
   m_Component:
   - component: {fileID: 537246004}
   - component: {fileID: 537246003}
+  - component: {fileID: 8100000002}
   m_Layer: 0
   m_Name: LevelStreamService
   m_TagString: Untagged
@@ -1502,6 +1503,7 @@ GameObject:
   - component: {fileID: 1205685184}
   - component: {fileID: 1205685185}
   - component: {fileID: 1205685186}
+  - component: {fileID: 1327789699}
   m_Layer: 0
   m_Name: Gorilla Rig
   m_TagString: Untagged
@@ -2005,7 +2007,6 @@ GameObject:
   m_Component:
   - component: {fileID: 1327789701}
   - component: {fileID: 1327789700}
-  - component: {fileID: 1327789699}
   - component: {fileID: 1327789698}
   - component: {fileID: 1327789697}
   m_Layer: 0
@@ -2071,7 +2072,7 @@ MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1327789696}
+  m_GameObject: {fileID: 1205685180}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a2cb78b4899984c43b647f02560460c7, type: 3}
@@ -2294,6 +2295,21 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 66caa8a607053a146acd1928b9f6a3ff, type: 3}
+--- !u!114 &8100000002
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 537246002}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 25d5d7c1089e4bda927edf93e8675b55, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  fadeShader: {fileID: 4800000, guid: daf74702b4dc4852b0ba7b0d24465662, type: 3}
+  fadeSeconds: 0.3
+  operationTimeout: 30
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

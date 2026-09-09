@@ -6,8 +6,8 @@ public class DoorOpenWhenReady : MonoBehaviour
     public string requiredScene = "Level1";
 
     [Header("Behavior")]
-    [Tooltip("Unlock (disable blocking collider) when scene is PRELOADED (0.9)")]
-    public bool unlockOnPreload = true;
+    [Tooltip("Legacy field retained for serialization; unlocking now requires activation.")]
+    public bool unlockOnPreload = false;
 
     [Tooltip("Open the door when scene is ACTIVATED (fully done)")]
     public bool openOnActivated = true;
@@ -71,8 +71,7 @@ public class DoorOpenWhenReady : MonoBehaviour
     {
         if (sceneName != requiredScene) return;
 
-        if (unlockOnPreload)
-            SetLocked(false);
+        // Held preloads have no usable colliders. Unlock only after activation.
     }
 
     private void HandleActivated(string sceneName)
