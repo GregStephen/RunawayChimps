@@ -31,6 +31,7 @@ public class ProximityManager : MonoBehaviour
     [Tooltip("If path distance is Infinity (different vent networks), treat as this far away.")]
     public float infinityDistance = 9999f;
     private readonly HashSet<ProximityReactor> reactors = new HashSet<ProximityReactor>();
+    private readonly List<ProximityReactor> snapshot = new List<ProximityReactor>();
     private Transform localPlayer;
 
     private float timer;
@@ -108,26 +109,26 @@ public class ProximityManager : MonoBehaviour
             localZone = zoneSvc.LocalZone;
 
         // Iterate over a snapshot to avoid collection modification during callbacks
-        var snapshot = new ProximityReactor[reactors.Count];
-        reactors.CopyTo(snapshot);
+        snapshot.Clear();
+        snapshot.AddRange(reactors);
         foreach (var reactor in snapshot)
         {
-            if (reactor == null)
+            if (reactor == null || !reactor.isActiveAndEnabled)
                 continue;
 
-            // Zone filtering: use flexible reflection helper so reactors can expose Zone or ZoneId
-            if (localZone != ZoneId.None)
+            // A skipped reactor still needs an exit and a zero proximity value,
+            // otherwise its material/audio callbacks retain the previous zone's state.
+            if (localZone != ZoneId.None && reactor.ZoneId != ZoneId.None &&
+                reactor.ZoneId != localZone)
             {
-                if (TryGetReactorZone(reactor, out var rZone) && rZone != ZoneId.None && rZone != localZone)
-                {
-                    continue;
-                }
+                reactor.ClearProximity();
+                continue;
             }
 
             float distance = ComputeDistance(localPlayer, reactor);
             reactor.UpdateProximity(distance, localPlayer);
         }
-
+        snapshot.Clear();
     }
     private float ComputeDistance(Transform player, ProximityReactor reactor)
     {
@@ -216,50 +217,4 @@ public class ProximityManager : MonoBehaviour
         reactors.Remove(reactor);
     }
 
-    /// <summary>
-    /// Zone filtering without hard dependency:
-    /// If your ProximityReactor implements a public ZoneId field/property named "ZoneId" or "Zone",
-    /// we’ll use it. Otherwise, no zone filtering occurs.
-    /// 
-    /// Recommended (in ProximityReactor):
-    /// public ZoneId ZoneId = ZoneId.Level1;
-    /// </summary>
-    private static bool TryGetReactorZone(ProximityReactor reactor, out ZoneId zone)
-    {
-        // Default
-        zone = ZoneId.None;
-
-        // Try common member names without forcing you to change Reactor immediately.
-        var t = reactor.GetType();
-
-        var field = t.GetField("ZoneId");
-        if (field != null && field.FieldType == typeof(ZoneId))
-        {
-            zone = (ZoneId)field.GetValue(reactor);
-            return true;
-        }
-
-        field = t.GetField("Zone");
-        if (field != null && field.FieldType == typeof(ZoneId))
-        {
-            zone = (ZoneId)field.GetValue(reactor);
-            return true;
-        }
-
-        var prop = t.GetProperty("ZoneId");
-        if (prop != null && prop.PropertyType == typeof(ZoneId))
-        {
-            zone = (ZoneId)prop.GetValue(reactor);
-            return true;
-        }
-
-        prop = t.GetProperty("Zone");
-        if (prop != null && prop.PropertyType == typeof(ZoneId))
-        {
-            zone = (ZoneId)prop.GetValue(reactor);
-            return true;
-        }
-
-        return false;
-    }
 }

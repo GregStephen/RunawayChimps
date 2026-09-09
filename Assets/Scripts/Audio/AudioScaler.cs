@@ -36,7 +36,7 @@ public class AudioScaler : MonoBehaviour
     {
         if (source == null) return;
 
-        if (source.mute != lastMute)
+        if (debugLogs && source.mute != lastMute)
         {
             Debug.LogWarning($"{name}: AudioSource.mute changed to {source.mute} on frame {Time.frameCount}", this);
             lastMute = source.mute;
@@ -126,8 +126,13 @@ public class AudioScaler : MonoBehaviour
     {
         if (source != null && source.isPlaying)
         {
-            //source.Stop();
+            source.Stop();
         }
+    }
+
+    private void OnDisable()
+    {
+        StopIfPlaying();
     }
 
     [ContextMenu("TEST: Play Now")]
