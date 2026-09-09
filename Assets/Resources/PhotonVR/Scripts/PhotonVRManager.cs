@@ -46,7 +46,7 @@ namespace Photon.VR
         public string PublicQueue = "lobby";
 
         [Tooltip("Max players per room (public + private).")]
-        public int DefaultRoomLimit = 16;
+        public int DefaultRoomLimit = 10;
 
         [Header("Other")]
         [Tooltip("If the user shall connect when this object has awoken")]

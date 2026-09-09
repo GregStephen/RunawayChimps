@@ -1,4 +1,5 @@
 using Photon.Pun;
+using RunawayChimps.Zones;
 using UnityEngine;
 
 public class PlayerVentState : MonoBehaviour
@@ -38,7 +39,25 @@ public class PlayerVentState : MonoBehaviour
         }
     }
 
-    public static bool LocalPlayerInVent =>
-        Local != null && Local.IsInVent;
-}
+    private void OnDestroy()
+    {
+        if (Local == this)
+            Local = null;
+    }
 
+    public static bool LocalPlayerInVent
+    {
+        get
+        {
+            // Hub_Base already uses ZoneTrigger on the persistent local rig.
+            // That rig has no parent PhotonView, so the legacy Local reference
+            // is not a reliable signal in this scene.
+            var zones = ZoneStateService.Instance;
+            if (zones != null)
+                return PhotonNetwork.InRoom && zones.LocalZone == ZoneId.Level1_Vents;
+
+            // Preserve support for older scenes that only use Vent-tagged volumes.
+            return Local != null && Local.IsInVent;
+        }
+    }
+}

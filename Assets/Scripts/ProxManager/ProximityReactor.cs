@@ -39,6 +39,7 @@ public class ProximityReactor : MonoBehaviour
     private void OnDisable()
     {
         Unregister();
+        ClearProximity();
     }
 
     private void OnDestroy()
@@ -99,6 +100,21 @@ public class ProximityReactor : MonoBehaviour
 #endif
 
         OnProximityValue?.Invoke(normalized);
+    }
+
+    /// <summary>
+    /// Reset effects when zone filtering or unloading ends an interaction.
+    /// Clear the state before callbacks so repeated resets cannot fire two exits.
+    /// </summary>
+    public void ClearProximity()
+    {
+        bool wasInRange = inRange;
+        inRange = false;
+
+        if (wasInRange)
+            OnExitRange?.Invoke();
+
+        OnProximityValue?.Invoke(0f);
     }
 
     private void OnDrawGizmosSelected()
