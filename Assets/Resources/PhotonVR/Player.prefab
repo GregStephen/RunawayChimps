@@ -890,12 +890,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 39a098810c6cfb94c802def7cddecadb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  faceClosed: {fileID: 2100000, guid: 3a5ff081f8f49a74fa666885f0c340ed, type: 2}
-  talkingFaces:
-  - {fileID: 2100000, guid: 43f316953cc0bce4999ad865f8cfa888, type: 2}
-  - {fileID: 2100000, guid: b75911a53862889468303fdf385923fb, type: 2}
-  faceScream: {fileID: 2100000, guid: 4ea373785065c26479b572910c836505, type: 2}
-  recorder: {fileID: 9129846414459552803}
+  faceClosed: {fileID: 0}
+  talkingFaces: []
+  faceScream: {fileID: 0}
+  recorder: {fileID: 0}
   faceRenderer: {fileID: 0}
   talkThreshold: 0.02
   screamThreshold: 0.08
@@ -916,10 +914,10 @@ MonoBehaviour:
   turnAction:
     m_UseReference: 0
     m_Action:
-      m_Name: Turn
+      m_Name: 
       m_Type: 0
       m_ExpectedControlType: 
-      m_Id: d8b7888d-2564-4b2f-89ad-36432f35b61f
+      m_Id: 3e83e812-f4af-4206-b5c4-31269ec97ac8
       m_Processors: 
       m_Interactions: 
       m_SingletonActionBindings: []
@@ -937,7 +935,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6961dac5e7ad04c40ac9032e05260e50, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  stableFramesRequired: 2
+  stableFramesRequired: 20
   extraSecondsAfterStable: 0.1
 --- !u!1 &6246818299328583850
 GameObject:
@@ -2025,8 +2023,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ChainLength: 2
-  Target: {fileID: 752089353315546107}
-  Pole: {fileID: 2768699113985102344}
+  Target: {fileID: 0}
+  Pole: {fileID: 0}
   Iterations: 10
   Delta: 0.001
   SnapBackStrength: 1
@@ -2044,7 +2042,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   handType: 0
   thumbMoveSpeed: 0.1
-  view: {fileID: 7780029385335637883}
+  view: {fileID: 0}
 --- !u!95 &8502272792571493509
 Animator:
   serializedVersion: 5
@@ -2136,8 +2134,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ChainLength: 2
-  Target: {fileID: 2837222685369851332}
-  Pole: {fileID: 4726460642201202213}
+  Target: {fileID: 0}
+  Pole: {fileID: 0}
   Iterations: 10
   Delta: 0.001
   SnapBackStrength: 1
@@ -2153,9 +2151,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 36f1b2232114a224c8bfeaee9a1a6c84, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  handType: 1
+  handType: 0
   thumbMoveSpeed: 0.1
-  view: {fileID: 7780029385335637883}
+  view: {fileID: 0}
 --- !u!95 &3497979426801727507
 Animator:
   serializedVersion: 5
