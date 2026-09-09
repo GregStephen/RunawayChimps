@@ -19,6 +19,13 @@ Read the [design and lore](design-and-lore.md) for intended behavior and [AGENTS
 
 **Checks completed:** source-level review of the prepared changes, bundle verification, and `git diff --check`. **Pending:** Unity 2022.3.55f1 compilation, Play Mode, Photon sessions, audio playback, and headset testing. The PR is currently marked ready for review; Unity and headset checks remain pending and should be completed before merging.
 
+## Scene split checkpoint — level1split, September 9, 2026
+
+- **Implemented asset:** `Assets/Scenes/Level1_Containment.unity` and its `.meta` file exist at `ac69718`. Greg reports the new scene and doors are committed. The actual filename supersedes the earlier planned `Level01_Containment` spelling.
+- **Implemented configuration:** this follow-up enables `Level1_Containment` in `ProjectSettings/EditorBuildSettings.asset`, using GUID `1a67d7f7a6e6dc64094eff3267980158` from its metadata. Bootstrap, Loading, and Hub_Base retain enabled build indices 0–2; containment is index 3. Existing disabled prototypes and XR configuration are preserved.
+- **Confirmed correction:** all Return to Hub actions use `HubReturnSpawn` in front of the hub computer. The hallway/gate return-spawn recommendation is superseded.
+- **Pending validation:** inspect scene extraction and door bindings, place or verify the computer return spawn, confirm the Build Settings list in Unity, and test guarded local travel, floor collision, cleanup, avatar/voice filtering, and monster controller handover. No Unity, Photon, or headset tests were run for this configuration/documentation update.
+
 ## Baseline review and remaining work
 
 The findings below describe the original review baseline unless a current-status note says otherwise. Preserve that distinction when updating a finding; do not mark an entire area complete because one local defect was fixed.
@@ -55,7 +62,7 @@ Evidence: [Editor version](https://github.com/GregStephen/RunawayChimps/blob/4f6
 
 P1 / unfinished feature with a missing event target. Hub_Base contains a PhysicalButton event named ActivateAndOpen, but its serialized target is fileID 0. It cannot invoke the intended action. Greg confirmed that disabled scene variants are experiments; their exclusion from the build is intentional. Hub_Base is the map to split.
 
-Fix: keep the starting area, shop, and gate approach in Hub_Base. Extract Primate Containment into a new Level01_Containment scene and wire the gate to that destination. Use the [scene extraction procedure](#editor-extraction-procedure). Level1 and Level1_2_Hall stay outside the runtime route; copying an old prototype route would restore unfinished assumptions.
+Fix: keep the starting area, shop, and gate approach in Hub_Base. Extract Primate Containment into a new Level1_Containment scene and wire the gate to that destination. Use the [scene extraction procedure](#editor-extraction-procedure). Level1 and Level1_2_Hall stay outside the runtime route; copying an old prototype route would restore unfinished assumptions.
 
 Acceptance: launch from Bootstrap in a build, press the entrance once, and reach exactly one Level 1 environment with a working return route. Audit persistent button events for missing targets as part of the build check.
 
@@ -215,7 +222,7 @@ The reliability branch adds a root README with the editor version, start scene, 
 
 ## Split Hub_Base at the Security Gate
 
-Source: the current Hub_Base, with world positions preserved during extraction. Destination: a new Level01_Containment scene. The Security Gate separates the social area from the safe containment arrival; the locked objective door remains inside the level and serves completion.
+Source: Hub_Base, with world positions preserved during extraction. Destination: Level1_Containment, now committed on level1split at ac69718. The following procedure remains the extraction verification checklist; committed files alone do not establish that every step is complete. The Security Gate separates the social area from the safe containment arrival; the locked objective door remains inside the level and serves completion.
 
 | Placement | Existing objects and required handling |
 | --- | --- |
@@ -228,11 +235,11 @@ Source: the current Hub_Base, with world positions preserved during extraction. 
 
 1. Create an isolated branch and save the existing scene. Record the gate threshold in the Scene view; verify which floor, wall, ceiling, and collider objects cross it.
 
-1. Open a new empty Level01_Containment additively beside Hub_Base. Regroup geometry to match the gate boundary, then move the level root into the new scene without resetting its transform. Move the inactive Zombie Crawl separately.
+1. Open a new empty Level1_Containment additively beside Hub_Base. Regroup geometry to match the gate boundary, then move the level root into the new scene without resetting its transform. Move the inactive Zombie Crawl separately.
 
 1. Keep asset references shared: materials, audio clips, meshes, and animation controllers remain project assets. Use Unity to move the scene objects and preserve their internal bindings, then audit the result; do not duplicate the whole asset collection.
 
-1. Give each scene a complete floor and doorway at its end. Add ContainmentEntrySpawn and a HubReturnSpawn near the gate. Each side owns its own trigger and collision surface; communicate travel by a destination ID instead of a direct cross-scene Transform.
+1. Give each scene a complete floor and doorway at its end. Add ContainmentEntrySpawn in the safe containment arrival room and HubReturnSpawn in front of the hub computer. All Return to Hub actions use the computer return spawn. Each side owns its own trigger and collision surface; communicate travel by a destination ID instead of a direct cross-scene Transform.
 
 1. Audit patrol points, both audio callbacks, capture and respawn references, objective bindings, and triggers. Establish one intended persistent XR Interaction Manager for persistent interactions and rebind any explicit references.
 
@@ -273,7 +280,7 @@ Keep the Listener, shop expansion, camera wall, and additional levels on the des
 | Card independence | Both players retrieve cards. One drops or uses theirs; the other player retains their own state. |
 | Capture and floor recovery | Repeated trigger contact starts one capture. Card drops at the recorded hit point; out-of-bounds returns it to the fixed room spawn. |
 | Exit and return | Winner fades and arrives in the next safe room. Follower sees them disappear and cannot follow without completing. Re-entry creates exactly one fresh card. |
-| Travel and visibility | Same room code and actor membership across sectors. No cross-sector avatar collision or unwanted voice; arrival and return refresh visibility. |
+| Travel and visibility | Return to Hub arrives in front of the computer. Same room code and actor membership across sectors. No cross-sector avatar collision or unwanted voice; arrival and return refresh visibility. |
 | Capacity and failure | Ten players remain ten even when split across levels. An eleventh cannot join that room. Failed login, join, or scene load offers recovery. |
 | Quest stability | No stale locomotion impulse, stuck fade, missing floor, duplicate rig, or accumulated level objects after repeated travel. Record frame-time and memory measurements. |
 
