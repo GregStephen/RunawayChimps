@@ -1,0 +1,85 @@
+{
+  "Level2_BehavioralConditioning_Blockout.unity": {
+    "serialized_objects": 866,
+    "yaml_parse": true,
+    "local_references_resolve": true
+  },
+  "Level2_Blockout.prefab": {
+    "serialized_objects": 865,
+    "yaml_parse": true,
+    "local_references_resolve": true
+  },
+  "external_dependencies": {
+    "22d2c44fed4ffa743aac7afe4d993905": "Assets/MASH Virtual/Sci Fi Doors/Prefab/Sci Fi Gates.prefab",
+    "b581fdbd127292d44ab21c4b16d91d05": "Assets/MASH Virtual/Sci Fi Doors/Prefab/Gate_Small.prefab",
+    "eca90685bd7c0e14c985891ef5c0a3f3": "Assets/MASH Virtual/Sci Fi Doors/Mesh/Sci Fi Gates.fbx"
+  },
+  "linked_gates": {
+    "count": 5,
+    "frame_only": 3,
+    "exit_matches_level1_scale": true,
+    "reward_uses_level1_small_gate": true
+  },
+  "connectivity_scope": "Box layout only; linked gate meshes, bevels and threshold clearance require Unity validation.",
+  "human_proxy": {
+    "radius_m": 0.35,
+    "height_m": 2.0,
+    "grid_step_m": 0.1,
+    "reachable_grid_points": 17168,
+    "endpoints": [
+      "entry",
+      "repair_hall_door",
+      "repair_bypass_door",
+      "lower_bypass",
+      "front_of_shutter"
+    ],
+    "either_repair_door_can_be_blocked": true,
+    "closed_exit_separates_exit": true,
+    "locked_reward_room_separate": true
+  },
+  "giant_conservative_circular_proxy": {
+    "radius_m": 1.375,
+    "height_m": 3.2,
+    "grid_step_m": 0.1,
+    "reachable_grid_points": 5461,
+    "endpoints": [
+      "entry",
+      "repair_hall_door",
+      "repair_bypass_door",
+      "lower_bypass",
+      "front_of_shutter"
+    ],
+    "either_repair_door_can_be_blocked": true,
+    "closed_exit_separates_exit": true,
+    "locked_reward_room_separate": true
+  },
+  "dimensions": {
+    "open_passage_wall_gap_width": 3.2,
+    "open_passage_wall_gap_height": 3.8,
+    "exit_wall_gap": [
+      2.35,
+      3.0
+    ],
+    "reward_wall_gap": [
+      2.2,
+      3.1
+    ],
+    "room_height": 4.2,
+    "wall_thickness": 0.2
+  },
+  "counts": {
+    "mesh_boxes": 178,
+    "box_triangles_including_inactive_guide": 2136,
+    "solid_box_colliders": 52,
+    "marker_trigger_volumes": 2
+  },
+  "pending": [
+    "Unity 2022.3.55f1 import",
+    "Unity Play Mode",
+    "Gorilla locomotion hand/body collision",
+    "Actual Listener animated clearance",
+    "NavMesh bake",
+    "Photon PUN integration",
+    "Quest performance"
+  ]
+}

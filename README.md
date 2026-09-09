@@ -20,6 +20,22 @@ To add a scene through Unity 2022.3, drag its `.unity` asset from the Project wi
 
 MiniGamesKidFirstRig is the current level monster. The inactive Zombie Crawl object is the chosen visual replacement. Sector monster synchronization is implemented on `level1split` and awaits multi-client validation. Zombie Crawl integration and the broader personal keycard/Level 2 exit lifecycle remain separate work.
 
+## Level 2 map blockout
+
+The editable Level 2 layout is in
+`Assets/RunawayChimps/Level2Blockout/Scenes/Level2_BehavioralConditioning_Blockout.unity`,
+with a reusable prefab in the adjacent `Prefabs` folder. Open the scene, select
+`Level2_Blockout_v03`, and press **F** over Scene view. Toggle the ceiling group
+for an overhead view. See the [map setup and validation notes](Assets/RunawayChimps/Level2Blockout/README.md).
+
+The map includes the repair-room escape loop, reused sci-fi gates and a locked
+reward-room blockout at the bottom right off the bypass. It references the
+existing MASH door assets. Scanner/reward shapes are placeholders; the Listener,
+repair progression, cross-level card saving, rewards and Level 2 travel remain
+unwired. This standalone scene has no player rig or Build Settings entry.
+Source/box-layout checks pass; Unity import, gate mesh fit and headset checks
+remain pending.
+
 ## Audio and proximity fixes
 
 - `AudioScaler` stops its source when the vent filter, patrol/chase filter, or automatic distance threshold excludes playback. Disabling the scaler also stops its source. Mute-change logging respects `debugLogs`.
