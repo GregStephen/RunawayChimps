@@ -10,18 +10,40 @@ public class ZoneTrigger : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        if (other.GetComponentInParent<LocalRigMarker>() == null)
+        var marker = other.GetComponentInParent<LocalRigMarker>();
+        Debug.Log($"[ZoneTrigger] Checking trigger for: {other.name}");
+        if (marker == null)
             return;
 
         var zs = ZoneStateService.Instance;
-        if (zs == null) return;
+        if (zs == null)
+        {
+            Debug.LogWarning($"[ZoneTrigger] {name} enter by {other.name}, but ZoneStateService.Instance is null");
+            return;
+        }
 
-        // If you only want changes, set reapplyEvenIfSame=false
         if (!reapplyEvenIfSame && zs.LocalZone == zone)
             return;
 
+        Debug.Log($"[ZoneTrigger] ENTER trigger={name} zone={zone} other={other.name} previousZone={zs.LocalZone}");
         zs.SetLocalZone(zone);
+    }
 
-        Debug.Log($"[ZoneTrigger] Local zone entered: {zone}");
+    private void OnTriggerStay(Collider other)
+    {
+        var marker = other.GetComponentInParent<LocalRigMarker>();
+        if (marker == null)
+            return;
+
+        Debug.Log($"[ZoneTrigger] STAY trigger={name} zone={zone} other={other.name}");
+    }
+
+    private void OnTriggerExit(Collider other)
+    {
+        var marker = other.GetComponentInParent<LocalRigMarker>();
+        if (marker == null)
+            return;
+
+        Debug.Log($"[ZoneTrigger] EXIT trigger={name} zone={zone} other={other.name}");
     }
 }

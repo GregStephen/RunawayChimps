@@ -39,8 +39,12 @@ namespace RunawayChimps.Zones
         public void SetLocalZone(ZoneId zone)
         {
             if (!PhotonNetwork.InRoom || zone == ZoneId.None)
+            {
+                Debug.Log($"[ZoneStateService] SetLocalZone early-return: InRoom={PhotonNetwork.InRoom} zone={zone}");
                 return;
+            }
 
+            Debug.Log($"[ZoneStateService] Setting local zone to {zone}");
             ApplyZone(PhotonNetwork.LocalPlayer.ActorNumber, zone, true);
 
             var props = new PhotonHashtable

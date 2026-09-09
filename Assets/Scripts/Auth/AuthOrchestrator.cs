@@ -140,7 +140,9 @@ public class AuthOrchestrator : MonoBehaviour
                 // Cache profile display name if present (we’ll re-read from payload)
                 _cachedProfileDisplayName = result.InfoResultPayload?.PlayerProfile?.DisplayName;
 
+                #if UNITY_EDITOR || DEVELOPMENT_BUILD
                 Debug.Log($"PlayFab login OK. CustomId={customId} PlayFabId={_playFabId} Entity={_entityType}:{_entityId}");
+                #endif
 
                 onSuccess?.Invoke();
             },
@@ -164,7 +166,9 @@ public class AuthOrchestrator : MonoBehaviour
                 new UpdateUserTitleDisplayNameRequest { DisplayName = displayName },
                 _ =>
                 {
+                    #if UNITY_EDITOR || DEVELOPMENT_BUILD
                     Debug.Log($"Initial display name set to '{displayName}'");
+                    #endif
                     ContinueAfterNameKnown(displayName, providerName, onReady, onFatal);
                 },
                 e =>

@@ -39,10 +39,6 @@ public class RespawnToOriginalSpawn : MonoBehaviour
 
     void Update()
     {
-        if (verboseLogging)
-        {
-            Debug.Log($"[Respawn] {name} Current Y: {transform.position.y}");
-        }
 
         if (transform.position.y < killY)
         {

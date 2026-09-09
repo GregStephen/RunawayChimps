@@ -18,6 +18,10 @@ public class ProximityManager : MonoBehaviour
     [Header("Tuning")]
     [Tooltip("Seconds between proximity checks. Lower = more responsive, higher = cheaper.")]
     public float checkInterval = 0.1f;
+    [Tooltip("Enable verbose logging from Proximity system (gated at runtime).")]
+    public bool verboseLogging = false;
+    [Tooltip("Seconds between attempts to fallback-scan for a local Player GameObject when PhotonVR is not available.")]
+    public float fallbackScanInterval = 2f;
     [Header("Vent Audio Distance")]
     public bool useVentGraphForDistance = true;
 
@@ -26,10 +30,11 @@ public class ProximityManager : MonoBehaviour
 
     [Tooltip("If path distance is Infinity (different vent networks), treat as this far away.")]
     public float infinityDistance = 9999f;
-    private readonly List<ProximityReactor> reactors = new List<ProximityReactor>();
+    private readonly HashSet<ProximityReactor> reactors = new HashSet<ProximityReactor>();
     private Transform localPlayer;
 
     private float timer;
+    private float lastFallbackScanTime;
 
     private void Awake()
     {
@@ -41,11 +46,50 @@ public class ProximityManager : MonoBehaviour
 
         Instance = this;
         DontDestroyOnLoad(gameObject);
+
+        // Subscribe to PhotonVRManager readiness so we can attach to its LocalHeadBound event
+        PhotonVRManager.ManagerReady += OnPhotonVRManagerReady;
+        // If manager already exists, handle it now
+        if (PhotonVRManager.Manager != null)
+            OnPhotonVRManagerReady();
+    }
+
+    private void OnDestroy()
+    {
+        if (Instance == this)
+            Instance = null;
+
+        PhotonVRManager.ManagerReady -= OnPhotonVRManagerReady;
+        if (PhotonVRManager.Manager != null)
+        {
+            PhotonVRManager.Manager.LocalHeadBound -= BindLocalPlayer;
+        }
+    }
+
+    private void OnPhotonVRManagerReady()
+    {
+        // Subscribe to LocalHeadBound to receive the head transform when available
+        PhotonVRManager.Manager.LocalHeadBound += BindLocalPlayer;
+
+        // If manager already has a head assigned, bind immediately
+        if (PhotonVRManager.Manager.Head != null)
+            BindLocalPlayer(PhotonVRManager.Manager.Head);
     }
 
     private void Start()
     {
         TryBindLocalPlayer();
+    }
+
+    /// <summary>
+    /// Event-driven binding: call this when the local player/head is available to avoid fallback scans.
+    /// </summary>
+    public void BindLocalPlayer(Transform head)
+    {
+        if (head == null) return;
+        localPlayer = head;
+        if (verboseLogging)
+            Debug.Log($"[ProximityManager] Bound local player head: {head.name}");
     }
 
     private void Update()
@@ -63,27 +107,32 @@ public class ProximityManager : MonoBehaviour
         if (zoneSvc != null)
             localZone = zoneSvc.LocalZone;
 
-        foreach (var reactor in reactors)
+        // Iterate over a snapshot to avoid collection modification during callbacks
+        var snapshot = new ProximityReactor[reactors.Count];
+        reactors.CopyTo(snapshot);
+        foreach (var reactor in snapshot)
         {
             if (reactor == null)
                 continue;
 
-            if (localZone != ZoneId.None &&
-                reactor.ZoneId != ZoneId.None &&
-                reactor.ZoneId != localZone)
+            // Zone filtering: use flexible reflection helper so reactors can expose Zone or ZoneId
+            if (localZone != ZoneId.None)
             {
-                continue;
+                if (TryGetReactorZone(reactor, out var rZone) && rZone != ZoneId.None && rZone != localZone)
+                {
+                    continue;
+                }
             }
 
-            float distance = ComputeDistance(localPlayer, reactor.transform);
+            float distance = ComputeDistance(localPlayer, reactor);
             reactor.UpdateProximity(distance, localPlayer);
         }
 
     }
-    private float ComputeDistance(Transform player, Transform reactor)
+    private float ComputeDistance(Transform player, ProximityReactor reactor)
     {
         // Fallback
-        float euclid = Vector3.Distance(player.position, reactor.position);
+        float euclid = Vector3.Distance(player.position, reactor.transform.position);
 
         if (!useVentGraphForDistance)
             return euclid;
@@ -99,15 +148,12 @@ public class ProximityManager : MonoBehaviour
             if (!PlayerVentState.LocalPlayerInVent)
                 return euclid;
 
-            // For the monster/reactor side, simplest is a bool flag on ProximityReactor or monster root.
-            // If you don't have that yet, assume reactor is in vents when its ZoneId is a vent zone.
-            // (Best fix: add a bool IsInVents to reactor/monster)
-            bool reactorInVents = true; // replace with your actual signal if you have one
-            if (!reactorInVents)
+            // Use reactor-provided signal when available
+            if (!reactor.IsInVents)
                 return euclid;
         }
 
-        float path = VentGraph.Instance.GetPathDistance(reactor.position, player.position);
+        float path = VentGraph.Instance.GetPathDistance(reactor.transform.position, player.position);
 
         if (float.IsInfinity(path) || path > infinityDistance)
             return infinityDistance;
@@ -131,6 +177,11 @@ public class ProximityManager : MonoBehaviour
         // Fallback: find local PhotonView (keep as last resort)
         if (localPlayer == null)
         {
+            // Throttle expensive fallback scans
+            if (Time.time - lastFallbackScanTime < fallbackScanInterval)
+                return false;
+            lastFallbackScanTime = Time.time;
+
             GameObject[] players = GameObject.FindGameObjectsWithTag("Player");
             foreach (var player in players)
             {
@@ -138,7 +189,8 @@ public class ProximityManager : MonoBehaviour
                 if (view != null && view.IsMine)
                 {
                     localPlayer = player.transform;
-                    Debug.Log($"[ProximityManager] Local player found via fallback: {localPlayer.name}");
+                    if (verboseLogging)
+                        Debug.Log($"[ProximityManager] Local player found via fallback: {localPlayer.name}");
                     return true;
                 }
             }

@@ -51,6 +51,7 @@ namespace Photon.VR.Player
                 : Quaternion.identity;
 
             AppState.I?.SetStatus("Spawning player...");
+            Debug.Log($"[PlayerSpawner] Instantiating player prefab '{PrefabLocation}' at {pos} rot={rot.eulerAngles}");
             playerTemp = PhotonNetwork.Instantiate(PrefabLocation, pos, rot);
 
             AppState.I?.MarkPhotonPlayerSpawned();

@@ -53,7 +53,9 @@ public class PlayFabLogin : MonoBehaviour
         var entityId = result.EntityToken.Entity.Id;
         var entityType = result.EntityToken.Entity.Type;
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
         Debug.Log($"PlayFab login OK. PlayFabId={playFabId} EntityId={entityId} EntityType={entityType}");
+#endif
 
         PlayFabCloudScriptAPI.ExecuteFunction(new ExecuteFunctionRequest
         {
@@ -68,7 +70,9 @@ public class PlayFabLogin : MonoBehaviour
         },
         r =>
         {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
             Debug.Log($"GrantLoginCoconuts OK. FunctionResult: {r.FunctionResult}");
+#endif
 
             // Always refresh inventory after grant
             RefreshEconomyInventory(entityId, entityType);
@@ -112,7 +116,9 @@ public class PlayFabLogin : MonoBehaviour
 
             EconomyState.Set(coconuts, owned);
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
             Debug.Log($"EconomyState updated. Coconuts={coconuts} OwnedCount={owned.Count}");
+#endif
         },
         e =>
         {

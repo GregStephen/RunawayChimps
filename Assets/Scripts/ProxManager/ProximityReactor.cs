@@ -11,6 +11,9 @@ public class ProximityReactor : MonoBehaviour
     [Header("Settings")]
     public float triggerDistance = 3f;
 
+    [Tooltip("True when this reactor is considered to be inside vents (used by ProximityManager).")]
+    public bool IsInVents = false;
+
     [Tooltip("Extra distance beyond triggerDistance required to fire exit (prevents flicker).")]
     public float exitBuffer = 0.5f;
 
@@ -91,7 +94,9 @@ public class ProximityReactor : MonoBehaviour
         float normalized = (triggerDistance <= 0.0001f)
             ? 0f
             : Mathf.Clamp01(1f - (distance / triggerDistance));
+#if UNITY_EDITOR
         Debug.Log($"[ProximityReactor] {name} dist={distance:F2} norm={normalized:F2} registered={registered}");
+#endif
 
         OnProximityValue?.Invoke(normalized);
     }

@@ -16,6 +16,11 @@ namespace Photon.VR
     {
         public static PhotonVRManager Manager { get; private set; }
 
+        /// <summary>
+        /// Invoked when a PhotonVRManager instance is ready (Manager set).
+        /// </summary>
+        public static event System.Action ManagerReady;
+
         [Header("Photon")]
         public string AppId;
         public string VoiceAppId;
@@ -53,6 +58,12 @@ namespace Photon.VR
         [NonSerialized]
         public PhotonVRPlayer LocalPlayer;
 
+        /// <summary>
+        /// Raised when the local player's head transform becomes available.
+        /// Subscribers can bind to this to get the head transform.
+        /// </summary>
+        public event System.Action<Transform> LocalHeadBound;
+
         private RoomOptions _lastMatchmakingOptions;
         private ConnectionState _state = ConnectionState.Disconnected;
 
@@ -80,6 +91,21 @@ namespace Photon.VR
             }
 
             DontDestroyOnLoad(gameObject);
+
+            // Notify watchers that the manager is ready
+            ManagerReady?.Invoke();
+        }
+
+        /// <summary>
+        /// Notify the manager that the local player's head is available (and update internal Head reference).
+        /// This will raise the LocalHeadBound event for subscribers.
+        /// </summary>
+        public void NotifyLocalHead(Transform head)
+        {
+            if (head == null) return;
+            Head = head;
+            Debug.Log($"[PhotonVRManager] NotifyLocalHead called with head={head.name}");
+            LocalHeadBound?.Invoke(head);
         }
 
         private void Start()

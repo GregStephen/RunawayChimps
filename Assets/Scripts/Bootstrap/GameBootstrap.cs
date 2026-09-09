@@ -30,7 +30,9 @@ public class GameBootstrap : MonoBehaviour
             this,
             onReady: msg =>
             {
+                #if UNITY_EDITOR || DEVELOPMENT_BUILD
                 Debug.Log(msg);
+                #endif
 
                 AppState.I?.SetStatus("Connecting to multiplayer...");
                 Photon.VR.PhotonVRManager.Connect();
