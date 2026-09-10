@@ -1,6 +1,6 @@
 # Runaway Chimps design and lore
 
-Last updated: 2026-09-09. Maintained repository edition, migrated from `Runaway_Chimps_Design_and_Lore.docx` version 0.9. The existing Word document is a downloadable snapshot; future edits belong here. See [AGENTS.md](../AGENTS.md) for the documentation workflow and the [repository improvement plan](repository-improvement-plan.md) for implementation evidence.
+Last updated: 2026-09-10. Maintained repository edition, migrated from `Runaway_Chimps_Design_and_Lore.docx` version 0.9. The existing Word document is a downloadable snapshot; future edits belong here. See [AGENTS.md](../AGENTS.md) for the documentation workflow and the [repository improvement plan](repository-improvement-plan.md) for implementation evidence.
 
 We are building a social VR horror game about gorillas escaping a laboratory that experiments on animals. This document records the current game rules, Level 1, the proposed Listener level, the story, and the scene architecture so future work can build on the same decisions.
 
@@ -20,6 +20,7 @@ The combined `level1split-travel.patch` also includes focused source cleanup for
 
 | Recorded | Decision or correction | Status |
 | --- | --- | --- |
+| 2026-09-10 | Develop the existing Hub Shop with seasonal stock, weekly rotating regular stock, and try-on/equip. Proceed through planning, mapping, then creation/integration; use Gorilla Tag as a reference. | Confirmed requirements; design proposal in hub-shop-plan.md; implementation pending |
 | 2026-09-09 | Runaway Chimps uses Unity 2022.3.55f1 and Photon PUN. Unity 6 belongs to the separate, non-horror Cheeky Chimps project. | Confirmed correction from the source document |
 | 2026-09-09 | Use Hub_Base as the source for a split at the Security Gate. Disabled Level1 and Level1_2_Hall scenes are experiments. | Confirmed direction; scene committed on level1split; extraction validation pending |
 | 2026-09-09 | Replace MiniGamesKidFirstRig with Zombie Crawl while preserving and repairing the existing monster systems. | Confirmed direction; integration pending |
@@ -100,9 +101,13 @@ A player who finishes Level 1 first can wait in the safe Level 2 starting room f
 
 ### The cosmetic shop
 
-Cosmetics are a planned hub feature. Proposed lore: the shop occupies a former Behavioral Enrichment supply room repurposed by escaped gorillas. Hats, toys, mirrors, and accessories come from enrichment supplies; goggles, badges, and uniforms can be scavenged staff belongings.
+**Confirmed requirements — 2026-09-10:** develop the existing Hub Shop room with seasonal items, regular items rotating weekly, and cosmetic try-on/equip facilities. Greg requests planning first, then mapping, then asset creation and system integration, with Gorilla Tag as a reference and room for improvements. The cosmetics themselves remain undesigned.
 
-Optional details include SHOP scratched below the official sign and a repurposed supply dispenser. Enrichment tokens are a possible currency name only if a currency system is wanted. The shop name, purchase mechanism, and currency are unresolved.
+**Source inspected on main at c388d87:** Shop contains the existing mirror and a “Current Coconuts” board bound to CoconutDisplay. EconomyState, PlayFab inventory loading and Photon avatar cosmetic setters exist; this is not a complete or validated shop. The earlier suggestion “Enrichment tokens” remains historical brainstorming and must not replace the existing Coconuts implementation without a new decision.
+
+**Proposed:** the shop occupies a former Behavioral Enrichment supply room repurposed by escaped gorillas. Simple worn racks, crates and sign plates fit the lab. Separate seasonal and weekly displays would surround an open centre; try-on, owned-item selection and purchase confirmation would share the existing mirror area. The shop name, lore, fixture details, slot counts and interaction design remain unapproved.
+
+See [Hub shop planning proposal](hub-shop-plan.md) for source evidence, tentative zoning, player flow and staged acceptance. No Shop scene, purchase or runtime changes are included in the planning update. Unity, Photon, backend and headset validation remain pending.
 
 ### Surveillance wall
 

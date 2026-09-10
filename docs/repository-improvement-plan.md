@@ -1,6 +1,6 @@
 # Runaway Chimps repository improvement plan
 
-Last updated: 2026-09-09. Maintained repository edition, migrated from `Runaway_Chimps_Repository_Review_and_Plan.docx`, Revision 2. The original review examined `main` at `4f6894141aa2b132d744cb2423c1ee227e0fc5be`; its evidence links remain pinned to that baseline. The Word document is a historical downloadable snapshot.
+Last updated: 2026-09-10. Maintained repository edition, migrated from `Runaway_Chimps_Repository_Review_and_Plan.docx`, Revision 2. The original review examined `main` at `4f6894141aa2b132d744cb2423c1ee227e0fc5be`; its evidence links remain pinned to that baseline. The Word document is a historical downloadable snapshot.
 
 Read the [design and lore](design-and-lore.md) for intended behavior and [AGENTS.md](../AGENTS.md) for update rules. A confirmed finding describes source evidence; it does not mean its fix is implemented or tested.
 
@@ -296,7 +296,7 @@ Use small reviewable changes, each ending with a playable checkpoint. Effort lab
 
 Start in Hub_Base and identify the exact geometry at the Security Gate. Extract the level while preserving world positions and local references. Use that stable map split for the Zombie Crawl work; compare before and after behavior so existing audio, capture, and patrol features remain accounted for.
 
-Keep the Listener, shop expansion, camera wall, and additional levels on the design backlog until the Level 1 checkpoint is dependable. The placeholder Level 2 arrival room is sufficient to prove personal completion and regrouping without building the Listener level yet.
+The earlier blanket recommendation to defer shop expansion is superseded for shop planning by Greg's 2026-09-10 request. Shop work now proceeds through planning, mapping, then creation/integration; see [Hub shop planning proposal](hub-shop-plan.md). This does not mark the Level 1 checkpoint or any pending validation complete. Other backlog priorities retain their separately recorded status.
 
 ## Acceptance checks and remaining choices
 
@@ -325,3 +325,15 @@ Add small tests for the personal visit lifecycle and eligible-target transitions
 - Presentation: should other players see a held keycard? What exact scare should precede respawn? These choices do not block the core personal-card work.
 
 The recommendations preserve the agreed direction: open level access, individual wins, no saved partial-level progress, personal card resets on re-entry, a Crawler restricted to vents, and one ten-player Photon room across independently loaded sectors.
+
+## Hub shop — planning started 2026-09-10
+
+**Confirmed:** seasonal stock, weekly rotating regular stock, and cosmetic try-on/equip in the existing Hub Shop. Follow Greg's requested order: planning, mapping, creation/integration. **Proposed:** the layout, capacities and player flow in [hub-shop-plan.md](hub-shop-plan.md). No Shop runtime or scene implementation is included in this planning update.
+
+**Current source evidence:** reviewed main at `c388d87c0443158011dd9b1ba5ef9c005cc44267`. Hub_Base retains the Shop room, mirror and bound Coconuts board. EconomyState tracks balance/ownership; AuthOrchestrator loads PlayFab inventory. PhotonVRManager cosmetic setters save and broadcast immediately, so temporary try-on needs independent state. PhotonVRPlayer skips empty values and does not clear missing slots; remove/revert needs explicit handling. No production rotation, purchase or wardrobe flow was established by this review.
+
+**Planned next checkpoint:** review the design, then produce a scaled layout/blockout in the actual room with placeholder display items. Verify reach, movement and sightlines before finishing fixture assets.
+
+**Integration work pending:** stable catalog-to-prefab IDs, compatible equipment slots, trusted availability/rotation and purchase handling, full inventory refresh, ownership validation, duplicate-purchase protection, temporary preview lifecycle, persistence and Photon appearance. R10 remains applicable; the external reward/purchase backend and production identity are not validated by inspecting client source.
+
+**Pending validation:** Unity 2022.3.55f1 import/compilation, Play Mode try/remove/revert and travel cleanup, backend purchase/timeout/rollover cases, two-client independent selection and appearance, and Quest interaction/performance. Exact cases and stage boundaries are listed in the shop proposal.
