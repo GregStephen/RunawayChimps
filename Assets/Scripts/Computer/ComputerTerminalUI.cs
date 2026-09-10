@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Text;
 using Photon.Pun;
 using Photon.Realtime;
@@ -105,6 +105,9 @@ public class ComputerTerminalUI : MonoBehaviourPunCallbacks
 
     private string GetRoomStatusLine()
     {
+        var rooms = RoomSwitchService.Instance;
+        if (rooms != null && rooms.IsSwitchingRooms) return "Status: Joining room...";
+        if (rooms != null && !string.IsNullOrEmpty(rooms.LastError)) return rooms.LastError;
         if (!PhotonNetwork.IsConnected)
             return "Status: Offline";
         if (!PhotonNetwork.IsConnectedAndReady)

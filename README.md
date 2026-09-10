@@ -10,11 +10,19 @@ A Photon PUN VR horror game about escaping a laboratory. Open this project with 
 
 The repository documents are the maintained versions; earlier Word documents are downloadable snapshots. Confirmed design, implemented code, and completed testing are separate statuses. The current reliability fixes remain pending Unity and headset validation.
 
+## September 10 codebase audit
+
+The `codex/codebase-reliability-audit` branch starts from main at `c388d87c` (merged PR #3). It fixes startup/room joining, script bindings, local keyboard input, turning/grounding, monster session state, cosmetics, inventory paging, and duplicate build registration. See the [audit report](docs/codebase-audit-2026-09-10.md) for all findings, remaining work and validation evidence.
+
+Run `python Tools/validate_source.py` for offline source/scene checks. Optional `--syntax` requires the `tree-sitter` and `tree-sitter-c-sharp` Python packages. In Unity 2022.3.55f1, run **Tools > Runaway Chimps > Run Reliability Regression Checks**, then **Validate Sector Travel**. All Unity, Photon and headset checks remain pending. Startup errors now offer either controller trigger to retry (desktop: R).
+
+PR #4 remains separate and unmerged at this audit's baseline. When combining it with this branch, preserve the active card GUID through the KeyCard1 → KeyCard filename change and retest personal completion.
+
 ## Current project layout
 
-Start from `Assets/Scenes/Bootstrap.unity`. On `level1split`, the enabled build scenes are Bootstrap (0), Loading (1), Hub_Base (2), and Level1_Containment (3). The new containment scene and its metadata are committed at `ac69718`; Greg reports the extraction and doors are added. Geometry, references, and runtime behavior still need validation.
+Start from `Assets/Scenes/Bootstrap.unity`. On this audit branch, the enabled build scenes are Bootstrap (0), Loading (1), Hub_Base (2), and Level1_Containment (3). The new containment scene and its metadata are committed at `ac69718`; Greg reports the extraction and doors are added. Geometry, references, and runtime behavior still need validation.
 
-Level1, Level1_2_Hall, and the other disabled scene iterations are experiments. Use `Assets/Scenes/Level1_Containment.unity` for the new destination; the earlier planned name `Level01_Containment` is superseded. The prepared `level1split-travel.patch` wires the computer and both entrance doors to the travel service. Door returns use `HubDoorReturnSpawn` in the hallway; terminal returns use `HubReturnSpawn` in front of the computer. Both entrances to Level 1 use `Level1EntrySpawn` in its safe room. Each transition fades through Loading while keeping the same Photon room and XR rig. Unity and headset validation remain pending.
+Level1, Level1_2_Hall, and the other disabled scene iterations are experiments. Use `Assets/Scenes/Level1_Containment.unity` for the new destination; the earlier planned name `Level01_Containment` is superseded. Merged PR #3 wires the computer and both entrance doors to the travel service. Door returns use `HubDoorReturnSpawn` in the hallway; terminal returns use `HubReturnSpawn` in front of the computer. Both entrances to Level 1 use `Level1EntrySpawn` in its safe room. Each transition fades through Loading while keeping the same Photon room and XR rig. Unity and headset validation remain pending.
 
 To add a scene through Unity 2022.3, drag its `.unity` asset from the Project window into **File > Build Settings > Scenes In Build**, or open it and click **Add Open Scenes**. Keep the intended scene checked and Bootstrap first. Commit `ProjectSettings/EditorBuildSettings.asset` after changing this list.
 
@@ -47,7 +55,7 @@ Run headset audio checks with the existing patrol and chase clips. The in-game T
 
 ## Scene travel checks
 
-Scene registration is published at `6443fd0`; the travel and additional cleanup are in the downloadable combined patch and have not been pushed. Apply and commit the latest `level1split-travel.patch` on `level1split`, then start from Bootstrap. Select **Tools > Runaway Chimps > Validate Sector Travel** outside Play Mode to audit enabled scenes, required references, distinct Hub markers, door/button wiring, the persistent rig arrangement, and baked navigation data. The validator leaves your open scenes unchanged; it does not replace runtime testing.
+Scene registration, travel and the earlier cleanup are merged in PR #3. Start from Bootstrap on the branch being validated. Select **Tools > Runaway Chimps > Validate Sector Travel** outside Play Mode to audit enabled scenes, required references, distinct Hub markers, door/button wiring, the persistent rig arrangement, and baked navigation data. The validator leaves your open scenes unchanged; it does not replace runtime testing.
 
 | Route | How to try it | Expected arrival |
 | --- | --- | --- |
@@ -72,7 +80,7 @@ Source syntax and serialized-reference checks passed in the editing environment.
 The combined travel patch also fixes the Hub computer's Color action and name-save handling, room-specific player spawn cancellation, local-only visual readiness, stale physical-button presses, verbose trigger/proximity logs, unnecessary material cloning, hand-impact audio, and held-item collision-layer restoration. The Color page now includes a preview label and hex value. Existing component class names and asset GUIDs are preserved; the held-item script and its metadata are renamed from `DisableCollisionWhileHeld` to `HeldItemCollisionMode` to match the class.
 
 1. At the computer, adjust Color and press Enter. Confirm the avatar changes, the value survives returning to Hub and restarting, and another player sees the update.
-2. Leave/disconnect while the player spawner is waiting, then rejoin. Reconnect while Level 1 is active and Hub is unloaded. Confirm one local avatar in the current room, no late spawn from an old attempt, and no waiting forever for an unloaded Hub. Force a missing environment to check the 30-second timeout diagnostic; full startup retry UI is still pending.
+2. Leave/disconnect while the player spawner is waiting, then rejoin. Reconnect while Level 1 is active and Hub is unloaded. Confirm one local avatar in the current room, no late spawn from an old attempt, and no waiting forever for an unloaded Hub. Force a missing environment to check the 30-second timeout diagnostic; startup retry is implemented on the audit branch and remains pending runtime validation.
 3. Confirm only the local avatar's settle check marks local visuals ready. A remote avatar or a cancelled old-room coroutine must not do so.
 4. Press a button, disable the pressing collider or the button, restore it, and press again. It should return to its resting position and accept one new press.
 5. Verify zone/audio transitions with diagnostics off. Repeated proximity swaps should preserve other material-slot references and should not create material copies merely to replace one binding.

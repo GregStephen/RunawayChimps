@@ -57,6 +57,8 @@ namespace RunawayChimps.Travel
         private readonly Dictionary<Collider, bool> frozenColliders = new Dictionary<Collider, bool>();
         private bool frozen;
         private bool wasKinematic;
+        private SectorId reconnectSector;
+        private ZoneId reconnectZone;
 
         private void Awake()
         {
@@ -95,7 +97,7 @@ namespace RunawayChimps.Travel
 
         public bool RespawnAt(Transform spawn)
         {
-            if (IsBusy || suspended || spawn == null || !BindRig()) return false;
+            if (IsBusy || suspended || !PhotonNetwork.InRoom || spawn == null || !BindRig()) return false;
             source = SceneManager.GetActiveScene();
             if (spawn.gameObject.scene != source) return false;
             destination = source.name;
@@ -422,7 +424,11 @@ namespace RunawayChimps.Travel
         {
             if (IsBusy) return;
             var context = SectorScene.Find(scene);
-            if (context != null) Publish(context.sector, context.entryZone);
+            if (context != null)
+            {
+                Publish(context.sector, reconnectSector == context.sector ? reconnectZone : context.entryZone);
+                reconnectSector = SectorId.None;
+            }
         }
 
         private void Publish(SectorId sector, ZoneId zone)
@@ -448,6 +454,11 @@ namespace RunawayChimps.Travel
         public override void OnDisconnected(DisconnectCause cause) => ClearSession();
         private void ClearSession()
         {
+            if (CurrentSector != SectorId.None)
+            {
+                reconnectSector = CurrentSector;
+                reconnectZone = ZoneStateService.Instance != null ? ZoneStateService.Instance.LocalZone : ZoneId.None;
+            }
             CurrentSector = SectorId.None;
             cancelled = IsBusy;
             ZoneStateService.Instance?.ResetSession();
@@ -458,8 +469,10 @@ namespace RunawayChimps.Travel
             suspended = paused;
             if (paused)
             {
-                pausedSector = CurrentSector;
-                pausedZone = ZoneStateService.Instance != null ? ZoneStateService.Instance.LocalZone : ZoneId.None;
+                pausedSector = IsBusy && !committed ? oldSector : CurrentSector;
+                pausedZone = IsBusy && !committed ? oldZone :
+                    ZoneStateService.Instance != null ? ZoneStateService.Instance.LocalZone : ZoneId.None;
+                cancelled = IsBusy;
                 foreach (var monster in FindObjectsOfType<SectorMonsterSync>()) monster.FlushState();
                 Publish(SectorId.None, ZoneId.None);
                 if (PhotonNetwork.InRoom) PhotonNetwork.SendAllOutgoingCommands();

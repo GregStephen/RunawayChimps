@@ -24,16 +24,17 @@ public class XRHandL : MonoBehaviour
     public PhotonView view;
 
     // Start is called before the first frame update
-    void Start()
+    void Awake()
     {
         animator = GetComponent<Animator>();
+        if (view == null) view = GetComponentInParent<PhotonView>();
        // inputDevice = GetInputDevice();
     }
 
     // Update is called once per frame
     void Update()
     {
-        if (view.IsMine)
+        if (animator != null && inputDevice.isValid && (view == null || view.IsMine))
         {
             AnimateHand();
         }
@@ -92,7 +93,7 @@ public class XRHandL : MonoBehaviour
         List<InputDevice> inputDevices = new List<InputDevice>();
         InputDevices.GetDevicesWithCharacteristics(controllerCharacteristic, inputDevices);
 
-        return inputDevices[0];
+        return inputDevices.Count > 0 ? inputDevices[0] : default;
     }
 
     void AnimateHand()
@@ -105,11 +106,11 @@ public class XRHandL : MonoBehaviour
 
         if (primaryTouched || secondaryTouched)
         {
-            pose6Value += thumbMoveSpeed;
+            pose6Value += thumbMoveSpeed * Time.deltaTime * 60f;
         }
         else
         {
-            pose6Value -= thumbMoveSpeed;
+            pose6Value -= thumbMoveSpeed * Time.deltaTime * 60f;
         }
 
         pose6Value = Mathf.Clamp(pose6Value, 0, 1);

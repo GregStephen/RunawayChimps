@@ -24,10 +24,10 @@ public class FaceExpressionController : MonoBehaviourPun
     {
         if (faceRenderer != null)
         {
-            Debug.Log($"{gameObject.name} has {faceRenderer.materials.Length} materials");
-            for (int i = 0; i < faceRenderer.materials.Length; i++)
+            Debug.Log($"{gameObject.name} has {faceRenderer.sharedMaterials.Length} materials");
+            for (int i = 0; i < faceRenderer.sharedMaterials.Length; i++)
             {
-                Debug.Log($"Material {i}: {faceRenderer.materials[i].name}");
+                Debug.Log($"Material {i}: {faceRenderer.sharedMaterials[i].name}");
             }
         }
     }
@@ -46,7 +46,7 @@ public class FaceExpressionController : MonoBehaviourPun
         {
             SetFace(faceScream);
         }
-        else if (amplitude > talkThreshold)
+        else if (amplitude > talkThreshold && talkingFaces != null && talkingFaces.Length > 0)
         {
             // Cycle between 3 talking faces for a more natural look
             changeTimer += Time.deltaTime;
@@ -68,11 +68,11 @@ public class FaceExpressionController : MonoBehaviourPun
         if (faceRenderer == null || material == null)
             return;
 
-        var mats = faceRenderer.materials; // Copy of all materials
-        if (mats.Length > 1)
+        var mats = faceRenderer.sharedMaterials; // Copy of all materials
+        if (mats.Length > 2 && mats[2] != material)
         {
             mats[2] = material;
-            faceRenderer.materials = mats; // Reassign the array back
+            faceRenderer.sharedMaterials = mats; // Reassign the array back
         }
     }
 }

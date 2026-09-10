@@ -1,31 +1,23 @@
 using UnityEngine;
 
-public class VRKeyCard : MonoBehaviour
+public class KeyCard : MonoBehaviour
 {
-    public string keyCardID = "KeyCard";
+    private bool isInserted = false;
 
-    private void OnEnable()
+    private void OnTriggerEnter(Collider other)
     {
-        var grab = GetComponent<UnityEngine.XR.Interaction.Toolkit.XRGrabInteractable>();
-        if (grab != null)
-            grab.selectEntered.AddListener(OnGrab);
-    }
+        if (isInserted) return;
 
-    private void OnDisable()
-    {
-        var grab = GetComponent<UnityEngine.XR.Interaction.Toolkit.XRGrabInteractable>();
-        if (grab != null)
-            grab.selectEntered.RemoveListener(OnGrab);
-    }
+        KeyBox box = other.GetComponent<KeyBox>();
+        if (box != null)
+        {
+            isInserted = true;
 
-    private void OnGrab(UnityEngine.XR.Interaction.Toolkit.SelectEnterEventArgs args)
-    {
-        // Get the local player's inventory and add the keycard
-        PlayerInventory.LocalInventory?.CollectKeyCard(keyCardID);
+            // Tell the keybox a card was inserted
+            box.AddKey();
 
-        Debug.Log($"[KeyCard] {keyCardID} collected locally.");
-
-        // Destroy ONLY the local copy
-        Destroy(gameObject);
+            // Remove the card (destroy locally)
+            Destroy(gameObject);
+        }
     }
 }

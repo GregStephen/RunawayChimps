@@ -18,7 +18,6 @@ public class HallwayPreloadTrigger : MonoBehaviour
         }
 
         if (preloadOnce && _done) return;
-        _done = true;
 
         if (LevelStreamService.I == null)
         {
@@ -27,6 +26,11 @@ public class HallwayPreloadTrigger : MonoBehaviour
         }
 
         Debug.Log($"[HallwayPreloadTrigger] Local rig entered. Preloading '{levelSceneName}'...");
-        LevelStreamService.I.Preload(levelSceneName);
+        if (!Application.CanStreamedLevelBeLoaded(levelSceneName))
+        {
+            Debug.LogWarning("Preload scene is not enabled: " + levelSceneName, this);
+            return;
+        }
+        _done = LevelStreamService.I.Preload(levelSceneName);
     }
 }

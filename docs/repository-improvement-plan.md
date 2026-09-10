@@ -1,10 +1,18 @@
 # Runaway Chimps repository improvement plan
 
-Last updated: 2026-09-09. Maintained repository edition, migrated from `Runaway_Chimps_Repository_Review_and_Plan.docx`, Revision 2. The original review examined `main` at `4f6894141aa2b132d744cb2423c1ee227e0fc5be`; its evidence links remain pinned to that baseline. The Word document is a historical downloadable snapshot.
+Last updated: 2026-09-10. Maintained repository edition, migrated from `Runaway_Chimps_Repository_Review_and_Plan.docx`, Revision 2. The original review examined `main` at `4f6894141aa2b132d744cb2423c1ee227e0fc5be`; its evidence links remain pinned to that baseline. The Word document is a historical downloadable snapshot.
 
 Read the [design and lore](design-and-lore.md) for intended behavior and [AGENTS.md](../AGENTS.md) for update rules. A confirmed finding describes source evidence; it does not mean its fix is implemented or tested.
 
-## Current implementation and validation status
+## September 10 audit and fix branch
+
+**Base verified:** current main at `c388d87c` includes merged PR #3 (`level1split`). **Implemented:** `codex/codebase-reliability-audit` adds the confirmed source fixes in the [full audit and remaining-findings report](codebase-audit-2026-09-10.md). That report is the current implementation/validation record for this pass; the original R01–R11 evidence remains historical unless its current-status note says otherwise.
+
+**Validated here:** 97 C# files pass syntax/binding/metadata source checks; four enabled scenes pass build-registration and local-reference checks; whitespace passes. The same validator finds eight defects on the original main and none of those on the fix branch. **Pending validation:** actual Unity compilation/import, Editor regression checks, Play Mode, live services, two-client Photon and headset tests.
+
+**Still open:** PR #4 personal-card/Level 2 work, the authored vent graph/NavMesh boundary, production platform-proof verification/account migration, backend reward/ownership review, and measured Quest performance. This audit does not merge other open feature work or upgrade SDKs. Resolve PR #4's KeyCard1 filename against this branch's KeyCard rename while retaining the existing active script GUID.
+
+## Earlier PR #2 implementation and validation status
 
 [PR #2](https://github.com/GregStephen/RunawayChimps/pull/2), branch `codex/level1-reliability`, was merged on 2026-09-09 at 19:24:51 UTC (merge commit `2d3d690`). Commit `d4ee616303ea7a8c6a4aa8d877a3be8086e07939` contains the initial code fixes. It has the same complete file tree as bundled source commit `1eb089fdc54ea821d0f5e3ad90c8f3def9bbe9b7`; the publishing API created a new commit ID. The documentation migration follows as a separate commit.
 
@@ -19,17 +27,17 @@ Read the [design and lore](design-and-lore.md) for intended behavior and [AGENTS
 
 **Checks completed:** source-level review of the prepared changes, bundle verification, and `git diff --check`. **Pending:** Unity 2022.3.55f1 compilation, Play Mode, Photon sessions, audio playback, and headset testing. The PR is merged; no Unity or headset validation evidence was added by the merge. Those checks remain pending.
 
-## Scene split checkpoint — prepared level1split patch, September 9, 2026
+## Scene split checkpoint — merged PR #3, September 9, 2026
 
-The scene registration is published at `6443fd0`. The subsequent travel and cleanup changes are prepared locally in `level1split-travel.patch`; GitHub upload did not complete. Apply and commit the current combined patch on `level1split` before running its checks.
+The scene registration and subsequent travel/cleanup patch were committed on `level1split` and merged through PR #3 at `c388d87c`. The earlier upload limitation is resolved. The implementation below is present on main; its Unity and headset checks remain pending.
 
 - **Implemented asset:** `Assets/Scenes/Level1_Containment.unity` and its `.meta` file exist at `ac69718`. Greg reports the new scene and doors are committed. The actual filename supersedes the earlier planned `Level01_Containment` spelling.
 - **Implemented configuration:** this follow-up enables `Level1_Containment` in `ProjectSettings/EditorBuildSettings.asset`, using GUID `1a67d7f7a6e6dc64094eff3267980158` from its metadata. Bootstrap, Loading, and Hub_Base retain enabled build indices 0–2; containment is index 3. Existing disabled prototypes and XR configuration are preserved.
 - **Confirmed correction:** the route determines Hub arrival. Returning through the Level 1 entrance door uses `HubDoorReturnSpawn` in the hallway. A future terminal's Return to Hub uses `HubReturnSpawn` in front of the computer. Both the Hub computer and hallway entrance load `Level1EntrySpawn` in the safe cage room. This supersedes the earlier all-returns-to-computer instruction.
-- **Prepared implementation:** a persistent `SectorTravelService` serializes requests, releases held interactions, fades the XR view, reuses Loading without resetting startup or matchmaking, loads the destination additively, validates floor/head/body clearance, moves and resets the local locomotion rig, publishes arrival, unloads the old environment, and restores movement. Timeout/connection failures restore the source before commitment; native loads that cannot be cancelled are drained and discarded. A cooldown rejects repeated presses.
-- **Prepared wiring:** the existing Hub button now targets `SectorDoor.Travel` and requires a local hand; both scene entrance doors support XR selection with solid barriers. The Hub computer has a Level 1 menu option; keyboard buttons also require the local rig. The default Hub spawn is retained for startup; separate computer, hallway, and Level 1 entry markers are serialized. One persistent XR interaction manager replaces Level 1's scene-owned manager and rebinds arriving interactables. The future terminal has a callable computer-return API; its physical UI is deferred until more levels exist. Other destinations remain planned.
-- **Prepared multiplayer foundation:** `sector` player properties identify Hub, Containment, or transition. Remote renderers/names, colliders, and speaker playback are filtered locally by sector. Voice traffic still uses the existing Photon Voice configuration; bandwidth/interest-group routing is not implemented. The lowest active actor in an occupied level controls its monster and sends position/rotation/chase state; arrivals request current state and departure/pause flushes the last pose. The master can remain in the Hub. Target eligibility requires Containment and its vent zone; closest-player switching is retained, and loss returns immediately to patrol.
-- **Prepared capture integration:** the active capture component uses the shared guarded movement service while retaining the existing inventory drop call. Releasing XRI selections and unloading Level 1 ends its local scene visit; the broader personal-card/consumption/Level 2 completion work in R05 remains open. This is not a Zombie Crawl model integration.
+- **Implemented in PR #3:** a persistent `SectorTravelService` serializes requests, releases held interactions, fades the XR view, reuses Loading without resetting startup or matchmaking, loads the destination additively, validates floor/head/body clearance, moves and resets the local locomotion rig, publishes arrival, unloads the old environment, and restores movement. Timeout/connection failures restore the source before commitment; native loads that cannot be cancelled are drained and discarded. A cooldown rejects repeated presses.
+- **Implemented wiring in PR #3:** the existing Hub button now targets `SectorDoor.Travel` and requires a local hand; both scene entrance doors support XR selection with solid barriers. The Hub computer has a Level 1 menu option; keyboard buttons also require the local rig. The default Hub spawn is retained for startup; separate computer, hallway, and Level 1 entry markers are serialized. One persistent XR interaction manager replaces Level 1's scene-owned manager and rebinds arriving interactables. The future terminal has a callable computer-return API; its physical UI is deferred until more levels exist. Other destinations remain planned.
+- **Implemented multiplayer foundation in PR #3:** `sector` player properties identify Hub, Containment, or transition. Remote renderers/names, colliders, and speaker playback are filtered locally by sector. Voice traffic still uses the existing Photon Voice configuration; bandwidth/interest-group routing is not implemented. The lowest active actor in an occupied level controls its monster and sends position/rotation/chase state; arrivals request current state and departure/pause flushes the last pose. The master can remain in the Hub. Target eligibility requires Containment and its vent zone; closest-player switching is retained, and loss returns immediately to patrol.
+- **Implemented capture integration in PR #3:** the active capture component uses the shared guarded movement service while retaining the existing inventory drop call. Releasing XRI selections and unloading Level 1 ends its local scene visit; the broader personal-card/consumption/Level 2 completion work in R05 remains open. This is not a Zombie Crawl model integration.
 - **Validated at source level, 2026-09-09:** changed C# files parse without syntax errors; changed scenes have unique object IDs and no unresolved local references; new travel assets have metadata. This does not establish Unity compilation or asset import.
 - **Pending validation:** use `Tools > Runaway Chimps > Validate Sector Travel`, then execute the [route and multiplayer checks](../README.md#scene-travel-checks) in Unity 2022.3.55f1. Confirm scene extraction, navmesh activation, floor/head/body clearance, camera-space Loading in both eyes, voice, controller handover, capture, rollback, and repeated travel/memory. No Unity, Photon, or headset tests were available in this editing environment.
 
@@ -48,7 +56,7 @@ The scene registration is published at `6443fd0`. The subsequent travel and clea
 | Computer color preview | Adds a colored `COLOR` label and RGB hex value to the existing Color page before Apply. It previews the pending choice; Enter still commits it. | Check RGB adjustments, reset, dark colors, text fit/readability in the headset, and that changing the preview alone does not change the avatar. |
 | Held-item collision layers and binding | Renames `DisableCollisionWhileHeld.cs` and its metadata to `HeldItemCollisionMode.cs`, preserving GUID `cceaa587972a4084385f9d2ce864386e`. Snapshots each child layer once on the first grab, keeps held layers until the last hand releases, and restores on disable. | Verify the existing Level 1 component imports without a missing script. Check mixed child layers, two-handed selection/release, disable/re-enable while held, and travel while holding the item. A missing HeldItem layer must leave layers unchanged. |
 
-These are source changes prepared for `level1split`, not a pushed or Unity-validated release. Full startup authentication/retry UI, matchmaking ownership, keycard completion, and Zombie Crawl integration remain separate work. The spawner's timeout reports through AppState and the Console; it does not close the broader LoadingFlow recovery finding.
+These source changes are merged in PR #3, with runtime validation still pending. The September 10 audit adds startup retry and matchmaking coordination. Keycard completion, backend authentication security, and Zombie Crawl integration remain separate work.
 
 The held-item implementation uses the XR Interaction Toolkit 2.6 [first-select and last-release events](https://docs.unity3d.com/Packages/com.unity.xr.interaction.toolkit@2.6/api/UnityEngine.XR.Interaction.Toolkit.XRBaseInteractable.html#UnityEngine_XR_Interaction_Toolkit_XRBaseInteractable_firstSelectEntered). Source checks and patch reconstruction do not establish runtime selection behavior. The hand-audio fixes apply to the existing two Bootstrap components; the held-item GUID is referenced once in Level1_Containment. No scene geometry or serialized gameplay settings were changed in this additional pass.
 
@@ -86,6 +94,8 @@ Evidence: [Editor version](https://github.com/GregStephen/RunawayChimps/blob/4f6
 
 ### R01 The Security Gate transition is unfinished
 
+**Current status, 2026-09-10:** The missing gate target and scene split/travel wiring are implemented in merged PR #3. This audit removes duplicate build registration and checks missing scripts; physical routes remain pending Unity/headset validation.
+
 P1 / unfinished feature with a missing event target. Hub_Base contains a PhysicalButton event named ActivateAndOpen, but its serialized target is fileID 0. It cannot invoke the intended action. Greg confirmed that disabled scene variants are experiments; their exclusion from the build is intentional. Hub_Base is the map to split.
 
 Fix: keep the starting area, shop, and gate approach in Hub_Base. Extract Primate Containment into a new Level1_Containment scene and wire the gate to that destination. Use the [scene extraction procedure](#editor-extraction-procedure). Level1 and Level1_2_Hall stay outside the runtime route; copying an old prototype route would restore unfinished assumptions.
@@ -95,6 +105,8 @@ Acceptance: launch from Bootstrap in a build, press the entrance once, and reach
 Evidence: [Missing button target](https://github.com/GregStephen/RunawayChimps/blob/4f6894141aa2b132d744cb2423c1ee227e0fc5be/Assets/Scenes/Hub_Base.unity#L397922)  |  [Alternate door wiring](https://github.com/GregStephen/RunawayChimps/blob/4f6894141aa2b132d744cb2423c1ee227e0fc5be/Assets/Scenes/Hub_Base_1.unity#L535499)  |  [Enabled scenes](https://github.com/GregStephen/RunawayChimps/blob/4f6894141aa2b132d744cb2423c1ee227e0fc5be/ProjectSettings/EditorBuildSettings.asset#L8)
 
 ### R02 The active monster is not synchronized
+
+**Current status, 2026-09-10:** Merged PR #3 adds sector controller election and pose/chase replication. This audit clears state on room changes and restores navigation after disable/rollback. Two-client handover/capture validation remains pending.
 
 P1 / confirmed wiring and code gap. MonsterNavigation lets only PhotonNetwork.IsMasterClient drive the NavMeshAgent; every other client disables its agent. The active MiniGamesKidFirstRig root has no PhotonView or transform synchronization component, and the controller contains no position/state broadcast. Its other root behaviours are rigging, proximity, and material components. Other clients therefore have no implemented path for following the moving monster.
 
@@ -109,6 +121,8 @@ Evidence: [Movement authority](https://github.com/GregStephen/RunawayChimps/blob
 ## Crawler behavior and sound
 
 ### R03 Target selection and patrol return differ from the design
+
+**Current status, 2026-09-10:** Sector/vent eligibility and immediate patrol return are implemented in PR #3 and hardened by this audit. Closest-player switching remains the existing behavior. The missing authored vent graph and verified NavMesh boundaries remain open.
 
 P1 / confirmed code behavior. Every detection interval replaces currentTarget with FindClosestPlayer. Hub_Base sets that interval to 0.2 seconds, so the monster can switch targets five times a second. It filters tagged bodies by distance, without checking whether they are in a safe room, another sector, or a transition.
 
@@ -191,6 +205,8 @@ Evidence: [Zone storage and callbacks](https://github.com/GregStephen/RunawayChi
 ## Startup session reliability and release preparation
 
 ### R09 Failures can leave startup waiting indefinitely
+
+**Current status, 2026-09-10:** This audit adds bounded authentication/startup waits, trigger/R retry, guarded late callbacks, player readiness reset and coordinated room join/create failure recovery. Runtime failure-injection and service tests remain pending; see the audit report.
 
 **Current status:** the prepared combined patch adds bounded/cancelled player spawning and local-only visual readiness. Authentication retry, startup failure UI, and the room-join coordinator below remain open.
 

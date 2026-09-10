@@ -28,6 +28,7 @@ public class XRHandController : MonoBehaviour
     private void Awake()
     {
         animator = GetComponent<Animator>();
+        if (view == null) view = GetComponentInParent<PhotonView>();
     }
 
     private void OnEnable()
@@ -46,7 +47,7 @@ public class XRHandController : MonoBehaviour
     private void Update()
     {
         // Only animate local hand
-        if (view != null && !view.IsMine)
+        if (animator == null || (view != null && !view.IsMine))
             return;
 
         if (!inputDevice.isValid)
@@ -99,8 +100,8 @@ public class XRHandController : MonoBehaviour
         inputDevice.TryGetFeatureValue(CommonUsages.primaryTouch, out bool primaryTouched);
         inputDevice.TryGetFeatureValue(CommonUsages.secondaryTouch, out bool secondaryTouched);
 
-        if (primaryTouched || secondaryTouched) pose3Value += thumbMoveSpeed;
-        else pose3Value -= thumbMoveSpeed;
+        if (primaryTouched || secondaryTouched) pose3Value += thumbMoveSpeed * Time.deltaTime * 60f;
+        else pose3Value -= thumbMoveSpeed * Time.deltaTime * 60f;
 
         pose3Value = Mathf.Clamp(pose3Value, 0, 1);
 

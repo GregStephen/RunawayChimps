@@ -5,7 +5,7 @@ public class LoadSceneOnStart : MonoBehaviour
 {
     [SerializeField] private string sceneToLoad = "Loading";
 
-    private void Awake()
+    private void Start()
     {
         SceneManager.LoadScene(sceneToLoad, LoadSceneMode.Single);
     }

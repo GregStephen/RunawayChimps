@@ -23,8 +23,9 @@ namespace RunawayChimps.Travel
         public static int ElectController(Player[] players, SectorId sector)
         {
             int actor = 0;
+            if (players == null || sector == SectorId.None) return actor;
             foreach (var player in players)
-                if (Get(player) == sector && (actor == 0 || player.ActorNumber < actor))
+                if (player != null && Get(player) == sector && (actor == 0 || player.ActorNumber < actor))
                     actor = player.ActorNumber;
             return actor;
         }

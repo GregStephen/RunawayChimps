@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 using PlayFab;
 using PlayFab.ClientModels;
@@ -50,6 +50,11 @@ public class PlayFabLogin : MonoBehaviour
     private void OnLoginSuccess(LoginResult result)
     {
         var playFabId = result.PlayFabId;
+        if (result.EntityToken?.Entity == null)
+        {
+            Debug.LogError("Sign-in returned no economy identity.");
+            return;
+        }
         var entityId = result.EntityToken.Entity.Id;
         var entityType = result.EntityToken.Entity.Type;
 
@@ -70,6 +75,7 @@ public class PlayFabLogin : MonoBehaviour
         },
         r =>
         {
+            if (r.Error != null) Debug.LogWarning("Login reward failed: " + r.Error.Message);
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             Debug.Log($"GrantLoginCoconuts OK. FunctionResult: {r.FunctionResult}");
 #endif
@@ -95,35 +101,7 @@ public class PlayFabLogin : MonoBehaviour
             return;
         }
 
-        PlayFabEconomyAPI.GetInventoryItems(new GetInventoryItemsRequest
-        {
-            Entity = new PlayFab.EconomyModels.EntityKey { Id = entityId, Type = entityType }
-        },
-        r =>
-        {
-            var items = r.Items ?? new List<InventoryItem>();
-
-            // 1) Coconuts
-            var coconutItem = items.FirstOrDefault(i => i.Id == coconutCurrencyItemId);
-            var coconuts = coconutItem?.Amount ?? 0;
-
-            // 2) Owned cosmetics (everything except the currency item)
-            // If your catalog “cosmetics” are normal items, they’ll be in Items with their Id.
-            var owned = items
-                .Where(i => i.Id != coconutCurrencyItemId)
-                .Select(i => i.Id)
-                .ToHashSet();
-
-            EconomyState.Set(coconuts, owned);
-
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-            Debug.Log($"EconomyState updated. Coconuts={coconuts} OwnedCount={owned.Count}");
-#endif
-        },
-        e =>
-        {
-            Debug.LogError("GetInventoryItems FAILED: " + e.GenerateErrorReport());
-        });
+        EconomyInventoryLoader.Refresh(entityId, entityType, coconutCurrencyItemId);
     }
 
     private void OnLoginFailure(PlayFabError error)

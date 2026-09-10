@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 using Photon.Pun;
 using Photon.VR;
@@ -118,7 +118,7 @@ public class ProximityManager : MonoBehaviour
 
             // A skipped reactor still needs an exit and a zero proximity value,
             // otherwise its material/audio callbacks retain the previous zone's state.
-            if (localZone != ZoneId.None && reactor.ZoneId != ZoneId.None &&
+            if (reactor.ZoneId != ZoneId.None &&
                 reactor.ZoneId != localZone)
             {
                 reactor.ClearProximity();

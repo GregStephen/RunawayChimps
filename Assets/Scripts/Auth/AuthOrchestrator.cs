@@ -1,288 +1,175 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using Photon.Pun;
+using System;
 using Photon.VR;
 using PlayFab;
 using PlayFab.ClientModels;
 using PlayFab.CloudScriptModels;
-using PlayFab.EconomyModels;
 using UnityEngine;
 
 public class AuthOrchestrator : MonoBehaviour
 {
-    [Header("PlayFab")]
-    [Tooltip("Optional: set TitleId here. If you already set it elsewhere, leave blank.")]
-    [SerializeField] private string titleId = "";
-
-    [Header("Auth")]
-    [SerializeField] private bool enforceQuestAuth = false;
-
-    [Header("Economy")]
-    [Tooltip("Paste your coconut currency ItemId GUID here.")]
-    [SerializeField] private string coconutCurrencyItemId;
-
-    [Tooltip("CloudScript function name to grant login coconuts.")]
+    [Header("PlayFab")] [SerializeField] private string titleId = "";
+    [Header("Auth")] [SerializeField] private bool enforceQuestAuth;
+    [Min(5f)] [SerializeField] private float authenticationTimeout = 30f;
+    [Header("Economy")] [SerializeField] private string coconutCurrencyItemId;
     [SerializeField] private string grantLoginCoconutsFunctionName = "GrantLoginCoconuts";
-
-    [Tooltip("If true, will call GrantLoginCoconuts on login then refresh inventory.")]
     [SerializeField] private bool grantCoconutsOnLogin = true;
 
     private static AuthOrchestrator _instance;
-    private static bool _hasRun;
+    private bool _hasRun;
     private bool _isRunning;
-
+    private int _attempt;
+    private float _deadline;
+    private Action<string> _onReady;
+    private Action<string> _onFatal;
+    private string _readyMessage;
     private string _playFabId;
     private string _entityId;
     private string _entityType;
 
     private void Awake()
     {
-        if (_instance != null && _instance != this)
-        {
-            Destroy(gameObject);
-            return;
-        }
-
+        if (_instance != null && _instance != this) { Destroy(gameObject); return; }
         _instance = this;
         DontDestroyOnLoad(gameObject);
-
-        if (!string.IsNullOrWhiteSpace(titleId))
-            PlayFabSettings.staticSettings.TitleId = titleId;
+        if (!string.IsNullOrWhiteSpace(titleId)) PlayFabSettings.staticSettings.TitleId = titleId;
     }
 
     public void Run(MonoBehaviour runner, Action<string> onReady, Action<string> onFatal)
     {
-        if (_hasRun || _isRunning) return;
-        _hasRun = true;
+        if (_isRunning) return;
+        if (_hasRun && PlayFabClientAPI.IsClientLoggedIn()) { onReady?.Invoke(_readyMessage); return; }
+        _hasRun = false;
         _isRunning = true;
-
-        IAuthProvider provider = SelectProvider();
-
-        provider.Authenticate(
-            runner,
-            auth =>
+        int attempt = ++_attempt;
+        _onReady = onReady;
+        _onFatal = onFatal;
+        _deadline = Time.realtimeSinceStartup + Mathf.Max(5f, authenticationTimeout);
+        Guard(attempt, () => SelectProvider().Authenticate(runner,
+            auth => Guard(attempt, () => LoginPlayFab(attempt, auth)),
+            error => Guard(attempt, () =>
             {
-                // ONE stable PlayFab customId per provider/user
-                var playFabCustomId = auth.Provider == "Meta"
-                    ? $"meta_{auth.UserId}"
-                    : $"dev_{auth.UserId}";
-
-                LoginPlayFab(
-                    playFabCustomId,
-                    onSuccess: () =>
-                    {
-                        EnsureDisplayNameThenContinue(auth.Provider, onReady, onFatal);
-                    },
-                    onFatal: onFatal
-                );
-            },
-            fail =>
-            {
-                if (enforceQuestAuth)
-                {
-                    onFatal(fail);
-                    return;
-                }
-
-                // fallback to dev auth only if not enforcing quest auth
-                new DevCustomIdAuthProvider().Authenticate(
-                    runner,
-                    auth =>
-                    {
-                        var playFabCustomId = $"dev_{auth.UserId}";
-
-                        LoginPlayFab(
-                            playFabCustomId,
-                            onSuccess: () =>
-                            {
-                                EnsureDisplayNameThenContinue("Dev", onReady, onFatal);
-                            },
-                            onFatal: onFatal
-                        );
-                    },
-                    onFatal
-                );
-            }
-        );
+                if (enforceQuestAuth) { Fail(attempt, error); return; }
+                new DevCustomIdAuthProvider().Authenticate(runner,
+                    auth => Guard(attempt, () => LoginPlayFab(attempt, auth)),
+                    failure => Fail(attempt, failure));
+            })));
     }
 
-    private void LoginPlayFab(string customId, Action onSuccess, Action<string> onFatal)
+    private bool IsCurrent(int attempt) => this != null && isActiveAndEnabled && _isRunning && attempt == _attempt;
+
+    private void Guard(int attempt, Action action)
     {
-        var request = new LoginWithCustomIDRequest
+        if (!IsCurrent(attempt)) return;
+        try { action(); }
+        catch (Exception exception)
+        {
+            Debug.LogException(exception, this);
+            Fail(attempt, "Sign-in could not finish. Please retry.");
+        }
+    }
+
+    private void Fail(int attempt, string error)
+    {
+        if (!IsCurrent(attempt)) return;
+        _isRunning = _hasRun = false;
+        var callback = _onFatal;
+        _onReady = _onFatal = null;
+        callback?.Invoke(error);
+    }
+
+    public void CancelPending()
+    {
+        ++_attempt; // Native callbacks may still arrive; discard their continuation.
+        _isRunning = false;
+        _onReady = _onFatal = null;
+    }
+
+    private void Update()
+    {
+        if (_isRunning && Time.realtimeSinceStartup >= _deadline)
+            Fail(_attempt, "Sign-in timed out. Check your connection and retry.");
+    }
+
+    private void LoginPlayFab(int attempt, AuthResult auth)
+    {
+        if (string.IsNullOrWhiteSpace(auth.UserId)) { Fail(attempt, "Sign-in returned no player identity."); return; }
+        var customId = (auth.Provider == "Meta" ? "meta_" : "dev_") + auth.UserId;
+        // Existing development identity is preserved. Server-side Meta proof
+        // validation/account migration remains a separate release requirement.
+        PlayFabClientAPI.LoginWithCustomID(new LoginWithCustomIDRequest
         {
             CustomId = customId,
             CreateAccount = true,
             InfoRequestParameters = new GetPlayerCombinedInfoRequestParams
             {
                 GetPlayerProfile = true,
-                ProfileConstraints = new PlayerProfileViewConstraints
-                {
-                    ShowDisplayName = true
-                }
+                ProfileConstraints = new PlayerProfileViewConstraints { ShowDisplayName = true }
             }
-        };
-
-        PlayFabClientAPI.LoginWithCustomID(
-            request,
-            result =>
-            {
-                _playFabId = result.PlayFabId;
-                _entityId = result.EntityToken?.Entity?.Id;
-                _entityType = result.EntityToken?.Entity?.Type;
-
-                if (string.IsNullOrWhiteSpace(_entityId) || string.IsNullOrWhiteSpace(_entityType))
-                {
-                    onFatal("PlayFab login succeeded but EntityToken was missing. Economy requires EntityToken.");
-                    return;
-                }
-
-                // Cache profile display name if present (we’ll re-read from payload)
-                _cachedProfileDisplayName = result.InfoResultPayload?.PlayerProfile?.DisplayName;
-
-                #if UNITY_EDITOR || DEVELOPMENT_BUILD
-                Debug.Log($"PlayFab login OK. CustomId={customId} PlayFabId={_playFabId} Entity={_entityType}:{_entityId}");
-                #endif
-
-                onSuccess?.Invoke();
-            },
-            error =>
-            {
-                onFatal("PlayFab login failed: " + error.GenerateErrorReport());
-            }
-        );
-    }
-
-    private string _cachedProfileDisplayName;
-
-    private void EnsureDisplayNameThenContinue(string providerName, Action<string> onReady, Action<string> onFatal)
-    {
-        var displayName = _cachedProfileDisplayName;
-
-        if (string.IsNullOrWhiteSpace(displayName))
+        }, result => Guard(attempt, () =>
         {
-            displayName = $"Chimp{UnityEngine.Random.Range(1000, 9999)}";
-            PlayFabClientAPI.UpdateUserTitleDisplayName(
-                new UpdateUserTitleDisplayNameRequest { DisplayName = displayName },
-                _ =>
+            _playFabId = result.PlayFabId;
+            _entityId = result.EntityToken?.Entity?.Id;
+            _entityType = result.EntityToken?.Entity?.Type;
+            if (string.IsNullOrWhiteSpace(_entityId) || string.IsNullOrWhiteSpace(_entityType))
+            {
+                Fail(attempt, "Sign-in returned no economy identity. Please retry.");
+                return;
+            }
+            var displayName = result.InfoResultPayload?.PlayerProfile?.DisplayName;
+            if (!string.IsNullOrWhiteSpace(displayName)) { Complete(attempt, displayName); return; }
+            displayName = "Chimp" + UnityEngine.Random.Range(1000, 10000);
+            PlayFabClientAPI.UpdateUserTitleDisplayName(new UpdateUserTitleDisplayNameRequest { DisplayName = displayName },
+                saved => Guard(attempt, () => Complete(attempt, saved.DisplayName)),
+                error => Guard(attempt, () =>
                 {
-                    #if UNITY_EDITOR || DEVELOPMENT_BUILD
-                    Debug.Log($"Initial display name set to '{displayName}'");
-                    #endif
-                    ContinueAfterNameKnown(displayName, providerName, onReady, onFatal);
-                },
-                e =>
-                {
-                    Debug.LogError("UpdateUserTitleDisplayName FAILED: " + e.GenerateErrorReport());
-                    // Continue anyway so the game proceeds
-                    ContinueAfterNameKnown(displayName, providerName, onReady, onFatal);
-                }
-            );
-            return;
-        }
-
-        ContinueAfterNameKnown(displayName, providerName, onReady, onFatal);
+                    Debug.LogWarning("Initial display name was not saved: " + error.ErrorMessage, this);
+                    Complete(attempt, displayName);
+                }));
+        }), error => Fail(attempt, "Sign-in failed: " + error.ErrorMessage));
     }
 
-    private void ContinueAfterNameKnown(string displayName, string providerName, Action<string> onReady, Action<string> onFatal)
+    private void Complete(int attempt, string displayName)
     {
-        // Set Photon names consistently
         PhotonVRManager.SetUsername(displayName);
-        PhotonNetwork.NickName = displayName;
-
-        onReady?.Invoke($"PlayFab OK. Provider={providerName}, PlayFabId={_playFabId}, NickName={displayName}");
-
-        // Economy: grant then refresh
-        if (!grantCoconutsOnLogin)
-        {
-            RefreshEconomyInventory();
-            return;
-        }
-
-        GrantLoginCoconuts(
-            onDone: RefreshEconomyInventory,
-            onFail: RefreshEconomyInventory
-        );
+        _readyMessage = "Signed in.";
+        _hasRun = true;
+        _isRunning = false;
+        var callback = _onReady;
+        _onReady = _onFatal = null;
+        callback?.Invoke(_readyMessage);
+        // Reconnecting to Photon must not grant the login reward again.
+        RefreshLoginEconomy();
     }
 
-    private void GrantLoginCoconuts(Action onDone, Action onFail)
+    private void RefreshLoginEconomy()
     {
-        if (string.IsNullOrWhiteSpace(grantLoginCoconutsFunctionName))
+        string entityId = _entityId, entityType = _entityType;
+        Action refresh = () => EconomyInventoryLoader.Refresh(entityId, entityType, coconutCurrencyItemId);
+        if (!grantCoconutsOnLogin || string.IsNullOrWhiteSpace(grantLoginCoconutsFunctionName)) { refresh(); return; }
+        try
         {
-            Debug.LogWarning("GrantLoginCoconuts skipped: function name is empty.");
-            onDone?.Invoke();
-            return;
-        }
-
-        PlayFabCloudScriptAPI.ExecuteFunction(
-            new ExecuteFunctionRequest
+            PlayFabCloudScriptAPI.ExecuteFunction(new ExecuteFunctionRequest
             {
                 FunctionName = grantLoginCoconutsFunctionName,
-                FunctionParameter = new
-                {
-                    PlayFabId = _playFabId,
-                    EntityId = _entityId,
-                    EntityType = _entityType
-                },
+                FunctionParameter = new { PlayFabId = _playFabId, EntityId = entityId, EntityType = entityType },
                 GeneratePlayStreamEvent = true
-            },
-            r =>
+            }, result =>
             {
-                Debug.Log($"GrantLoginCoconuts OK. FunctionResult: {r.FunctionResult}");
-                onDone?.Invoke();
-            },
-            e =>
-            {
-                Debug.LogError("GrantLoginCoconuts FAILED: " + e.GenerateErrorReport());
-                onFail?.Invoke();
-            }
-        );
-    }
-
-    private void RefreshEconomyInventory()
-    {
-        if (string.IsNullOrWhiteSpace(coconutCurrencyItemId))
-        {
-            Debug.LogError("coconutCurrencyItemId is empty. Paste the currency GUID in AuthOrchestrator inspector.");
-            return;
+                if (result.Error != null) Debug.LogWarning("Login reward failed: " + result.Error.Message);
+                refresh();
+            }, error => { Debug.LogWarning("Login reward failed: " + error.ErrorMessage); refresh(); });
         }
-
-        PlayFabEconomyAPI.GetInventoryItems(
-            new GetInventoryItemsRequest
-            {
-                Entity = new PlayFab.EconomyModels.EntityKey { Id = _entityId, Type = _entityType }
-            },
-            r =>
-            {
-                var items = r.Items ?? new List<InventoryItem>();
-
-                // Currency amount
-                var coconutItem = items.FirstOrDefault(i => i.Id == coconutCurrencyItemId);
-                var coconuts = coconutItem?.Amount ?? 0;
-
-                // Owned cosmetics (everything except currency)
-                var owned = items
-                    .Where(i => i.Id != coconutCurrencyItemId)
-                    .Select(i => i.Id)
-                    .ToHashSet();
-
-                EconomyState.Set(coconuts, owned);
-
-                Debug.Log($"EconomyState updated. Coconuts={coconuts} OwnedCount={owned.Count}");
-            },
-            e =>
-            {
-                Debug.LogError("GetInventoryItems FAILED: " + e.GenerateErrorReport());
-            }
-        );
+        catch (Exception exception) { Debug.LogException(exception, this); refresh(); }
     }
 
     private IAuthProvider SelectProvider()
     {
 #if UNITY_ANDROID && !UNITY_EDITOR
-        if (enforceQuestAuth)
-            return new QuestMetaAuthProvider();
+        if (enforceQuestAuth) return new QuestMetaAuthProvider();
 #endif
         return new DevCustomIdAuthProvider();
     }
+
+    private void OnDisable() => CancelPending();
+    private void OnDestroy() { if (_instance == this) _instance = null; }
 }

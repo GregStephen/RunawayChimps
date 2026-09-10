@@ -1,4 +1,4 @@
-﻿namespace GorillaLocomotion
+namespace GorillaLocomotion
 {
     using UnityEngine;
 
@@ -56,6 +56,7 @@
             if (_instance != null && _instance != this)
             {
                 Destroy(gameObject);
+                return;
             }
             else
             {
@@ -67,6 +68,7 @@
         public void InitializeValues()
         {
             playerRigidBody = GetComponent<Rigidbody>();
+            velocityHistorySize = Mathf.Max(1, velocityHistorySize);
             velocityHistory = new Vector3[velocityHistorySize];
             lastLeftHandPosition = leftHandFollower.transform.position;
             lastRightHandPosition = rightHandFollower.transform.position;
@@ -390,10 +392,15 @@
 
         private void StoreVelocities()
         {
-            velocityIndex = (velocityIndex + 1) % velocityHistorySize;
+            if (Time.deltaTime <= 0f)
+            {
+                lastPosition = transform.position;
+                return;
+            }
+            velocityIndex = (velocityIndex + 1) % velocityHistory.Length;
             Vector3 oldestVelocity = velocityHistory[velocityIndex];
             currentVelocity = (transform.position - lastPosition) / Time.deltaTime;
-            denormalizedVelocityAverage += (currentVelocity - oldestVelocity) / (float)velocityHistorySize;
+            denormalizedVelocityAverage += (currentVelocity - oldestVelocity) / (float)velocityHistory.Length;
             velocityHistory[velocityIndex] = currentVelocity;
             lastPosition = transform.position;
         }

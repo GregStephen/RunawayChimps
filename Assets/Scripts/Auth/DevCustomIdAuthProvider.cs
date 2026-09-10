@@ -13,7 +13,7 @@ public class DevCustomIdAuthProvider : IAuthProvider
 
     private static string GetOrCreateId()
     {
-        if (PlayerPrefs.HasKey(Key))
+        if (!string.IsNullOrWhiteSpace(PlayerPrefs.GetString(Key)))
             return PlayerPrefs.GetString(Key);
 
         var id = Guid.NewGuid().ToString("N");

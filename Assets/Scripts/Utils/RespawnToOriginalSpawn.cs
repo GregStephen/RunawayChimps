@@ -71,13 +71,14 @@ public class RespawnToOriginalSpawn : MonoBehaviour
         if (verboseLogging)
             Debug.Log($"[Respawn] RespawnNow() called on {name}");
 
-        if (grab && grab.isSelected)
+        bool reenableGrab = grab != null && grab.enabled && grab.isSelected;
+        if (reenableGrab)
         {
             Debug.Log($"[Respawn] {name} was selected. Forcing release.");
             grab.enabled = false;
         }
 
-        if (rb)
+        if (rb && !rb.isKinematic)
         {
             rb.velocity = Vector3.zero;
             rb.angularVelocity = Vector3.zero;
@@ -88,7 +89,7 @@ public class RespawnToOriginalSpawn : MonoBehaviour
         transform.rotation = spawnRot;
         transform.localScale = spawnScale;
 
-        if (grab)
+        if (reenableGrab && isActiveAndEnabled)
             StartCoroutine(ReenableGrabNextFrame());
     }
 

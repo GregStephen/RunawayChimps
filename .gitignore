@@ -29,3 +29,7 @@ Thumbs.db
 *.tmp
 *.bak
 *.pdb
+
+# Python repository validation tools
+__pycache__/
+*.py[cod]

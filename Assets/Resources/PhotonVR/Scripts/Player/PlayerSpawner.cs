@@ -21,6 +21,17 @@ namespace Photon.VR.Player
 
         private void Awake() => DontDestroyOnLoad(gameObject);
 
+        public void RetrySpawn()
+        {
+            if (!PhotonNetwork.InRoom) return;
+            if (playerTemp == null) OnJoinedRoom();
+            else
+            {
+                AppState.I?.MarkPhotonPlayerSpawned();
+                playerTemp.GetComponentInChildren<PlayerVisualReadyReporter>(true)?.BeginReporting();
+            }
+        }
+
         public override void OnJoinedRoom()
         {
             CancelPendingSpawn();
@@ -45,7 +56,7 @@ namespace Photon.VR.Player
                 if (Time.realtimeSinceStartup >= deadline)
                 {
                     Debug.LogError("[PlayerSpawner] Environment did not become ready before the spawn timeout. Rejoin after resolving the loading error.", this);
-                    AppState.I?.SetStatus("Player setup timed out. Please rejoin.");
+                    AppState.I?.Fail("Player setup timed out. Please retry.");
                     pendingSpawn = null;
                     yield break;
                 }
@@ -62,7 +73,7 @@ namespace Photon.VR.Player
             catch (System.Exception exception)
             {
                 Debug.LogException(exception, this);
-                AppState.I?.SetStatus("Player setup failed. Please rejoin.");
+                AppState.I?.Fail("Player setup failed. Please retry.");
             }
             pendingSpawn = null;
             if (playerTemp == null || !IsCurrentAttempt(attempt, room)) yield break;
@@ -107,6 +118,7 @@ namespace Photon.VR.Player
 
         private void ClearLocalAvatar()
         {
+            AppState.I?.ResetPlayerReady();
             CancelPendingSpawn();
             // PUN removes room-owned objects on leave. Dispose any local remainder
             // without sending PhotonNetwork.Destroy after membership has ended.

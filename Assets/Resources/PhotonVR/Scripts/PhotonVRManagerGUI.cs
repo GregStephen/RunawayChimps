@@ -42,7 +42,7 @@ namespace Photon.VR
                 GUILayout.Label($"Room: {(PhotonNetwork.InRoom ? PhotonNetwork.CurrentRoom.Name : "Not in a room")}");
                 if(!PhotonNetwork.InRoom && !manager.JoinRoomOnConnect)
                     if (GUILayout.Button(CreateContent("Join", "Join a random public lobby")))
-                        PhotonVRManager.JoinRandomRoom("Default", 16);
+                        PhotonVRManager.JoinRandomRoom(manager.PublicQueue, manager.DefaultRoomLimit);
             }
             else
                 if (!manager.ConnectOnAwake)

@@ -1,8 +1,16 @@
 # Runaway Chimps design and lore
 
-Last updated: 2026-09-09. Maintained repository edition, migrated from `Runaway_Chimps_Design_and_Lore.docx` version 0.9. The existing Word document is a downloadable snapshot; future edits belong here. See [AGENTS.md](../AGENTS.md) for the documentation workflow and the [repository improvement plan](repository-improvement-plan.md) for implementation evidence.
+Last updated: 2026-09-10. Maintained repository edition, migrated from `Runaway_Chimps_Design_and_Lore.docx` version 0.9. The existing Word document is a downloadable snapshot; future edits belong here. See [AGENTS.md](../AGENTS.md) for the documentation workflow and the [repository improvement plan](repository-improvement-plan.md) for implementation evidence.
 
 We are building a social VR horror game about gorillas escaping a laboratory that experiments on animals. This document records the current game rules, Level 1, the proposed Listener level, the story, and the scene architecture so future work can build on the same decisions.
+
+## September 10 reliability audit
+
+**Implemented on main:** PR #3 (`level1split`) merged at `c388d87c` on September 9. Its Hub/Containment split, travel coordinator, sector presence/monster replication and earlier cleanup are committed; older references below to a prepared/unpushed patch describe the historical checkpoint.
+
+**Implemented on `codex/codebase-reliability-audit`, pending validation:** startup and room-join retry/recovery, local keyboard ownership, GUID-preserving component filename repairs, head-centered smooth turning, safer grounding and locomotion reset, room-specific monster state, safe-zone capture guards, cosmetic clearing/persistence, complete inventory paging, and duplicate scene registration cleanup. The existing ten-player room, independent travel and closest-player monster targeting rules are preserved. See the [September 10 audit](codebase-audit-2026-09-10.md) for the complete findings and test scope.
+
+**Still separate:** open PR #4 contains Level 2/personal-objective work and is not part of this audit's main baseline. The active main card path still needs that implementation and validation. Production platform-proof verification, backend rewards/ownership, authored navigation boundaries, and headset validation remain open. Source checks do not establish playable or release-ready behavior.
 
 ## Implementation status
 
