@@ -1,6 +1,6 @@
 # Hub cosmetic shop — planning proposal
 
-Recorded: 2026-09-10. Status: **Confirmed requirements; proposed design; no shop implementation in this change.**
+Recorded: 2026-09-10. Status: **Confirmed requirements and reclaimed supply-room visual direction; proposed layout and checkout; no shop implementation in this change.**
 Source review: main at `c388d87c0443158011dd9b1ba5ef9c005cc44267`, Unity 2022.3.55f1 and Photon PUN.
 
 ## Confirmed requirements
@@ -27,9 +27,9 @@ Another Axiom's [official Steam description](https://store.steampowered.com/app/
 
 For Runaway Chimps, combine outfit preview, owned-item selection and purchase confirmation around the existing mirror. Players can inspect combinations in one place, while seasonal and weekly items remain visibly distinct in the room. Keep each player's selections personal so several people can browse together.
 
-## Proposed look
+## Visual direction — supported by Greg on 2026-09-10
 
-Build on the existing proposed Behavioral Enrichment supply-room lore: escaped gorillas have repurposed a lab storeroom. Use simple worn metal racks, supply crates, rough sign plates, broad silhouettes and matte materials. Retain the dark, restrained lab aesthetic. Give merchandise and the mirror steady, readable light, with darker room edges. Avoid flickering light on prices or outfit previews.
+Greg supports the reclaimed lab supply-room look. The specific Behavioral Enrichment supply-room lore remains proposed: escaped gorillas have repurposed a lab storeroom. Use simple worn metal racks, supply crates, rough sign plates, broad silhouettes and matte materials. Retain the dark, restrained lab aesthetic. Give merchandise and the mirror steady, readable light, with darker room edges. Avoid flickering light on prices or outfit previews.
 
 The shop name, supply-room lore and particular fixtures remain proposals. Coconuts is the existing implementation term; retain it while designing unless Greg chooses a change.
 
@@ -45,6 +45,14 @@ The shop name, supply-room lore and particular fixtures remain proposals. Coconu
 | Centre and entrance | Keep open | Direct approach to fitting, passing space, and room for friends. Start without a central display island. |
 
 Four seasonal and six weekly positions are proposed capacities, not a requirement to create ten cosmetics immediately. Final rack dimensions, spacing, reach, signs and placement belong to the mapping stage. Start with around 1.5 m clear primary routes where geometry allows, then test actual gorilla arm movement and seated/standing reach on headset.
+
+## Proposed checkout fixture
+
+Following Greg's question about purchasing and a possible cash register, recommend a small self-service purchase panel on a worn lab counter beside the mirror. Use a simple metal box, readable item/price/balance display, and large CONFIRM PURCHASE / CANCEL controls. Avoid adding a detailed register mechanism just to make the purchase readable.
+
+A player selects an item, tries it on if desired, then reviews that selected item at checkout. Show its price, current Coconuts and the remaining balance before confirmation. Only confirmation initiates spending; successful purchase updates ownership and balance, shows OWNED, and offers EQUIP. Trial selection does not require purchase. Keep checkout state personal even when several players use the same fixture.
+
+Coconuts are deducted by the purchase service; players do not hand over physical cash or scan an objective keycard. Fixture styling and this interaction flow remain Proposed. No production purchase functionality is implemented by this document update.
 
 ## Proposed player flow
 

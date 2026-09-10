@@ -20,6 +20,7 @@ The combined `level1split-travel.patch` also includes focused source cleanup for
 
 | Recorded | Decision or correction | Status |
 | --- | --- | --- |
+| 2026-09-10 | Greg supports the reclaimed lab supply-room shop look. Asked how checkout should work; a simple purchase panel beside the mirror is proposed. | Visual direction confirmed; checkout fixture and interaction details proposed |
 | 2026-09-10 | Develop the existing Hub Shop with seasonal stock, weekly rotating regular stock, and try-on/equip. Proceed through planning, mapping, then creation/integration; use Gorilla Tag as a reference. | Confirmed requirements; design proposal in hub-shop-plan.md; implementation pending |
 | 2026-09-09 | Runaway Chimps uses Unity 2022.3.55f1 and Photon PUN. Unity 6 belongs to the separate, non-horror Cheeky Chimps project. | Confirmed correction from the source document |
 | 2026-09-09 | Use Hub_Base as the source for a split at the Security Gate. Disabled Level1 and Level1_2_Hall scenes are experiments. | Confirmed direction; scene committed on level1split; extraction validation pending |
@@ -105,7 +106,9 @@ A player who finishes Level 1 first can wait in the safe Level 2 starting room f
 
 **Source inspected on main at c388d87:** Shop contains the existing mirror and a “Current Coconuts” board bound to CoconutDisplay. EconomyState, PlayFab inventory loading and Photon avatar cosmetic setters exist; this is not a complete or validated shop. The earlier suggestion “Enrichment tokens” remains historical brainstorming and must not replace the existing Coconuts implementation without a new decision.
 
-**Proposed:** the shop occupies a former Behavioral Enrichment supply room repurposed by escaped gorillas. Simple worn racks, crates and sign plates fit the lab. Separate seasonal and weekly displays would surround an open centre; try-on, owned-item selection and purchase confirmation would share the existing mirror area. The shop name, lore, fixture details, slot counts and interaction design remain unapproved.
+**Confirmed visual direction — 2026-09-10:** Greg supports the reclaimed lab supply-room look. Specific fixture designs and the exact Behavioral Enrichment story/name remain proposed.
+
+**Proposed:** use simple worn racks, crates and sign plates. Separate seasonal and weekly displays would surround an open centre; try-on, owned-item selection and purchase confirmation would share the existing mirror area. For checkout, use a small self-service purchase panel on a worn counter beside the mirror, with an item/price/balance readout and large CONFIRM PURCHASE / CANCEL controls. The player spends Coconuts electronically after confirmation; no physical cash handoff is required. The panel design, layout, slot counts and interaction details await agreement.
 
 See [Hub shop planning proposal](hub-shop-plan.md) for source evidence, tentative zoning, player flow and staged acceptance. No Shop scene, purchase or runtime changes are included in the planning update. Unity, Photon, backend and headset validation remain pending.
 

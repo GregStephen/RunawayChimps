@@ -328,7 +328,7 @@ The recommendations preserve the agreed direction: open level access, individual
 
 ## Hub shop — planning started 2026-09-10
 
-**Confirmed:** seasonal stock, weekly rotating regular stock, and cosmetic try-on/equip in the existing Hub Shop. Follow Greg's requested order: planning, mapping, creation/integration. **Proposed:** the layout, capacities and player flow in [hub-shop-plan.md](hub-shop-plan.md). No Shop runtime or scene implementation is included in this planning update.
+**Confirmed:** seasonal stock, weekly rotating regular stock, and cosmetic try-on/equip in the existing Hub Shop. Follow Greg's requested order: planning, mapping, creation/integration. **Confirmed visual direction:** Greg supports the reclaimed lab supply-room look. **Proposed:** the layout, capacities, player flow and a small self-service purchase panel on a worn counter beside the mirror in [hub-shop-plan.md](hub-shop-plan.md). The checkout fixture and interaction details are not yet approved. No Shop runtime or scene implementation is included in this planning update.
 
 **Current source evidence:** reviewed main at `c388d87c0443158011dd9b1ba5ef9c005cc44267`. Hub_Base retains the Shop room, mirror and bound Coconuts board. EconomyState tracks balance/ownership; AuthOrchestrator loads PlayFab inventory. PhotonVRManager cosmetic setters save and broadcast immediately, so temporary try-on needs independent state. PhotonVRPlayer skips empty values and does not clear missing slots; remove/revert needs explicit handling. No production rotation, purchase or wardrobe flow was established by this review.
 
