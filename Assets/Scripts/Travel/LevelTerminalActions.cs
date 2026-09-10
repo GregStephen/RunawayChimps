@@ -3,8 +3,8 @@ using UnityEngine.SceneManagement;
 
 namespace RunawayChimps.Travel
 {
-    // Bind the future terminal's locally operated buttons to these UnityEvent methods.
-    // The component intentionally creates no terminal art or UI.
+    // Safe-entry actions used by the one-button return control.
+    // Level 1 selection is retained as a future code hook, not current player UI.
     public sealed class LevelTerminalActions : MonoBehaviour
     {
         public BoxCollider safeEntryArea;

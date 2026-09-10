@@ -1,11 +1,11 @@
 {
   "Level2_BehavioralConditioning_Blockout.unity": {
-    "serialized_objects": 868,
+    "serialized_objects": 908,
     "yaml_parse": true,
     "local_references_resolve": true
   },
   "Level2_Blockout.prefab": {
-    "serialized_objects": 867,
+    "serialized_objects": 907,
     "yaml_parse": true,
     "local_references_resolve": true
   },
@@ -14,7 +14,8 @@
     "b581fdbd127292d44ab21c4b16d91d05": "Assets/MASH Virtual/Sci Fi Doors/Prefab/Gate_Small.prefab",
     "eca90685bd7c0e14c985891ef5c0a3f3": "Assets/MASH Virtual/Sci Fi Doors/Mesh/Sci Fi Gates.fbx",
     "f5804367cdd64d9988009ed4d4e40bb0": "Assets/Scripts/Travel/SectorScene.cs",
-    "0a4725352759d7255301e5b06df6157b": "Assets/Scripts/Travel/LevelTerminalActions.cs"
+    "0a4725352759d7255301e5b06df6157b": "Assets/Scripts/Travel/LevelTerminalActions.cs",
+    "1f618183dbed4d76a96a6e00b1057d73": "Assets/Scripts/Travel/ReturnToSecurityButton.cs"
   },
   "linked_gates": {
     "count": 5,
@@ -27,7 +28,7 @@
     "radius_m": 0.35,
     "height_m": 2.0,
     "grid_step_m": 0.1,
-    "reachable_grid_points": 17168,
+    "reachable_grid_points": 17199,
     "endpoints": [
       "entry",
       "repair_hall_door",
@@ -43,7 +44,7 @@
     "radius_m": 1.375,
     "height_m": 3.2,
     "grid_step_m": 0.1,
-    "reachable_grid_points": 5461,
+    "reachable_grid_points": 5494,
     "endpoints": [
       "entry",
       "repair_hall_door",
@@ -70,10 +71,10 @@
     "wall_thickness": 0.2
   },
   "counts": {
-    "mesh_boxes": 178,
-    "box_triangles_including_inactive_guide": 2136,
+    "mesh_boxes": 187,
+    "box_triangles_including_inactive_guide": 2244,
     "solid_box_colliders": 52,
-    "marker_trigger_volumes": 2
+    "marker_trigger_volumes": 3
   },
   "pending": [
     "Unity 2022.3.55f1 import",

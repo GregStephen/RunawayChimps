@@ -20,6 +20,7 @@ The combined `level1split-travel.patch` also includes focused source cleanup for
 
 | Recorded | Decision or correction | Status |
 | --- | --- | --- |
+| 2026-09-10 | Replace the proposed elaborate Level 2 terminal with one large wall button labeled RETURN TO SECURITY. It returns to the Hub computer; no Level 1 selection UI for now. Internal Hub naming is unchanged. | Confirmed; simple geometry and local-hand interaction implemented on PR #4; Unity/headset checks pending |
 | 2026-09-09 | Wire Level 1 completion and Hub selection to Level 2's safe entry; the future Level 2 terminal returns to Level 1's safe cage room or the Hub computer. | Confirmed; code and scene wiring on PR #4, Unity/headset validation pending |
 | 2026-09-09 | Add optional locked reward rooms opened by a card discovered on a different level, using the smaller Level 1 entrance door. Rewards may be a collectible, in-game currency, or both. Level 4 supplying Level 2 is an example, not a fixed assignment. | Confirmed direction; gameplay planned |
 | 2026-09-09 | Put Level 2's reward room in the bottom-right area to spread out points of interest. This supersedes the assistant's suggested space between the exit and repair room. | Confirmed correction; blockout v0.3 on codex/level2-blockout |
@@ -52,11 +53,11 @@ These dates record migration and clarification, not the original date of every e
 | Planned | One Photon PUN room holds up to 10 players across the hub and all levels. Each headset loads its current level scene. |
 | Planned | About four silent monitors surround the hub computer. Each displays its level name; additional levels rotate onto the screens. |
 | Planned | A control in each level starting room allows return to the hub. The current direction favors open level selection without mandatory unlocks. |
-| Planned | A starting-room terminal offers return to the Hub or travel to another level. Its UI, available destinations, and final appearance remain to be built. Separate solo progression and permanent completion records are not committed features. |
+| Confirmed | Level 2 currently offers one RETURN TO SECURITY button. Direct Level 1 selection is deferred; its code hook remains for future use. Separate solo progression and permanent completion records are not committed features. |
 
 ### Latest flow change
 
-Winning leads forward into the next level. Returning to the hub is an available choice from the next safe starting room, rather than the automatic result of a win. Direct travel from a future starting-room terminal is now confirmed direction; additional destination scenes and terminal UI remain planned.
+Winning leads forward into the next level. Returning to the hub is an available choice from the next safe starting room, rather than the automatic result of a win. The September 10 correction limits Level 2's current physical control to RETURN TO SECURITY; direct selection of other levels is deferred.
 
 ### Level 2 travel implementation
 
@@ -64,7 +65,7 @@ Winning leads forward into the next level. Returning to the hub is an available 
 
 The existing Level 1 two-card requirement is preserved. The keybox counts each local-picked card once and requests completion travel after the final card. Its completion gate stays solid instead of opening a passage, including during rollback. If loading fails, completed source-scene state remains available and locally selecting the keybox retries; leaving/re-entering the scene still resets the visit. Completion sound/animation polish and the broader capture/drop lifecycle remain pending.
 
-`LevelTerminalActions` is attached to the entry's `HubReturnControlMarker`. Its `ReturnToLevelOne()` and `ReturnToHub()` methods are ready for the future terminal's local button events. Both enforce being in the Level 2 safe-entry volume and reuse the guarded travel flow. The UI/model is deliberately unbuilt. Play Mode component context menus allow testing these actions before the terminal is designed. Level 1 return arrives in the cage room; Hub return arrives at the computer. The existing Level 1 door-to-Hub hallway route is unchanged.
+`LevelTerminalActions` remains attached to the entry's `HubReturnControlMarker`. The simple `Return_To_Security_Button` on the west wall at `(0.28, 1.25, -2)` calls `ReturnToHub()` through `ReturnToSecurityButton`. Scene and prefab contain editable plate, cap, bolts and paint-chip shapes; the plain TextMeshPro label is created at runtime. A local hand/fingertip is required, held contact cannot repeatedly trigger travel, and the cap depresses slightly. The existing safe-entry and busy-travel guards remain in force. No new audio asset is included. `ReturnToLevelOne()` remains a code/context-menu hook only, not a player-facing option. Hub return arrives at the computer; the Level 1 door-to-Hub hallway route is unchanged.
 
 **Validated at source level:** C# syntax, card script GUID preservation after matching filenames to classes, scene IDs/references, one Level 2 build registration, two Level 1 card instances, and safe-entry/terminal bindings. **Pending:** Unity compilation/import, Editor validator execution, all four travel routes, failed-load retry, two-client independent completion and visibility/voice, headset spawning and clearance. These are implemented routes, not claimed playtested behavior.
 
@@ -112,9 +113,9 @@ The numbered levels can form a recommended route through the facility, with each
 
 ### Return and travel controls
 
-The next level begins in a safe room where a player can regroup. A future terminal will offer return to the Hub or travel to another level. The terminal is not placed yet; its appearance and exact destination list remain open.
+The next level begins in a safe room where a player can regroup. Level 2 now has one simple RETURN TO SECURITY wall button, with no screen or keyboard. The destination remains Hub_Base; this label does not rename the scene or establish additional facility lore.
 
-Recommendation for review: offer Return to Hub and Select Sector at this terminal. A player can continue the story by walking into the current level, or jump elsewhere without an extra trip through the hub. Keep selection confined to safe starting rooms so it does not become an escape button during a chase.
+The earlier two-option terminal recommendation is deferred. Players continue by walking into Level 2, or return to Security and choose a level at the existing computer. Keep the return action confined to the safe starting room so it does not become an escape button during a chase.
 
 Confirmed travel routes (Greg’s latest clarification supersedes the earlier all-returns-to-computer rule):
 
@@ -125,10 +126,10 @@ Confirmed travel routes (Greg’s latest clarification supersedes the earlier al
 | Level 1 entrance door: return | HubDoorReturnSpawn | Hub hallway, on the Hub side of the door |
 | Hub computer: select Level 2 | Level2EntrySpawn | Level 2 safe entry room |
 | Complete the personal Level 1 keybox | Level2EntrySpawn | Same Level 2 safe entry room |
-| Future Level 2 terminal: return to Level 1 | Level1EntrySpawn | Level 1 safe cage room |
-| Future level terminal: return to Hub | HubReturnSpawn | In front of the Hub computer |
+| Deferred Level 2 Level 1 action (code/context menu only) | Level1EntrySpawn | Level 1 safe cage room |
+| Level 2 RETURN TO SECURITY button | HubReturnSpawn | In front of the Hub computer |
 
-Every route fades to black, displays the Loading scene, then fades into the destination. Travel is an explicit interaction; walking into the door does not automatically transition. Both the existing Hub button and XR door selection are wired for testing while the final control choice remains open. The future terminal can use `SectorTravelService.ReturnToHub()`; the Level 2 route is now wired in PR #4, while the terminal UI remains unbuilt. Arrival markers exist in the scene assets; verify their clear floor space, facing, and reach in Unity and on a headset.
+Every route fades to black, displays the Loading scene, then fades into the destination. Travel is an explicit interaction; walking into the door does not automatically transition. Both the existing Hub button and XR door selection are wired for testing. Level 2's single return button is wired in PR #4. Arrival markers exist in the scene assets; verify their clear floor space, facing, button-label readability and reach in Unity and on a headset.
 
 A player who finishes Level 1 first can wait in the safe Level 2 starting room for a friend. Travel affects the interacting player only. Changing sectors, returning to the hub, or following a friend must preserve membership of the same 10-player Photon room.
 

@@ -54,7 +54,9 @@ The held-item implementation uses the XR Interaction Toolkit 2.6 [first-select a
 
 ## Level 2 travel follow-up — September 9, 2026
 
-**Confirmed request and implemented on PR #4, `codex/level2-blockout`; not merged:** Level 1 personal completion and Hub computer selection lead to Level 2's safe entry. The future Level 2 terminal returns to Level 1's cage room or the Hub computer. The terminal's model/UI remains unbuilt.
+**Confirmed request and implemented on PR #4, `codex/level2-blockout`; not merged:** Level 1 personal completion and Hub computer selection lead to Level 2's safe entry. September 10 correction: the current physical control is one RETURN TO SECURITY button, returning to the Hub computer. Level 1 selection is deferred, with its code hook retained.
+
+**Return-button follow-up, September 10:** editable plate/cap geometry replaces the active green placeholder in scene and prefab; the generator preserves existing IDs and adds the new objects at the end. ReturnToSecurityButton supplies local-hand/fingertip filtering, held-contact suppression, cooldown, cap depression/release and a runtime TextMeshPro label. It delegates to the existing safe-entry-only actions and guarded travel service; no shared rig/button implementation is changed. No screen, keyboard, new audio or Level 1 selection button. Source checks cover C# syntax, serialized action/visual bindings and trigger dimensions. Unity compilation, runtime text/font availability and orientation, physical reach, failed-load retry, two-client isolation, and headset testing remain pending.
 
 - Added a Conditioning sector and supported Level 2 destination; remote presence accepts the new sector. Existing guarded loading, fade, grounding, rig reuse and room membership remain the shared path.
 - Registered the Level 2 scene once at enabled build index 4, removing a duplicate Level 1 registration while preserving indices 0–3 and disabled experiments.
@@ -65,7 +67,7 @@ The held-item implementation uses the XR Interaction Toolkit 2.6 [first-select a
 
 **Validation executed:** nine changed/new C# files parsed; card GUIDs preserved; scene/prefab IDs and local references resolve; exact Level 2 spawn and safe-entry area bindings checked; two source card instances match the unchanged required count. Existing box-layout checks still pass. `Tools/Level2Blockout/travel_validation.json` records source evidence. No C# compiler or Unity Editor is available here.
 
-**Unity/headset acceptance:** run Tools > Runaway Chimps > Validate Sector Travel; start from Bootstrap and test Hub → Level 2, personal Level 1 completion → Level 2, terminal → Level 1 and terminal → Hub. Test repeated requests, missing/obstructed arrival rollback, completed-keybox retry without new cards, fresh objective state on revisiting Level 1, two users completing independently, sector avatar/collision/voice visibility, and safe-entry-only terminal use. Listener/repair/rewards and the physical terminal are separate work.
+**Unity/headset acceptance:** run Tools > Runaway Chimps > Validate Sector Travel; start from Bootstrap and test Hub → Level 2, personal Level 1 completion → Level 2 and RETURN TO SECURITY → Hub. The retained Level 1 return hook can still be tested through its context menu. Test repeated requests, missing/obstructed arrival rollback, completed-keybox retry without new cards, fresh objective state on revisiting Level 1, two users completing independently, sector avatar/collision/voice visibility, and safe-entry-only button use. A remote hand, local head/body, or loose prop must not activate the button; holding a hand against it must not repeatedly travel. Listener/repair/rewards remain separate work.
 
 ## Level 2 map and replay-room checkpoint — September 9, 2026
 

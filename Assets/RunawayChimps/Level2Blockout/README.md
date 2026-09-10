@@ -100,27 +100,30 @@ Review branch: `codex/level2-blockout`, rebased onto `main` at `c388d87`.
 The original map was built from `level1split` at `6443fd0`. The blockout is not
 merged. Its travel wiring is implemented in this branch and awaits Unity testing.
 
-## Travel wiring and future terminal
+## Travel wiring and return button
 
 | Action | Arrival |
 | --- | --- |
 | Hub computer: Level 2, then Enter | Level2EntrySpawn in the safe entry |
 | Insert both personal Level 1 cards | Same Level 2 entry, for the completing player |
-| Future terminal: ReturnToLevelOne | Level1EntrySpawn in the safe cage room |
-| Future terminal: ReturnToHub | HubReturnSpawn in front of the Hub computer |
+| Deferred Level 1 option: code/context menu only | Level1EntrySpawn in the safe cage room |
+| RETURN TO SECURITY physical button | HubReturnSpawn in front of the Hub computer |
 
 All routes reuse SectorTravelService's fade, Loading scene, grounding, collision
 checks and existing rig, while keeping the same Photon room. Level 1's existing
 door return still uses the Hub hallway arrival. Level 2 uses sector Conditioning
 and ZoneId.Level2; this does not implement Listener safe-room exclusion.
 
-The `LevelTerminalActions` component is already attached to
-`08_Gameplay_Markers__Not_Wired/HubReturnControlMarker`. Bind the future terminal's
-local button UnityEvents to `ReturnToLevelOne()` and `ReturnToHub()`. It checks
-that the local player's head is inside the assigned safe-entry area. No terminal
-model or UI is generated. To test before the UI exists, start from Bootstrap,
-travel to Level 2, stay in the safe room, and use this component's Play Mode
-context-menu actions.
+The `LevelTerminalActions` component remains attached to
+`08_Gameplay_Markers__Not_Wired/HubReturnControlMarker`. The new
+`Return_To_Security_Button` at `(0.28, 1.25, -2)` calls `ReturnToHub()` and checks
+that the local player's head is inside the assigned safe-entry area. Its plain
+plate/cap/bolts are editable scene and prefab shapes; the TextMeshPro label is
+created at runtime. Press with a local hand or fingertip. A remote hand, local
+head/body, or loose prop must not activate it. There is no Level 1 selection UI;
+that method remains available through the component's Play Mode context menu.
+No screen, keyboard or new audio asset is included. Check label font/orientation,
+physical reach, held-contact suppression and retry after rollback in Unity/VR.
 
 The Level 1 keybox keeps its existing two-card requirement. Each accepted card
 must have been picked up by the local rig. Repeated collider contacts cannot

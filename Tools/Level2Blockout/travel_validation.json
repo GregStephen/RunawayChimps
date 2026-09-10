@@ -1,5 +1,5 @@
 {
-  "csharp_syntax_files": 9,
+  "csharp_syntax_files": 10,
   "card_script_guid_preserved": true,
   "enabled_destinations": [
     "Assets/Scenes/Bootstrap.unity",
@@ -10,8 +10,8 @@
   ],
   "serialized_reference_counts": {
     "Assets/Scenes/Level1_Containment.unity": 2193,
-    "Assets/RunawayChimps/Level2Blockout/Scenes/Level2_BehavioralConditioning_Blockout.unity": 868,
-    "Assets/RunawayChimps/Level2Blockout/Prefabs/Level2_Blockout.prefab": 867
+    "Assets/RunawayChimps/Level2Blockout/Scenes/Level2_BehavioralConditioning_Blockout.unity": 908,
+    "Assets/RunawayChimps/Level2Blockout/Prefabs/Level2_Blockout.prefab": 907
   },
   "level2_arrival": [
     3,
@@ -19,6 +19,7 @@
     -2.4
   ],
   "terminal_area_contains_spawn": true,
+  "return_button_action_visual_trigger_bindings": true,
   "level1_required_cards": 2,
   "level1_card_instances": 2,
   "pending": [
@@ -27,6 +28,7 @@
     "Play Mode and travel rollback",
     "Local card interaction and completion retry",
     "Two-client sector visibility/voice",
-    "Headset arrival clearance"
+    "Headset arrival clearance",
+    "Return button label/font/orientation, local-hand filtering, hold/release and failed-load retry"
   ]
 }

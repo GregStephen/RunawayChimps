@@ -108,11 +108,13 @@ personal Level 1 cards to travel automatically to the same Level 2 safe entry.
 Incomplete keyboxes do not qualify; a failed transition retains completed state
 for a local retry by selecting the keybox. Each new Level 1 visit starts fresh.
 
-The future terminal's code is attached to Level 2's
-`08_Gameplay_Markers__Not_Wired/HubReturnControlMarker` as `LevelTerminalActions`.
-Bind its future local button events to `ReturnToLevelOne()` and `ReturnToHub()`.
-Until its UI exists, use the component's Play Mode context menus while standing
-in the safe entry. Returns go to Level 1's cage room or the Hub computer.
+Level 2's west safe-entry wall now has one **RETURN TO SECURITY** button.
+It calls `LevelTerminalActions.ReturnToHub()` and arrives at the Hub computer.
+The plate and cap are editable scene/prefab geometry; its plain text label appears
+at runtime. Only the local hand/fingertip can press it. There is no screen or
+Level 1 selection UI; `ReturnToLevelOne()` remains available as a code/context-menu
+hook. Check label readability, hand reach, held-contact suppression, rejection of
+remote hands/head/body/props, and release/retry after failed travel in Play Mode.
 
 Run the expanded Editor travel validator, then test all four routes, repeated
 inputs, rollback/retry, fresh Level 1 visits, two-client independent completion

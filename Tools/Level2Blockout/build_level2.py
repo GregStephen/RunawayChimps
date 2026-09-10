@@ -1,7 +1,7 @@
 """Generate an isolated Unity 2022.3 greybox using the project's existing gates.
 
 All dimensions are metres. Unity axes are X/right, Y/up, Z/north.
-Includes the sector arrival context and future-terminal travel actions.
+Includes the sector arrival context and simple return-to-security button.
 Repair, reward, safety enforcement and AI behaviour remain unimplemented.
 """
 from pathlib import Path
@@ -123,7 +123,7 @@ for i in range(9):
     node('Shutter_Rib_'+str(i),shutter,(3,.18+i*.39,9.89),(3.1,.03,.035),'Concrete')
 node('Shutter_Caution_Band',shutter,(3,1.2,9.875),(3.1,.16,.03),'Amber')
 
-# Placeholder shapes do not implement a terminal, progress, triggers or safety.
+# Historical placeholder retained inactive; the return button is appended below.
 node('Hub_Return_Control_Placeholder',details,(.25,1.25,-2),(.3,.65,.5),'SafeTrim',True)
 for name,p in [
     ('Level2EntrySpawn',(3,.05,-2.4)), ('RepairStrikeOrigin',(14,1.8,13.56)),
@@ -217,6 +217,10 @@ def travel_component(n):
     if n['name']=='HubReturnControlMarker':
         return ('0a4725352759d7255301e5b06df6157b',
                 '  safeEntryArea: {fileID: '+str(byname['Entry_Safe_Volume__Marker_Only']['id']+4)+'}\n')
+    if n['name']=='Return_To_Security_Button':
+        return ('1f618183dbed4d76a96a6e00b1057d73',
+                '  actions: {fileID: '+str(byname['HubReturnControlMarker']['id']+6)+'}\n'
+                '  buttonVisual: {fileID: '+str(byname['Return_Button_Cap']['id']+1)+'}\n')
     return None
 
 def serialize_nodes():
@@ -314,7 +318,7 @@ def serialize_nodes():
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {{x: 1, y: 1, z: 1}}
+  m_Size: {v3((.16,.32,.36) if n['name']=='Return_To_Security_Button' else (1,1,1))}
   m_Center: {{x: 0, y: 0, z: 0}}
 '''))
         if n['kind']=='light':
@@ -389,6 +393,18 @@ for n in nodes:
     if n['name'].startswith(('Entry_Door_Trim','Entry_Door_Lintel','Exit_Door_Trim','Exit_Door_Lintel','Repair_Doors_Trim','Repair_Doors_Lintel','Reward_Door_Trim','Reward_Door_Lintel')):n['active']=False
 # Temporary closed-exit collision remains until personal completion is integrated.
 node('Exit_Blocker__Remove_When_Exit_Logic_Wired',markers,(3,1.5,10),(2.35,3.0,.2),collider=True,kind='empty')
+# Append rather than insert to preserve existing scene object IDs and travel bindings.
+for n in nodes:
+    if n['name']=='Hub_Return_Control_Placeholder': n['active']=False
+button=node('Return_To_Security_Button',root,(.28,1.25,-2),collider=True,trigger=True,kind='empty')
+node('Return_Button_Plate',button,(-.13,.12,0),(.08,.76,.62),'Metal')
+node('Return_Button_Cap',button,(0,0,0),(.12,.30,.34),'RedMarker')
+for y in [-.20,.44]:
+    for z in [-.25,.25]:
+        node('Return_Plate_Bolt',button,(-.08,y,z),(.025,.035,.035),'Concrete')
+# A few flat chips, not a polished console or a texture-heavy prop.
+for y,z in [(.38,-.20),(-.18,.16),(.04,.24)]:
+    node('Return_Plate_Paint_Chip',button,(-.088,y,z),(.008,.025,.065),'Concrete')
 body=serialize_nodes()
 for rel,contents in [('Prefabs/Level2_Blockout.prefab',HEADER+body),
                      ('Scenes/Level2_BehavioralConditioning_Blockout.unity',HEADER+render_settings+body)]:
