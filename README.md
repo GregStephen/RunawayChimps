@@ -21,6 +21,8 @@ PR #4 merges the editable Level 2 blockout and its travel wiring. Hub computer s
 
 Draft PR #5 (`codex/codebase-reliability-audit`) adds the September 10 reliability fixes. Merge commit `ad1a424` reconciles those fixes with current main/PR #4. The resolution preserves the Level 2 assets/routes and active personal-card pickup behavior while adding startup/room recovery, reconnect/pause safeguards, corrected component filenames/GUID-safe bindings, cosmetics/economy fixes, and expanded validation. GitHub reports PR #5 mergeable/clean, but it remains a draft until the validation below is run.
 
+PR #6 (`codex/hub-level1-physical-button`) implements the September 11 Hub-entry correction: Hub → Level 1 is activated only by the physical `StartLevel1Button`. The Hub gate itself rejects direct XR Select/Grip. Source inspection found the existing button root authored inactive even though its visible mesh, hand trigger, local-hand filter, and `SectorDoor.Travel` event binding are intact; the Hub `SectorDoor` now reactivates that root at runtime before Play Mode interaction. Unity 2022.3.55f1 and headset validation remain pending.
+
 To add a scene through Unity 2022.3, drag its `.unity` asset from the Project window into **File > Build Settings > Scenes In Build**, or open it and click **Add Open Scenes**. Keep Bootstrap first and commit `ProjectSettings/EditorBuildSettings.asset` after changing this list.
 
 MiniGamesKidFirstRig is the current Level 1 monster. The inactive Zombie Crawl object is the chosen visual replacement. Sector monster synchronization is implemented at source level and awaits multi-client validation. Zombie Crawl visual integration remains separate work.
@@ -89,12 +91,12 @@ Run headset audio/comfort checks with the existing game assets. Editor/source va
 
 ## Scene travel checks
 
-Start from Bootstrap. Walking into a door should not automatically transition; use the intended button/XR interaction.
+Start from Bootstrap. Walking into a door should not automatically transition; use the intended physical button or route-specific XR interaction.
 
 | Route | How to try it | Expected arrival |
 | --- | --- | --- |
 | Hub computer → Level 1 | Select Level 1, then Enter | `Level1EntrySpawn` in the safe cage room |
-| Hub hallway → Level 1 | Press the existing entrance button or select the entrance door with the local XR controller | Same Level 1 safe cage room |
+| Hub hallway → Level 1 | Touch/press the visible `StartLevel1Button` before the gate with the local monkey hand/fingertip. Do not Grip/Select the gate itself. | Same Level 1 safe cage room |
 | Level 1 → Hub door | Select the matching entrance door from inside Level 1 | `HubDoorReturnSpawn` in the Hub hallway |
 | Hub computer → Level 2 | Select Level 2, then Enter | `Level2EntrySpawn` in the Level 2 safe entry |
 | Complete Level 1 | Insert both currently required local personal cards | Same Level 2 safe entry, for the completing player |
@@ -103,6 +105,7 @@ Start from Bootstrap. Walking into a door should not automatically transition; u
 
 For travel validation:
 
+- Confirm the Hub `StartLevel1Button` becomes visible before the gate in Play Mode, can be pressed by moving the local monkey hand/fingertip into its trigger in both headset and non-headset editor testing, and calls the Hub door's `Travel()` once. Touching/Grip-selecting the gate itself must do nothing.
 - Confirm fade → Loading → destination works in both eyes and preserves the Photon room, actor membership and one local rig.
 - Check floor/head/body clearance and comfortable facing at every arrival marker. Missing/obstructed arrival must reject/rollback safely.
 - Repeat routes with repeated input, while holding an item, after a failed load, and after completed-keybox retry.
@@ -132,8 +135,8 @@ Only the local hand/fingertip should activate it. A remote hand, local head/body
 
 ## Validation status
 
-**Implemented:** PR #3 scene travel foundation; PR #4 Level 2 blockout/travel/RETURN TO SECURITY and card filename/GUID correction; PR #5 reliability fixes reconciled with both in `ad1a424`.
+**Implemented:** PR #3 scene travel foundation; PR #4 Level 2 blockout/travel/RETURN TO SECURITY and card filename/GUID correction; PR #5 reliability fixes reconciled with both in `ad1a424`; PR #6 Hub → Level 1 button-only interaction and runtime recovery of the existing inactive entrance button.
 
-**Validated before reconciliation:** the separate PR #4 source/geometry checks and PR #5 audit-tree source checks recorded in their reports.
+**Validated before reconciliation:** the separate PR #4 source/geometry checks and PR #5 audit-tree source checks recorded in their reports. For PR #6, repository inspection confirms the existing button is positioned beside/before the Hub gate, has an enabled visible mesh and trigger, requires the local `HandTag`/hand layer, and has one persistent `SectorDoor.Travel` binding. This is source evidence, not Play Mode validation.
 
-**Pending on the reconciled PR #5 head:** rerun offline source validation; Unity 2022.3.55f1 compile/import; both Editor validators; startup/live-service tests; Level 1/2 routes; two-client Photon; capture/controller handover/reconnect; voice; headset pause/resume; repeated travel; Quest performance and comfort.
+**Pending on the current branches:** rerun offline source validation; Unity 2022.3.55f1 compile/import; both Editor validators; startup/live-service tests; Hub entrance button Play Mode/headset behavior; Level 1/2 routes; two-client Photon; capture/controller handover/reconnect; voice; headset pause/resume; repeated travel; Quest performance and comfort.
