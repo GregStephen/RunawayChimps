@@ -8,42 +8,60 @@ public class PhotonVRRigBinder : MonoBehaviour
     public Transform LeftHand;   // LeftHand Controller transform (XR tracked)
     public Transform RightHand;  // RightHand Controller transform (XR tracked)
 
-    private bool _bound;
+    private PhotonVRManager boundManager;
+    private bool warnedMissingReferences;
 
     private void Awake()
     {
-        // Try immediately (Bootstrap case)
         TryBind();
     }
 
     private void OnEnable()
     {
-        // Try again when enabled (scene transitions)
         TryBind();
     }
 
     private void Update()
     {
-        // Keep trying until the manager exists
-        if (!_bound) TryBind();
+        var manager = PhotonVRManager.Manager;
+        if (manager == null)
+        {
+            boundManager = null;
+            return;
+        }
+
+        // Rebind not only at startup, but also if the persistent manager was replaced or
+        // any tracking reference was cleared/overwritten during reconnect or scene work.
+        if (boundManager != manager ||
+            manager.Head != Head ||
+            manager.LeftHand != LeftHand ||
+            manager.RightHand != RightHand)
+        {
+            TryBind();
+        }
     }
 
     private void TryBind()
     {
-        var mgr = PhotonVRManager.Manager;
-        if (mgr == null) return;
+        var manager = PhotonVRManager.Manager;
+        if (manager == null) return;
 
         if (Head == null || LeftHand == null || RightHand == null)
         {
-            Debug.LogError("[PhotonVRRigBinder] Missing Head/LeftHand/RightHand references.");
+            if (!warnedMissingReferences)
+            {
+                warnedMissingReferences = true;
+                Debug.LogError("[PhotonVRRigBinder] Missing Head/LeftHand/RightHand references.", this);
+            }
             return;
         }
 
-        mgr.Head = Head;
-        mgr.LeftHand = LeftHand;
-        mgr.RightHand = RightHand;
+        manager.Head = Head;
+        manager.LeftHand = LeftHand;
+        manager.RightHand = RightHand;
 
-        _bound = true;
-        Debug.Log("[PhotonVRRigBinder] Bound PhotonVRManager to local rig transforms.");
+        boundManager = manager;
+        warnedMissingReferences = false;
+        Debug.Log("[PhotonVRRigBinder] Bound PhotonVRManager to local rig transforms.", this);
     }
 }
