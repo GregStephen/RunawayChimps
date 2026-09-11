@@ -1,0 +1,53 @@
+name: Record Level 2 fuse prototype v2
+on:
+  push:
+    paths:
+      - '.github/workflows/record-level2-fuse-prototype-v2.yml'
+jobs:
+  validate-and-document:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: design/level2-expanded-map-v04
+      - name: Source sanity checks
+        shell: python
+        run: |
+          from pathlib import Path
+          files=list(Path('Assets/Scripts/Level2').glob('Level2*.cs'))
+          assert len(files) >= 7, files
+          text='\n'.join(p.read_text() for p in files)
+          for token in ['XRGrabInteractable','HeldItemCollisionMode','Level2NoiseBus.Emit','chargeSeconds = 10f','FuseSocket{i}Marker','Fuse{i}Start','Level2NoisySearchContainer','OnPowerRestored']:
+              assert token in text, token
+          for i in range(1,5):
+              layout=Path('Tools/Level2Blockout/layout.json').read_text()
+              assert f'Fuse{i}Start' in layout
+              assert f'FuseSocket{i}Marker' in layout
+          for p in files:
+              assert p.with_suffix(p.suffix+'.meta').exists(), p
+              s=p.read_text(); assert s.count('{') == s.count('}'), p
+          print('Fuse prototype source/marker sanity checks passed.')
+      - name: Update maintained docs
+        shell: python
+        run: |
+          from pathlib import Path
+          design=Path('docs/design-and-lore.md'); s=design.read_text()
+          needle='| 2026-09-11 | Approve the current v0.4 room sizing/proportions'
+          row='| 2026-09-11 | Implement the approved Level 2 fuse interaction foundation: physical grabbable prototype fuses, socket insertion, resumable lever charging, a shared Level 2 noise-event bus, objective completion tracking, and reusable noisy-search-container hooks. | Implemented on `design/level2-expanded-map-v04`; runtime bootstrap wires the current v0.4 markers without final art/audio or Listener response. Source/marker sanity checks pass; Unity 2022.3.55f1, XR ergonomics, capture/drop integration, personal Photon presentation and powered-exit behavior remain pending. |\n'
+          if row not in s: s=s.replace(needle,row+needle); design.write_text(s)
+          plan=Path('docs/repository-improvement-plan.md'); p=plan.read_text()
+          old='**Implemented on `design/level2-expanded-map-v04` for review:** the Repair Lab is deepened to approximately 16 × 10 m; the old hammer bench is removed; a central island, four socket/indicator/lever placeholders, a visible exit conduit and four fuse-cache/fuse-start markers are generated into the scene/prefab. The conservative player/Listener box-route validator requires circulation around the island and keeps both Repair Lab escape routes connected. Gameplay components, personal state, noisy container interaction, charge progress, Listener investigation and exit power-up remain unwired.'
+          new='**Implemented on `design/level2-expanded-map-v04` for review:** the Repair Lab is deepened to approximately 16 × 10 m; the old hammer bench is removed; a central island, four socket/indicator/lever placeholders, a visible exit conduit and four fuse-cache/fuse-start markers are generated into the scene/prefab. The branch now also contains the first functional fuse prototype foundation: runtime-built low-poly grabbable fuse bodies using `XRGrabInteractable` and `HeldItemCollisionMode`, physical socket snapping, resumable 10-second prototype lever charging, charge progress/completion events, a reusable `Level2NoiseBus` for search/fuse-impact/charging events, `Level2FuseObjective` completion tracking, and noisy-search-container hooks. `Level2FuseRuntimeBootstrap` binds those components to the current v0.4 markers without changing the confirmed room geometry. Listener response, final art/audio, capture-specific fuse release/drop handling, personal Photon presentation and powered-exit activation remain unwired.'
+          if old in p: p=p.replace(old,new)
+          old2='**Pending validation/implementation:** Unity 2022.3.55f1 import, actual gate/island clearance, Gorilla pickup/hold/drop behavior, drawer/cabinet interactions, personal fuse visibility/state, lever ergonomics, charge interruption/resume, Listener sound response,'
+          new2='**Pending validation/implementation:** Unity 2022.3.55f1 import/compile, actual gate/island clearance, Gorilla pickup/hold/drop behavior, drawer/cabinet animation/interaction, personal Photon fuse visibility/state, lever ergonomics, capture-specific fuse drop behavior, Listener consumption of the new noise bus, powered-exit response,'
+          p=p.replace(old2,new2); plan.write_text(p)
+      - name: Commit docs
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add docs/design-and-lore.md docs/repository-improvement-plan.md
+          git diff --cached --check
+          if ! git diff --cached --quiet; then git commit -m 'Document and validate Level 2 fuse prototype'; git push origin HEAD:design/level2-expanded-map-v04; fi

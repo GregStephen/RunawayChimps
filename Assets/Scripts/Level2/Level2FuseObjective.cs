@@ -37,5 +37,13 @@ namespace RunawayChimps.Level2
             PowerRestored = true;
             OnPowerRestored?.Invoke();
         }
+
+        // Capture keeps installed/charged progress. Only a loose locally-held fuse is released by the rig freeze.
+        public void HandleLocalCapture(Vector3 capturePosition)
+        {
+            foreach (var fuse in FindObjectsOfType<Level2Fuse>())
+                if (!fuse.IsInserted && fuse.WasHeldByLocalPlayer)
+                    fuse.transform.position = capturePosition + Vector3.up * .25f;
+        }
     }
 }

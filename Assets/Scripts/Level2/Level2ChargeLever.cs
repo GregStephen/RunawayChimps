@@ -1,38 +1,37 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace RunawayChimps.Level2
 {
-    [RequireComponent(typeof(BoxCollider))]
+    [RequireComponent(typeof(Collider))]
     public sealed class Level2ChargeLever : MonoBehaviour
     {
         public Level2FuseSocket socket;
-        Collider holdingCollider;
+        readonly HashSet<Collider> localHands = new HashSet<Collider>();
 
-        void Awake() => GetComponent<BoxCollider>().isTrigger = true;
+        void Awake() => GetComponent<Collider>().isTrigger = true;
 
         void OnTriggerEnter(Collider other)
         {
-            if (holdingCollider != null || other.GetComponentInParent<LocalRigMarker>() == null) return;
-            holdingCollider = other;
+            if (other.GetComponentInParent<LocalRigMarker>() == null || !localHands.Add(other)) return;
             socket?.SetLeverHeld(true);
         }
 
         void OnTriggerExit(Collider other)
         {
-            if (other != holdingCollider) return;
-            Release();
+            if (!localHands.Remove(other)) return;
+            if (localHands.Count == 0) socket?.SetLeverHeld(false);
         }
 
         void Update()
         {
-            if (holdingCollider != null && (!holdingCollider.enabled || !holdingCollider.gameObject.activeInHierarchy)) Release();
+            localHands.RemoveWhere(c => c == null || !c.enabled || !c.gameObject.activeInHierarchy);
+            if (localHands.Count == 0) socket?.SetLeverHeld(false);
         }
 
-        void OnDisable() => Release();
-
-        void Release()
+        void OnDisable()
         {
-            holdingCollider = null;
+            localHands.Clear();
             socket?.SetLeverHeld(false);
         }
     }
