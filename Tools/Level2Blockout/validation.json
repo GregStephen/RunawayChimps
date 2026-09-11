@@ -1,88 +1,90 @@
 {
+  "version": "0.4",
+  "bounds_m": [
+    0,
+    36,
+    -4,
+    32
+  ],
   "Level2_BehavioralConditioning_Blockout.unity": {
-    "serialized_objects": 908,
-    "yaml_parse": true,
-    "local_references_resolve": true
+    "serialized_objects": 1364,
+    "unique_ids": true,
+    "local_references_resolve": true,
+    "linked_gate_instances": 5
   },
   "Level2_Blockout.prefab": {
-    "serialized_objects": 907,
-    "yaml_parse": true,
-    "local_references_resolve": true
+    "serialized_objects": 1363,
+    "unique_ids": true,
+    "local_references_resolve": true,
+    "linked_gate_instances": 5
   },
-  "external_dependencies": {
-    "22d2c44fed4ffa743aac7afe4d993905": "Assets/MASH Virtual/Sci Fi Doors/Prefab/Sci Fi Gates.prefab",
-    "b581fdbd127292d44ab21c4b16d91d05": "Assets/MASH Virtual/Sci Fi Doors/Prefab/Gate_Small.prefab",
-    "eca90685bd7c0e14c985891ef5c0a3f3": "Assets/MASH Virtual/Sci Fi Doors/Mesh/Sci Fi Gates.fbx",
-    "f5804367cdd64d9988009ed4d4e40bb0": "Assets/Scripts/Travel/SectorScene.cs",
-    "0a4725352759d7255301e5b06df6157b": "Assets/Scripts/Travel/LevelTerminalActions.cs",
-    "1f618183dbed4d76a96a6e00b1057d73": "Assets/Scripts/Travel/ReturnToSecurityButton.cs"
-  },
-  "linked_gates": {
-    "count": 5,
-    "frame_only": 3,
-    "exit_matches_level1_scale": true,
-    "reward_uses_level1_small_gate": true
-  },
-  "connectivity_scope": "Box layout only; linked gate meshes, bevels and threshold clearance require Unity validation.",
   "human_proxy": {
     "radius_m": 0.35,
     "height_m": 2.0,
-    "grid_step_m": 0.1,
-    "reachable_grid_points": 17199,
-    "endpoints": [
-      "entry",
-      "repair_hall_door",
-      "repair_bypass_door",
-      "lower_bypass",
-      "front_of_shutter"
+    "reachable_targets": [
+      "test_hall",
+      "service",
+      "west_observation",
+      "conditioning",
+      "east_bypass",
+      "north_gallery",
+      "repair_lab",
+      "exit_approach",
+      "fuse_1_cache",
+      "fuse_2_cache",
+      "fuse_3_cache",
+      "fuse_4_cache",
+      "island_west",
+      "island_east",
+      "island_south",
+      "island_north"
     ],
-    "either_repair_door_can_be_blocked": true,
-    "closed_exit_separates_exit": true,
-    "locked_reward_room_separate": true
+    "either_repair_route_can_be_blocked": true,
+    "reachable_grid_points": 20842
   },
-  "giant_conservative_circular_proxy": {
+  "listener_proxy": {
     "radius_m": 1.375,
     "height_m": 3.2,
-    "grid_step_m": 0.1,
-    "reachable_grid_points": 5494,
-    "endpoints": [
-      "entry",
-      "repair_hall_door",
-      "repair_bypass_door",
-      "lower_bypass",
-      "front_of_shutter"
+    "reachable_targets": [
+      "test_hall",
+      "service",
+      "west_observation",
+      "conditioning",
+      "east_bypass",
+      "north_gallery",
+      "repair_lab",
+      "island_west",
+      "island_east",
+      "island_south",
+      "island_north"
     ],
-    "either_repair_door_can_be_blocked": true,
-    "closed_exit_separates_exit": true,
-    "locked_reward_room_separate": true
+    "either_repair_route_can_be_blocked": true,
+    "reachable_grid_points": 9843
   },
-  "dimensions": {
-    "open_passage_wall_gap_width": 3.2,
-    "open_passage_wall_gap_height": 3.8,
-    "exit_wall_gap": [
-      2.35,
-      3.0
-    ],
-    "reward_wall_gap": [
-      2.2,
-      3.1
-    ],
-    "room_height": 4.2,
-    "wall_thickness": 0.2
+  "temporary_barriers": {
+    "closed_exit_separates_safe_exit": true,
+    "locked_reward_room_separate": true,
+    "reward_reachable_when_blocker_removed": true
+  },
+  "fuse_power_objective": {
+    "fuse_count": 4,
+    "all_cache_approaches_reachable": true,
+    "player_and_listener_can_circle_power_island": true,
+    "charge_noise_gameplay": "pending runtime wiring"
   },
   "counts": {
-    "mesh_boxes": 187,
-    "box_triangles_including_inactive_guide": 2244,
-    "solid_box_colliders": 52,
-    "marker_trigger_volumes": 3
+    "authored_objects": 337,
+    "mesh_boxes": 282,
+    "solid_box_colliders": 92,
+    "marker_triggers": 3
   },
   "pending": [
-    "Unity 2022.3.55f1 import",
-    "Unity Play Mode",
-    "Gorilla locomotion hand/body collision",
-    "Actual Listener animated clearance",
+    "Unity 2022.3.55f1 import/compile",
+    "actual linked gate mesh clearance",
     "NavMesh bake",
-    "Photon PUN integration",
-    "Quest performance"
+    "Listener animated turning/reach",
+    "Play Mode travel",
+    "two-client Photon PUN",
+    "Quest headset scale/performance"
   ]
 }

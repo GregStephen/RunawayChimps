@@ -18,18 +18,25 @@ The combined `level1split-travel.patch` also includes focused source cleanup for
 
 **September 10 integration status:** PR #4 is merged into `main` at `8657c3e`, including the Level 2 blockout, Level 2 travel routes, personal Level 1 completion handoff, and RETURN TO SECURITY control. PR #5 (`codex/codebase-reliability-audit`) was reconciled with that mainline in merge commit `ad1a424`. The conflict resolution preserves PR #4's Level 2 behavior and personal-card pickup checks while adding the audit branch's startup, room-switch, reconnect/pause, validator, filename, and reliability fixes. GitHub reports PR #5 mergeable/clean. This records implementation state only: the reconciled five-scene tree still requires the offline source checker to be rerun, followed by Unity 2022.3.55f1, Photon, and headset validation.
 
+**September 11 Level 2 design correction:** Greg confirmed that the current 18 × 18 m Level 2 blockout is too small and that the replacement must be at least twice as large in both length and width, making **36 × 36 m the minimum target footprint**. This supersedes the earlier instruction to keep the Listener level small. Branch `design/level2-expanded-map-v04` now contains an **implemented v0.4 review blockout** at that minimum footprint, generated as the existing Level 2 scene/prefab with the travel contract preserved. Greg reviewed the v0.4 fuse-power blockout and confirmed the current room sizing/proportions. Obstacle placement, ceiling judgment, final Listener clearances and runtime navigation remain subject to validation/tuning. `main` still contains v0.3. Source/box-route validation has passed on v0.4; Unity 2022.3.55f1, Photon and headset validation remain pending.
+
 ## Decision and correction record
 
 | Recorded | Decision or correction | Status |
 | --- | --- | --- |
+| 2026-09-11 | Harden the Level 2 fuse prototype before Listener implementation: explicit fuse/socket state machines, multi-collider-safe lever holding, loose-fuse fall recovery, power-island indicator feedback, noise debug logging/gizmos, a reusable power-state endpoint, and a first physical noisy drawer interaction. Keep the runtime bootstrap prototype-only until authored prefabs replace it. | Implemented on `design/level2-expanded-map-v04`; source/marker hardening checks pass. Unity 2022.3.55f1/XR behavior, capture-drop positioning, personal Photon presentation, final drawer ergonomics, powered exit and Listener consumption remain pending. |
+| 2026-09-11 | Implement the approved Level 2 fuse interaction foundation: physical grabbable prototype fuses, socket insertion, resumable lever charging, a shared Level 2 noise-event bus, objective completion tracking, and reusable noisy-search-container hooks. | Implemented on `design/level2-expanded-map-v04`; runtime bootstrap wires the current v0.4 markers without final art/audio or Listener response. Source/marker sanity checks pass; Unity 2022.3.55f1, XR ergonomics, capture/drop integration, personal Photon presentation and powered-exit behavior remain pending. |
+| 2026-09-11 | Approve the current v0.4 room sizing/proportions shown in the fuse-power blockout. Keep Listener navigation as a separate implementation/validation concern: use a Listener-sized walkable area so narrow player-only pockets are excluded, and ensure patrol/chase targets stay on that area. | Confirmed room sizing. Listener NavMesh/agent setup, turning clearance and runtime stuck-case testing remain pending. |
+| 2026-09-11 | Replace Level 2's hammer/strike repair with four personal hand-held cylindrical power fuses distributed around the map. Search containers make short noises; each fuse is returned to a central four-slot power island in the Repair Lab and charged with a nearby lever that creates sustained noise and attracts the Listener. A clearly visible power conduit leads from the exit to the island. | Confirmed objective correction. V0.4 blockout visuals/markers implemented on `design/level2-expanded-map-v04`; gameplay interaction, personal state, Listener sound response, exit power-up and runtime validation pending. |
+| 2026-09-11 | Expand Level 2 to at least twice the current v0.3 blockout's length and width. Since v0.3 is 18 × 18 m, the replacement target is at least 36 × 36 m. Do not treat the earlier “keep the proposed small layout” instruction as active. Preserve the power-restoration loop, two Repair Lab escape routes, safe entry/qualified exit, bottom-right reward-room rule and established gate language while redesigning the larger space. | Confirmed size correction. V0.4 review geometry is implemented on `design/level2-expanded-map-v04` and passes generated-source/box-route checks; exact arrangement still proposed for review; Unity, Photon and headset validation pending. |
 | 2026-09-11 | Hub hallway → Level 1 uses the physical `StartLevel1Button` beside the gate as the only player-facing activation. Touch/press it with the local monkey hand or fingertip; do not require Grip, Trigger, or XR Select on the door itself. This keeps headset play and non-headset editor testing on the same hand-collision interaction. The door remains a barrier/visual, not an interactable. | Confirmed correction; implemented on PR #6 (`codex/hub-level1-physical-button`). Source inspection found the existing button root authored inactive while its visible mesh, trigger, local-hand filter and `SectorDoor.Travel` binding remain intact. PR #6 removes Hub-door direct XR Select, reactivates the button root at runtime, and expands the validator for placement/visibility/wiring. Unity 2022.3.55f1 Play Mode/headset validation remains pending. Level 1 → Hub return interaction is unchanged. |
 | 2026-09-10 | Reconcile the reliability-audit branch with merged PR #4 without dropping Level 2 or the audit fixes. Preserve the active `KeyCard`/`VRKeyCard` GUID identities, PR #4's local-pickup ownership check, Level 2 menu/completion routes, and current five-scene Build Settings; combine them with the audit reconnect/pause and missing-script safeguards. | Implemented in PR #5 merge commit `ad1a424`; GitHub mergeable/clean; source checker, Unity, Photon and headset validation pending |
 | 2026-09-10 | Replace the proposed elaborate Level 2 terminal with one large wall button labeled RETURN TO SECURITY. It returns to the Hub computer; no Level 1 selection UI for now. Internal Hub naming is unchanged. | Confirmed; simple geometry and local-hand interaction merged through PR #4; Unity/headset checks pending |
 | 2026-09-09 | Wire Level 1 completion and Hub selection to Level 2's safe entry; the future Level 2 terminal returns to Level 1's safe cage room or the Hub computer. | Confirmed; code and scene wiring merged through PR #4 and preserved by PR #5 conflict resolution; Unity/headset validation pending |
 | 2026-09-09 | Add optional locked reward rooms opened by a card discovered on a different level, using the smaller Level 1 entrance door. Rewards may be a collectible, in-game currency, or both. Level 4 supplying Level 2 is an example, not a fixed assignment. | Confirmed direction; gameplay planned |
-| 2026-09-09 | Put Level 2's reward room in the bottom-right area to spread out points of interest. This supersedes the assistant's suggested space between the exit and repair room. | Confirmed correction; blockout v0.3 merged through PR #4 |
+| 2026-09-09 | Put Level 2's reward room in the bottom-right area to spread out points of interest. This supersedes the assistant's suggested space between the exit and repair room. | Confirmed correction; blockout v0.3 merged through PR #4; v0.4 keeps the same bottom-right relationship while its exact size/coordinates remain proposed |
 | 2026-09-09 | Reuse scaled sci-fi gate frames for open passages and the complete Level 1 exit gate at its existing scale for exits. | Confirmed; linked assets in blockout v0.3, Unity validation pending |
-| 2026-09-09 | Greg requested a rough Level 2 map from the saved noisy-repair floorplan. Unity blockout v0.1 preserves that layout; 3.2 m openings are a proposed scale allowance for the giant. | Asset merged through PR #4; import and headset validation pending |
+| 2026-09-09 | Greg requested a rough Level 2 map from the saved noisy-repair floorplan. Unity blockout v0.1 preserves that layout; 3.2 m openings are a proposed scale allowance for the giant. | Asset merged through PR #4; import and headset validation pending; its 18 × 18 m footprint is superseded by the September 11 size correction |
 | 2026-09-09 | Runaway Chimps uses Unity 2022.3.55f1 and Photon PUN. Unity 6 belongs to the separate, non-horror Cheeky Chimps project. | Confirmed correction from the source document |
 | 2026-09-09 | Use Hub_Base as the source for a split at the Security Gate. Disabled Level1 and Level1_2_Hall scenes are experiments. | Confirmed direction; scene committed on level1split; extraction validation pending |
 | 2026-09-09 | Replace MiniGamesKidFirstRig with Zombie Crawl while preserving and repairing the existing monster systems. | Confirmed direction; integration pending |
@@ -55,6 +62,8 @@ These dates record migration and clarification, not the original date of every e
 | Confirmed | The winner hears the door, fades to black, and arrives safely in Level 2. Other players see them disappear and stay in Level 1. |
 | Confirmed | The Crawler has almost-severed legs and cannot leave the vents. Scratches and/or blood lead from its cage toward the vent. |
 | Confirmed | Hub hallway entry into Level 1 uses a physical hand-press button beside the gate. The gate itself is not selected with Grip/Trigger. Use the same local hand/fingertip collision in headset play and non-headset editor testing. |
+| Confirmed | Level 2's replacement footprint is at least 36 × 36 m, twice the v0.3 blockout in each horizontal dimension. |
+| Confirmed | Level 2 uses four personal cylindrical power fuses found in noisy search containers. Each fuse is inserted and charged at a central four-slot Repair Lab island; sustained charging attracts the Listener, and a visible conduit links the island to the exit. |
 | Planned | One Photon PUN room holds up to 10 players across the hub and all levels. Each headset loads its current level scene. |
 | Planned | About four silent monitors surround the hub computer. Each displays its level name; additional levels rotate onto the screens. |
 | Planned | A control in each level starting room allows return to the hub. The current direction favors open level selection without mandatory unlocks. |
@@ -82,7 +91,7 @@ The existing Level 1 two-card requirement is preserved. The keybox counts each l
 
 **Confirmed direction, September 9, 2026:** add a small locked side room whose scanner requires a keycard found on a different level. Players first notice the locked room, later recognize the matching card, and return to claim a collectible, in-game currency, or both. This is optional exploration; Level 2's main objective remains the noisy repair. Reuse `Gate_Small.prefab`, confirmed in the source scene as `Level1_Entrance_Door`.
 
-**Confirmed placement correction:** the Level 2 room belongs at the bottom right. Do not put it between the exit and repair room; Greg found that arrangement too busy. The local blockout uses a proposed 4 × 4 m room beneath the bypass, with its door facing north into the bypass. It fits inside the existing 18 × 18 m envelope. Room size and detailed dressing remain adjustable.
+**Confirmed placement correction:** the Level 2 room belongs in the bottom-right area. Do not put it between the exit and repair room; Greg found that arrangement too busy. The implemented v0.3 blockout uses a 4 × 4 m room beneath the bypass inside its old 18 × 18 m envelope. The September 11 size correction keeps the bottom-right relationship but supersedes those envelope coordinates; the v0.4 plan currently proposes a larger 6 × 6 m room at the southeast edge. Exact room size and dressing remain proposed.
 
 **Proposed readable clue:** use the same color plus a distinct symbol on the scanner sign and keycard, with a short readable name/code in the final art. Do not rely on color alone. The blockout's cyan plaque and three white bars are illustrative, not an approved card identity. Level 4 supplying this Level 2 room is Greg's example; the exact source level, placement, and card identity remain open. No Level 4 asset or card has been created.
 
@@ -92,13 +101,13 @@ The existing Level 1 two-card requirement is preserved. The keybox counts each l
 
 **Open monster rule:** this room is not marked as an additional safe room. Its small doorway may exclude the giant physically; decide and test that behavior before integrating AI so it does not accidentally become an unrestricted chase refuge.
 
-**Implementation status:** v0.3 contains the room shell, original linked small-door prefab, temporary closed barrier, scanner/sign shapes, collectible plinth and optional currency-cache placeholder. Card pickup, saved ownership, scanning, door animation, reward claims and multiplayer behavior are planned and unwired.
+**Implementation status:** v0.3 contains the room shell, original linked small-door prefab, temporary closed barrier, scanner/sign shapes, collectible plinth and optional currency-cache placeholder. Card pickup, saved ownership, scanning, door animation, reward claims and multiplayer behavior are planned and unwired. The v0.4 expanded layout has not yet changed this scene geometry.
 
 ## Facility lore
 
 ### Established premise
 
-The player characters are laboratory gorillas trying to escape the facility that experiments on them. The overall objective is to get outside the lab. The precise experiments and facility history remain to be written; each level has its own monster, objective, and environmental clues.
+The player characters are laboratory gorillas trying to escape the facility that experiments on animals. The overall objective is to get outside the lab. The precise experiments and facility history remain to be written; each level has its own monster, objective, and environmental clues.
 
 Confirmed creative constraint: other experiments and monsters need not be gorillas. Favor unsettling behavior and restrained designs. Develop one manageable level at a time for a solo developer; detailed concept art does not establish the required production scope.
 
@@ -249,31 +258,31 @@ Optional refinement: vary the interval between 3 and 6 sequences after testing. 
 
 ## Proposed Level 2 Behavioral Conditioning
 
-Working concept: a small test wing with the Listener, a blind experiment that investigates noise. Two visual options are saved: Concept A, a lean eyeless biped with hearing cavities, and Concept B, a large dark creature with bloodstained bandages over its eyes. Both use rough low-poly graphics. Concept B is the current selected asset direction; final gameplay scale remains open and all movement stays on the floor.
+Working concept: a test wing with the Listener, a blind experiment that investigates noise. Two visual options are saved: Concept A, a lean eyeless biped with hearing cavities, and Concept B, a large dark creature with bloodstained bandages over its eyes. Both use rough low-poly graphics. Concept B is the current selected asset direction; final gameplay scale remains open and all movement stays on the floor.
 
-### Noisy repair objective
+### Four-fuse power restoration objective
 
-Chosen direction: replace this level's proposed keycard with work that makes noise. Players must stop, flee when interrupted, and return to continue. Level 1 keeps its keycard objective.
+**Confirmed September 11:** replace the hammer/strike repair with four personal, hand-held cylindrical power fuses. The fuses are distributed across the enlarged map so Level 2 requires exploration rather than immediately camping the Repair Lab. Each fuse is hidden in an obvious electrical/maintenance search container such as a drawer, cabinet or access panel. Container opening makes a short audible scrape/clunk that can attract the Listener; dropping a fuse also produces an audible impact.
 
-Proposed mechanism: free the jammed emergency release for the exit shutter. A hammer rests beside the mechanism. Each deliberate strike moves a seized part slightly, advances that player's repair, and creates a noise at the workbench for the Listener to investigate. The tool is available here without a separate search; it returns to its rack if lost.
+The Repair Lab contains a large central power-distribution island with two fuse slots on each side and enough clearance for both the player and Listener to circle it. Insert a recovered fuse, then operate/hold the nearby charging lever. Charging creates a sustained electrical/mechanical sound that strongly attracts the Listener. The player can release the lever and flee if interrupted; exact charge duration is tuning, with roughly 8–12 seconds as the current starting range rather than a fixed rule.
 
-The player hears the Listener approaching, stops work, escapes through either doorway, and loops back once it moves on. Reaching the required repair amount enables that player's exit. Prototype the required strikes and approach timing in play; repeated visits should arise from its position and reactions, not a scripted interruption after a fixed number of hits.
+A thick, clearly readable power conduit runs from the qualified exit back to the power island so a new player can discover the objective diegetically: locked door → follow cable → four empty sockets. Each charged fuse should make the system look progressively more alive. Completing the fourth charge powers the exit and creates the final noisy transition into a run toward the door; do not add another long master hold after all four fuses are complete.
 
 ### Layout and monster rules
 
-Keep the proposed small layout: safe entry, test hall with two solid obstacles, a bypass, a repair room with two doorways, a separate exit, and an optional reward room at the bottom right off the bypass. The repair room replaces the test booth and remains dangerous. Both doorways must connect to a usable loop around the obstacles. A visible conduit can connect the release mechanism to the exit shutter.
+**Confirmed size correction, September 11:** do not keep the old 18 × 18 m “small layout” as the Level 2 target. The replacement must be at least 36 × 36 m overall. Preserve the same gameplay relationships—safe entry, dangerous halls, bypass/looping routes, a repair room with two exits, a separate qualified exit, and the optional reward room in the bottom-right area—but use multiple connected spaces and large sightline-breaking geometry rather than uniformly scaling one hall. The detailed v0.4 arrangement remains proposed in [the expanded layout plan](level2-expanded-layout-v04.md).
 
 Unlike the Crawler, the Listener can enter the objective room. It patrols, investigates the latest audible in-game impact, searches briefly, then resumes patrol if it hears nothing. New audible impacts update its destination; it does not magically know where a quiet player went. Only the entry and completed exit are safe. Give its approach an audible warning, then test whether both escape routes remain usable.
 
-### Individual progress and prototype scope
+### Individual fuse progress and prototype scope
 
-Repair progress survives stopping and fleeing. Proposed visit rule: leaving for the hub or another level resets it; no saved partial attempt. Capture behavior remains open. Recommendation for review: retain completed work after capture during the same visit, while returning the player to the safe entry.
+Fuse ownership, socket completion and exit qualification are personal per player. Friends may distract the shared Listener or deliberately create noise elsewhere, but they cannot satisfy another player's four-fuse requirement. A carried fuse drops at the capture location for its owner to recover. Installed/charged fuses remain completed through capture during the same Level 2 visit. Leaving Level 2 for the Hub or another level resets that visit and returns the four objective fuses to their fixed starting containers; no partial Level 2 attempt is saved across visits.
 
-Each player has their own repair amount and exit qualification; repair sounds affect the shared Listener. A friend can distract it, but completing their repair does not complete yours. Enforce the qualification at the exit, including when another player opens a visible shared door.
+Search noise is intentionally tiered: opening drawers/cabinets is a short moderate event, dropping a fuse is a sharper impact, and charging is the sustained high-risk event. New audible events update the Listener's investigation destination rather than magically revealing a quiet player. Exact sound ranges, charge duration and container placement are tuning values.
 
-First prototype: plain rooms, one floor-moving placeholder, one repair target, one progress counter per player, and a sound event per valid strike. Start with a button to simulate a strike, then add the hammer and reject repeated contact jitter. Leave physical bolt simulation, microphone listening, and detailed creature animation for later. Test interruption and return with two players before adding detail.
+Prototype the loop with four fixed fuse starts, readable maintenance-marked containers, the central island, four socket/lever pairs, per-player completion state, and one sustained noise event per active charge. Avoid pixel hunting: the challenge is safely searching noisy containers and transporting/charging the fuse, not finding tiny objects hidden among arbitrary clutter.
 
-Proposed story clue: a maintenance note forbids impact tools during auditory trials. The hub preview can show the repair station and the Listener beside it; all monitor footage stays silent.
+Proposed story clue: maintenance labels and trial notes can show that the exit power bus was intentionally isolated during auditory testing. The Hub preview can show the four-slot island or a powered conduit segment; all monitor footage stays silent.
 
 ## Listener concept A
 
@@ -301,21 +310,27 @@ Keep the huge raised shoulders, small recessed pale face, very long arms, large 
 
 ### Why it is the Listener
 
-Proposed behavior: it is blind and locates players through hammer strikes and loud in-game movement impacts. It investigates the last sound position, searches briefly, and moves on if it hears nothing further. Going quiet gives a player a chance to escape its search. On hearing a strike, it stops and turns or tilts its head sideways to listen before approaching.
+Confirmed gameplay direction: it is blind and locates players through objective/search noise and loud in-game impacts. Fuse-container scrapes, dropped fuses and especially sustained charging noise provide investigation targets. It investigates the latest audible position, searches briefly, and moves on if it hears nothing further. Going quiet gives a player a chance to escape. On hearing a strong charge event, it stops and turns or tilts its head sideways to listen before approaching.
 
 ### Scale and movement prototype
 
-Use a hunched floor walk and a short listening pause as the first animations. Preserve an audible approach warning. Test a looming size in the headset while ensuring the body can pass through both repair-room doorways and turn around the hall obstacles. The sketch's original 2 m openings were starting dimensions. The current blockout uses a proposed 3.2 m clear width, described below; final creature scale and speed remain open.
+Use a hunched floor walk and a short listening pause as the first animations. Preserve an audible approach warning. Test a looming size in the headset while ensuring the body can pass through both repair-room doorways and turn around the hall obstacles. The sketch's original 2 m openings were starting dimensions. The current blockout uses a proposed 3.2 m clear width; the expanded v0.4 plan proposes larger common routes and approximately 4 m actual framed clearance as a starting test target. Final creature scale and speed remain open.
+
+### Expanded v0.4 review blockout
+
+The September 11 correction sets **36 × 36 m as the minimum Level 2 footprint**. Branch `design/level2-expanded-map-v04` now implements that review blockout in the normal Level 2 scene/prefab. It keeps the existing safe-entry end where practical and expands mainly north/east into Test Hall A, Lower Service Hall, West Observation Wing, Conditioning Hall B, East Bypass, North Gallery, a larger Repair Lab, the qualified exit and the bottom-right reward room. This creates multiple connected loops instead of a single oversized room.
+
+The Repair Lab has one route into North Gallery and another into the East Bypass. The confirmed fuse objective deepens it to roughly 16 × 10 m and replaces the north-wall hammer bench with a central four-slot power island that both player and Listener can circle. Large partitions, acoustic baffles, service blocks and offset bypass walls break long views without creating extra safe rooms. Source-level geometry checks confirm the player proxy and conservative Listener proxy can reach the Repair Lab through either route when the other repair doorway is blocked and can circulate around the island. Exact obstacle dressing, fuse-container placement, the 5 m ceiling target and provisional repair-frame scaling remain tuning/review items until Unity/headset validation. See [Level 2 expanded layout v0.4](level2-expanded-layout-v04.md).
 
 ## Listener level floorplan
 
-Saved schematic of the proposed Behavioral Conditioning layout. The former keycard booth is now a repair room with a noisy mechanism. Dimensions are starting values for headset testing. A separate editable Unity map blockout now follows this sketch; its implementation and remaining checks are recorded below.
+The saved schematic below documents the **older 18 × 18 m v0.3 relationship** and remains useful for the original noisy-repair loop. Its footprint is superseded by the September 11 minimum 36 × 36 m correction; do not use the old overall dimensions as the v0.4 target.
 
 ![Proposed Listener level floorplan with a noisy repair room](images/listener-floorplan.png)
 
 ### Build and test the loop
 
-Original sketch sizes: test hall 14 × 10 m; repair room 8 × 4 m; entry and exit rooms each 6 × 4 m; bypass 4 m wide; door openings 2 m. Blockout v0.1 retains the nominal room sizes and proposes 3.2 m door widths for the giant. Keep both repair-room doorways usable by players and the Listener.
+Historical sketch sizes: test hall 14 × 10 m; repair room 8 × 4 m; entry and exit rooms each 6 × 4 m; bypass 4 m wide; door openings 2 m. Blockout v0.1 retained those nominal room sizes and proposed 3.2 m door widths for the giant. These values describe the current v0.3 asset, not the replacement footprint. V0.4 should keep both repair-room doorways usable by players and the Listener while testing larger route and clearance targets.
 
 Place the mechanism away from the door openings. The two exits let players leave by the other route when the Listener arrives. Solid hall obstacles create corners for an escape; the bypass reconnects to the lower hall. The dashed line is one possible patrol route, not a fixed chase path. Test reach, turning space, warning time, and return opportunities in VR.
 
@@ -325,21 +340,29 @@ Place the mechanism away from the door openings. The two exits let players leave
 
 The inspected Level 1 objective exit is `Level2_Entrance_Door`, an instance of `Assets/MASH Virtual/Sci Fi Doors/Prefab/Sci Fi Gates.prefab` (GUID `22d2c44fed4ffa743aac7afe4d993905`). Its root scale is `(1, 1.1564301, 0.8)` under an unscaled parent. It contains separate Frame, Door_Left and Door_Right children. Frame-only copies disable both door panels and retain frame collision; the original prefab remains unchanged.
 
-**Implemented in v0.3 and merged through PR #4:** three linked frame-only instances at the entry and repair openings, the complete exit at the Level 1 scale, and the small Level 1 entrance gate for the bottom-right reward room. The interrupted v0.2 generation was rebuilt and source-checked before the merge. Both original prefab assets remain unchanged. Import requires the existing MASH sci-fi-door assets in this project.
+**Implemented in v0.3 and merged through PR #4:** three linked frame-only instances at the entry and repair openings, the complete exit at the Level 1 scale, and the small Level 1 entrance gate for the bottom-right reward room. The interrupted v0.2 generation was rebuilt and source-checked before the merge. Both original prefab assets remain unchanged. Import requires the existing MASH sci-fi-door assets in this project. V0.4 should reuse the same standards while re-placing passages for the larger map.
+
+### Editable Level 2 blockout v0.4 — branch review prototype
+
+**Implemented on `design/level2-expanded-map-v04`:** the existing Level 2 scene path and reusable prefab are regenerated as `Level2_Blockout_v04` with a 36 × 36 m authored envelope, 5 m ceiling target, multiple connected chase spaces, two separated Repair Lab exits, retained Safe Entry/RETURN TO SECURITY wiring, the existing full exit gate family and bottom-right reward-room gate family. The v0.3 root was not uniformly scaled.
+
+**Source validated on the branch:** generated Unity object IDs are unique, local serialized references resolve, five linked gate instances remain present, required travel bindings remain serialized, human and conservative Listener proxies reach the gameplay spaces, either repair doorway can be blocked while the other route still reaches the Repair Lab, and the temporary exit/reward blockers isolate their spaces as intended. These checks exclude actual linked-gate bevel/collider clearance, NavMesh, animated Listener dimensions, Unity import/runtime, Photon and headset performance.
+
+**Pending validation:** Unity 2022.3.55f1 import/compile, both Runaway Chimps Editor validators, actual gate thresholds, Gorilla hand/body collision, 5 m scale judgment in headset, Listener turning/reach, NavMesh, safe-zone enforcement, repair pacing, travel, two-client Photon and Quest performance. `main` remains on v0.3 until this review branch is approved and merged.
 
 ### Editable Level 2 blockout v0.3
 
 ![Level 2 blockout with the optional reward room at bottom right](images/level2-blockout-floorplan.png)
 
-**Confirmed request:** an editable rough map based on the saved Level 2 repair-room plan. The standalone scene and matching reusable prefab were developed on `codex/level2-blockout` and merged through PR #4 into `main` at `8657c3e`. PR #5 preserves those assets while layering the reliability audit changes on top. Runtime validation remains pending. This map task does not promote proposed gameplay rules to confirmed status.
+**Implemented historical-size asset:** the editable rough map based on the saved Level 2 repair-room plan was developed on `codex/level2-blockout` and merged through PR #4 into `main` at `8657c3e`. PR #5 preserves those assets while layering the reliability audit changes on top. Runtime validation remains pending. Its 18 × 18 m size is now superseded as a design target by the September 11 correction, but the scene/prefab remains the current implemented Level 2 until v0.4 is built.
 
 **Implemented asset:** `Assets/RunawayChimps/Level2Blockout/Scenes/Level2_BehavioralConditioning_Blockout.unity` and `Prefabs/Level2_Blockout.prefab` contain independently editable floors, walls, ceilings, two solid obstacles, bypass, two repair passages, repair bench/hammer/conduit placeholders, linked sci-fi gates, the bottom-right reward room, scanner/sign and reward placeholders, and named gameplay markers. Entry and completed exit remain the intended safe rooms; marker triggers do not enforce safety. Static exit and reward barriers remain until the respective personal qualification logic is wired.
 
-**Proposed dimensions:** the original hall, entry, exit, repair room and bypass retain their nominal sizes. The new reward room is 4 × 4 m at X=14–18, Z=-4–0. Ceilings are 4.2 m, walls are 0.20 m and floor slabs are 0.25 m. Hall obstacles remain 3.4 m tall. Open-passage wall gaps are 3.2 × 3.8 m, the exit wall gap is 2.35 × 3.0 m and the reward wall gap is 2.2 × 3.1 m. These are wall openings, not measured clearances through the bevelled gate meshes. Full exit scale is preserved; frame-only scaling and small-gate placement need Unity inspection. The disabled giant guide remains 2.75 m wide × 3.2 m tall; final creature dimensions are open.
+**Historical v0.3 dimensions:** the original hall, entry, exit, repair room and bypass retain their nominal sizes. The reward room is 4 × 4 m at X=14–18, Z=-4–0. Ceilings are 4.2 m, walls are 0.20 m and floor slabs are 0.25 m. Hall obstacles remain 3.4 m tall. Open-passage wall gaps are 3.2 × 3.8 m, the exit wall gap is 2.35 × 3.0 m and the reward wall gap is 2.2 × 3.1 m. These are wall openings, not measured clearances through the bevelled gate meshes. Full exit scale is preserved; frame-only scaling and small-gate placement need Unity inspection. The disabled giant guide remains 2.75 m wide × 3.2 m tall; final creature dimensions are open. These measurements remain useful for comparing v0.3, but they are not the approved v0.4 footprint.
 
 **Validated outside Unity before merge, September 9–10, 2026:** generated YAML parses; local references and source-prefab object IDs resolve; all five linked gate instances have the expected scale and panel-visibility overrides. The 0.10 m box-layout grid connects the entry, exit approach, both repair passages and lower bypass for 0.35 m and 1.375 m radius proxies. Either repair opening can be blocked while the other route remains available. Closed barriers isolate the exit and reward room; removing the reward barrier connects the player proxy through its wall gap. These checks exclude the linked gate meshes and do not prove actual doorway, NavMesh or animated clearance. The overhead diagram uses schematic door symbols. Earlier Blender models and perspective images remain v0.1 references without the new reward room or gate revision.
 
-**Pending validation:** rerun the reconciled source validator, then Unity 2022.3.55f1 import, gate/frame/threshold fitting, Gorilla hand/body collision, Listener turning and reach, safe-room exclusion, NavMesh, headset scale and performance, repair and capture rules, cross-level cards and saving, scanner/door interaction, personal rewards, exit qualification, sector travel and Photon PUN integration. The travel follow-up adds a SectorScene context, LevelTerminalActions binding and one enabled Build Settings entry. It reuses the persistent Bootstrap rig and adds no scene-owned rig, camera or Photon avatar.
+**Pending validation:** rerun the reconciled source validator, then Unity 2022.3.55f1 import, gate/frame/threshold fitting, Gorilla hand/body collision, Listener turning and reach, safe-room exclusion, NavMesh, headset scale and performance, repair and capture rules, cross-level cards and saving, scanner/door interaction, personal rewards, exit qualification, sector travel and Photon PUN integration. The travel follow-up adds a SectorScene context, LevelTerminalActions binding and one enabled Build Settings entry. It reuses the persistent Bootstrap rig and adds no scene-owned rig, camera or Photon avatar. These checks apply to the current v0.3 asset; v0.4 will require the same checks again after geometry changes.
 
 ## Future levels and remaining decisions
 
@@ -349,13 +372,13 @@ The inspected Level 1 objective exit is `Level2_Entrance_Door`, an instance of `
 | Level access and records | Favor all levels available. Decide later whether individual completion badges or optional solo progression are useful. |
 | Held card visibility | Cards and exits are personal. Decide whether other players see a held card; if shown, hide that visual on drop. The owner keeps their dropped card for recovery. |
 | Crawler and difficulty | Integrate Zombie Crawl while retaining existing vent systems. Start with one card; add a second only if playtests justify a distinct route and story purpose. |
-| Listener and final escape | Choose the repair mechanism and capture reset rule; tune the Listener. The eventual escape outside remains open. |
+| Listener and final escape | Implement/tune the confirmed four-fuse search/charge loop, personal visit state and Listener sound response, then validate the final powered-door run. The eventual escape outside remains open. |
 | Optional reward rooms | Choose card identities and source levels, persistence/capture rules, personal access versus following friends, collectible type, currency repeatability and room safety. |
 | Hub lore and cosmetics | Decide the staff situation, cause of lockdown, shop identity, and missing-legs explanation. |
 
 ### Next prototype
 
-Prototype with the hub, Level 1, and the Level 2 safe entry currently present in the merged blockout.
+For layout review, prototype with branch `design/level2-expanded-map-v04`; `main` still retains the merged v0.3 blockout until the enlarged geometry is approved and merged.
 
 1. Verify the Hub/Level 1 scene split at the Security Gate; check each side has complete geometry and colliders.
 
@@ -370,6 +393,8 @@ Prototype with the hub, Level 1, and the Level 2 safe entry currently present in
 1. Integrate and tune the Crawler model; verify vent limits, patrol return, both sound states, capture, respawn, controller handover, and arrival during a chase.
 
 1. Test the fade and scene activation on the target Quest hardware, then add the cage-to-vent clues.
+
+1. Review the implemented v0.4 blockout's room proportions, route readability and pacing. After layout approval, tune/regenerate the geometry as needed, then complete Level 2 navigation, travel, collision, Photon and headset validation on the enlarged map.
 
 ### Keeping this document current
 
