@@ -2,9 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using Photon.Pun;
+using Photon.VR.Player;
 using Photon.VR.Saving;
 using PlayFab.EconomyModels;
 using RunawayChimps.Travel;
+using peepeecaca;
 using UnityEditor;
 using UnityEngine;
 
@@ -18,6 +20,7 @@ public static class ReliabilityRegressionChecks
         if (EditorApplication.isPlayingOrWillChangePlaymode || PhotonNetwork.IsConnected)
             throw new InvalidOperationException("Run these checks outside Play Mode and disconnected from Photon.");
         CheckScriptBindings();
+        CheckPlayerRigPrefab();
         CheckInventorySnapshot();
         CheckSavedCosmetics();
         CheckRoomFailureLifecycle();
@@ -44,6 +47,52 @@ public static class ReliabilityRegressionChecks
             var script = AssetDatabase.LoadAssetAtPath<MonoScript>("Assets/Scripts/" + path + ".cs");
             Require(script != null && script.GetClass() != null, "Unity must resolve " + path);
         }
+    }
+
+    private static void CheckPlayerRigPrefab()
+    {
+        // Repair the known September 9 serialization regression first. The assertions below
+        // ensure the exact historical target/pole/view wiring can actually be restored.
+        PlayerRigPrefabRepair.RepairFromMenu();
+
+        var root = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Resources/PhotonVR/Player.prefab");
+        Require(root != null, "Photon player prefab must load.");
+
+        var player = root.GetComponent<PhotonVRPlayer>();
+        var view = root.GetComponent<PhotonView>();
+        Require(player != null && view != null, "Photon player prefab must contain PhotonVRPlayer and PhotonView.");
+        Require(player.LeftHand != null && player.RightHand != null, "Photon player tracked hand transforms must be assigned.");
+
+        FastIKFabric leftSolver = null;
+        FastIKFabric rightSolver = null;
+        XRHandL leftHand = null;
+        XRHandController rightHand = null;
+
+        foreach (var solver in root.GetComponentsInChildren<FastIKFabric>(true))
+        {
+            var left = solver.GetComponent<XRHandL>();
+            if (left != null)
+            {
+                leftSolver = solver;
+                leftHand = left;
+                continue;
+            }
+
+            var right = solver.GetComponent<XRHandController>();
+            if (right != null)
+            {
+                rightSolver = solver;
+                rightHand = right;
+            }
+        }
+
+        Require(leftSolver != null && rightSolver != null && leftHand != null && rightHand != null,
+            "Photon player prefab must expose both visual hand IK solvers.");
+        Require(leftSolver.Target == player.LeftHand, "Left arm IK target must be PhotonVRPlayer.LeftHand.");
+        Require(rightSolver.Target == player.RightHand, "Right arm IK target must be PhotonVRPlayer.RightHand.");
+        Require(leftSolver.Pole != null && rightSolver.Pole != null, "Both arm IK solvers must retain elbow poles.");
+        Require(leftHand.view == view && rightHand.view == view, "Both hand animation scripts must reference the player PhotonView.");
+        Require(rightHand.handType == HandType.Right, "Right visual hand must read the right XR controller.");
     }
 
     private static void CheckInventorySnapshot()
