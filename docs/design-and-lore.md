@@ -24,7 +24,8 @@ The combined `level1split-travel.patch` also includes focused source cleanup for
 
 | Recorded | Decision or correction | Status |
 | --- | --- | --- |
-| 2026-09-11 | Expand Level 2 to at least twice the current v0.3 blockout's length and width. Since v0.3 is 18 × 18 m, the replacement target is at least 36 × 36 m. Do not treat the earlier “keep the proposed small layout” instruction as active. Preserve the noisy-repair loop, two repair escape routes, safe entry/qualified exit, bottom-right reward-room rule and established gate language while redesigning the larger space. | Confirmed size correction. V0.4 review geometry is implemented on `design/level2-expanded-map-v04` and passes generated-source/box-route checks; exact arrangement still proposed for review; Unity, Photon and headset validation pending. |
+| 2026-09-11 | Replace Level 2's hammer/strike repair with four personal hand-held cylindrical power fuses distributed around the map. Search containers make short noises; each fuse is returned to a central four-slot power island in the Repair Lab and charged with a nearby lever that creates sustained noise and attracts the Listener. A clearly visible power conduit leads from the exit to the island. | Confirmed objective correction. V0.4 blockout visuals/markers implemented on `design/level2-expanded-map-v04`; gameplay interaction, personal state, Listener sound response, exit power-up and runtime validation pending. |
+| 2026-09-11 | Expand Level 2 to at least twice the current v0.3 blockout's length and width. Since v0.3 is 18 × 18 m, the replacement target is at least 36 × 36 m. Do not treat the earlier “keep the proposed small layout” instruction as active. Preserve the power-restoration loop, two Repair Lab escape routes, safe entry/qualified exit, bottom-right reward-room rule and established gate language while redesigning the larger space. | Confirmed size correction. V0.4 review geometry is implemented on `design/level2-expanded-map-v04` and passes generated-source/box-route checks; exact arrangement still proposed for review; Unity, Photon and headset validation pending. |
 | 2026-09-11 | Hub hallway → Level 1 uses the physical `StartLevel1Button` beside the gate as the only player-facing activation. Touch/press it with the local monkey hand or fingertip; do not require Grip, Trigger, or XR Select on the door itself. This keeps headset play and non-headset editor testing on the same hand-collision interaction. The door remains a barrier/visual, not an interactable. | Confirmed correction; implemented on PR #6 (`codex/hub-level1-physical-button`). Source inspection found the existing button root authored inactive while its visible mesh, trigger, local-hand filter and `SectorDoor.Travel` binding remain intact. PR #6 removes Hub-door direct XR Select, reactivates the button root at runtime, and expands the validator for placement/visibility/wiring. Unity 2022.3.55f1 Play Mode/headset validation remains pending. Level 1 → Hub return interaction is unchanged. |
 | 2026-09-10 | Reconcile the reliability-audit branch with merged PR #4 without dropping Level 2 or the audit fixes. Preserve the active `KeyCard`/`VRKeyCard` GUID identities, PR #4's local-pickup ownership check, Level 2 menu/completion routes, and current five-scene Build Settings; combine them with the audit reconnect/pause and missing-script safeguards. | Implemented in PR #5 merge commit `ad1a424`; GitHub mergeable/clean; source checker, Unity, Photon and headset validation pending |
 | 2026-09-10 | Replace the proposed elaborate Level 2 terminal with one large wall button labeled RETURN TO SECURITY. It returns to the Hub computer; no Level 1 selection UI for now. Internal Hub naming is unchanged. | Confirmed; simple geometry and local-hand interaction merged through PR #4; Unity/headset checks pending |
@@ -58,7 +59,8 @@ These dates record migration and clarification, not the original date of every e
 | Confirmed | The winner hears the door, fades to black, and arrives safely in Level 2. Other players see them disappear and stay in Level 1. |
 | Confirmed | The Crawler has almost-severed legs and cannot leave the vents. Scratches and/or blood lead from its cage toward the vent. |
 | Confirmed | Hub hallway entry into Level 1 uses a physical hand-press button beside the gate. The gate itself is not selected with Grip/Trigger. Use the same local hand/fingertip collision in headset play and non-headset editor testing. |
-| Confirmed | Level 2's replacement footprint is at least 36 × 36 m, twice the v0.3 blockout in each horizontal dimension. The exact v0.4 room arrangement is still proposed. |
+| Confirmed | Level 2's replacement footprint is at least 36 × 36 m, twice the v0.3 blockout in each horizontal dimension. |
+| Confirmed | Level 2 uses four personal cylindrical power fuses found in noisy search containers. Each fuse is inserted and charged at a central four-slot Repair Lab island; sustained charging attracts the Listener, and a visible conduit links the island to the exit. |
 | Planned | One Photon PUN room holds up to 10 players across the hub and all levels. Each headset loads its current level scene. |
 | Planned | About four silent monitors surround the hub computer. Each displays its level name; additional levels rotate onto the screens. |
 | Planned | A control in each level starting room allows return to the hub. The current direction favors open level selection without mandatory unlocks. |
@@ -255,13 +257,13 @@ Optional refinement: vary the interval between 3 and 6 sequences after testing. 
 
 Working concept: a test wing with the Listener, a blind experiment that investigates noise. Two visual options are saved: Concept A, a lean eyeless biped with hearing cavities, and Concept B, a large dark creature with bloodstained bandages over its eyes. Both use rough low-poly graphics. Concept B is the current selected asset direction; final gameplay scale remains open and all movement stays on the floor.
 
-### Noisy repair objective
+### Four-fuse power restoration objective
 
-Chosen direction: replace this level's proposed keycard with work that makes noise. Players must stop, flee when interrupted, and return to continue. Level 1 keeps its keycard objective.
+**Confirmed September 11:** replace the hammer/strike repair with four personal, hand-held cylindrical power fuses. The fuses are distributed across the enlarged map so Level 2 requires exploration rather than immediately camping the Repair Lab. Each fuse is hidden in an obvious electrical/maintenance search container such as a drawer, cabinet or access panel. Container opening makes a short audible scrape/clunk that can attract the Listener; dropping a fuse also produces an audible impact.
 
-Proposed mechanism: free the jammed emergency release for the exit shutter. A hammer rests beside the mechanism. Each deliberate strike moves a seized part slightly, advances that player's repair, and creates a noise at the workbench for the Listener to investigate. The tool is available here without a separate search; it returns to its rack if lost.
+The Repair Lab contains a large central power-distribution island with two fuse slots on each side and enough clearance for both the player and Listener to circle it. Insert a recovered fuse, then operate/hold the nearby charging lever. Charging creates a sustained electrical/mechanical sound that strongly attracts the Listener. The player can release the lever and flee if interrupted; exact charge duration is tuning, with roughly 8–12 seconds as the current starting range rather than a fixed rule.
 
-The player hears the Listener approaching, stops work, escapes through either doorway, and loops back once it moves on. Reaching the required repair amount enables that player's exit. Prototype the required strikes and approach timing in play; repeated visits should arise from its position and reactions, not a scripted interruption after a fixed number of hits.
+A thick, clearly readable power conduit runs from the qualified exit back to the power island so a new player can discover the objective diegetically: locked door → follow cable → four empty sockets. Each charged fuse should make the system look progressively more alive. Completing the fourth charge powers the exit and creates the final noisy transition into a run toward the door; do not add another long master hold after all four fuses are complete.
 
 ### Layout and monster rules
 
@@ -269,15 +271,15 @@ The player hears the Listener approaching, stops work, escapes through either do
 
 Unlike the Crawler, the Listener can enter the objective room. It patrols, investigates the latest audible in-game impact, searches briefly, then resumes patrol if it hears nothing. New audible impacts update its destination; it does not magically know where a quiet player went. Only the entry and completed exit are safe. Give its approach an audible warning, then test whether both escape routes remain usable.
 
-### Individual progress and prototype scope
+### Individual fuse progress and prototype scope
 
-Repair progress survives stopping and fleeing. Proposed visit rule: leaving for the hub or another level resets it; no saved partial attempt. Capture behavior remains open. Recommendation for review: retain completed work after capture during the same visit, while returning the player to the safe entry.
+Fuse ownership, socket completion and exit qualification are personal per player. Friends may distract the shared Listener or deliberately create noise elsewhere, but they cannot satisfy another player's four-fuse requirement. A carried fuse drops at the capture location for its owner to recover. Installed/charged fuses remain completed through capture during the same Level 2 visit. Leaving Level 2 for the Hub or another level resets that visit and returns the four objective fuses to their fixed starting containers; no partial Level 2 attempt is saved across visits.
 
-Each player has their own repair amount and exit qualification; repair sounds affect the shared Listener. A friend can distract it, but completing their repair does not complete yours. Enforce the qualification at the exit, including when another player opens a visible shared door.
+Search noise is intentionally tiered: opening drawers/cabinets is a short moderate event, dropping a fuse is a sharper impact, and charging is the sustained high-risk event. New audible events update the Listener's investigation destination rather than magically revealing a quiet player. Exact sound ranges, charge duration and container placement are tuning values.
 
-First prototype: plain rooms, one floor-moving placeholder, one repair target, one progress counter per player, and a sound event per valid strike. Start with a button to simulate a strike, then add the hammer and reject repeated contact jitter. Leave physical bolt simulation, microphone listening, and detailed creature animation for later. Test interruption and return with two players before adding detail.
+Prototype the loop with four fixed fuse starts, readable maintenance-marked containers, the central island, four socket/lever pairs, per-player completion state, and one sustained noise event per active charge. Avoid pixel hunting: the challenge is safely searching noisy containers and transporting/charging the fuse, not finding tiny objects hidden among arbitrary clutter.
 
-Proposed story clue: a maintenance note forbids impact tools during auditory trials. The hub preview can show the repair station and the Listener beside it; all monitor footage stays silent.
+Proposed story clue: maintenance labels and trial notes can show that the exit power bus was intentionally isolated during auditory testing. The Hub preview can show the four-slot island or a powered conduit segment; all monitor footage stays silent.
 
 ## Listener concept A
 
@@ -305,7 +307,7 @@ Keep the huge raised shoulders, small recessed pale face, very long arms, large 
 
 ### Why it is the Listener
 
-Proposed behavior: it is blind and locates players through hammer strikes and loud in-game movement impacts. It investigates the last sound position, searches briefly, and moves on if it hears nothing further. Going quiet gives a player a chance to escape its search. On hearing a strike, it stops and turns or tilts its head sideways to listen before approaching.
+Confirmed gameplay direction: it is blind and locates players through objective/search noise and loud in-game impacts. Fuse-container scrapes, dropped fuses and especially sustained charging noise provide investigation targets. It investigates the latest audible position, searches briefly, and moves on if it hears nothing further. Going quiet gives a player a chance to escape. On hearing a strong charge event, it stops and turns or tilts its head sideways to listen before approaching.
 
 ### Scale and movement prototype
 
@@ -315,7 +317,7 @@ Use a hunched floor walk and a short listening pause as the first animations. Pr
 
 The September 11 correction sets **36 × 36 m as the minimum Level 2 footprint**. Branch `design/level2-expanded-map-v04` now implements that review blockout in the normal Level 2 scene/prefab. It keeps the existing safe-entry end where practical and expands mainly north/east into Test Hall A, Lower Service Hall, West Observation Wing, Conditioning Hall B, East Bypass, North Gallery, a larger Repair Lab, the qualified exit and the bottom-right reward room. This creates multiple connected loops instead of a single oversized room.
 
-The Repair Lab has one route into North Gallery and another into the East Bypass. Large partitions, acoustic baffles, service blocks and offset bypass walls break long views without creating extra safe rooms. Source-level geometry checks confirm the player proxy and conservative Listener proxy can reach the Repair Lab through either route when the other repair doorway is blocked. This is **implemented review geometry, not final layout approval**: exact room bounds, obstacle locations, the 5 m ceiling target and provisional repair-frame scaling remain proposed until Greg reviews the blockout in Unity/headset. See [Level 2 expanded layout v0.4](level2-expanded-layout-v04.md).
+The Repair Lab has one route into North Gallery and another into the East Bypass. The confirmed fuse objective deepens it to roughly 16 × 10 m and replaces the north-wall hammer bench with a central four-slot power island that both player and Listener can circle. Large partitions, acoustic baffles, service blocks and offset bypass walls break long views without creating extra safe rooms. Source-level geometry checks confirm the player proxy and conservative Listener proxy can reach the Repair Lab through either route when the other repair doorway is blocked and can circulate around the island. Exact obstacle dressing, fuse-container placement, the 5 m ceiling target and provisional repair-frame scaling remain tuning/review items until Unity/headset validation. See [Level 2 expanded layout v0.4](level2-expanded-layout-v04.md).
 
 ## Listener level floorplan
 
@@ -367,7 +369,7 @@ The inspected Level 1 objective exit is `Level2_Entrance_Door`, an instance of `
 | Level access and records | Favor all levels available. Decide later whether individual completion badges or optional solo progression are useful. |
 | Held card visibility | Cards and exits are personal. Decide whether other players see a held card; if shown, hide that visual on drop. The owner keeps their dropped card for recovery. |
 | Crawler and difficulty | Integrate Zombie Crawl while retaining existing vent systems. Start with one card; add a second only if playtests justify a distinct route and story purpose. |
-| Listener and final escape | Build and review the expanded v0.4 blockout, choose the repair mechanism and capture reset rule, then tune the Listener. The eventual escape outside remains open. |
+| Listener and final escape | Implement/tune the confirmed four-fuse search/charge loop, personal visit state and Listener sound response, then validate the final powered-door run. The eventual escape outside remains open. |
 | Optional reward rooms | Choose card identities and source levels, persistence/capture rules, personal access versus following friends, collectible type, currency repeatability and room safety. |
 | Hub lore and cosmetics | Decide the staff situation, cause of lockdown, shop identity, and missing-legs explanation. |
 

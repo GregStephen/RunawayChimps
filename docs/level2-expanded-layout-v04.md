@@ -13,7 +13,7 @@ Do not implement the size change by scaling the v0.3 root transform to 2x. Build
 ## Rules retained from the current design
 
 - Keep Safe Entry and Completed Exit as the only confirmed safe spaces.
-- Keep the noisy repair as the main objective and keep two distinct escape routes from the repair room.
+- Keep the confirmed four-fuse power-restoration objective, with a central Repair Lab island and two distinct escape routes from the room.
 - Keep the optional reward room in the bottom-right area.
 - Keep the current sci-fi frame language for open passages and the established full exit gate for the completed exit.
 - Keep RETURN TO SECURITY in Safe Entry.
@@ -28,11 +28,11 @@ Use Unity X to the right and Z north. Retain the current entry end where practic
 | Safe Entry | X 0-6, Z -4-0 | 6 x 4 m |
 | Test Hall A | X 0-18, Z 0-14 | 18 x 14 m |
 | Lower Service Hall | X 18-30, Z 0-14 | 12 x 14 m |
-| West Observation Wing | X 0-8, Z 14-24 | 8 x 10 m |
-| Conditioning Hall B | X 8-30, Z 14-24 | 22 x 10 m |
-| East Bypass | X 30-36, Z 2-24 | 6 x 22 m |
-| North Gallery | X 8-20, Z 24-32 | 12 x 8 m |
-| Repair Lab | X 20-36, Z 24-32 | 16 x 8 m |
+| West Observation Wing | X 0-8, Z 14-22 | 8 x 8 m |
+| Conditioning Hall B | X 8-30, Z 14-22 | 22 x 8 m |
+| East Bypass | X 30-36, Z 2-22 | 6 x 20 m |
+| North Gallery | X 8-20, Z 22-32 | 12 x 10 m |
+| Repair Lab | X 20-36, Z 22-32 | 16 x 10 m |
 | Completed Exit | X 0-8, Z 26-32 | 8 x 6 m |
 | Optional Reward Room | X 30-36, Z -4-2 | 6 x 6 m |
 
@@ -42,7 +42,15 @@ These are planning coordinates, not approved final wall transforms.
 
 The larger level should use multiple connected loops rather than one oversized room. Test Hall A and Lower Service Hall form the lower loop. West Observation Wing and Conditioning Hall B form a second middle route. East Bypass reconnects the lower half to the repair side. North Gallery connects the upper route to the qualified exit and one side of the repair room.
 
-The Repair Lab should have one opening into North Gallery and a second opening toward the East Bypass/Conditioning side. The objective mechanism should sit away from both openings so using it commits the player to the room. A normal local loop can be Repair Lab -> North Gallery -> Conditioning Hall B -> East Bypass -> Repair Lab, with longer branches through West Observation, Test Hall A and Lower Service Hall.
+The Repair Lab has one opening into North Gallery and a second toward the East Bypass/Conditioning side. Its central power island creates a full circulation ring instead of a wall-mounted dead end. A normal local loop can be Repair Lab -> North Gallery -> Conditioning Hall B -> East Bypass -> Repair Lab, with longer branches through West Observation, Test Hall A and Lower Service Hall. Four fuse-search locations deliberately pull the player into those larger branches before returning to charge each fuse.
+
+## Confirmed four-fuse power objective
+
+Four personal hand-held cylindrical fuses are distributed in readable maintenance/search containers across major Level 2 spaces. Opening those drawers/cabinets/access panels is an audible transient event; dropping a fuse is also audible. The player transports each fuse to the Repair Lab's central four-slot distribution island. Two sockets are available on each long side so the player and Listener must move around the structure rather than treating it as a wall.
+
+After inserting a fuse, the player holds a nearby charge lever while the island emits sustained electrical/mechanical noise. Releasing the lever allows an escape; charge duration is a tuning value, with 8–12 seconds as the initial test range. Installed/charged fuses persist through capture for that visit, while a carried fuse drops for its owner to recover. Leaving Level 2 resets the visit and returns all four fuses to their fixed containers. Completion remains personal per player.
+
+A thick visible conduit runs from the qualified exit to the island. The fourth completed charge powers the exit and creates the final noisy run toward the door; there is no additional long master activation after the four charges.
 
 ## Geometry proposal
 

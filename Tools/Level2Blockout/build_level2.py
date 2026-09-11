@@ -26,22 +26,23 @@ def group(name,parent): return node(name,parent,kind='empty')
 root=node('Level2_Blockout_v04',kind='empty')
 floors=group('01_Floors',root); walls=group('02_Walls_and_Doorways',root)
 ceilings=group('03_Ceilings__Toggle_for_Top_View',root); obstacles=group('04_Route_Shaping_Obstacles',root)
-repair=group('05_Repair_Station__Visual_Only',root); shutter=group('06_Exit_Shutter__Historical_Inactive',root)
+repair=group('05_Power_Distribution_Island__Visual_Only',root); shutter=group('06_Exit_Shutter__Historical_Inactive',root)
 details=group('07_Trim_and_Wayfinding',root); markers=group('08_Gameplay_Markers__Not_Wired',root)
 scale_group=node('09_Listener_Size_Guide__Enable_to_Check_Fit',root,active=False,kind='empty')
 lights=group('10_Blockout_Lighting',root); gates=group('11_Existing_SciFi_Gates',root)
 reward=group('12_Optional_Reward_Room__Visual_Only',root)
+fuse_search=group('13_Fuse_Search_Containers__Visual_Only',root)
 rooms=[
  ('Safe_Entry',0,6,-4,0,'SafeFloor'),
  ('Test_Hall_A',0,18,0,14,'Floor'),
  ('Lower_Service_Hall',18,30,0,14,'BypassFloor'),
- ('West_Observation_Wing',0,8,14,24,'Floor'),
- ('Conditioning_Hall_B',8,30,14,24,'Floor'),
- ('East_Bypass',30,36,2,24,'BypassFloor'),
- ('Exit_Approach',0,8,24,26,'Floor'),
+ ('West_Observation_Wing',0,8,14,22,'Floor'),
+ ('Conditioning_Hall_B',8,30,14,22,'Floor'),
+ ('East_Bypass',30,36,2,22,'BypassFloor'),
+ ('Exit_Approach',0,8,22,26,'Floor'),
  ('Completed_Exit',0,8,26,32,'SafeFloor'),
- ('North_Gallery',8,20,24,32,'BypassFloor'),
- ('Repair_Lab',20,36,24,32,'RepairFloor'),
+ ('North_Gallery',8,20,22,32,'BypassFloor'),
+ ('Repair_Lab',20,36,22,32,'RepairFloor'),
  ('Optional_Reward_Room',30,36,-4,2,'BypassFloor'),
 ]
 for name,x0,x1,z0,z1,mat in rooms:
@@ -80,16 +81,16 @@ for name,a,b in [
 doorwall_h('Entry_Door',0,0,6,[(1.4,4.6)],'SafeTrim',3.8)
 doorwall_h('Reward_Door',2,30,36,[(31.9,34.1)],'RewardCyan',3.1)
 doorwall_h('Exit_Door',26,0,8,[(2.825,5.175)],'SafeTrim',3.0)
-doorwall_v('Repair_Gallery_Door',20,24,32,[(26,30)],'Amber',4.2)
-doorwall_h('Repair_Bypass_Door',24,30,36,[(31,35)],'Amber',4.2)
+doorwall_v('Repair_Gallery_Door',20,22,32,[(26,30)],'Amber',4.2)
+doorwall_h('Repair_Bypass_Door',22,30,36,[(31,35)],'Amber',4.2)
 # Internal route partitions. Openings deliberately create multiple loops.
 doorwall_v('Test_Service_Divider',18,0,14,[(3.5,8.5)],'Amber',4.1)
 doorwall_h('Hall_Middle_Divider',14,0,30,[(2,6),(11,16),(22,27)],'Amber',4.1)
-doorwall_v('Observation_Conditioning_Divider',8,14,24,[(17,22)],'Amber',4.1)
+doorwall_v('Observation_Conditioning_Divider',8,14,22,[(17,21)],'Amber',4.1)
 doorwall_v('Service_Bypass_Divider',30,2,14,[(5,10)],'Amber',4.1)
-doorwall_v('Conditioning_Bypass_Divider',30,14,24,[(17,22)],'Amber',4.1)
-doorwall_h('Conditioning_Gallery_Divider',24,8,30,[(12,17)],'Amber',4.1)
-wall('Exit_Approach_East',(8,24),(8,26))
+doorwall_v('Conditioning_Bypass_Divider',30,14,22,[(17,21)],'Amber',4.1)
+doorwall_h('Conditioning_Gallery_Divider',22,8,30,[(12,17)],'Amber',4.1)
+wall('Exit_Approach_East',(8,22),(8,26))
 # The exit approach remains open to the top of West Observation at z=24.
 
 # Reward-room visual placeholders.
@@ -119,16 +120,40 @@ for i,(x,z,sx,sz) in enumerate([(12.0,18.0,5.0,.7),(20.5,20.5,6.0,.7),(26.0,16.5
 for i,(x,z) in enumerate([(35.6,7),(30.4,13),(35.6,19)]):
  node('Bypass_Offset_'+str(i+1),obstacles,(x,1.7,z),(.8,3.4,3.2),'Obstacles',True)
 
-# Repair station on north wall, away from both escape gates.
-node('Workbench_Top',repair,(28,1.0,31.45),(3.2,.14,.65),'Metal',True)
-for x in [26.65,29.35]: node('Workbench_Leg',repair,(x,.47,31.45),(.12,.94,.5),'Metal',True)
-node('Jammed_Release_Housing',repair,(28,1.45,31.38),(1.0,.75,.42),'Amber',True)
-node('Strike_Plate',repair,(28,1.88,31.35),(.34,.10,.34),'LightStrip',True)
-node('Hammer_Handle__Placeholder',repair,(29.0,1.10,31.42),(.05,.05,.45),'Concrete')
-node('Hammer_Head__Placeholder',repair,(29.0,1.13,31.2),(.28,.15,.13),'Metal')
-node('Conduit_Up',details,(28,3.0,31.78),(.07,2.4,.07),'Amber')
-node('Conduit_West',details,(14,4.2,31.78),(28,.07,.07),'Amber')
-node('Conduit_Down_To_Exit',details,(4,4.2,28.9),(.07,.07,5.8),'Amber')
+# Confirmed four-fuse power-restoration objective. Geometry is visual-only until gameplay is wired.
+# The central island leaves a complete circulation ring for the player and conservative Listener proxy.
+node('Power_Island_Core',repair,(28,1.2,27),(4.4,2.4,2.4),'Metal',True)
+node('Power_Island_Top',repair,(28,2.43,27),(4.65,.08,2.65),'Concrete')
+node('Power_Island_Center_Band',repair,(28,1.25,25.77),(4.0,.22,.08),'Amber')
+node('Power_Island_Center_Band_North',repair,(28,1.25,28.23),(4.0,.22,.08),'Amber')
+slot_specs=[
+ (1,27.0,25.72,-1),(2,29.0,25.72,-1),(3,27.0,28.28,1),(4,29.0,28.28,1),
+]
+for i,x,z,side in slot_specs:
+ node(f'Fuse_Socket_{i}_Plate',repair,(x,1.28,z),(.82,.62,.10),'Concrete')
+ node(f'Fuse_Socket_{i}_Opening',repair,(x,1.28,z+side*.06),(.42,.38,.06),'Amber')
+ node(f'Fuse_Socket_{i}_Charge_Indicator',repair,(x,1.72,z+side*.07),(.42,.10,.04),'LightStrip')
+ node(f'Fuse_Socket_{i}_Lever_Base',repair,(x+.62,1.18,z),(.18,.46,.18),'Metal')
+ node(f'Fuse_Socket_{i}_Lever_Handle',repair,(x+.62,1.55,z),(.10,.64,.10),'Amber')
+ node(f'FuseSocket{i}Marker',markers,(x,1.28,z),kind='empty')
+node('Exit_Power_Cable_EastWest',details,(16,0.10,25.55),(24,.12,.22),'Amber')
+node('Exit_Power_Cable_To_Island',details,(28,0.10,26.28),(.22,.12,1.46),'Amber')
+for x in [8,13,18,23]: node('Exit_Power_Cable_Status_Node',details,(x,.18,25.55),(.42,.08,.34),'LightStrip')
+node('PowerIslandCenter',markers,(28,1.2,27),kind='empty')
+node('FuseChargeNoiseOrigin',markers,(28,1.2,27),kind='empty')
+
+fuse_caches=[
+ (1,'TestHall_Drawer',2.4,11.3),
+ (2,'Service_Cabinet',20.5,12.4),
+ (3,'Observation_Drawer',2.4,20.3),
+ (4,'Conditioning_AccessPanel',26.0,20.3),
+]
+for i,label,x,z in fuse_caches:
+ node(f'Fuse_Cache_{i}_{label}_Body',fuse_search,(x,1.0,z),(1.5,2.0,.70),'Metal',True)
+ node(f'Fuse_Cache_{i}_{label}_DoorOrDrawer',fuse_search,(x,1.0,z-.39),(1.28,.62,.10),'Concrete')
+ node(f'Fuse_Cache_{i}_Electrical_Label',fuse_search,(x,1.58,z-.45),(.62,.22,.04),'Amber')
+ node(f'Fuse_{i}_Personal_Cylindrical_Placeholder',fuse_search,(x,.78,z-.52),(.18,.36,.18),'Amber',kind='cylinder')
+ node(f'Fuse{i}Start',markers,(x,.78,z-.52),kind='empty')
 
 # Historical exit shutter visual remains inactive; gate + blocker are authoritative blockout visuals.
 node('Exit_Shutter_Leaf__Historical',shutter,(4,1.78,26),(3.16,3.56,.18),'Metal',True)
@@ -137,13 +162,13 @@ placeholder=node('Hub_Return_Control_Placeholder',details,(.25,1.25,-2),(.3,.65,
 
 # Gameplay markers and patrol suggestion.
 for name,p in [
- ('Level2EntrySpawn',(3,.05,-2.4)),('RepairStrikeOrigin',(28,1.9,31.35)),
- ('RepairApproach_Gallery',(20.8,.05,28)),('RepairApproach_Bypass',(33,.05,24.8)),
+ ('Level2EntrySpawn',(3,.05,-2.4)),
+ ('RepairApproach_Gallery',(20.8,.05,28)),('RepairApproach_Bypass',(33,.05,22.8)),
  ('ListenerSpawn',(7,.05,8)),('ExitQualificationMarker',(4,.05,25.2)),
  ('CompletedExitArrival',(4,.05,29)),('HubReturnControlMarker',(.5,1.3,-2)),
 ]: node(name,markers,p,kind='empty')
 patrol=group('Suggested_Patrol_Points__Not_a_Chase_Path',markers)
-patrol_pts=[(5,8),(15,11),(23,10),(33,8),(33,19),(33,27),(28,29),(20.8,28),(15,27),(15,20),(5,20),(4,12),(10,6)]
+patrol_pts=[(5,8),(15,11),(23,10),(33,8),(33,18),(33,23.5),(31.8,27),(28,30.4),(24.2,27),(20.8,28),(15,27),(15,18),(5,18),(4,12),(10,6)]
 for i,(x,z) in enumerate(patrol_pts): node('Patrol_'+str(i+1),patrol,(x,.05,z),kind='empty')
 node('Entry_Safe_Volume__Marker_Only',markers,(3,2,-2),(5.6,4,3.6),collider=True,trigger=True,kind='empty')
 node('Completed_Exit_Safe_Volume__Marker_Only',markers,(4,2,29),(7.6,4,5.6),collider=True,trigger=True,kind='empty')
@@ -283,7 +308,8 @@ def serialize_nodes():
   m_EditorClassIdentifier:
 '''+fields))
   if n['material']:
-   blocks.append(block(33,i+2,'MeshFilter',base(i+2,n)+f'  m_Mesh: {{fileID: 10202, guid: {BUILTIN}, type: 0}}\n'))
+   mesh_id=10206 if n['kind']=='cylinder' else 10202
+   blocks.append(block(33,i+2,'MeshFilter',base(i+2,n)+f'  m_Mesh: {{fileID: {mesh_id}, guid: {BUILTIN}, type: 0}}\n'))
    mg=guid(relative(ASSET/'Materials'/f'{n["material"]}.mat'))
    blocks.append(block(23,i+3,'MeshRenderer',base(i+3,n)+f'''  m_Enabled: 1
   m_CastShadows: 1
@@ -414,6 +440,10 @@ layout=dict(version='0.4',units='metres',axes='Unity X right, Y up, Z north',bou
  open_passage_wall_gap_width=4.0,open_passage_wall_gap_height=4.2,entry_wall_gap=[3.2,3.8],
  exit_wall_gap=[2.35,3.0],reward_wall_gap=[2.2,3.1],
  gate_clearance_status='Wall gaps only; actual mesh opening and threshold need Unity inspection',
- room_height=ROOM_HEIGHT,wall_thickness=.2,room_dimensions='Wall centreline dimensions',rooms=rooms,colors=COLORS,nodes=nodes,gates=gate_manifest)
+ room_height=ROOM_HEIGHT,wall_thickness=.2,room_dimensions='Wall centreline dimensions',
+ objective='Restore exit power with four personal hand-held fuses',fuse_count=4,
+ fuse_search_noise='Opening fuse containers and dropping fuses are audible Listener investigation events',
+ charge_interaction='Insert a fuse, then hold its nearby lever while a sustained charge noise attracts the Listener; exact charge duration is tuning',
+ rooms=rooms,colors=COLORS,nodes=nodes,gates=gate_manifest)
 write(OUT/'layout.json',json.dumps(layout,indent=2)+'\n')
 print(json.dumps({'version':'0.4','objects':len(nodes),'mesh_boxes':sum(bool(n['material']) for n in nodes),'colliders':sum(n['collider'] for n in nodes),'bounds':[0,36,-4,32]}))

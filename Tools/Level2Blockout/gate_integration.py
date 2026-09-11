@@ -16,7 +16,7 @@ SMALL_SCALE=[1,1.3197935,1.2965604]
 GATES=[
     dict(name='Entry_Frame_Only',center_x=3,z=0,scale=ENTRY_SCALE,y=2.07101,frame_only=True,axis='z'),
     dict(name='Repair_Gallery_Frame_Only',x=20,center_z=28,scale=CHASE_SCALE,y=2.16,frame_only=True,axis='x'),
-    dict(name='Repair_Bypass_Frame_Only',center_x=33,z=24,scale=CHASE_SCALE,y=2.16,frame_only=True,axis='z'),
+    dict(name='Repair_Bypass_Frame_Only',center_x=33,z=22,scale=CHASE_SCALE,y=2.16,frame_only=True,axis='z'),
     dict(name='Exit_Gate__Matches_Level1_Scale',center_x=4,z=26,scale=EXIT_SCALE,y=1.65,frame_only=False,axis='z'),
     dict(name='Reward_Room_Gate__Level1_Small_Entrance',center_x=33,z=2,scale=SMALL_SCALE,y=1.5500001,frame_only=False,small=True,axis='z'),
 ]

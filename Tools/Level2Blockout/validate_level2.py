@@ -12,6 +12,7 @@ d=json.loads((HERE/'layout.json').read_text()); nodes=d['nodes']; byid={n['id']:
 manifest=json.loads((HERE/'gate_manifest.json').read_text())
 assert d['version']=='0.4' and d['bounds']==[0,36,-4,32]
 assert d['room_height']==5.0 and d['open_passage_wall_gap_width']==4.0
+assert d['fuse_count']==4 and 'four personal' in d['objective'].lower()
 assert len(manifest['gates'])==5
 results={'version':'0.4','bounds_m':d['bounds']}
 
@@ -24,7 +25,7 @@ for p in [ASSETS/'Scenes/Level2_BehavioralConditioning_Blockout.unity',ASSETS/'P
         if 'guid:' not in m[2]: assert int(m[1]) in known,(p,m[0])
     assert len(re.findall(r'^--- !u!1001 &',s,re.M))==5,p
     for g in manifest['gates']: assert g['name'] in s,(p,g['name'])
-    for required in ['Level2_Blockout_v04','Level2EntrySpawn','HubReturnControlMarker','Return_To_Security_Button','RepairStrikeOrigin']:
+    for required in ['Level2_Blockout_v04','Level2EntrySpawn','HubReturnControlMarker','Return_To_Security_Button','PowerIslandCenter','FuseChargeNoiseOrigin','Fuse1Start','Fuse2Start','Fuse3Start','Fuse4Start','Power_Island_Core']:
         assert required in s,(p,required)
     for script_guid in ['f5804367cdd64d9988009ed4d4e40bb0','0a4725352759d7255301e5b06df6157b','1f618183dbed4d76a96a6e00b1057d73']:
         assert script_guid in s,(p,script_guid)
@@ -68,15 +69,18 @@ def flood(radius,body_height,ignored_prefixes=(),virtual_blockers=()):
     return seen
 def reachable(seen,p): return idx(p) in seen
 
-human_targets={'test_hall':(10,6),'service':(24,7),'west_observation':(4,19),'conditioning':(16,19),'east_bypass':(33,16),'north_gallery':(14,28),'repair_lab':(28,28),'exit_approach':(4,24.2)}
-giant_targets={'test_hall':(10,3),'service':(24,7),'west_observation':(4,19),'conditioning':(16,19),'east_bypass':(33,16),'north_gallery':(14,28),'repair_lab':(28,28)}
+human_targets={'test_hall':(10,6),'service':(24,7),'west_observation':(4,18),'conditioning':(16,18),'east_bypass':(33,16),'north_gallery':(14,27),'repair_lab':(24.2,27),'exit_approach':(4,22.2),
+ 'fuse_1_cache':(2.4,10.4),'fuse_2_cache':(20.5,11.5),'fuse_3_cache':(2.4,19.4),'fuse_4_cache':(26,19.4),
+ 'island_west':(24.2,27),'island_east':(31.8,27),'island_south':(28,23.6),'island_north':(28,30.4)}
+giant_targets={'test_hall':(10,3),'service':(24,7),'west_observation':(4,18),'conditioning':(16,18),'east_bypass':(33,16),'north_gallery':(14,27),'repair_lab':(24.2,27),
+ 'island_west':(24.2,27),'island_east':(31.8,27),'island_south':(28,23.6),'island_north':(28,30.4)}
 for label,radius,body_height,targets in [('human_proxy',.35,2.0,human_targets),('listener_proxy',1.375,3.2,giant_targets)]:
     seen=flood(radius,body_height)
     assert all(reachable(seen,p) for p in targets.values()),(label,{k:reachable(seen,p) for k,p in targets.items()})
     # Either repair doorway may be cut while the other still connects the repair lab.
-    gallery_cut=(19.9,26,20.1,30); bypass_cut=(31,23.9,35,24.1)
-    assert reachable(flood(radius,body_height,virtual_blockers=(gallery_cut,)),(28,28)),(label,'gallery cut')
-    assert reachable(flood(radius,body_height,virtual_blockers=(bypass_cut,)),(28,28)),(label,'bypass cut')
+    gallery_cut=(19.9,26,20.1,30); bypass_cut=(31,21.9,35,22.1)
+    assert reachable(flood(radius,body_height,virtual_blockers=(gallery_cut,)),(31.8,27)),(label,'gallery cut')
+    assert reachable(flood(radius,body_height,virtual_blockers=(bypass_cut,)),(24.2,27)),(label,'bypass cut')
     results[label]={'radius_m':radius,'height_m':body_height,'reachable_targets':list(targets),'either_repair_route_can_be_blocked':True,'reachable_grid_points':len(seen)}
 # Safe exit and optional reward remain sealed by their temporary blockers.
 human=flood(.35,2.0)
@@ -85,6 +89,7 @@ assert not reachable(human,(33,-2)),'locked reward blocker leaked'
 unlocked_reward=flood(.35,2.0,ignored_prefixes=('Reward_Room_Blocker',))
 assert reachable(unlocked_reward,(33,-2)),'reward room unreachable after blocker removal'
 results['temporary_barriers']={'closed_exit_separates_safe_exit':True,'locked_reward_room_separate':True,'reward_reachable_when_blocker_removed':True}
+results['fuse_power_objective']={'fuse_count':4,'all_cache_approaches_reachable':True,'player_and_listener_can_circle_power_island':True,'charge_noise_gameplay':'pending runtime wiring'}
 results['counts']={'authored_objects':len(nodes),'mesh_boxes':sum(bool(n['material']) for n in nodes),'solid_box_colliders':sum(n['collider'] and not n['trigger'] for n in nodes),'marker_triggers':sum(n['trigger'] for n in nodes)}
 results['pending']=['Unity 2022.3.55f1 import/compile','actual linked gate mesh clearance','NavMesh bake','Listener animated turning/reach','Play Mode travel','two-client Photon PUN','Quest headset scale/performance']
 (HERE/'validation.json').write_text(json.dumps(results,indent=2)+'\n')
