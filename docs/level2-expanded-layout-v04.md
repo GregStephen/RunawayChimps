@@ -6,7 +6,7 @@ Recorded: 2026-09-11.
 
 **Confirmed:** Level 2 must be at least twice the current v0.3 blockout's length and width. The current blockout is 18 x 18 m, so v0.4 targets a minimum 36 x 36 m footprint.
 
-**Implemented for review:** branch `design/level2-expanded-map-v04` now builds the room arrangement below into the normal Level 2 Unity scene and reusable prefab. The exact arrangement/dimensions remain **proposed for final design approval** until the blockout is reviewed. `main` still contains v0.3.
+**Confirmed room sizing / implemented blockout:** Greg reviewed the fuse-power v0.4 blockout and approved the current room sizing/proportions below. Branch `design/level2-expanded-map-v04` builds that arrangement into the normal Level 2 Unity scene and reusable prefab. Obstacle placement and runtime Listener navigation may still be tuned. `main` still contains v0.3.
 
 Do not implement the size change by scaling the v0.3 root transform to 2x. Build larger authored spaces so normal room scale, gate scale, colliders and traversal remain believable.
 
@@ -19,11 +19,11 @@ Do not implement the size change by scaling the v0.3 root transform to 2x. Build
 - Keep RETURN TO SECURITY in Safe Entry.
 - Common routes must remain large enough for the Level 2 creature to traverse and turn.
 
-## Proposed 36 x 36 m planning grid
+## Confirmed v0.4 room sizing
 
 Use Unity X to the right and Z north. Retain the current entry end where practical and expand mainly north/east: overall X = 0-36 m and Z = -4-32 m.
 
-| Space | Proposed bounds | Approx. size |
+| Space | Confirmed blockout bounds | Approx. size |
 | --- | --- | ---: |
 | Safe Entry | X 0-6, Z -4-0 | 6 x 4 m |
 | Test Hall A | X 0-18, Z 0-14 | 18 x 14 m |
@@ -36,7 +36,7 @@ Use Unity X to the right and Z north. Retain the current entry end where practic
 | Completed Exit | X 0-8, Z 26-32 | 8 x 6 m |
 | Optional Reward Room | X 30-36, Z -4-2 | 6 x 6 m |
 
-These are planning coordinates, not approved final wall transforms.
+These room bounds/sizes are now the confirmed v0.4 design target. Individual obstacle transforms, doorway fitting and navigation clearances may still move during Unity/runtime validation without reopening the overall room-sizing decision.
 
 ## Route concept
 
@@ -68,9 +68,9 @@ The expansion should create more uncertainty and route choice, not just more wal
 2. **Implemented:** synchronize `layout.json`, generator, reusable prefab and standalone scene.
 3. **Implemented:** preserve existing travel components, `Level2EntrySpawn` and RETURN TO SECURITY behavior.
 4. **Implemented / pending Unity measurement:** re-place linked gates using the confirmed asset families; actual mesh/collider clearance still needs Unity inspection.
-5. **Pending:** rebuild NavMesh and Listener runtime navigation after layout approval.
+5. **Pending:** build a Listener-specific navigation setup using the final creature footprint/agent radius so player-sized tight pockets are excluded. Project patrol and chase destinations onto that walkable area and test corners, doorway approaches, bypass offsets and the complete power-island loop for stuck cases.
 6. **Source validated / runtime pending:** generated source and box-route checks pass; Runaway Chimps Editor validators, Unity 2022.3.55f1 compile/import, Play Mode travel, two-client Photon and headset checks remain pending.
 
 ## Pending decisions
 
-The exact wall positions, obstacle positions, ceiling height, repair-door locations and detailed dressing remain proposed until the enlarged blockout is reviewed. The bottom-right reward-room rule and minimum 36 x 36 m footprint are confirmed.
+The current room sizing/proportions are confirmed. Obstacle positions, ceiling height, exact repair-door fitting, detailed dressing and Listener navigation tuning remain open to runtime adjustment. The bottom-right reward-room rule and minimum 36 x 36 m footprint remain confirmed.
