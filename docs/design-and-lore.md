@@ -20,10 +20,13 @@ The combined `level1split-travel.patch` also includes focused source cleanup for
 
 **September 11 Level 2 design correction:** Greg confirmed that the current 18 × 18 m Level 2 blockout is too small and that the replacement must be at least twice as large in both length and width, making **36 × 36 m the minimum target footprint**. This supersedes the earlier instruction to keep the Listener level small. Branch `design/level2-expanded-map-v04` now contains an **implemented v0.4 review blockout** at that minimum footprint, generated as the existing Level 2 scene/prefab with the travel contract preserved. Greg reviewed the v0.4 fuse-power blockout and confirmed the current room sizing/proportions. Obstacle placement, ceiling judgment, final Listener clearances and runtime navigation remain subject to validation/tuning. `main` still contains v0.3. Source/box-route validation has passed on v0.4; Unity 2022.3.55f1, Photon and headset validation remain pending.
 
+**September 11 Level 1 runtime follow-up:** after the first Zombie Crawl integration and emergency lighting fallback reached `main`, Greg reported that Level 1 remained almost impossible to see, Zombie Crawl rendered far too small, translated without convincing crawl motion, did not appear to pursue the player, and did not capture on ordinary player contact. Branch `codex/fix-level1-crawler-lighting` now implements a focused correction: a brighter but still cool/shadowless readable baseline, authored-world-scale preservation for Zombie Crawl, retuned crawl/chase pacing and detection, local-rig contact capture, and a directional safe-room-to-vent zone repair for the second Level 1 route. This is implementation based on actual play feedback; Unity 2022.3.55f1, two-client Photon and headset validation remain pending. A local headset-style vent headlamp/flashlight cone is a **proposed** presentation idea only and is not implemented by this branch.
+
 ## Decision and correction record
 
 | Recorded | Decision or correction | Status |
 | --- | --- | --- |
+| 2026-09-11 | Level 1 horror lighting must remain navigable rather than nearly black, and the Zombie Crawl replacement must appear at its intended physical size, visibly crawl while moving, pursue eligible vent players, and capture on normal local-rig contact while safe rooms remain safe. | Confirmed from Greg's runtime feedback. Corrective implementation is on `codex/fix-level1-crawler-lighting`; Unity/Photon/headset validation pending. A vent-only local headlamp remains proposed, not confirmed. |
 | 2026-09-11 | Harden the Level 2 fuse prototype before Listener implementation: explicit fuse/socket state machines, multi-collider-safe lever holding, loose-fuse fall recovery, power-island indicator feedback, noise debug logging/gizmos, a reusable power-state endpoint, and a first physical noisy drawer interaction. Keep the runtime bootstrap prototype-only until authored prefabs replace it. | Implemented on `design/level2-expanded-map-v04`; source/marker hardening checks pass. Unity 2022.3.55f1/XR behavior, capture-drop positioning, personal Photon presentation, final drawer ergonomics, powered exit and Listener consumption remain pending. |
 | 2026-09-11 | Implement the approved Level 2 fuse interaction foundation: physical grabbable prototype fuses, socket insertion, resumable lever charging, a shared Level 2 noise-event bus, objective completion tracking, and reusable noisy-search-container hooks. | Implemented on `design/level2-expanded-map-v04`; runtime bootstrap wires the current v0.4 markers without final art/audio or Listener response. Source/marker sanity checks pass; Unity 2022.3.55f1, XR ergonomics, capture/drop integration, personal Photon presentation and powered-exit behavior remain pending. |
 | 2026-09-11 | Approve the current v0.4 room sizing/proportions shown in the fuse-power blockout. Keep Listener navigation as a separate implementation/validation concern: use a Listener-sized walkable area so narrow player-only pockets are excluded, and ensure patrol/chase targets stay on that area. | Confirmed room sizing. Listener NavMesh/agent setup, turning clearance and runtime stuck-case testing remain pending. |
@@ -39,7 +42,7 @@ The combined `level1split-travel.patch` also includes focused source cleanup for
 | 2026-09-09 | Greg requested a rough Level 2 map from the saved noisy-repair floorplan. Unity blockout v0.1 preserves that layout; 3.2 m openings are a proposed scale allowance for the giant. | Asset merged through PR #4; import and headset validation pending; its 18 × 18 m footprint is superseded by the September 11 size correction |
 | 2026-09-09 | Runaway Chimps uses Unity 2022.3.55f1 and Photon PUN. Unity 6 belongs to the separate, non-horror Cheeky Chimps project. | Confirmed correction from the source document |
 | 2026-09-09 | Use Hub_Base as the source for a split at the Security Gate. Disabled Level1 and Level1_2_Hall scenes are experiments. | Confirmed direction; scene committed on level1split; extraction validation pending |
-| 2026-09-09 | Replace MiniGamesKidFirstRig with Zombie Crawl while preserving and repairing the existing monster systems. | Confirmed direction; integration pending |
+| 2026-09-09 | Replace MiniGamesKidFirstRig with Zombie Crawl while preserving and repairing the existing monster systems. | Confirmed direction; visual integration merged through PR #8; follow-up runtime tuning is implemented on `codex/fix-level1-crawler-lighting`; validation pending |
 | 2026-09-09 | Personal cards start at fixed locations; completion affects one player and leads to the next level. Separate room families, randomized card starts, group wins, automatic hub return, and monitor audio are superseded. | Recorded from the current design; runtime implementation still needs verification |
 | 2026-09-09 | Prototype one card; two remain an option if gameplay and story justify them. Do not treat the active two-card keybox as a defect solely because of its count. | Prototype recommendation; final count open |
 | 2026-09-09 | Maintain the design and improvement plan in the repository; update relevant sections after confirmed decisions, corrections, implementation, or meaningful test results. Keep Word exports as snapshots. | Confirmed workflow |
@@ -61,6 +64,7 @@ These dates record migration and clarification, not the original date of every e
 | Confirmed | Level-objective cards are personal, with fixed starting locations. Capture drops a held objective card; re-entry resets it. The new optional reward-room cards need separate cross-level state, described below. One card is the prototype recommendation; two remain an option if they improve the route and story. |
 | Confirmed | The winner hears the door, fades to black, and arrives safely in Level 2. Other players see them disappear and stay in Level 1. |
 | Confirmed | The Crawler has almost-severed legs and cannot leave the vents. Scratches and/or blood lead from its cage toward the vent. |
+| Confirmed | Level 1 should remain dark and threatening but readable enough to navigate; near-black visibility is not the intended difficulty. |
 | Confirmed | Hub hallway entry into Level 1 uses a physical hand-press button beside the gate. The gate itself is not selected with Grip/Trigger. Use the same local hand/fingertip collision in headset play and non-headset editor testing. |
 | Confirmed | Level 2's replacement footprint is at least 36 × 36 m, twice the v0.3 blockout in each horizontal dimension. |
 | Confirmed | Level 2 uses four personal cylindrical power fuses found in noisy search containers. Each fuse is inserted and charged at a central four-slot Repair Lab island; sustained charging attracts the Listener, and a visible conduit links the island to the exit. |
@@ -222,22 +226,29 @@ Reported local capture behavior: respawn in the cage room and drop a held keycar
 
 Leaving Level 1 for the hub or another level ends that visit. Re-entry restores your card to its original spot and clears its previous held or dropped state without duplicates. Other players' cards are unaffected. Partial-level progress is not saved.
 
+### Level 1 lighting
+
+Confirmed runtime correction: Level 1 is a horror environment, but it must not be so dark that walls, junctions, or the route are effectively invisible. The first emergency post-split fallback was still too dim in actual play. `codex/fix-level1-crawler-lighting` raises the cool ambient floor and shadowless directional fill while preserving a dark presentation. Final authored practical lights, contrast, flicker and Quest performance remain pending visual work.
+
+**Proposed, not confirmed:** inside `Level1_Vents`, give only the local player a subtle head-mounted spot/headlamp effect—approximately a 40–50° cone with enough range to read the next junction but not the whole maze. Keep the global baseline readable so the headlamp is atmosphere and focus, not a requirement to see anything. Start shadowless/cheap on Quest and do not have remote players' lamps illuminate the local scene unless a later multiplayer presentation decision explicitly asks for it.
+
 ### Level 1 monster rules
 
-Confirmed design: the Crawler is a gorilla with almost-severed legs. It moves and chases only inside the vents; the containment room and keycard room are safe. The two keycard-room entrances offer different routes back into the vents. The current monster is Level1Root/MiniGamesKidFirstRig. The selected replacement is Zombie Crawl, already present as a disabled object in Hub_Base with an animation controller assigned.
+Confirmed design: the Crawler is a gorilla with almost-severed legs. It moves and chases only inside the vents; the containment room and keycard room are safe. The two keycard-room entrances offer different routes back into the vents. `Zombie Crawl` is now the selected and integrated visible model on the existing Level 1 gameplay root; the old MiniGamesKid render is hidden while navigation, capture, patrol/audio and Photon state remain on that root.
 
 Existing behavior reported by Greg: automated range detection starts pursuit. Players escape by moving quickly and losing the monster in the vents, reaching the keycard room, or retreating into the containment room. Sound 1 plays during normal patrol; Sound 2 plays while hunting.
 
-Confirmed rule: when a player reaches either safe room or the monster loses the player, it returns to its set patrol path. Waiting at a safe-room entrance or adding a separate search phase is not the chosen behavior. Exact detection and loss conditions need inspection in the current script; sight-based detection has not been selected.
+Confirmed rule: when a player reaches either safe room or the monster loses the player, it returns to its set patrol path. Waiting at a safe-room entrance or adding a separate search phase is not the chosen behavior. Sight-based detection has not been selected.
 
-Next implementation task: preserve the existing navigation, patrol points, chase sounds, proximity effects, and capture behavior while integrating Zombie Crawl. Rebind model-specific Animator and material references; do not reuse old bone targets blindly. Use navigation to move an upright root and let the crawl animation follow its speed. Tune body height, hand contact, corner clearance, and capture reach in the actual vents.
+**Implemented follow-up on `codex/fix-level1-crawler-lighting`:** preserve Zombie Crawl's authored world size when it is reparented below the scaled gameplay root; retune patrol/chase translation and animation playback so movement reads as crawling instead of sliding; expand prototype detection from the scene's 6 m value to a 12 m runtime range with faster checks and a clearer chase-speed increase; accept capture from any collider belonging to the local rig rather than only the camera collider; and repair the second safe-room route so exiting its correctly oriented safe boundary back toward the vents republishes `Level1_Vents`. The directional zone repair uses the tracked camera collider so a reaching hand cannot change the player's danger state early. These are implemented corrections, not yet validated Unity/headset behavior.
+
+Pending validation: verify authored scale/floor contact in the narrowest vent, a 90-degree corner and junction; confirm crawl cadence while patrolling and chasing; confirm both safe-room entrances stop pursuit and both exits restore eligibility; confirm ordinary head/body/hand contact captures in the vents but cannot capture inside a safe room; confirm respawn/card drop and controller handover; and repeat on two Photon clients and target Quest hardware.
 
 ### The missing subject in Level 1
 
 Chosen visual direction: scratches and/or blood run from a cage toward the vent, both guiding exploration and suggesting what escaped. The cage, trail, vent, and crawler should tell one connected story.
 
 - Proposed: a damaged cage and matching subject number on the monster connect the creature to its former enclosure.
-
 - Proposed: a maintenance request mentions damage inside the ducts before the broader incident.
 
 - Proposed: a clipboard still labels the missing subject contained, suggesting negligence or a cover-up.
@@ -371,7 +382,7 @@ The inspected Level 1 objective exit is `Level2_Entrance_Door`, an instance of `
 | Starting-room navigation | Return to Hub is planned. Direct Select Sector is proposed; choose the final controls and wording. |
 | Level access and records | Favor all levels available. Decide later whether individual completion badges or optional solo progression are useful. |
 | Held card visibility | Cards and exits are personal. Decide whether other players see a held card; if shown, hide that visual on drop. The owner keeps their dropped card for recovery. |
-| Crawler and difficulty | Integrate Zombie Crawl while retaining existing vent systems. Start with one card; add a second only if playtests justify a distinct route and story purpose. |
+| Crawler and difficulty | Validate the Zombie Crawl follow-up branch for size, crawl cadence, 12 m prototype detection, contact capture and both safe-room boundaries. Start with one card; add a second only if playtests justify a distinct route and story purpose. |
 | Listener and final escape | Implement/tune the confirmed four-fuse search/charge loop, personal visit state and Listener sound response, then validate the final powered-door run. The eventual escape outside remains open. |
 | Optional reward rooms | Choose card identities and source levels, persistence/capture rules, personal access versus following friends, collectible type, currency repeatability and room safety. |
 | Hub lore and cosmetics | Decide the staff situation, cause of lockdown, shop identity, and missing-legs explanation. |
@@ -390,7 +401,7 @@ For layout review, prototype with branch `design/level2-expanded-map-v04`; `main
 
 1. Verify card drops, recovery after falling through the floor, and reset on re-entry without moving another player's card or creating duplicates.
 
-1. Integrate and tune the Crawler model; verify vent limits, patrol return, both sound states, capture, respawn, controller handover, and arrival during a chase.
+1. Validate `codex/fix-level1-crawler-lighting`: Level 1 stays dark but readable; Zombie Crawl keeps authored world scale, visibly crawls during patrol/chase, pursues eligible vent players, both safe-room routes correctly end/restore eligibility, and local-rig contact captures only in the vents.
 
 1. Test the fade and scene activation on the target Quest hardware, then add the cage-to-vent clues.
 
