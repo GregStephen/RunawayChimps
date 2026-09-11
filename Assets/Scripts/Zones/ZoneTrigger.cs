@@ -47,11 +47,14 @@ public class ZoneTrigger : MonoBehaviour
 
         // Level 1 has two safe-room boundaries but only one separately-authored vent
         // trigger. Both safe boundaries are oriented with local +X pointing back into
-        // the vent network. When the local rig leaves a safe trigger on that side,
+        // the vent network. When the tracked head leaves a safe trigger on that side,
         // publish the vent zone here so chase, crawl presentation and capture cannot
         // remain incorrectly gated as "safe" on the second route. Leaving the same
         // trigger deeper into the safe room is local -X and intentionally stays safe.
-        if (gameObject.scene.name != "Level1_Containment" ||
+        // Restrict this fallback to the tracked camera collider so a reaching hand
+        // cannot flip the player's zone before their head/body cross the boundary.
+        if (!other.CompareTag("MainCamera") ||
+            gameObject.scene.name != "Level1_Containment" ||
             zone != ZoneId.Level1_Antechamber ||
             zs.LocalZone != ZoneId.Level1_Antechamber)
             return;
