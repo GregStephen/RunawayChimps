@@ -13,15 +13,23 @@ public sealed class CrawlerVisualController : MonoBehaviour
     [SerializeField] private Vector3 visualLocalPosition = Vector3.zero;
     [SerializeField] private Vector3 visualLocalEuler = new Vector3(0f, 180f, 0f);
     [SerializeField] private bool preserveAuthoredScale = true;
+    [Tooltip("Used as the desired world scale when authored scale preservation is disabled.")]
     [SerializeField] private Vector3 fallbackLocalScale = new Vector3(0.1705642f, 0.1705642f, 0.1705642f);
+    [SerializeField, Min(0.1f)] private float visualScaleMultiplier = 1f;
+
+    [Header("Crawler gameplay tuning")]
+    [SerializeField, Min(1f)] private float detectionRange = 12f;
+    [SerializeField, Min(0.1f)] private float wanderSpeed = 2.25f;
+    [SerializeField, Min(0.1f)] private float chaseSpeed = 4.5f;
+    [SerializeField, Range(0.05f, 0.5f)] private float detectionInterval = 0.1f;
 
     [Header("Animation matching")]
-    [SerializeField, Min(0.01f)] private float referenceMetersPerSecond = 5f;
+    [SerializeField, Min(0.01f)] private float referenceMetersPerSecond = 2.25f;
     [SerializeField, Min(0f)] private float stationaryThreshold = 0.04f;
-    [SerializeField, Min(0f)] private float minimumMovingPlayback = 0.45f;
-    [SerializeField, Min(0f)] private float maximumPlayback = 1.6f;
+    [SerializeField, Min(0f)] private float minimumMovingPlayback = 0.55f;
+    [SerializeField, Min(0f)] private float maximumPlayback = 2.3f;
     [SerializeField, Min(0f)] private float chasePlaybackBoost = 1.08f;
-    [SerializeField, Min(0f)] private float playbackSmoothing = 10f;
+    [SerializeField, Min(0f)] private float playbackSmoothing = 12f;
     [SerializeField, Min(0.1f)] private float teleportDistance = 2f;
 
     private MonsterNavigation navigation;
@@ -37,6 +45,7 @@ public sealed class CrawlerVisualController : MonoBehaviour
     private void Awake()
     {
         navigation = GetComponent<MonsterNavigation>();
+        ApplyNavigationTuning();
         TryInitialize();
         previousPosition = transform.position;
     }
@@ -97,14 +106,18 @@ public sealed class CrawlerVisualController : MonoBehaviour
         }
 
         zombieVisual = zombieObject.transform;
-        Vector3 authoredScale = zombieVisual.localScale;
 
-        // The gameplay root rotates and moves. The visual child owns the mesh's
-        // forward-axis correction so navigation itself remains model-agnostic.
+        // The authored Zombie exists as a scene root at its intended world size. The
+        // gameplay root is itself scaled down, so copying the Zombie's old LOCAL scale
+        // beneath that root shrinks it a second time. Capture the intended world size
+        // before reparenting and compensate for the gameplay root's lossy scale.
+        Vector3 desiredWorldScale = preserveAuthoredScale ? zombieVisual.lossyScale : fallbackLocalScale;
+        desiredWorldScale *= visualScaleMultiplier;
+
         zombieVisual.SetParent(transform, false);
         zombieVisual.localPosition = visualLocalPosition;
         zombieVisual.localRotation = Quaternion.Euler(visualLocalEuler);
-        zombieVisual.localScale = preserveAuthoredScale ? authoredScale : fallbackLocalScale;
+        zombieVisual.localScale = WorldScaleToLocalScale(transform, desiredWorldScale);
         zombieObject.SetActive(true);
 
         zombieAnimator = zombieObject.GetComponent<Animator>();
@@ -127,8 +140,36 @@ public sealed class CrawlerVisualController : MonoBehaviour
             gate.SetAnimator(zombieAnimator);
 
         initialized = true;
-        Debug.Log($"{name}: Zombie Crawl visual is now driven by the existing Crawler gameplay root.", this);
+        Debug.Log($"{name}: Zombie Crawl visual is now driven by the existing Crawler gameplay root at world scale {zombieVisual.lossyScale}.", this);
         return true;
+    }
+
+    private void ApplyNavigationTuning()
+    {
+        if (navigation == null) return;
+
+        navigation.DetectionRange = detectionRange;
+        navigation.MonsterSpeedWander = wanderSpeed;
+        navigation.MonsterSpeedChase = chaseSpeed;
+        navigation.detectionCheckInterval = detectionInterval;
+
+        if (navigation.agent != null && navigation.agent.enabled)
+            navigation.agent.speed = navigation.IsChasing ? chaseSpeed : wanderSpeed;
+    }
+
+    private static Vector3 WorldScaleToLocalScale(Transform parent, Vector3 desiredWorldScale)
+    {
+        Vector3 parentScale = parent.lossyScale;
+        return new Vector3(
+            SafeDivide(desiredWorldScale.x, parentScale.x),
+            SafeDivide(desiredWorldScale.y, parentScale.y),
+            SafeDivide(desiredWorldScale.z, parentScale.z));
+    }
+
+    private static float SafeDivide(float value, float divisor)
+    {
+        if (Mathf.Abs(divisor) < 0.0001f) return value;
+        return value / Mathf.Abs(divisor);
     }
 
     private void DisableLegacyVisuals()
