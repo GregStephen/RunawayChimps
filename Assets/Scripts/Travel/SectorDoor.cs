@@ -8,18 +8,36 @@ namespace RunawayChimps.Travel
     public sealed class SectorDoor : MonoBehaviour
     {
         public string destinationScene;
-        [Tooltip("Optional label on the accessible side of the door.")]
+        [Tooltip("Optional label on the accessible side of a directly selectable door.")]
         public string label;
         private XRSimpleInteractable interactable;
+
+        // The Hub -> Level 1 route is intentionally button-only. This keeps the
+        // headset interaction identical to non-headset editor testing: touch the
+        // physical StartLevel1Button with the local monkey hand/fingertip.
+        public bool AllowsDirectXRSelection =>
+            !(gameObject.scene.name == SectorDestinations.Hub &&
+              destinationScene == SectorDestinations.LevelOne);
 
         private void Awake()
         {
             GetComponent<BoxCollider>().isTrigger = true;
+
+            if (!AllowsDirectXRSelection)
+            {
+                // Defensive: if an interactable was ever serialized on this door,
+                // do not leave a second Grip/Select path active beside the button.
+                interactable = GetComponent<XRSimpleInteractable>();
+                if (interactable != null) interactable.enabled = false;
+                return;
+            }
+
             interactable = GetComponent<XRSimpleInteractable>();
             if (interactable == null) interactable = gameObject.AddComponent<XRSimpleInteractable>();
             if (SectorTravelService.I != null)
                 interactable.interactionManager = SectorTravelService.I.InteractionManager;
             interactable.selectEntered.AddListener(Selected);
+
             if (string.IsNullOrEmpty(label)) return;
             var sign = new GameObject("Travel sign");
             sign.transform.SetParent(transform, false);
@@ -42,7 +60,8 @@ namespace RunawayChimps.Travel
             if (interactable != null) interactable.selectEntered.RemoveListener(Selected);
         }
 
-        // Also used by the existing local-hand PhysicalButton UnityEvent.
+        // Used by the Hub's local-hand PhysicalButton UnityEvent and by direct
+        // XR selection on routes that still intentionally allow it.
         public void Travel()
         {
             if (SectorTravelService.I != null)
