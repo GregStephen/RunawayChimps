@@ -46,6 +46,12 @@ public class RigSpawnSnapper : MonoBehaviour
         if (scene.name != HubSceneName)
             return;
 
+        RetrySnap();
+    }
+
+    public void RetrySnap()
+    {
+        if (!SceneManager.GetSceneByName(HubSceneName).isLoaded) return;
         // Prevent double-starts if the event fires twice for any reason
         if (_snapping) return;
 
@@ -67,6 +73,7 @@ public class RigSpawnSnapper : MonoBehaviour
         if (spawnGo == null)
         {
             Debug.LogError($"[RigSpawnSnapper] Could not find '{HubSpawnObjectName}' in loaded scene '{HubSceneName}'.");
+            AppState.I?.Fail("Hub spawn is missing.");
             _snapping = false;
             yield break;
         }
@@ -74,6 +81,7 @@ public class RigSpawnSnapper : MonoBehaviour
         if (xrOrigin == null || xrOrigin.Camera == null)
         {
             Debug.LogError("[RigSpawnSnapper] Missing XROrigin or XROrigin.Camera.");
+            AppState.I?.Fail("The tracked rig camera is missing.");
             _snapping = false;
             yield break;
         }
@@ -94,9 +102,12 @@ public class RigSpawnSnapper : MonoBehaviour
         if (hadRb)
         {
             prevKinematic = gorillaPlayerRigidbody.isKinematic;
+            if (!prevKinematic)
+            {
+                gorillaPlayerRigidbody.velocity = Vector3.zero;
+                gorillaPlayerRigidbody.angularVelocity = Vector3.zero;
+            }
             gorillaPlayerRigidbody.isKinematic = true;
-            gorillaPlayerRigidbody.velocity = Vector3.zero;
-            gorillaPlayerRigidbody.angularVelocity = Vector3.zero;
         }
 
         // 1) Place the CAMERA at spawn (XR-correct)
@@ -109,17 +120,29 @@ public class RigSpawnSnapper : MonoBehaviour
         transform.RotateAround(cam.position, Vector3.up, deltaYaw);
 
         // 3) Ground-correct so the capsule bottom sits above floor
-        GroundCorrect(cam.position);
+        Physics.SyncTransforms();
+        bool grounded = GroundCorrect(spawnGo.transform.position);
+        GorillaLocomotion.Player.Instance?.ResetAfterTeleport();
+        Physics.SyncTransforms();
 
         // Restore RB
         if (hadRb)
         {
             gorillaPlayerRigidbody.isKinematic = prevKinematic;
-            gorillaPlayerRigidbody.velocity = Vector3.zero;
-            gorillaPlayerRigidbody.angularVelocity = Vector3.zero;
-            gorillaPlayerRigidbody.WakeUp();
+            if (!prevKinematic)
+            {
+                gorillaPlayerRigidbody.velocity = Vector3.zero;
+                gorillaPlayerRigidbody.angularVelocity = Vector3.zero;
+                gorillaPlayerRigidbody.WakeUp();
+            }
         }
 
+        if (!grounded)
+        {
+            AppState.I?.Fail("No safe floor was found beneath the Hub spawn.");
+            _snapping = false;
+            yield break;
+        }
         AppState.I?.MarkRigSnapped();
         AppState.I?.TryMarkReady();
 
@@ -127,26 +150,21 @@ public class RigSpawnSnapper : MonoBehaviour
         _snapping = false;
     }
 
-    private void GroundCorrect(Vector3 referencePos)
+    private bool GroundCorrect(Vector3 referencePos)
     {
-        float capsuleBottomOffset = 0.5f; // fallback
-        if (gorillaBodyCapsule != null)
-        {
-            capsuleBottomOffset = Mathf.Max(0.01f, (gorillaBodyCapsule.height * 0.5f) - gorillaBodyCapsule.radius);
-        }
-
+        if (gorillaBodyCapsule == null) return false;
         Vector3 rayStart = referencePos + Vector3.up * RaycastUp;
-        if (Physics.Raycast(rayStart, Vector3.down, out var hit, RaycastUp + RaycastDown, GroundMask, QueryTriggerInteraction.Ignore))
+        RaycastHit floor = default;
+        bool found = false;
+        foreach (var hit in Physics.RaycastAll(rayStart, Vector3.down, RaycastUp + RaycastDown, GroundMask, QueryTriggerInteraction.Ignore))
         {
-            float desiredBottomY = hit.point.y + GroundSkin;
-            float currentBottomY = referencePos.y - capsuleBottomOffset;
-            float deltaY = desiredBottomY - currentBottomY;
-
-            transform.position += new Vector3(0f, deltaY, 0f);
+            if (hit.collider.transform.IsChildOf(xrOrigin.transform) || hit.collider.gameObject.scene.name != HubSceneName ||
+                hit.normal.y < 0.65f || hit.point.y > referencePos.y + 0.2f) continue;
+            if (!found || hit.distance < floor.distance) { floor = hit; found = true; }
         }
-        else
-        {
-            Debug.LogWarning("[RigSpawnSnapper] GroundCorrect raycast hit nothing. Check GroundMask/colliders.");
-        }
+        if (!found) return false;
+        // Bounds include the real capsule center, radius and transform scale.
+        xrOrigin.transform.position += Vector3.up * (floor.point.y + GroundSkin - gorillaBodyCapsule.bounds.min.y);
+        return true;
     }
 }

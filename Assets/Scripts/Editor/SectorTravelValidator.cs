@@ -54,6 +54,10 @@ public static class SectorTravelValidator
 
     private static void CheckScene(Scene scene, List<string> errors)
     {
+        foreach (var transform in Find<Transform>(scene))
+            if (GameObjectUtility.GetMonoBehavioursWithMissingScriptCount(transform.gameObject) > 0)
+                errors.Add(scene.name + "/" + transform.name + " has a missing script.");
+
         if (scene.name == "Bootstrap")
         {
             var services = Find<SectorTravelService>(scene);
@@ -110,7 +114,8 @@ public static class SectorTravelValidator
             errors.Add(scene.name + " requires its matching return/entrance SectorDoor.");
         foreach (var door in doors)
         {
-            if (!door.GetComponent<BoxCollider>().isTrigger ||
+            var trigger = door.GetComponent<BoxCollider>();
+            if (trigger == null || !trigger.isTrigger ||
                 !door.GetComponentsInChildren<Collider>().Any(c => c.enabled && !c.isTrigger))
                 errors.Add(door.name + " requires an interaction trigger and a solid barrier.");
         }

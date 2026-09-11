@@ -21,6 +21,11 @@ public class VentGraph : MonoBehaviour
         nodes.AddRange(GetComponentsInChildren<VentNode>());
     }
 
+    private void OnDestroy()
+    {
+        if (Instance == this) Instance = null;
+    }
+
     public VentNode GetClosestNode(Vector3 position)
     {
         VentNode closest = null;
@@ -28,6 +33,7 @@ public class VentGraph : MonoBehaviour
 
         foreach (var node in nodes)
         {
+            if (node == null) continue;
             float d = (node.transform.position - position).sqrMagnitude;
             if (d < closestDistSqr)
             {
@@ -67,7 +73,7 @@ public class VentGraph : MonoBehaviour
         var visited = new HashSet<VentNode>();
 
         foreach (var n in nodes)
-            dist[n] = float.PositiveInfinity;
+            if (n != null) dist[n] = float.PositiveInfinity;
 
         dist[start] = 0f;
 
@@ -94,9 +100,10 @@ public class VentGraph : MonoBehaviour
             open.Remove(current);
             visited.Add(current);
 
+            if (current.neighbors == null) continue;
             foreach (var neighbor in current.neighbors)
             {
-                if (visited.Contains(neighbor)) continue;
+                if (neighbor == null || !dist.ContainsKey(neighbor) || visited.Contains(neighbor)) continue;
 
                 float edgeCost = Vector3.Distance(
                     current.transform.position,

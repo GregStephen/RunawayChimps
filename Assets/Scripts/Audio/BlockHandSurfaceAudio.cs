@@ -2,5 +2,5 @@ using UnityEngine;
 
 public class BlockHandSurfaceAudio : MonoBehaviour
 {
-    // Empty on purpose — presence = block
+    // Empty on purpose â€” presence = block
 }

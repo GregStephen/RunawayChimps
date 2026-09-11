@@ -28,6 +28,9 @@ public class TeleportGorillaPlayerPhotonVR : MonoBehaviour
         if (travel != null)
         {
             if (other.GetComponentInParent<LocalRigMarker>() == null || travel.IsBusy) return;
+            if (travel.CurrentSector != RunawayChimps.Travel.SectorId.Containment ||
+                RunawayChimps.Zones.ZoneStateService.Instance == null ||
+                RunawayChimps.Zones.ZoneStateService.Instance.LocalZone != RunawayChimps.Zones.ZoneId.Level1_Vents) return;
             Vector3 capturePosition = other.transform.position;
             if (travel.RespawnAt(TeleportLocation))
             {

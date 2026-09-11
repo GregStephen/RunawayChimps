@@ -21,8 +21,11 @@ public class PlayerVisualReadyReporter : MonoBehaviour
         ownerView = GetComponentInParent<PhotonView>();
     }
 
-    private void Start()
+    private void OnEnable() => BeginReporting();
+
+    public void BeginReporting()
     {
+        StopAllCoroutines();
         reportingRoom = PhotonNetwork.CurrentRoom;
         if (!CanReportReady()) return;
         StartCoroutine(CoWaitForVisualsToSettle());
@@ -59,11 +62,19 @@ public class PlayerVisualReadyReporter : MonoBehaviour
 
         int stable = 0;
         int lastHash = ComputeMaterialsHash();
+        float deadline = Time.realtimeSinceStartup + 8f;
 
         while (stable < stableFramesRequired)
         {
             yield return null;
             if (!CanReportReady()) yield break;
+
+            // Animated material swaps must not hold the loading screen forever.
+            if (Time.realtimeSinceStartup >= deadline)
+            {
+                Debug.LogWarning("Player materials continue changing; finishing visual setup after the settle limit.", this);
+                break;
+            }
 
             int hash = ComputeMaterialsHash();
             if (hash == lastHash)

@@ -44,6 +44,17 @@ public class MonsterNavigation : MonoBehaviour
     private SectorMonsterSync sectorSync;
     private bool hadAuthority;
     private bool warnedNoNavMesh;
+    private Photon.Realtime.Player targetOwner;
+    private bool warnedNoPatrolPoints;
+
+    private void OnDisable()
+    {
+        hadAuthority = false;
+        currentTarget = null;
+        targetOwner = null;
+        IsChasing = isChasingDebug = false;
+        if (agent != null) agent.enabled = false;
+    }
 
     private void Awake()
     {
@@ -84,6 +95,15 @@ public class MonsterNavigation : MonoBehaviour
         if (!agent.isOnNavMesh) return;
         bool wasChasing = IsChasing;
 
+        // Safe-room/sector changes invalidate a chase immediately, independently
+        // of the slower nearest-player search interval.
+        if (sectorSync != null && currentTarget != null && !IsEligible(targetOwner))
+        {
+            currentTarget = null;
+            targetOwner = null;
+            detectionTimer = 0;
+        }
+
         // Always compute chasing state (or at least update IsChasing)
         detectionTimer -= Time.deltaTime;
         if (detectionTimer <= 0f)
@@ -103,6 +123,7 @@ public class MonsterNavigation : MonoBehaviour
         }
         else if (wasChasing || (!agent.pathPending && agent.remainingDistance < 0.5f))
         {
+            if (wasChasing) agent.ResetPath();
             agent.speed = MonsterSpeedWander;
             Wander();
         }
@@ -120,16 +141,17 @@ public class MonsterNavigation : MonoBehaviour
     private Transform FindClosestPlayer()
     {
         var targets = new List<Transform>();
+        var owners = new Dictionary<Transform, Photon.Realtime.Player>();
+        targetOwner = null;
         if (sectorSync != null)
         {
             var zones = ZoneStateService.Instance;
             foreach (var avatar in FindObjectsOfType<PhotonVRPlayer>())
             {
                 var owner = avatar.photonView.Owner;
-                if (owner == null || SectorPresence.Get(owner) != sectorSync.sector || zones == null ||
-                    !zones.TryGetZone(owner.ActorNumber, out var zone) || zone != ZoneId.Level1_Vents) continue;
+                if (!IsEligible(owner)) continue;
                 var head = owner.IsLocal && PhotonVRManager.Manager != null ? PhotonVRManager.Manager.Head : avatar.Head;
-                if (head != null) targets.Add(head);
+                if (head != null) { targets.Add(head); owners[head] = owner; }
             }
         }
         else
@@ -168,19 +190,36 @@ public class MonsterNavigation : MonoBehaviour
             }
         }
 
+        if (closest != null) owners.TryGetValue(closest, out targetOwner);
         return closest;
+    }
+
+    private bool IsEligible(Photon.Realtime.Player owner)
+    {
+        var zones = ZoneStateService.Instance;
+        return owner != null && sectorSync != null && SectorPresence.Get(owner) == sectorSync.sector &&
+            zones != null && zones.TryGetZone(owner.ActorNumber, out var zone) && zone == ZoneId.Level1_Vents;
     }
 
     private void Wander()
     {
         if (points == null || points.Length == 0)
         {
-            Debug.LogError($"{name}: Monster has no wander points assigned!");
+            if (!warnedNoPatrolPoints) Debug.LogError($"{name}: Monster has no wander points assigned!", this);
+            warnedNoPatrolPoints = true;
             return;
         }
 
         int destPoint = Random.Range(0, points.Length);
-        agent.SetDestination(points[destPoint].position);
+        for (int offset = 0; offset < points.Length; offset++)
+        {
+            var point = points[(destPoint + offset) % points.Length];
+            if (point == null) continue;
+            agent.SetDestination(point.position);
+            return;
+        }
+        if (!warnedNoPatrolPoints) Debug.LogError("Monster patrol points are all missing.", this);
+        warnedNoPatrolPoints = true;
     }
 
     private void RotateTowardsMovement()

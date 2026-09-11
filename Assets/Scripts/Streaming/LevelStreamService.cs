@@ -39,14 +39,14 @@ public class LevelStreamService : MonoBehaviour
     public bool IsPreloaded(string sceneName) => _preloaded.Contains(sceneName) || IsActivated(sceneName);
     public bool IsActivated(string sceneName) => SceneManager.GetSceneByName(sceneName).isLoaded;
 
-    public void Preload(string sceneName)
+    public bool Preload(string sceneName)
     {
-        if (RunawayChimps.Travel.SectorTravelService.I != null && RunawayChimps.Travel.SectorTravelService.I.IsBusy) return;
-        if (string.IsNullOrWhiteSpace(sceneName)) return;
-        if (IsPreloaded(sceneName)) return;
-        if (_loading.ContainsKey(sceneName)) return;
+        if (RunawayChimps.Travel.SectorTravelService.I != null && RunawayChimps.Travel.SectorTravelService.I.IsBusy) return false;
+        if (string.IsNullOrWhiteSpace(sceneName) || !Application.CanStreamedLevelBeLoaded(sceneName)) return false;
+        if (IsPreloaded(sceneName) || _loading.ContainsKey(sceneName)) return true;
 
         StartCoroutine(CoLoad(sceneName, allowActivation: false));
+        return true;
     }
 
     public void Activate(string sceneName)
@@ -109,7 +109,11 @@ public class LevelStreamService : MonoBehaviour
 
         float deadline = Time.realtimeSinceStartup + timeout;
         // A preload held at 0.9 stalls Unity's entire async operation queue.
-        foreach (var operation in _loading.Values) operation.allowSceneActivation = true;
+        foreach (var pending in new List<string>(_loading.Keys))
+        {
+            if (pending == sceneName) _loading[pending].allowSceneActivation = true;
+            else AbandonLoad(pending); // Drained preloads must not leave unrelated environments active.
+        }
         while (_abandoned.Contains(sceneName) ||
                (_unloading.TryGetValue(sceneName, out var unloading) && !unloading.isDone))
         {

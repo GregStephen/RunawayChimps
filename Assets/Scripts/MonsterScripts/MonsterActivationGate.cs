@@ -30,6 +30,7 @@ public class MonsterActivationGate : MonoBehaviour
             // If you add OnLocalZoneApplied later, you can hook it too.
             // ZoneStateService.Instance.OnLocalZoneApplied += Apply;
         }
+        Apply(ZoneStateService.Instance != null ? ZoneStateService.Instance.LocalZone : ZoneId.None);
     }
 
     private void OnDisable()
@@ -51,7 +52,12 @@ public class MonsterActivationGate : MonoBehaviour
 
         if (aiScripts != null)
             foreach (var s in aiScripts)
-                if (s != null) s.enabled = active;
+            {
+                if (s == null) continue;
+                bool sharedMonster = GetComponent<RunawayChimps.Travel.SectorMonsterSync>() != null;
+                if (sharedMonster && (s is MonsterNavigation || s is RunawayChimps.Travel.SectorMonsterSync)) continue;
+                s.enabled = active;
+            }
 
         if (audioSources != null)
         {

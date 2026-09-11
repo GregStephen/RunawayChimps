@@ -1,4 +1,3 @@
-using System;
 using Photon.Pun;
 using Photon.Realtime;
 using Photon.VR;
@@ -7,147 +6,113 @@ using UnityEngine;
 public class RoomSwitchService : MonoBehaviourPunCallbacks
 {
     public static RoomSwitchService Instance { get; private set; }
-
-    [Header("Public Lobby Settings")]
-    [Tooltip("Must match PhotonVRManager.PublicQueue")]
     public string publicQueue = "lobby";
-
-    [Tooltip("If blank, uses PhotonVRManager.DefaultRoomLimit")]
-    public int maxPlayersOverride = 0;
-
-    private enum PendingJoinType { None, RandomPublic, PrivateCode }
-    private PendingJoinType pendingType = PendingJoinType.None;
-    private string pendingPrivateCode = null;
+    public int maxPlayersOverride;
+    [Min(5f)] public float joinTimeout = 30f;
     public bool IsSwitchingRooms { get; private set; }
+    public string LastError { get; private set; }
+    private enum PendingJoinType { None, RandomPublic, PrivateCode }
+    private PendingJoinType pendingType;
+    private string pendingPrivateCode;
+    private bool joinIssued;
+    private float deadline;
 
     private void Awake()
     {
-        if (Instance != null && Instance != this)
-        {
-            Destroy(gameObject);
-            return;
-        }
-
+        if (Instance != null && Instance != this) { Destroy(gameObject); return; }
         Instance = this;
         DontDestroyOnLoad(gameObject);
     }
 
-    // -------------------------
-    // Public API
-    // -------------------------
-
-    public void JoinRandomPublicLobby()
-    {
-        QueueJoin(PendingJoinType.RandomPublic, null);
-    }
-
+    public void JoinRandomPublicLobby() => QueueJoin(PendingJoinType.RandomPublic, null);
     public void JoinPrivateRoom(string roomCode)
     {
-        if (string.IsNullOrWhiteSpace(roomCode))
-            return;
-
-        QueueJoin(PendingJoinType.PrivateCode, roomCode.Trim().ToUpperInvariant());
+        if (!string.IsNullOrWhiteSpace(roomCode))
+            QueueJoin(PendingJoinType.PrivateCode, roomCode.Trim().ToUpperInvariant());
     }
 
-    // -------------------------
-    // Core logic
-    // -------------------------
-
-    private void QueueJoin(PendingJoinType type, string privateCode)
+    private void QueueJoin(PendingJoinType type, string code)
     {
+        if (IsSwitchingRooms || (RunawayChimps.Travel.SectorTravelService.I != null &&
+            RunawayChimps.Travel.SectorTravelService.I.IsBusy)) return;
+        if (PhotonVRManager.Manager == null) { Fail("Multiplayer setup is not ready."); return; }
+        if (PhotonNetwork.InRoom && type == PendingJoinType.PrivateCode && PhotonNetwork.CurrentRoom.Name == code) return;
+        LastError = null;
+        AppState.I?.ClearFailure();
         IsSwitchingRooms = true;
+        joinIssued = false;
         pendingType = type;
-        pendingPrivateCode = privateCode;
-
-        // If not connected, connect and wait for OnConnectedToMaster
-        if (!PhotonNetwork.IsConnected)
-        {
-            Debug.Log($"[RoomSwitchService] Not connected. Connecting then will join: {pendingType}");
-            PhotonVRManager.Connect();
-            return;
-        }
-
-        // If in a room, leave first. Join after OnLeftRoom -> OnConnectedToMaster.
+        pendingPrivateCode = code;
+        deadline = Time.realtimeSinceStartup + Mathf.Max(5f, joinTimeout);
+        // Remains true through completion, preventing public autojoin regardless of callback order.
         if (PhotonNetwork.InRoom)
         {
-            Debug.Log($"[RoomSwitchService] Leaving room '{PhotonNetwork.CurrentRoom.Name}' to join: {pendingType}");
-            PhotonVRManager.SuppressAutoLobbyJoinOnce = true; // important: prevents auto lobby join while we switch
-            PhotonNetwork.LeaveRoom(false);
-            return;
+            if (!PhotonNetwork.LeaveRoom(false)) Fail("Could not leave the current room.");
         }
-
-        // Already connected and not in a room: join now (or wait if still transitioning)
-        TryExecutePending();
+        else if (!PhotonNetwork.IsConnected)
+        {
+            if (!PhotonVRManager.Connect()) Fail("Could not start the multiplayer connection.");
+        }
+        else TryExecutePending();
     }
 
     private void TryExecutePending()
     {
-        if (pendingType == PendingJoinType.None)
-            return;
-
-        // Must be on master and ready
-        if (!PhotonNetwork.IsConnectedAndReady ||
-            PhotonNetwork.NetworkClientState != ClientState.ConnectedToMasterServer)
-        {
-            Debug.Log($"[RoomSwitchService] Waiting for Master (state={PhotonNetwork.NetworkClientState})");
-            return;
-        }
-
-        int maxPlayers = (maxPlayersOverride > 0) ? maxPlayersOverride : PhotonVRManager.Manager.DefaultRoomLimit;
-
-        if (pendingType == PendingJoinType.RandomPublic)
-        {
-            Debug.Log("[RoomSwitchService] Joining random PUBLIC lobby...");
-            PhotonVRManager.JoinRandomRoom(publicQueue, maxPlayers);
-        }
-        else if (pendingType == PendingJoinType.PrivateCode)
-        {
-            Debug.Log($"[RoomSwitchService] Joining PRIVATE room: {pendingPrivateCode}");
-            PhotonVRManager.JoinPrivateRoom(pendingPrivateCode, maxPlayers);
-        }
-
-        pendingType = PendingJoinType.None;
-        pendingPrivateCode = null;
+        if (!IsSwitchingRooms || joinIssued || pendingType == PendingJoinType.None ||
+            !PhotonNetwork.IsConnectedAndReady ||
+            PhotonNetwork.NetworkClientState != ClientState.ConnectedToMasterServer) return;
+        var manager = PhotonVRManager.Manager;
+        if (manager == null) { Fail("Multiplayer setup is not ready."); return; }
+        int capacity = Mathf.Clamp(maxPlayersOverride > 0 ? maxPlayersOverride : manager.DefaultRoomLimit, 1, 10);
+        joinIssued = true;
+        bool accepted = pendingType == PendingJoinType.RandomPublic
+            ? PhotonVRManager.JoinRandomRoom(publicQueue, capacity)
+            : PhotonVRManager.JoinPrivateRoom(pendingPrivateCode, capacity);
+        if (!accepted) Fail("Could not start room joining. Please try again.");
     }
 
-    // -------------------------
-    // Photon callbacks
-    // -------------------------
-
-    public override void OnLeftRoom()
+    private void Update()
     {
-        Debug.Log("[RoomSwitchService] Left room. Waiting for Master to rejoin...");
-        // Photon will go back to Master automatically, then OnConnectedToMaster will fire
+        if (!IsSwitchingRooms || Time.realtimeSinceStartup < deadline) return;
+        // Cancel the native attempt before permitting a retry with different intent.
+        PhotonNetwork.Disconnect();
+        Fail("Room joining timed out. Please try again.");
     }
 
-    public override void OnJoinedRoom()
-    {
-        Debug.Log("[RoomSwitchService] Joined room.");
-        IsSwitchingRooms = false;
-    }
-
-    public override void OnConnectedToMaster()
-    {
-        Debug.Log("[RoomSwitchService] OnConnectedToMaster");
-        TryExecutePending();
-    }
-
-    public override void OnJoinRoomFailed(short returnCode, string message)
+    private void ClearRequest()
     {
         IsSwitchingRooms = false;
-        Debug.LogError($"[RoomSwitchService] OnJoinRoomFailed ({returnCode}): {message}");
         pendingType = PendingJoinType.None;
         pendingPrivateCode = null;
+        joinIssued = false;
+        PhotonVRManager.SuppressAutoLobbyJoinOnce = false;
     }
 
-    public override void OnJoinRandomFailed(short returnCode, string message)
+    private void Fail(string message)
     {
-        Debug.LogWarning($"[RoomSwitchService] OnJoinRandomFailed ({returnCode}): {message}");
-        // Your PhotonVRManager already creates a new lobby room on random join fail.
-        // So we don't do anything special here.
-        pendingType = PendingJoinType.None;
-        pendingPrivateCode = null;
-        IsSwitchingRooms = false;
-
+        ClearRequest();
+        LastError = message;
+        AppState.I?.SetStatus(message);
+        if (AppState.I != null && !AppState.I.IsReady) AppState.I.Fail(message);
+        Debug.LogWarning("[RoomSwitchService] " + message, this);
     }
+
+    public override void OnConnectedToMaster() => TryExecutePending();
+    public override void OnJoinedRoom() { ClearRequest(); LastError = null; }
+    public override void OnJoinRoomFailed(short code, string message) => Fail("Could not join room: " + message);
+    public override void OnCreateRoomFailed(short code, string message) => Fail("Could not create room: " + message);
+    public override void OnJoinRandomFailed(short code, string message)
+    {
+        // The manager creates a fallback public room. Stay locked until its result.
+    }
+    public override void OnDisconnected(DisconnectCause cause)
+    {
+        if (IsSwitchingRooms) Fail("Disconnected while joining: " + cause);
+    }
+    public override void OnDisable()
+    {
+        base.OnDisable();
+        if (Instance == this) ClearRequest();
+    }
+    private void OnDestroy() { if (Instance == this) Instance = null; }
 }

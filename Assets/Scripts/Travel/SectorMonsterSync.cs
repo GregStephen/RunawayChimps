@@ -24,6 +24,19 @@ namespace RunawayChimps.Travel
         private double lastStateTime = double.MinValue;
         private float nextSend;
         private float nextRequest;
+        private Room observedRoom;
+
+        private void RefreshRoom()
+        {
+            var room = PhotonNetwork.CurrentRoom;
+            if (ReferenceEquals(room, observedRoom)) return;
+            observedRoom = room;
+            controller = 0;
+            hasState = HasAuthority = false;
+            lastStateTime = double.MinValue;
+            nextRequest = nextSend = 0;
+            navigation.ApplyRemoteChasing(false);
+        }
 
         private void Awake() => navigation = GetComponent<MonsterNavigation>();
         private void OnEnable() => PhotonNetwork.AddCallbackTarget(this);
@@ -35,6 +48,7 @@ namespace RunawayChimps.Travel
 
         private void Update()
         {
+            RefreshRoom();
             int elected = PhotonNetwork.InRoom ? SectorPresence.ElectController(PhotonNetwork.PlayerList, sector) : 0;
             if (elected != controller)
             {
@@ -89,6 +103,8 @@ namespace RunawayChimps.Travel
 
         public void OnEvent(EventData photonEvent)
         {
+            if (!PhotonNetwork.InRoom) return;
+            RefreshRoom();
             if (photonEvent.Code != StateEvent && photonEvent.Code != RequestEvent) return;
             if (!(photonEvent.CustomData is object[] data) || data.Length < 2 ||
                 !(data[0] is int eventSector) || eventSector != (int)sector ||
@@ -96,13 +112,18 @@ namespace RunawayChimps.Travel
             int owner = SectorPresence.ElectController(PhotonNetwork.PlayerList, sector);
             if (photonEvent.Code == RequestEvent)
             {
-                if (owner == PhotonNetwork.LocalPlayer.ActorNumber && owner != 0)
+                var sender = PhotonNetwork.CurrentRoom.GetPlayer(photonEvent.Sender);
+                if (data.Length == 2 && SectorPresence.Get(sender) == sector &&
+                    owner == PhotonNetwork.LocalPlayer.ActorNumber && owner != 0)
                     SendState(new[] { photonEvent.Sender }, true);
                 return;
             }
             if (owner == 0 || photonEvent.Sender != owner || data.Length != 6 ||
                 !(data[2] is double time) || !(data[3] is Vector3 position) ||
                 !(data[4] is Quaternion rotation) || !(data[5] is bool chasing)) return;
+            if (double.IsNaN(time) || double.IsInfinity(time) || !Finite(position.x) || !Finite(position.y) ||
+                !Finite(position.z) || !Finite(rotation.x) || !Finite(rotation.y) || !Finite(rotation.z) ||
+                !Finite(rotation.w) || Quaternion.Dot(rotation, rotation) < 0.0001f) return;
             if (controller == owner && time <= lastStateTime) return;
             lastStateTime = time;
             targetPosition = position;
@@ -111,5 +132,7 @@ namespace RunawayChimps.Travel
             hasState = true;
             navigation.ApplyRemoteChasing(chasing);
         }
+
+        private static bool Finite(float value) => !float.IsNaN(value) && !float.IsInfinity(value);
     }
 }

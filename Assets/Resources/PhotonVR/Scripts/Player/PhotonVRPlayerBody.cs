@@ -9,7 +9,8 @@ public class PhotonVRPlayerBody : MonoBehaviour
 
     private void Update()
     {
-        transform.rotation = new Quaternion(0, Head.rotation.y, 0, Head.rotation.w);
+        if (Head == null) return;
+        transform.rotation = Quaternion.Euler(0, Head.eulerAngles.y, 0);
         transform.position = new Vector3(Head.position.x, Head.position.y + Offset, Head.position.z);
     }
 }

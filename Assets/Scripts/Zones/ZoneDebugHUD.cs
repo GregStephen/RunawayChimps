@@ -15,7 +15,7 @@ namespace RunawayChimps.Zones
 
         private GUIStyle _style;
 
-        private void Awake()
+        private void EnsureStyle()
         {
             _style = new GUIStyle(GUI.skin.label)
             {
@@ -35,6 +35,7 @@ namespace RunawayChimps.Zones
         private void OnGUI()
         {
             if (!Visible) return;
+            if (_style == null) EnsureStyle();
 
             var svc = ZoneStateService.Instance;
             if (svc == null)

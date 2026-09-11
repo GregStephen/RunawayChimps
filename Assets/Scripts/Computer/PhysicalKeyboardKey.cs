@@ -54,6 +54,7 @@ public class PhysicalKeyboardKey : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
+        if (other.GetComponentInParent<LocalRigMarker>() == null) return;
         if (_pressingCollider != null) return;
         if (Time.time < _nextPressTime) return;
 
@@ -63,6 +64,14 @@ public class PhysicalKeyboardKey : MonoBehaviour
         _pressingCollider = other;
         DoPress();
     }
+
+    private void Update()
+    {
+        if (_pressingCollider == null || !_pressingCollider.enabled ||
+            !_pressingCollider.gameObject.activeInHierarchy) _pressingCollider = null;
+    }
+
+    private void OnDisable() => _pressingCollider = null;
 
     private void OnTriggerExit(Collider other)
     {

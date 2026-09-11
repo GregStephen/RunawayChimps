@@ -1,61 +1,112 @@
 using System.Collections;
-using UnityEngine;
-using UnityEngine.SceneManagement;
+using Photon.Pun;
 using TMPro;
+using UnityEngine;
+using UnityEngine.InputSystem;
+using UnityEngine.SceneManagement;
+using UnityEngine.XR;
 
 public class LoadingFlow : MonoBehaviour
 {
     [SerializeField] private string hubSceneName = "Hub_Base";
     [SerializeField] private TMP_Text statusText;
+    [Min(10f)] [SerializeField] private float startupTimeout = 90f;
+    private AsyncOperation hubLoad;
+    private bool startup;
+    private bool entering;
+    private bool triggerWasPressed;
+    private float deadline;
+    private string loadError;
 
     private void Start()
     {
-        // Reuse the Loading scene for travel without restarting login or room setup.
-        if (RunawayChimps.Travel.SectorTravelService.I != null &&
-            RunawayChimps.Travel.SectorTravelService.I.IsBusy)
+        if (RunawayChimps.Travel.SectorTravelService.I != null && RunawayChimps.Travel.SectorTravelService.I.IsBusy)
         {
             if (statusText != null) statusText.text = "Loading...";
             return;
         }
-        AppState.I?.ResetReady();
-        SetStatus("Loading hub...");
-        StartCoroutine(CoPreloadHubThenEnter());
+        startup = true;
+        deadline = Time.realtimeSinceStartup + Mathf.Max(10f, startupTimeout);
+        BeginHubLoad();
     }
 
-    private void SetStatus(string s)
+    private void BeginHubLoad()
     {
-        if (statusText != null) statusText.text = s;
-        AppState.I?.SetStatus(s);
+        if (SceneManager.GetSceneByName(hubSceneName).isLoaded || (hubLoad != null && !hubLoad.isDone)) return;
+        try
+        {
+            loadError = null;
+            if (!Application.CanStreamedLevelBeLoaded(hubSceneName))
+                throw new System.InvalidOperationException("Hub scene is missing from Build Settings.");
+            hubLoad = SceneManager.LoadSceneAsync(hubSceneName, LoadSceneMode.Additive);
+            if (hubLoad == null) throw new System.InvalidOperationException("Could not start loading the hub.");
+        }
+        catch (System.Exception exception)
+        {
+            loadError = exception.Message;
+            AppState.I?.Fail(loadError);
+        }
     }
 
-    private IEnumerator CoPreloadHubThenEnter()
+    private void Update()
     {
-        // 1) Preload hub additively (but DO NOT activate it yet)
-        var op = SceneManager.LoadSceneAsync(hubSceneName, LoadSceneMode.Additive);
-        while (!op.isDone) yield return null;
-        yield return null;
+        if (!startup || entering) return;
+        var state = AppState.I;
+        bool hubReady = SceneManager.GetSceneByName(hubSceneName).isLoaded;
+        if (state != null && hubReady)
+        {
+            state.MarkHubActive();
+            state.TryMarkReady();
+        }
+        if (state != null && state.IsReady && hubReady && PhotonNetwork.InRoom)
+        {
+            entering = true;
+            StartCoroutine(EnterHub());
+            return;
+        }
+        if (Time.realtimeSinceStartup >= deadline && state != null && string.IsNullOrEmpty(state.LastError))
+            state.Fail("Startup timed out. Check your connection and retry.");
+        string error = state != null ? state.LastError : "Bootstrap state is missing. Start from Bootstrap.";
+        if (string.IsNullOrEmpty(error)) error = loadError;
+        if (statusText != null)
+            statusText.text = string.IsNullOrEmpty(error) ? (hubReady ? state?.Status : "Loading hub...") :
+                error + "\nPress either trigger to retry. (Desktop: R)";
+        bool pressed = TriggerPressed(XRNode.LeftHand) || TriggerPressed(XRNode.RightHand);
+        bool retry = (pressed && !triggerWasPressed) || (Keyboard.current != null && Keyboard.current.rKey.wasPressedThisFrame);
+        triggerWasPressed = pressed;
+        if (!string.IsNullOrEmpty(error) && retry) Retry();
+    }
 
-        // Mark hub loaded/available
-        AppState.I?.MarkHubActive();
-        AppState.I?.TryMarkReady();
-        SetStatus("Connecting...");
+    private static bool TriggerPressed(XRNode hand) => InputDevices.GetDeviceAtXRNode(hand)
+        .TryGetFeatureValue(UnityEngine.XR.CommonUsages.triggerButton, out bool pressed) && pressed;
 
-        // 2) Wait until everything is truly ready (spawn + visuals + rig snap)
-        while (AppState.I != null && !AppState.I.IsReady)
-            yield return null;
+    public void Retry()
+    {
+        if (!startup || entering) return;
+        deadline = Time.realtimeSinceStartup + Mathf.Max(10f, startupTimeout);
+        AppState.I?.ClearFailure();
+        BeginHubLoad(); // Reuse an in-flight native scene load; never duplicate it.
+        if (GameBootstrap.I != null) GameBootstrap.I.RetryStartup();
+        else AppState.I?.Fail("Bootstrap service is missing. Start from Bootstrap.");
+    }
 
-        // 3) Final settle (optional but helps)
+    private IEnumerator EnterHub()
+    {
         yield return null;
         yield return new WaitForFixedUpdate();
-
-        SetStatus("Entering...");
-
-        // 4) NOW activate hub
-        var hubScene = SceneManager.GetSceneByName(hubSceneName);
-        SceneManager.SetActiveScene(hubScene);
-        RunawayChimps.Travel.SectorTravelService.I?.NotifySceneReady(hubScene);
-
-        // 5) Unload Loading
-        yield return SceneManager.UnloadSceneAsync("Loading");
+        if (!PhotonNetwork.InRoom || AppState.I == null || !AppState.I.IsReady)
+        {
+            entering = false;
+            yield break;
+        }
+        var hub = SceneManager.GetSceneByName(hubSceneName);
+        if (!SceneManager.SetActiveScene(hub))
+        {
+            AppState.I.Fail("Could not activate the hub.");
+            entering = false;
+            yield break;
+        }
+        RunawayChimps.Travel.SectorTravelService.I?.NotifySceneReady(hub);
+        yield return SceneManager.UnloadSceneAsync(gameObject.scene);
     }
 }

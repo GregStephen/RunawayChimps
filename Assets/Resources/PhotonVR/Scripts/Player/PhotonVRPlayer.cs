@@ -30,17 +30,17 @@ namespace Photon.VR.Player
         {
             if (photonView.IsMine)
             {
-                PhotonVRManager.Manager.LocalPlayer = this;
+                if (PhotonVRManager.Manager != null) PhotonVRManager.Manager.LocalPlayer = this;
                 Debug.Log($"[PhotonVRPlayer] Awake (IsMine). Head={(Head!=null?Head.name:"null")}, Body={(Body!=null?Body.name:"null")}, HideLocalPlayer={HideLocalPlayer}");
                 // Do NOT notify PhotonVRManager with this prefab's visual head transform —
                 // the manager should be bound to the actual tracking rig (via PhotonVRRigBinder).
                 if (HideLocalPlayer)
                 {
-                    Head.gameObject.SetActive(false);
-                    Body.gameObject.SetActive(false);
-                    RightHand.gameObject.SetActive(false);
-                    LeftHand.gameObject.SetActive(false);
-                    NameText.gameObject.SetActive(false);
+                    if (Head != null) Head.gameObject.SetActive(false);
+                    if (Body != null) Body.gameObject.SetActive(false);
+                    if (RightHand != null) RightHand.gameObject.SetActive(false);
+                    if (LeftHand != null) LeftHand.gameObject.SetActive(false);
+                    if (NameText != null) NameText.gameObject.SetActive(false);
                 }
                 // Debug visual state now and next frame (in case something else toggles it on Start)
             }
@@ -56,7 +56,8 @@ namespace Photon.VR.Player
         private void Update()
         {
             var mgr = PhotonVRManager.Manager; // or PhotonVRManager.Manager if you have the using
-            if (mgr == null || mgr.Head == null)
+            if (mgr == null || mgr.Head == null || mgr.LeftHand == null || mgr.RightHand == null ||
+                Head == null || LeftHand == null || RightHand == null)
                 return;
             if (photonView.IsMine)
             {
@@ -109,6 +110,7 @@ namespace Photon.VR.Player
 
         private void _RefreshPlayerValues()
         {
+            if (photonView.Owner == null) return;
             // Name
             if (NameText != null)
             {
@@ -116,6 +118,7 @@ namespace Photon.VR.Player
                     photonView.Owner.CustomProperties.TryGetValue("DisplayName", out object dn) &&
                     dn is string s && !string.IsNullOrEmpty(s))
                 {
+                    NameText.richText = false;
                     NameText.text = s;
                 }
                 else
@@ -134,58 +137,25 @@ namespace Photon.VR.Player
                 photonView.Owner.CustomProperties.TryGetValue("Colour", out object colObj) &&
                 colObj is string colJson)
             {
-                var c = JsonUtility.FromJson<Color>(colJson);
-                foreach (MeshRenderer renderer in ColourObjects)
+                Color c;
+                try { c = JsonUtility.FromJson<Color>(colJson); }
+                catch (ArgumentException) { c = Color.white; }
+                if (ColourObjects != null) foreach (MeshRenderer renderer in ColourObjects)
                     if (renderer != null)
                         renderer.material.color = c;
             }
 
-            // Cosmetics - it's a little ugly to look at
-            //Dictionary<string, string> cosmetics = (Dictionary<string, string>)photonView.Owner.CustomProperties["Cosmetics"];
-            //foreach (KeyValuePair<string, string> cosmetic in cosmetics)
-            //{
-            //    Debug.Log(cosmetic.Key);
-            //    foreach (CosmeticSlot slot in CosmeticSlots)
-            //    {
-            //        if (slot.SlotName == cosmetic.Key)
-            //        {
-            //            foreach (Transform cos in slot.Object)
-            //                if (cos.name != cosmetic.Value)
-            //                    cos.gameObject.SetActive(false);
-            //                else
-            //                    cos.gameObject.SetActive(true);
-            //        }
-            //    }
-            //}
-            // Cosmetics
-            if (photonView.Owner.CustomProperties != null &&
-                photonView.Owner.CustomProperties.TryGetValue("Cosmetics", out object cosObj) &&
-                cosObj != null)
+            object cosmetics = null;
+            photonView.Owner.CustomProperties?.TryGetValue("Cosmetics", out cosmetics);
+            foreach (var slot in CosmeticSlots)
             {
-                // Photon often gives you an ExitGames.Client.Photon.Hashtable here, not Dictionary<string,string>
-                if (cosObj is ExitGames.Client.Photon.Hashtable ht)
-                {
-                    foreach (System.Collections.DictionaryEntry entry in ht)
-                    {
-                        string key = entry.Key as string;
-                        string value = entry.Value as string;
-                        if (string.IsNullOrEmpty(key) || string.IsNullOrEmpty(value)) continue;
-
-                        ApplyCosmetic(key, value);
-                    }
-                }
-                else if (cosObj is Dictionary<string, string> dict)
-                {
-                    foreach (var kv in dict)
-                    {
-                        if (string.IsNullOrEmpty(kv.Key) || string.IsNullOrEmpty(kv.Value)) continue;
-                        ApplyCosmetic(kv.Key, kv.Value);
-                    }
-                }
-                else
-                {
-                    Debug.LogWarning($"[PhotonVRPlayer] Cosmetics property has unexpected type: {cosObj.GetType().FullName}");
-                }
+                if (slot == null || string.IsNullOrEmpty(slot.SlotName)) continue;
+                string cosmeticId = null;
+                if (cosmetics is ExitGames.Client.Photon.Hashtable table &&
+                    table.TryGetValue(slot.SlotName, out var value)) cosmeticId = value as string;
+                else if (cosmetics is Dictionary<string, string> dictionary)
+                    dictionary.TryGetValue(slot.SlotName, out cosmeticId);
+                ApplyCosmetic(slot.SlotName, cosmeticId);
             }
 
 

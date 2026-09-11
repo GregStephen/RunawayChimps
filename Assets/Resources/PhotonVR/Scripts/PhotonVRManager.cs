@@ -112,7 +112,10 @@ namespace Photon.VR
         {
             // Load saved values first (so the initial broadcast is correct)
             if (!string.IsNullOrEmpty(PlayerPrefs.GetString("Colour")))
-                Colour = JsonUtility.FromJson<Color>(PlayerPrefs.GetString("Colour"));
+            {
+                try { Colour = JsonUtility.FromJson<Color>(PlayerPrefs.GetString("Colour")); }
+                catch (ArgumentException) { Debug.LogWarning("Saved avatar color is invalid; using the default.", this); }
+            }
 
             if (!string.IsNullOrEmpty(PlayerPrefs.GetString("Cosmetics")))
                 Cosmetics = PhotonVRValueSaver.GetDictionary("Cosmetics");
@@ -128,7 +131,7 @@ namespace Photon.VR
             if (b)
             {
                 if (string.IsNullOrEmpty(AppId))
-                    AppId = PhotonNetwork.PhotonServerSettings.AppSettings.AppIdFusion;
+                    AppId = PhotonNetwork.PhotonServerSettings.AppSettings.AppIdRealtime;
 
                 if (string.IsNullOrEmpty(VoiceAppId))
                     VoiceAppId = PhotonNetwork.PhotonServerSettings.AppSettings.AppIdVoice;
@@ -229,6 +232,7 @@ namespace Photon.VR
                 return false;
             }
 
+            if (PhotonNetwork.IsConnected || Manager._state == ConnectionState.Connecting) return true;
             PhotonNetwork.AuthValues = null;
 
             Manager._state = ConnectionState.Connecting;
@@ -236,9 +240,10 @@ namespace Photon.VR
             PhotonNetwork.PhotonServerSettings.AppSettings.AppIdVoice = Manager.VoiceAppId;
             PhotonNetwork.PhotonServerSettings.AppSettings.FixedRegion = Manager.Region;
 
-            PhotonNetwork.ConnectUsingSettings();
+            bool started = PhotonNetwork.ConnectUsingSettings();
+            if (!started) Manager._state = ConnectionState.Disconnected;
             Debug.Log($"Connecting - AppId: {PhotonNetwork.PhotonServerSettings.AppSettings.AppIdRealtime} VoiceAppId: {PhotonNetwork.PhotonServerSettings.AppSettings.AppIdVoice}");
-            return true;
+            return started;
         }
 
         public static bool ConnectAuthenticated(string username, string token)
@@ -265,9 +270,10 @@ namespace Photon.VR
             PhotonNetwork.PhotonServerSettings.AppSettings.AppIdVoice = Manager.VoiceAppId;
             PhotonNetwork.PhotonServerSettings.AppSettings.FixedRegion = Manager.Region;
 
-            PhotonNetwork.ConnectUsingSettings();
+            bool started = PhotonNetwork.ConnectUsingSettings();
+            if (!started) Manager._state = ConnectionState.Disconnected;
             Debug.Log($"Connecting (auth) - AppId: {PhotonNetwork.PhotonServerSettings.AppSettings.AppIdRealtime} VoiceAppId: {PhotonNetwork.PhotonServerSettings.AppSettings.AppIdVoice}");
-            return true;
+            return started;
         }
 
         public void Disconnect()
@@ -293,7 +299,7 @@ namespace Photon.VR
             };
             PhotonNetwork.LocalPlayer.SetCustomProperties(props);
 
-            if (PhotonNetwork.InRoom && Manager.LocalPlayer != null)
+            if (PhotonNetwork.InRoom && Manager != null && Manager.LocalPlayer != null)
                 Manager.LocalPlayer.RefreshPlayerValues();
         }
 
@@ -310,7 +316,7 @@ namespace Photon.VR
             };
             PhotonNetwork.LocalPlayer.SetCustomProperties(props);
 
-            if (PhotonNetwork.InRoom && Manager.LocalPlayer != null)
+            if (PhotonNetwork.InRoom && Manager != null && Manager.LocalPlayer != null)
                 Manager.LocalPlayer.RefreshPlayerValues();
         }
 
@@ -326,7 +332,7 @@ namespace Photon.VR
 
             PhotonVRValueSaver.SaveDictionary("Cosmetics", Manager.Cosmetics);
 
-            if (PhotonNetwork.InRoom && Manager.LocalPlayer != null)
+            if (PhotonNetwork.InRoom && Manager != null && Manager.LocalPlayer != null)
                 Manager.LocalPlayer.RefreshPlayerValues();
         }
 
@@ -345,7 +351,7 @@ namespace Photon.VR
 
             PhotonVRValueSaver.SaveDictionary("Cosmetics", Manager.Cosmetics);
 
-            if (PhotonNetwork.InRoom && Manager.LocalPlayer != null)
+            if (PhotonNetwork.InRoom && Manager != null && Manager.LocalPlayer != null)
                 Manager.LocalPlayer.RefreshPlayerValues();
         }
 
@@ -371,8 +377,8 @@ namespace Photon.VR
             };
             PhotonNetwork.LocalPlayer.SetCustomProperties(props);
 
-            if (!JoinRoomOnConnect)
-                return;
+            if (RoomSwitchService.Instance != null && RoomSwitchService.Instance.IsSwitchingRooms) return;
+            if (!JoinRoomOnConnect) return;
 
             if (SuppressAutoLobbyJoinOnce)
             {
@@ -417,6 +423,15 @@ namespace Photon.VR
             Debug.Log("Disconnected from server: " + cause);
         }
 
+        public override void OnLeftRoom() => _state = ConnectionState.Connected;
+        public override void OnJoinRoomFailed(short code, string message) => _state = ConnectionState.Connected;
+        public override void OnCreateRoomFailed(short code, string message) => _state = ConnectionState.Connected;
+
+        private void OnDestroy()
+        {
+            if (Manager == this) { Manager = null; SuppressAutoLobbyJoinOnce = false; }
+        }
+
         public override void OnJoinRandomFailed(short returnCode, string message)
         {
             Debug.LogWarning($"OnJoinRandomFailed ({returnCode}): {message}");
@@ -429,29 +444,30 @@ namespace Photon.VR
 
         public static ConnectionState GetConnectionState()
         {
-            return Manager._state;
+            return Manager != null ? Manager._state : ConnectionState.Disconnected;
         }
 
         public static void SwitchScenes(int sceneIndex, int maxPlayers)
         {
-            SceneManager.LoadScene(sceneIndex);
-            JoinRandomRoom(sceneIndex.ToString(), maxPlayers);
+            SwitchScenes(sceneIndex);
         }
 
         public static void SwitchScenes(int sceneIndex)
         {
-            SceneManager.LoadScene(sceneIndex);
-            JoinRandomRoom(sceneIndex.ToString(), Manager.DefaultRoomLimit);
+            string path = SceneUtility.GetScenePathByBuildIndex(sceneIndex);
+            var travel = RunawayChimps.Travel.SectorTravelService.I;
+            if (travel == null || string.IsNullOrEmpty(path) ||
+                !travel.TravelTo(System.IO.Path.GetFileNameWithoutExtension(path)))
+                Debug.LogWarning("Use an available sector destination after starting from Bootstrap.");
         }
 
-        public static void JoinRandomRoom(string queue, int maxPlayers) => _JoinRandomRoom(queue, maxPlayers);
-        public static void JoinRandomRoom(string queue) => _JoinRandomRoom(queue, Manager.DefaultRoomLimit);
+        public static bool JoinRandomRoom(string queue, int maxPlayers) => _JoinRandomRoom(queue, maxPlayers);
+        public static bool JoinRandomRoom(string queue) => Manager != null && _JoinRandomRoom(queue, Manager.DefaultRoomLimit);
 
-        private static void _JoinRandomRoom(string queue, int maxPlayers)
+        private static bool _JoinRandomRoom(string queue, int maxPlayers)
         {
-            if (Manager == null)
-                return;
-
+            if (Manager == null) return false;
+            maxPlayers = Mathf.Clamp(maxPlayers, 1, 10);
             Manager._state = ConnectionState.JoiningRoom;
 
             var roomProps = new ExitGames.Client.Photon.Hashtable
@@ -472,8 +488,10 @@ namespace Photon.VR
             // Save so HandleJoinError can create a matching room if needed.
             Manager._lastMatchmakingOptions = roomOptions;
 
-            PhotonNetwork.JoinRandomRoom(roomProps, (byte)maxPlayers, MatchmakingMode.RandomMatching, null, null, null);
+            bool started = PhotonNetwork.JoinRandomRoom(roomProps, (byte)maxPlayers, MatchmakingMode.RandomMatching, null, null, null);
+            if (!started) Manager._state = ConnectionState.Connected;
             Debug.Log($"Joining random room (queue={queue}, version={Application.version})");
+            return started;
         }
 
         private void HandleJoinError()
@@ -491,7 +509,7 @@ namespace Photon.VR
 
                 _lastMatchmakingOptions = new RoomOptions
                 {
-                    MaxPlayers = (byte)DefaultRoomLimit,
+                    MaxPlayers = (byte)Mathf.Clamp(DefaultRoomLimit, 1, 10),
                     IsVisible = true,
                     IsOpen = true,
                     CustomRoomProperties = roomProps,
@@ -502,15 +520,22 @@ namespace Photon.VR
             string roomName = $"LOBBY_{CreateRoomCode()}";
             Debug.Log($"Creating public room: {roomName}");
 
-            PhotonNetwork.CreateRoom(roomName, _lastMatchmakingOptions, null, null);
+            if (!PhotonNetwork.CreateRoom(roomName, _lastMatchmakingOptions, null, null))
+            {
+                _state = ConnectionState.Connected;
+                RoomSwitchService.Instance?.OnCreateRoomFailed(0, "Could not start fallback room creation.");
+            }
         }
 
-        public static void JoinPrivateRoom(string roomId, int maxPlayers) => _JoinPrivateRoom(roomId, maxPlayers);
-        public static void JoinPrivateRoom(string roomId) => _JoinPrivateRoom(roomId, Manager.DefaultRoomLimit);
+        public static bool JoinPrivateRoom(string roomId, int maxPlayers) => _JoinPrivateRoom(roomId, maxPlayers);
+        public static bool JoinPrivateRoom(string roomId) => Manager != null && _JoinPrivateRoom(roomId, Manager.DefaultRoomLimit);
 
-        public static void _JoinPrivateRoom(string roomId, int maxPlayers)
+        public static bool _JoinPrivateRoom(string roomId, int maxPlayers)
         {
-            PhotonNetwork.JoinOrCreateRoom(
+            if (Manager == null || string.IsNullOrWhiteSpace(roomId)) return false;
+            maxPlayers = Mathf.Clamp(maxPlayers, 1, 10);
+            Manager._state = ConnectionState.JoiningRoom;
+            bool started = PhotonNetwork.JoinOrCreateRoom(
                 roomId,
                 new RoomOptions
                 {
@@ -522,7 +547,9 @@ namespace Photon.VR
                 null
             );
 
+            if (!started) Manager._state = ConnectionState.Connected;
             Debug.Log($"Joining a private room: {roomId}");
+            return started;
         }
 
         public string CreateRoomCode()
