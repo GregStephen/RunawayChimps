@@ -7,6 +7,7 @@ on:
     paths:
       - .github/workflows/level2-fuse-objective.yml
       - Tools/Level2Blockout/apply_fuse_objective.py
+      - Tools/Level2Blockout/fix_fuse_patch_helper.py
 
 permissions:
   contents: write
@@ -19,6 +20,8 @@ jobs:
         with:
           ref: design/level2-expanded-map-v04
           fetch-depth: 0
+      - name: Apply small corrections to one-off patch helper
+        run: python Tools/Level2Blockout/fix_fuse_patch_helper.py
       - name: Apply confirmed fuse objective changes
         run: python Tools/Level2Blockout/apply_fuse_objective.py
       - name: Regenerate Level 2 scene and prefab
@@ -31,7 +34,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git rm .github/workflows/level2-fuse-objective.yml Tools/Level2Blockout/apply_fuse_objective.py
+          git rm .github/workflows/level2-fuse-objective.yml Tools/Level2Blockout/apply_fuse_objective.py Tools/Level2Blockout/fix_fuse_patch_helper.py
           git add Assets/RunawayChimps/Level2Blockout Tools/Level2Blockout docs
           git commit -m "Replace Level 2 hammer objective with four-fuse power loop"
           git push origin HEAD:design/level2-expanded-map-v04
