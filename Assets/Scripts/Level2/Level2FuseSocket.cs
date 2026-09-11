@@ -3,7 +3,7 @@ using UnityEngine.Events;
 
 namespace RunawayChimps.Level2
 {
-    [RequireComponent(typeof(Collider))]
+    [RequireComponent(typeof(BoxCollider))]
     public sealed class Level2FuseSocket : MonoBehaviour
     {
         public int socketId = 1;
@@ -22,8 +22,7 @@ namespace RunawayChimps.Level2
 
         void Awake()
         {
-            var c = GetComponent<Collider>();
-            c.isTrigger = true;
+            GetComponent<BoxCollider>().isTrigger = true;
             if (snapPoint == null) snapPoint = transform;
         }
 
