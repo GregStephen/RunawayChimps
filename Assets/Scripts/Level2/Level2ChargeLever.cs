@@ -2,13 +2,13 @@ using UnityEngine;
 
 namespace RunawayChimps.Level2
 {
-    [RequireComponent(typeof(Collider))]
+    [RequireComponent(typeof(BoxCollider))]
     public sealed class Level2ChargeLever : MonoBehaviour
     {
         public Level2FuseSocket socket;
         Collider holdingCollider;
 
-        void Awake() => GetComponent<Collider>().isTrigger = true;
+        void Awake() => GetComponent<BoxCollider>().isTrigger = true;
 
         void OnTriggerEnter(Collider other)
         {
