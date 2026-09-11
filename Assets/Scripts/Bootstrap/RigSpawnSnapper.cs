@@ -86,14 +86,28 @@ public class RigSpawnSnapper : MonoBehaviour
             yield break;
         }
 
-        // Auto-find GorillaPlayer RB + capsule via floor offset object
+        // Auto-find the GorillaPlayer rigidbody/body capsule via the floor offset object.
+        // Prefer the locomotion body's explicit collider so hand/head capsules cannot be
+        // selected accidentally if the hierarchy changes later.
+        GorillaLocomotion.Player locomotionPlayer = GorillaLocomotion.Player.Instance;
         if (xrOrigin.CameraFloorOffsetObject != null)
         {
             if (gorillaPlayerRigidbody == null)
                 gorillaPlayerRigidbody = xrOrigin.CameraFloorOffsetObject.GetComponent<Rigidbody>();
 
+            if (gorillaBodyCapsule == null && locomotionPlayer != null)
+                gorillaBodyCapsule = locomotionPlayer.bodyCollider;
+
             if (gorillaBodyCapsule == null)
                 gorillaBodyCapsule = xrOrigin.CameraFloorOffsetObject.GetComponentInChildren<CapsuleCollider>();
+        }
+
+        if (gorillaBodyCapsule == null)
+        {
+            Debug.LogError("[RigSpawnSnapper] Missing GorillaPlayer body capsule.");
+            AppState.I?.Fail("The player body collider is missing.");
+            _snapping = false;
+            yield break;
         }
 
         // Freeze RB during move
@@ -110,19 +124,24 @@ public class RigSpawnSnapper : MonoBehaviour
             gorillaPlayerRigidbody.isKinematic = true;
         }
 
-        // 1) Place the CAMERA at spawn (XR-correct)
-        xrOrigin.MoveCameraToWorldLocation(spawnGo.transform.position);
+        Transform cam = xrOrigin.Camera.transform;
 
-        // 2) Apply yaw around camera position
-        var cam = xrOrigin.Camera.transform;
+        // Spawn markers represent a floor-relative destination, not an eye-height target.
+        // Keep the tracked camera's current vertical offset, align only X/Z + yaw, then
+        // ground the locomotion capsule. This matches SectorTravelService.PlaceRig and
+        // prevents startup from forcing the headset/camera down to a floor marker.
         float targetYaw = spawnGo.transform.rotation.eulerAngles.y;
-        float deltaYaw = targetYaw - cam.eulerAngles.y;
-        transform.RotateAround(cam.position, Vector3.up, deltaYaw);
+        float deltaYaw = Mathf.DeltaAngle(cam.eulerAngles.y, targetYaw);
+        xrOrigin.transform.RotateAround(cam.position, Vector3.up, deltaYaw);
 
-        // 3) Ground-correct so the capsule bottom sits above floor
+        Vector3 cameraShift = spawnGo.transform.position - cam.position;
+        cameraShift.y = 0f;
+        xrOrigin.transform.position += cameraShift;
+
+        // Ground-correct so the body capsule bottom sits just above the actual Hub floor.
         Physics.SyncTransforms();
         bool grounded = GroundCorrect(spawnGo.transform.position);
-        GorillaLocomotion.Player.Instance?.ResetAfterTeleport();
+        locomotionPlayer?.ResetAfterTeleport();
         Physics.SyncTransforms();
 
         // Restore RB
