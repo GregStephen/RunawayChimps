@@ -38,18 +38,18 @@ namespace RunawayChimps.Level2
                 var marker = GameObject.Find($"FuseSocket{i}Marker");
                 if (marker != null)
                 {
+                    var trigger = marker.GetComponent<BoxCollider>() ?? marker.AddComponent<BoxCollider>();
+                    trigger.size = new Vector3(.7f, .7f, .65f);
+                    trigger.isTrigger = true;
                     var socket = marker.AddComponent<Level2FuseSocket>();
                     socket.socketId = i;
                     socket.chargeSeconds = 10f;
-                    var trigger = marker.AddComponent<BoxCollider>();
-                    trigger.size = new Vector3(.7f, .7f, .65f);
-                    trigger.isTrigger = true;
                     objective.RegisterSocket(socket);
 
                     var leverObject = GameObject.Find($"Fuse_Socket_{i}_Lever_Handle");
                     if (leverObject != null)
                     {
-                        var leverCollider = leverObject.GetComponent<Collider>() ?? leverObject.AddComponent<BoxCollider>();
+                        var leverCollider = leverObject.GetComponent<BoxCollider>() ?? leverObject.AddComponent<BoxCollider>();
                         leverCollider.isTrigger = true;
                         var lever = leverObject.AddComponent<Level2ChargeLever>();
                         lever.socket = socket;
@@ -116,6 +116,7 @@ namespace RunawayChimps.Level2
         static Material MakeMaterial(Color color)
         {
             var shader = Shader.Find("Standard");
+            if (shader == null) shader = Shader.Find("Universal Render Pipeline/Lit");
             var material = new Material(shader) { color = color };
             material.enableInstancing = true;
             return material;
