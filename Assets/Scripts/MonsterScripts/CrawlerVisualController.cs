@@ -91,6 +91,16 @@ public sealed class CrawlerVisualController : MonoBehaviour
         if (targetPlayback == 0f && smoothedPlayback < 0.02f)
             smoothedPlayback = 0f;
 
+        // The controller currently has one crawl state. If the imported clip is ever
+        // authored as non-looping, explicitly restart it while moving so the Crawler
+        // cannot finish one cycle and then slide through the vents in a frozen pose.
+        if (targetPlayback > 0f && zombieAnimator.enabled)
+        {
+            AnimatorStateInfo state = zombieAnimator.GetCurrentAnimatorStateInfo(0);
+            if (!state.loop && state.normalizedTime >= 0.98f)
+                zombieAnimator.Play(state.fullPathHash, 0, Mathf.Repeat(state.normalizedTime, 1f));
+        }
+
         zombieAnimator.speed = smoothedPlayback;
     }
 
@@ -98,10 +108,10 @@ public sealed class CrawlerVisualController : MonoBehaviour
     {
         if (initialized) return true;
 
-        GameObject zombieObject = GameObject.Find(zombieObjectName);
+        GameObject zombieObject = FindInOwnScene(zombieObjectName);
         if (zombieObject == null)
         {
-            Debug.LogWarning($"{name}: '{zombieObjectName}' was not found; keeping the existing Crawler visual until it is available.", this);
+            Debug.LogWarning($"{name}: '{zombieObjectName}' was not found in {gameObject.scene.name}; keeping the existing Crawler visual until it is available.", this);
             return false;
         }
 
@@ -144,6 +154,24 @@ public sealed class CrawlerVisualController : MonoBehaviour
         return true;
     }
 
+    private GameObject FindInOwnScene(string objectName)
+    {
+        var scene = gameObject.scene;
+        if (!scene.IsValid() || !scene.isLoaded)
+            return null;
+
+        foreach (var root in scene.GetRootGameObjects())
+        {
+            foreach (var candidate in root.GetComponentsInChildren<Transform>(true))
+            {
+                if (candidate != null && candidate.name == objectName)
+                    return candidate.gameObject;
+            }
+        }
+
+        return null;
+    }
+
     private void ApplyNavigationTuning()
     {
         if (navigation == null) return;
@@ -176,7 +204,7 @@ public sealed class CrawlerVisualController : MonoBehaviour
     {
         foreach (var renderer in GetComponentsInChildren<Renderer>(true))
         {
-            if (renderer == null || renderer.transform.IsChildOf(zombieVisual)) continue;
+            if (renderer == null || renderer.transform == zombieVisual || renderer.transform.IsChildOf(zombieVisual)) continue;
             renderer.enabled = false;
         }
 
