@@ -21,25 +21,10 @@ public class TeleportGorillaPlayerPhotonVR : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        // The current Bootstrap rig has several meaningful collision shapes (head,
-        // body and hands). Requiring the collider itself to be tagged MainCamera made
-        // most visible Crawler/player contacts do nothing. LocalRigMarker is the
-        // authoritative local-rig filter used by the rest of the travel interactions.
-        var localRig = other.GetComponentInParent<LocalRigMarker>();
         var travel = RunawayChimps.Travel.SectorTravelService.I;
         if (travel != null)
         {
-            if (localRig == null || travel.IsBusy) return;
-            if (travel.CurrentSector != RunawayChimps.Travel.SectorId.Containment ||
-                RunawayChimps.Zones.ZoneStateService.Instance == null ||
-                RunawayChimps.Zones.ZoneStateService.Instance.LocalZone != RunawayChimps.Zones.ZoneId.Level1_Vents) return;
-
-            Vector3 capturePosition = other.transform.position;
-            if (travel.RespawnAt(TeleportLocation))
-            {
-                PlayerInventory.LocalInventory?.DropAllKeyCards(capturePosition);
-                if (TeleportSound != null) TeleportSound.Play();
-            }
+            TryCaptureThroughTravel(other, travel);
             return;
         }
 
@@ -57,8 +42,39 @@ public class TeleportGorillaPlayerPhotonVR : MonoBehaviour
         }
 
         Debug.Log("[Teleport] Triggered by local player.");
-
         StartCoroutine(TeleportSequence(localPlayer));
+    }
+
+    private void OnTriggerStay(Collider other)
+    {
+        // A player can begin overlapping the Crawler while a zone/travel transition is
+        // still finishing. Retry the guarded split-scene path while overlap continues so
+        // that contact cannot be permanently missed just because the first Enter frame
+        // was ineligible. SectorTravelService.IsBusy prevents duplicate captures.
+        var travel = RunawayChimps.Travel.SectorTravelService.I;
+        if (travel != null)
+            TryCaptureThroughTravel(other, travel);
+    }
+
+    private void TryCaptureThroughTravel(Collider other, RunawayChimps.Travel.SectorTravelService travel)
+    {
+        var localRig = other.GetComponentInParent<LocalRigMarker>();
+        if (localRig == null || travel.IsBusy)
+            return;
+
+        var zones = RunawayChimps.Zones.ZoneStateService.Instance;
+        if (travel.CurrentSector != RunawayChimps.Travel.SectorId.Containment ||
+            zones == null || zones.LocalZone != RunawayChimps.Zones.ZoneId.Level1_Vents)
+            return;
+
+        var player = GorillaLocomotion.Player.Instance;
+        Vector3 capturePosition = player != null ? player.transform.position : other.bounds.center;
+
+        if (travel.RespawnAt(TeleportLocation))
+        {
+            PlayerInventory.LocalInventory?.DropAllKeyCards(capturePosition);
+            if (TeleportSound != null) TeleportSound.Play();
+        }
     }
 
     private IEnumerator TeleportSequence(PhotonVRPlayer localPlayer)
