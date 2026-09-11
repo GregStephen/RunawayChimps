@@ -1,0 +1,53 @@
+name: Sync Level 2 branch with main
+
+on:
+  push:
+    branches:
+      - design/level2-expanded-map-v04
+    paths:
+      - .github/workflows/sync-level2-main.yml
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: design/level2-expanded-map-v04
+          fetch-depth: 0
+      - name: Merge latest main while preserving Level 2 branch tree
+        run: |
+          git fetch origin main
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git merge --no-commit -s ours origin/main
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('docs/design-and-lore.md')
+          s=p.read_text()
+          old="| 2026-09-11 | Hub hallway → Level 1 uses the physical `StartLevel1Button` beside the gate as the only player-facing activation. Touch/press it with the local monkey hand or fingertip; do not require Grip, Trigger, or XR Select on the door itself. This keeps headset play and non-headset editor testing on the same hand-collision interaction. The door remains a barrier/visual, not an interactable. | Confirmed correction. The existing `StartLevel1Button` is already wired to `SectorDoor.Travel`; removing the Hub door's XR-select shortcut and generated select prompt is still pending implementation and validation. Level 1 → Hub return interaction is unchanged by this correction. |"
+          new="| 2026-09-11 | Hub hallway → Level 1 uses the physical `StartLevel1Button` beside the gate as the only player-facing activation. Touch/press it with the local monkey hand or fingertip; do not require Grip, Trigger, or XR Select on the door itself. This keeps headset play and non-headset editor testing on the same hand-collision interaction. The door remains a barrier/visual, not an interactable. | Confirmed correction; implemented on PR #6 (`codex/hub-level1-physical-button`). Source inspection found the existing button root authored inactive while its visible mesh, trigger, local-hand filter and `SectorDoor.Travel` binding remain intact. PR #6 removes Hub-door direct XR Select, reactivates the button root at runtime, and expands the validator for placement/visibility/wiring. Unity 2022.3.55f1 Play Mode/headset validation remains pending. Level 1 → Hub return interaction is unchanged. |"
+          if old not in s: raise SystemExit('Hub decision row not found')
+          s=s.replace(old,new,1)
+          anchor="Winning leads forward into the next level. Returning to the hub is an available choice from the next safe starting room, rather than the automatic result of a win. The September 10 correction limits Level 2's current physical control to RETURN TO SECURITY; direct selection of other levels is deferred. The September 11 correction makes the Hub hallway's physical entrance button the only player-facing way to activate Hub → Level 1 travel at that gate.\n"
+          section="\n### Hub entrance interaction implementation\n\n**Implemented on PR #6; validation pending:** the Hub `SectorDoor` no longer creates or enables an `XRSimpleInteractable` for Hub → Level 1, so Grip/XR Select on the gate is not a travel path. Repository inspection found the existing `StartLevel1Button` root at the intended gate approach authored inactive. Its `BigRedButton` children remain positioned roughly 1.5 m from the door, with an enabled visible mesh and enabled trigger; its `PhysicalButton` requires the local rig, `HandTag` and configured hand layer, and its one persistent `OnPressed` call targets that Hub `SectorDoor.Travel` method. PR #6 reactivates the button root when the Hub door awakens and validates that it stays visible, triggerable, within 2.5 m, on the approach side, and wired exactly once. This source inspection does not replace Unity Play Mode or headset testing.\n"
+          if section.strip() not in s:
+              if anchor not in s: raise SystemExit('Latest-flow anchor not found')
+              s=s.replace(anchor,anchor+section,1)
+          old_travel="Every route fades to black, displays the Loading scene, then fades into the destination. Travel is an explicit interaction; walking into the door does not automatically transition. **Confirmed September 11:** the Hub hallway gate itself is not a Grip/Trigger/XR-select interactable; its physical `StartLevel1Button` is the single player-facing activation for that route. The same local hand/fingertip collision should work in a headset and in non-headset editor testing by moving the monkey hand into the button. Current source still includes the older Hub-door XR selection until that shortcut and its select prompt are removed. Level 1's return-door interaction is unchanged by this correction. Level 2's single return button is merged through PR #4 and preserved in PR #5. Arrival markers exist in the scene assets; verify their clear floor space, facing, button-label readability and reach in Unity and on a headset."
+          new_travel="Every route fades to black, displays the Loading scene, then fades into the destination. Travel is an explicit interaction; walking into the door does not automatically transition. **Confirmed September 11:** the Hub hallway gate itself is not a Grip/Trigger/XR-select interactable; its physical `StartLevel1Button` is the single player-facing activation for that route. The same local hand/fingertip collision should work in a headset and in non-headset editor testing by moving the monkey hand into the button. **Implemented on PR #6:** direct Hub-gate XR Select is suppressed, and because the existing button root was found authored inactive, the active Hub `SectorDoor` reactivates that root before the player can interact. Source inspection confirms its visible mesh, trigger, local-hand filtering and one `Travel()` event binding; Play Mode/headset confirmation remains pending. Level 1's return-door interaction is unchanged by this correction. Level 2's single return button is merged through PR #4 and preserved in PR #5. Arrival markers exist in the scene assets; verify their clear floor space, facing, button-label readability and reach in Unity and on a headset."
+          if old_travel not in s: raise SystemExit('Travel paragraph not found')
+          s=s.replace(old_travel,new_travel,1)
+          s=s.replace('Ceilings are 4.2 m, walls 0.20 m and floor slabs 0.25 m.','Ceilings are 4.2 m, walls are 0.20 m and floor slabs are 0.25 m.',1)
+          old_check="1. Verify the Hub hallway `StartLevel1Button` activates travel from a local hand/fingertip in both headset play and non-headset editor testing, and verify the Hub gate itself no longer exposes XR Select once the pending interaction correction is implemented."
+          new_check="1. Verify PR #6's Hub hallway `StartLevel1Button` appears before the gate in Play Mode, activates travel from a local hand/fingertip in both headset play and non-headset editor testing, and leaves the Hub gate itself non-selectable."
+          if old_check not in s: raise SystemExit('Hub validation bullet not found')
+          s=s.replace(old_check,new_check,1)
+          p.write_text(s)
+          PY
+          git add docs/design-and-lore.md
+          git commit -m "Merge main into Level 2 v0.4 branch"
+          git push origin HEAD:design/level2-expanded-map-v04
