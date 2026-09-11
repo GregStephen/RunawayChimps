@@ -39,10 +39,21 @@ public static class SectorTravelValidator
                 errors.Add("Missing scene asset: " + path);
                 continue;
             }
-            // Preview scenes leave the user's scene setup and unsaved edits untouched.
-            var scene = EditorSceneManager.OpenPreviewScene(path);
+
+            // Unity 2022.3 does not provide EditorSceneManager.OpenPreviewScene.
+            // Reuse a scene the user already has loaded; otherwise open it additively
+            // for validation and close only the scene we opened ourselves.
+            var scene = SceneManager.GetSceneByPath(path);
+            bool openedForValidation = !scene.IsValid() || !scene.isLoaded;
+            if (openedForValidation)
+                scene = EditorSceneManager.OpenScene(path, OpenSceneMode.Additive);
+
             try { CheckScene(scene, errors); }
-            finally { EditorSceneManager.ClosePreviewScene(scene); }
+            finally
+            {
+                if (openedForValidation && scene.IsValid())
+                    EditorSceneManager.CloseScene(scene, true);
+            }
         }
         if (errors.Count == 0)
             Debug.Log("Sector travel references passed. Still test floor clearance, all routes, multiplayer handover, voice, and fades on headsets.");
