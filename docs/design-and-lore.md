@@ -1,6 +1,6 @@
 # Runaway Chimps design and lore
 
-Last updated: 2026-09-10. Maintained repository edition, migrated from `Runaway_Chimps_Design_and_Lore.docx` version 0.9. The existing Word document is a downloadable snapshot; future edits belong here. See [AGENTS.md](../AGENTS.md) for the documentation workflow and the [repository improvement plan](repository-improvement-plan.md) for implementation evidence.
+Last updated: 2026-09-11. Maintained repository edition, migrated from `Runaway_Chimps_Design_and_Lore.docx` version 0.9. The existing Word document is a downloadable snapshot; future edits belong here. See [AGENTS.md](../AGENTS.md) for the documentation workflow and the [repository improvement plan](repository-improvement-plan.md) for implementation evidence.
 
 We are building a social VR horror game about gorillas escaping a laboratory that experiments on animals. This document records the current game rules, Level 1, the proposed Listener level, the story, and the scene architecture so future work can build on the same decisions.
 
@@ -22,6 +22,7 @@ The combined `level1split-travel.patch` also includes focused source cleanup for
 
 | Recorded | Decision or correction | Status |
 | --- | --- | --- |
+| 2026-09-11 | Hub hallway → Level 1 uses the physical `StartLevel1Button` beside the gate as the only player-facing activation. Touch/press it with the local monkey hand or fingertip; do not require Grip, Trigger, or XR Select on the door itself. This keeps headset play and non-headset editor testing on the same hand-collision interaction. The door remains a barrier/visual, not an interactable. | Confirmed correction. The existing `StartLevel1Button` is already wired to `SectorDoor.Travel`; removing the Hub door's XR-select shortcut and generated select prompt is still pending implementation and validation. Level 1 → Hub return interaction is unchanged by this correction. |
 | 2026-09-10 | Reconcile the reliability-audit branch with merged PR #4 without dropping Level 2 or the audit fixes. Preserve the active `KeyCard`/`VRKeyCard` GUID identities, PR #4's local-pickup ownership check, Level 2 menu/completion routes, and current five-scene Build Settings; combine them with the audit reconnect/pause and missing-script safeguards. | Implemented in PR #5 merge commit `ad1a424`; GitHub mergeable/clean; source checker, Unity, Photon and headset validation pending |
 | 2026-09-10 | Replace the proposed elaborate Level 2 terminal with one large wall button labeled RETURN TO SECURITY. It returns to the Hub computer; no Level 1 selection UI for now. Internal Hub naming is unchanged. | Confirmed; simple geometry and local-hand interaction merged through PR #4; Unity/headset checks pending |
 | 2026-09-09 | Wire Level 1 completion and Hub selection to Level 2's safe entry; the future Level 2 terminal returns to Level 1's safe cage room or the Hub computer. | Confirmed; code and scene wiring merged through PR #4 and preserved by PR #5 conflict resolution; Unity/headset validation pending |
@@ -37,7 +38,7 @@ The combined `level1split-travel.patch` also includes focused source cleanup for
 | 2026-09-09 | Maintain the design and improvement plan in the repository; update relevant sections after confirmed decisions, corrections, implementation, or meaningful test results. Keep Word exports as snapshots. | Confirmed workflow |
 
 | 2026-09-09 | Earlier instruction: all Return to Hub actions arrive in front of the computer. | Superseded by the route-specific clarification below |
-| 2026-09-09 | Hub computer or hallway door → fade, Loading, Level 1 safe room. Level 1 return door → Hub hallway on the other side of that door. Future terminal → Hub computer when returning to Hub; it can also select another level. | Confirmed correction; Hub/Level 1 routes merged through PR #3. Level 2 currently uses the simpler RETURN TO SECURITY control described above. Unity/headset validation remains pending. |
+| 2026-09-09 | Hub computer or hallway door → fade, Loading, Level 1 safe room. Level 1 return door → Hub hallway on the other side of that door. Future terminal → Hub computer when returning to Hub; it can also select another level. | Confirmed correction; destination behavior remains correct, but the September 11 interaction correction supersedes direct Hub-door selection: the hallway route is now activated only by its physical button. Level 2 currently uses the simpler RETURN TO SECURITY control described above. Unity/headset validation remains pending. |
 | 2026-09-09 | Defer placing a Level 1 terminal until more levels exist. Keep the door return as the current Level 1 route to Hub. | Confirmed; no Level 1 terminal added |
 | 2026-09-09 | Use the committed scene name Level1_Containment, replacing the earlier planned spelling Level01_Containment. Greg reports the scene split and doors committed on level1split at ac69718. | Scene asset and metadata verified; geometry, door wiring, and runtime travel pending validation |
 
@@ -53,6 +54,7 @@ These dates record migration and clarification, not the original date of every e
 | Confirmed | Level-objective cards are personal, with fixed starting locations. Capture drops a held objective card; re-entry resets it. The new optional reward-room cards need separate cross-level state, described below. One card is the prototype recommendation; two remain an option if they improve the route and story. |
 | Confirmed | The winner hears the door, fades to black, and arrives safely in Level 2. Other players see them disappear and stay in Level 1. |
 | Confirmed | The Crawler has almost-severed legs and cannot leave the vents. Scratches and/or blood lead from its cage toward the vent. |
+| Confirmed | Hub hallway entry into Level 1 uses a physical hand-press button beside the gate. The gate itself is not selected with Grip/Trigger. Use the same local hand/fingertip collision in headset play and non-headset editor testing. |
 | Planned | One Photon PUN room holds up to 10 players across the hub and all levels. Each headset loads its current level scene. |
 | Planned | About four silent monitors surround the hub computer. Each displays its level name; additional levels rotate onto the screens. |
 | Planned | A control in each level starting room allows return to the hub. The current direction favors open level selection without mandatory unlocks. |
@@ -60,7 +62,7 @@ These dates record migration and clarification, not the original date of every e
 
 ### Latest flow change
 
-Winning leads forward into the next level. Returning to the hub is an available choice from the next safe starting room, rather than the automatic result of a win. The September 10 correction limits Level 2's current physical control to RETURN TO SECURITY; direct selection of other levels is deferred.
+Winning leads forward into the next level. Returning to the hub is an available choice from the next safe starting room, rather than the automatic result of a win. The September 10 correction limits Level 2's current physical control to RETURN TO SECURITY; direct selection of other levels is deferred. The September 11 correction makes the Hub hallway's physical entrance button the only player-facing way to activate Hub → Level 1 travel at that gate.
 
 ### Level 2 travel implementation
 
@@ -125,14 +127,14 @@ Confirmed travel routes (Greg’s latest clarification supersedes the earlier al
 | Action | Destination marker | Arrival |
 | --- | --- | --- |
 | Hub computer: select Level 1 | Level1EntrySpawn | Level 1 safe cage room |
-| Hub hallway door or its button | Level1EntrySpawn | Same Level 1 safe cage room |
+| Hub hallway: physically press `StartLevel1Button` with the local monkey hand/fingertip | Level1EntrySpawn | Same Level 1 safe cage room |
 | Level 1 entrance door: return | HubDoorReturnSpawn | Hub hallway, on the Hub side of the door |
 | Hub computer: select Level 2 | Level2EntrySpawn | Level 2 safe entry room |
 | Complete the personal Level 1 keybox | Level2EntrySpawn | Same Level 2 safe entry room |
 | Deferred Level 2 Level 1 action (code/context menu only) | Level1EntrySpawn | Level 1 safe cage room |
 | Level 2 RETURN TO SECURITY button | HubReturnSpawn | In front of the Hub computer |
 
-Every route fades to black, displays the Loading scene, then fades into the destination. Travel is an explicit interaction; walking into the door does not automatically transition. Both the existing Hub button and XR door selection are wired for testing. Level 2's single return button is merged through PR #4 and preserved in PR #5. Arrival markers exist in the scene assets; verify their clear floor space, facing, button-label readability and reach in Unity and on a headset.
+Every route fades to black, displays the Loading scene, then fades into the destination. Travel is an explicit interaction; walking into the door does not automatically transition. **Confirmed September 11:** the Hub hallway gate itself is not a Grip/Trigger/XR-select interactable; its physical `StartLevel1Button` is the single player-facing activation for that route. The same local hand/fingertip collision should work in a headset and in non-headset editor testing by moving the monkey hand into the button. Current source still includes the older Hub-door XR selection until that shortcut and its select prompt are removed. Level 1's return-door interaction is unchanged by this correction. Level 2's single return button is merged through PR #4 and preserved in PR #5. Arrival markers exist in the scene assets; verify their clear floor space, facing, button-label readability and reach in Unity and on a headset.
 
 A player who finishes Level 1 first can wait in the safe Level 2 starting room for a friend. Travel affects the interacting player only. Changing sectors, returning to the hub, or following a friend must preserve membership of the same 10-player Photon room.
 
@@ -352,6 +354,8 @@ The inspected Level 1 objective exit is `Level2_Entrance_Door`, an instance of `
 Prototype with the hub, Level 1, and the Level 2 safe entry currently present in the merged blockout.
 
 1. Verify the Hub/Level 1 scene split at the Security Gate; check each side has complete geometry and colliders.
+
+1. Verify the Hub hallway `StartLevel1Button` activates travel from a local hand/fingertip in both headset play and non-headset editor testing, and verify the Hub gate itself no longer exposes XR Select once the pending interaction correction is implemented.
 
 1. Verify that two clients share one Photon room while one stays in the hub and the other plays Level 1.
 
