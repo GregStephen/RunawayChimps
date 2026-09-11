@@ -8,6 +8,7 @@ on:
       - Tools/Level2Blockout/build_level2.py
       - Tools/Level2Blockout/gate_integration.py
       - Tools/Level2Blockout/validate_level2.py
+      - Tools/Level2Blockout/update_v04_docs.py
       - .github/workflows/level2-v04-regenerate.yml
   workflow_dispatch:
 
@@ -41,16 +42,18 @@ jobs:
         run: python Tools/Level2Blockout/build_level2.py
       - name: Validate generated source and routes
         run: python Tools/Level2Blockout/validate_level2.py
+      - name: Update maintained design and implementation docs
+        run: python Tools/Level2Blockout/update_v04_docs.py
       - name: Check generated diff
         run: git diff --check
-      - name: Commit generated blockout
+      - name: Commit completed v0.4 review blockout
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add Tools/Level2Blockout/build_level2.py Assets/RunawayChimps/Level2Blockout Tools/Level2Blockout/layout.json Tools/Level2Blockout/gate_manifest.json Tools/Level2Blockout/validation.json
+          git add Tools/Level2Blockout/build_level2.py Assets/RunawayChimps/Level2Blockout Tools/Level2Blockout/layout.json Tools/Level2Blockout/gate_manifest.json Tools/Level2Blockout/validation.json docs/design-and-lore.md docs/repository-improvement-plan.md docs/level2-expanded-layout-v04.md
           if git diff --cached --quiet; then
             echo "No generated changes."
           else
-            git commit -m "Fix Level 2 bypass clearance and regenerate v0.4 [skip level2 regen]"
+            git commit -m "Complete Level 2 v0.4 review blockout [skip level2 regen]"
             git push origin HEAD:design/level2-expanded-map-v04
           fi
