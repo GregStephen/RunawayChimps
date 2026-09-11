@@ -3,7 +3,7 @@ using Photon.Realtime;
 namespace RunawayChimps.Travel
 {
     // A sector is a loaded environment; safe rooms and vents remain separate ZoneIds.
-    public enum SectorId { None = 0, Hub = 1, Containment = 2 }
+    public enum SectorId { None = 0, Hub = 1, Containment = 2, Conditioning = 3 }
 
     public static class SectorPresence
     {
@@ -15,7 +15,7 @@ namespace RunawayChimps.Travel
             if (player.IsLocal && SectorTravelService.I != null)
                 return SectorTravelService.I.CurrentSector;
             if (player.CustomProperties.TryGetValue(PropertyKey, out object value) && value is int id &&
-                (id == (int)SectorId.Hub || id == (int)SectorId.Containment))
+                (id == (int)SectorId.Hub || id == (int)SectorId.Containment || id == (int)SectorId.Conditioning))
                 return (SectorId)id;
             return SectorId.None;
         }

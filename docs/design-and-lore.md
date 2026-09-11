@@ -14,12 +14,18 @@ On `level1split`, commit `ac69718` contains `Assets/Scenes/Level1_Containment.un
 
 The gameplay rules below describe the intended game. Reported local behavior is identified separately from what the repository review established.
 
-The combined `level1split-travel.patch` also includes focused source cleanup for terminal color saving/preview and name-save handling, local startup readiness, cancelled/timeout player spawning, button release state, logging, material bindings, hand-impact audio, and held-item collision-layer restoration. The held-item script filename now matches its existing component class with its asset GUID preserved. GitHub upload of this patch did not complete; apply the latest patch before testing. These changes add no Level 1 terminal or new gameplay/progression rules; Unity and headset validation remain pending.
+The combined `level1split-travel.patch` also includes focused source cleanup for terminal color saving/preview and name-save handling, local startup readiness, cancelled/timeout player spawning, button release state, logging, material bindings, hand-impact audio, and held-item collision-layer restoration. The held-item script filename now matches its existing component class with its asset GUID preserved. The Level 1 travel/cleanup work is now on main through merged PR #3; no separate patch application is needed. These changes add no Level 1 terminal or new gameplay/progression rules; Unity and headset validation remain pending.
 
 ## Decision and correction record
 
 | Recorded | Decision or correction | Status |
 | --- | --- | --- |
+| 2026-09-10 | Replace the proposed elaborate Level 2 terminal with one large wall button labeled RETURN TO SECURITY. It returns to the Hub computer; no Level 1 selection UI for now. Internal Hub naming is unchanged. | Confirmed; simple geometry and local-hand interaction implemented on PR #4; Unity/headset checks pending |
+| 2026-09-09 | Wire Level 1 completion and Hub selection to Level 2's safe entry; the future Level 2 terminal returns to Level 1's safe cage room or the Hub computer. | Confirmed; code and scene wiring on PR #4, Unity/headset validation pending |
+| 2026-09-09 | Add optional locked reward rooms opened by a card discovered on a different level, using the smaller Level 1 entrance door. Rewards may be a collectible, in-game currency, or both. Level 4 supplying Level 2 is an example, not a fixed assignment. | Confirmed direction; gameplay planned |
+| 2026-09-09 | Put Level 2's reward room in the bottom-right area to spread out points of interest. This supersedes the assistant's suggested space between the exit and repair room. | Confirmed correction; blockout v0.3 on codex/level2-blockout |
+| 2026-09-09 | Reuse scaled sci-fi gate frames for open passages and the complete Level 1 exit gate at its existing scale for exits. | Confirmed; linked assets in blockout v0.3, Unity validation pending |
+| 2026-09-09 | Greg requested a rough Level 2 map from the saved noisy-repair floorplan. Unity blockout v0.1 preserves that layout; 3.2 m openings are a proposed scale allowance for the giant. | Asset created on codex/level2-blockout; import and headset validation pending |
 | 2026-09-09 | Runaway Chimps uses Unity 2022.3.55f1 and Photon PUN. Unity 6 belongs to the separate, non-horror Cheeky Chimps project. | Confirmed correction from the source document |
 | 2026-09-09 | Use Hub_Base as the source for a split at the Security Gate. Disabled Level1 and Level1_2_Hall scenes are experiments. | Confirmed direction; scene committed on level1split; extraction validation pending |
 | 2026-09-09 | Replace MiniGamesKidFirstRig with Zombie Crawl while preserving and repairing the existing monster systems. | Confirmed direction; integration pending |
@@ -41,17 +47,43 @@ These dates record migration and clarification, not the original date of every e
 | Confirmed | The overall objective is to escape the laboratory. Story clues should be distributed throughout the environment. |
 | Confirmed | Players complete levels individually. One player winning does not win or reset the level for everyone. |
 | Confirmed | Level 1 ends when a player returns the keycard to the cage room and opens the locked objective door. |
-| Confirmed | Cards are personal, with fixed starting locations. Capture drops a held card; re-entry resets it. One card is the prototype recommendation; two remain an option if they improve the route and story. |
+| Confirmed | Level-objective cards are personal, with fixed starting locations. Capture drops a held objective card; re-entry resets it. The new optional reward-room cards need separate cross-level state, described below. One card is the prototype recommendation; two remain an option if they improve the route and story. |
 | Confirmed | The winner hears the door, fades to black, and arrives safely in Level 2. Other players see them disappear and stay in Level 1. |
 | Confirmed | The Crawler has almost-severed legs and cannot leave the vents. Scratches and/or blood lead from its cage toward the vent. |
 | Planned | One Photon PUN room holds up to 10 players across the hub and all levels. Each headset loads its current level scene. |
 | Planned | About four silent monitors surround the hub computer. Each displays its level name; additional levels rotate onto the screens. |
 | Planned | A control in each level starting room allows return to the hub. The current direction favors open level selection without mandatory unlocks. |
-| Planned | A starting-room terminal offers return to the Hub or travel to another level. Its UI, available destinations, and final appearance remain to be built. Separate solo progression and permanent completion records are not committed features. |
+| Confirmed | Level 2 currently offers one RETURN TO SECURITY button. Direct Level 1 selection is deferred; its code hook remains for future use. Separate solo progression and permanent completion records are not committed features. |
 
 ### Latest flow change
 
-Winning leads forward into the next level. Returning to the hub is an available choice from the next safe starting room, rather than the automatic result of a win. Direct travel from a future starting-room terminal is now confirmed direction; additional destination scenes and terminal UI remain planned.
+Winning leads forward into the next level. Returning to the hub is an available choice from the next safe starting room, rather than the automatic result of a win. The September 10 correction limits Level 2's current physical control to RETURN TO SECURITY; direct selection of other levels is deferred.
+
+### Level 2 travel implementation
+
+**Implemented on `codex/level2-blockout`, PR #4; not merged:** Hub's existing computer menu includes Level 2. `SectorTravelService` accepts the registered Level 2 scene, reuses fade/Loading and destination floor/body/head checks, and publishes the Conditioning sector for avatar/voice presentation. Both Hub selection and personal Level 1 completion use `Level2EntrySpawn` at `(3, 0.05, -2.4)`, facing into the hall. Level 2's arrival context uses existing `ZoneId.Level2`; the Listener and its safety logic remain unimplemented.
+
+The existing Level 1 two-card requirement is preserved. The keybox counts each local-picked card once and requests completion travel after the final card. Its completion gate stays solid instead of opening a passage, including during rollback. If loading fails, completed source-scene state remains available and locally selecting the keybox retries; leaving/re-entering the scene still resets the visit. Completion sound/animation polish and the broader capture/drop lifecycle remain pending.
+
+`LevelTerminalActions` remains attached to the entry's `HubReturnControlMarker`. The simple `Return_To_Security_Button` on the west wall at `(0.28, 1.25, -2)` calls `ReturnToHub()` through `ReturnToSecurityButton`. Scene and prefab contain editable plate, cap, bolts and paint-chip shapes; the plain TextMeshPro label is created at runtime. A local hand/fingertip is required, held contact cannot repeatedly trigger travel, and the cap depresses slightly. The existing safe-entry and busy-travel guards remain in force. No new audio asset is included. `ReturnToLevelOne()` remains a code/context-menu hook only, not a player-facing option. Hub return arrives at the computer; the Level 1 door-to-Hub hallway route is unchanged.
+
+**Validated at source level:** C# syntax, card script GUID preservation after matching filenames to classes, scene IDs/references, one Level 2 build registration, two Level 1 card instances, and safe-entry/terminal bindings. **Pending:** Unity compilation/import, Editor validator execution, all four travel routes, failed-load retry, two-client independent completion and visibility/voice, headset spawning and clearance. These are implemented routes, not claimed playtested behavior.
+
+## Optional reward rooms and replay
+
+**Confirmed direction, September 9, 2026:** add a small locked side room whose scanner requires a keycard found on a different level. Players first notice the locked room, later recognize the matching card, and return to claim a collectible, in-game currency, or both. This is optional exploration; Level 2's main objective remains the noisy repair. Reuse `Gate_Small.prefab`, confirmed in the source scene as `Level1_Entrance_Door`.
+
+**Confirmed placement correction:** the Level 2 room belongs at the bottom right. Do not put it between the exit and repair room; Greg found that arrangement too busy. The local blockout uses a proposed 4 × 4 m room beneath the bypass, with its door facing north into the bypass. It fits inside the existing 18 × 18 m envelope. Room size and detailed dressing remain adjustable.
+
+**Proposed readable clue:** use the same color plus a distinct symbol on the scanner sign and keycard, with a short readable name/code in the final art. Do not rely on color alone. The blockout's cyan plaque and three white bars are illustrative, not an approved card identity. Level 4 supplying this Level 2 room is Greg's example; the exact source level, placement, and card identity remain open. No Level 4 asset or card has been created.
+
+**Planned requirement:** ownership must survive travel from the source level to Level 2. The attempt-based Level 1 card rules must not erase a newly acquired bonus-room card during that journey. **Recommended for review:** record a personal, permanent, non-consumed unlock when collected, surviving capture and game restarts. Present it as a reusable access card when scanning. Permanent persistence and capture behavior are recommendations, not confirmed rules.
+
+**Reward proposal:** one collectible per player, with an optional first-claim currency bonus. Keep card ownership, room access, and reward-claim state separate so reopening a door does not award the same collectible or currency again. Whether currency is repeatable, its amount, the collectible type, how an already-claimed room appears, and whether friends may follow an unlocked door are open decisions. A reward should not disappear for everybody when one player claims theirs. Currency grants will need the project's account/economy integration; the blockout contains no award logic.
+
+**Open monster rule:** this room is not marked as an additional safe room. Its small doorway may exclude the giant physically; decide and test that behavior before integrating AI so it does not accidentally become an unrestricted chase refuge.
+
+**Implementation status:** v0.3 contains the room shell, original linked small-door prefab, temporary closed barrier, scanner/sign shapes, collectible plinth and optional currency-cache placeholder. Card pickup, saved ownership, scanning, door animation, reward claims and multiplayer behavior are planned and unwired.
 
 ## Facility lore
 
@@ -81,9 +113,9 @@ The numbered levels can form a recommended route through the facility, with each
 
 ### Return and travel controls
 
-The next level begins in a safe room where a player can regroup. A future terminal will offer return to the Hub or travel to another level. The terminal is not placed yet; its appearance and exact destination list remain open.
+The next level begins in a safe room where a player can regroup. Level 2 now has one simple RETURN TO SECURITY wall button, with no screen or keyboard. The destination remains Hub_Base; this label does not rename the scene or establish additional facility lore.
 
-Recommendation for review: offer Return to Hub and Select Sector at this terminal. A player can continue the story by walking into the current level, or jump elsewhere without an extra trip through the hub. Keep selection confined to safe starting rooms so it does not become an escape button during a chase.
+The earlier two-option terminal recommendation is deferred. Players continue by walking into Level 2, or return to Security and choose a level at the existing computer. Keep the return action confined to the safe starting room so it does not become an escape button during a chase.
 
 Confirmed travel routes (Greg’s latest clarification supersedes the earlier all-returns-to-computer rule):
 
@@ -92,9 +124,12 @@ Confirmed travel routes (Greg’s latest clarification supersedes the earlier al
 | Hub computer: select Level 1 | Level1EntrySpawn | Level 1 safe cage room |
 | Hub hallway door or its button | Level1EntrySpawn | Same Level 1 safe cage room |
 | Level 1 entrance door: return | HubDoorReturnSpawn | Hub hallway, on the Hub side of the door |
-| Future level terminal: return to Hub | HubReturnSpawn | In front of the Hub computer |
+| Hub computer: select Level 2 | Level2EntrySpawn | Level 2 safe entry room |
+| Complete the personal Level 1 keybox | Level2EntrySpawn | Same Level 2 safe entry room |
+| Deferred Level 2 Level 1 action (code/context menu only) | Level1EntrySpawn | Level 1 safe cage room |
+| Level 2 RETURN TO SECURITY button | HubReturnSpawn | In front of the Hub computer |
 
-Every route fades to black, displays the Loading scene, then fades into the destination. Travel is an explicit interaction; walking into the door does not automatically transition. Both the existing Hub button and XR door selection are wired for testing while the final control choice remains open. The future terminal can use `SectorTravelService.ReturnToHub()`; that API does not mean its UI or Level 2 travel is built. Arrival markers exist in the scene assets; verify their clear floor space, facing, and reach in Unity and on a headset.
+Every route fades to black, displays the Loading scene, then fades into the destination. Travel is an explicit interaction; walking into the door does not automatically transition. Both the existing Hub button and XR door selection are wired for testing. Level 2's single return button is wired in PR #4. Arrival markers exist in the scene assets; verify their clear floor space, facing, button-label readability and reach in Unity and on a headset.
 
 A player who finishes Level 1 first can wait in the safe Level 2 starting room for a friend. Travel affects the interacting player only. Changing sectors, returning to the hub, or following a friend must preserve membership of the same 10-player Photon room.
 
@@ -137,7 +172,7 @@ Confirmed editor: Unity 2022.3.55f1. Unity 6 belongs to Cheeky Chimps, the separ
 
 - Load the current environment only during normal play. Scene activation and transition memory peaks still need Quest testing.
 
-- Validate each personal keycard and exit. Only the completing player transitions; others see them disappear and stay in their level. Keep pickup, drop, floor recovery, and re-entry resets personal. Completion does not open a shared passage for followers.
+- Validate each personal keycard and exit. Only the completing player transitions; others see them disappear and stay in their level. Keep objective-card pickup, drop, floor recovery, and re-entry resets personal. Optional cross-level reward cards require their own lifecycle. Completion does not open a shared passage for followers.
 
 ### Earlier approaches that were superseded
 
@@ -205,7 +240,7 @@ Optional refinement: vary the interval between 3 and 6 sequences after testing. 
 
 ## Proposed Level 2 Behavioral Conditioning
 
-Working concept: a small test wing with the Listener, a blind experiment that investigates noise. Two visual options are saved: Concept A, a lean eyeless biped with hearing cavities, and Concept B, a large dark creature with bloodstained bandages over its eyes. Both use rough low-poly graphics. Final appearance remains open; all movement stays on the floor.
+Working concept: a small test wing with the Listener, a blind experiment that investigates noise. Two visual options are saved: Concept A, a lean eyeless biped with hearing cavities, and Concept B, a large dark creature with bloodstained bandages over its eyes. Both use rough low-poly graphics. Concept B is the current selected asset direction; final gameplay scale remains open and all movement stays on the floor.
 
 ### Noisy repair objective
 
@@ -217,7 +252,7 @@ The player hears the Listener approaching, stops work, escapes through either do
 
 ### Layout and monster rules
 
-Keep the proposed small layout: safe entry, test hall with two solid obstacles, a bypass, a repair room with two doorways, and a separate exit. The repair room replaces the test booth and remains dangerous. Both doorways must connect to a usable loop around the obstacles. A visible conduit can connect the release mechanism to the exit shutter.
+Keep the proposed small layout: safe entry, test hall with two solid obstacles, a bypass, a repair room with two doorways, a separate exit, and an optional reward room at the bottom right off the bypass. The repair room replaces the test booth and remains dangerous. Both doorways must connect to a usable loop around the obstacles. A visible conduit can connect the release mechanism to the exit shutter.
 
 Unlike the Crawler, the Listener can enter the objective room. It patrols, investigates the latest audible in-game impact, searches briefly, then resumes patrol if it hears nothing. New audible impacts update its destination; it does not magically know where a quiet player went. Only the entry and completed exit are safe. Give its approach an audible warning, then test whether both escape routes remain usable.
 
@@ -233,7 +268,7 @@ Proposed story clue: a maintenance note forbids impact tools during auditory tri
 
 ## Listener concept A
 
-Concept A is the first saved option. Greg approved this simpler level of detail after finding the first realistic render too polished for the game. It remains available alongside Concept B; neither design is a final monster selection.
+Concept A is the first saved option. Greg approved this simpler level of detail after finding the first realistic render too polished for the game. It remains an alternate. Greg selected Concept B for the current monster asset work; Concept A is not the active map scale reference.
 
 ![Listener concept A with a lean eyeless silhouette](images/listener-concept-a.png)
 
@@ -245,11 +280,11 @@ Keep broad, simple shapes, rough low-resolution textures, and a readable silhoue
 
 ## Listener concept B Bandaged giant
 
-Saved as an additional visual option at Greg's request. This version emphasizes size and an unsettling face, with bloodstained bandages covering both eyes to communicate blindness. Concept A and the current repair-room floorplan remain available.
+Confirmed current asset direction: Greg selected Concept B, the bandaged giant, for a faithful staged Blender rebuild. It has bloodstained eye bandages, a small recessed face, long heavy arms, and raised irregular shoulders. His latest appearance correction asks for a more uneven back and shoulders. Concept A remains an alternate; the repair-room floorplan remains the Level 2 layout reference.
 
 ![Listener concept B with bandaged eyes](images/listener-concept-b.png)
 
-Concept B reference. Proposed appearance only; no model, rig, or animation has been implemented.
+Concept B reference. Separate clay and historical rigged prototypes exist outside this map task. The Level 2 blockout includes only a disabled size guide, not a creature asset or animation. Final gameplay scale remains open.
 
 ### Appearance and story clues
 
@@ -261,19 +296,41 @@ Proposed behavior: it is blind and locates players through hammer strikes and lo
 
 ### Scale and movement prototype
 
-Use a hunched floor walk and a short listening pause as the first animations. Preserve an audible approach warning. Test a looming size in the headset while ensuring the body can pass through both repair-room doorways and turn around the hall obstacles. The existing 2 m door widths are starting dimensions to check against the model; final creature height and speed remain open.
+Use a hunched floor walk and a short listening pause as the first animations. Preserve an audible approach warning. Test a looming size in the headset while ensuring the body can pass through both repair-room doorways and turn around the hall obstacles. The sketch's original 2 m openings were starting dimensions. The current blockout uses a proposed 3.2 m clear width, described below; final creature scale and speed remain open.
 
 ## Listener level floorplan
 
-Saved schematic of the proposed Behavioral Conditioning layout. The former keycard booth is now a repair room with a noisy mechanism. Dimensions are starting values for headset testing; this is not a finished Unity map.
+Saved schematic of the proposed Behavioral Conditioning layout. The former keycard booth is now a repair room with a noisy mechanism. Dimensions are starting values for headset testing. A separate editable Unity map blockout now follows this sketch; its implementation and remaining checks are recorded below.
 
 ![Proposed Listener level floorplan with a noisy repair room](images/listener-floorplan.png)
 
 ### Build and test the loop
 
-Starting sizes: test hall 14 × 10 m; repair room 8 × 4 m; entry and exit rooms each 6 × 4 m; bypass 4 m wide; door openings 2 m. Keep both repair-room doorways usable by players and the Listener.
+Original sketch sizes: test hall 14 × 10 m; repair room 8 × 4 m; entry and exit rooms each 6 × 4 m; bypass 4 m wide; door openings 2 m. Blockout v0.1 retains the nominal room sizes and proposes 3.2 m door widths for the giant. Keep both repair-room doorways usable by players and the Listener.
 
 Place the mechanism away from the door openings. The two exits let players leave by the other route when the Listener arrives. Solid hall obstacles create corners for an escape; the bypass reconnects to the lower hall. The dashed line is one possible patrol route, not a fixed chase path. Test reach, turning space, warning time, and return opportunities in VR.
+
+### Confirmed doorway standard
+
+**Confirmed correction, September 9, 2026:** Greg requested reuse of the existing sci-fi gate frame for passages that do not need doors, scaled to fit each opening. Level exits must reuse the same complete gate as the Level 1 objective exit and preserve its size and scale for consistency. This supersedes treating the generic Level 2 shutter and identical 3.2 m dimensions for every doorway as the final direction.
+
+The inspected Level 1 objective exit is `Level2_Entrance_Door`, an instance of `Assets/MASH Virtual/Sci Fi Doors/Prefab/Sci Fi Gates.prefab` (GUID `22d2c44fed4ffa743aac7afe4d993905`). Its root scale is `(1, 1.1564301, 0.8)` under an unscaled parent. It contains separate Frame, Door_Left and Door_Right children. Frame-only copies disable both door panels and retain frame collision; the original prefab remains unchanged.
+
+**Implemented in v0.3 on `codex/level2-blockout`:** three linked frame-only instances at the entry and repair openings, the complete exit at the Level 1 scale, and the small Level 1 entrance gate for the bottom-right reward room. The interrupted v0.2 generation has now been rebuilt and source-checked. Both original prefab assets remain unchanged. Import requires the existing MASH sci-fi-door assets in this project.
+
+### Editable Level 2 blockout v0.3
+
+![Level 2 blockout with the optional reward room at bottom right](images/level2-blockout-floorplan.png)
+
+**Confirmed request:** an editable rough map based on the saved Level 2 repair-room plan. The standalone scene and matching reusable prefab are on review branch `codex/level2-blockout`, rebased onto `main` at `c388d87`. The original map base was `level1split` commit `6443fd0`. They are not merged. The travel follow-up in the same PR connects Hub selection and Level 1 completion to the safe entry; runtime validation remains pending. This map task does not promote proposed gameplay rules to confirmed status.
+
+**Implemented asset:** `Assets/RunawayChimps/Level2Blockout/Scenes/Level2_BehavioralConditioning_Blockout.unity` and `Prefabs/Level2_Blockout.prefab` contain independently editable floors, walls, ceilings, two solid obstacles, bypass, two repair passages, repair bench/hammer/conduit placeholders, linked sci-fi gates, the bottom-right reward room, scanner/sign and reward placeholders, and named gameplay markers. Entry and completed exit remain the intended safe rooms; marker triggers do not enforce safety. Static exit and reward barriers remain until the respective personal qualification logic is wired.
+
+**Proposed dimensions:** the original hall, entry, exit, repair room and bypass retain their nominal sizes. The new reward room is 4 × 4 m at X=14–18, Z=-4–0. Ceilings are 4.2 m, walls 0.20 m and floor slabs 0.25 m. Hall obstacles remain 3.4 m tall. Open-passage wall gaps are 3.2 × 3.8 m, the exit wall gap is 2.35 × 3.0 m and the reward wall gap is 2.2 × 3.1 m. These are wall openings, not measured clearances through the bevelled gate meshes. Full exit scale is preserved; frame-only scaling and small-gate placement need Unity inspection. The disabled giant guide remains 2.75 m wide × 3.2 m tall; final creature dimensions are open.
+
+**Validated outside Unity, September 9, 2026:** generated YAML parses; local references and source-prefab object IDs resolve; all five linked gate instances have the expected scale and panel-visibility overrides. The 0.10 m box-layout grid connects the entry, exit approach, both repair passages and lower bypass for 0.35 m and 1.375 m radius proxies. Either repair opening can be blocked while the other route remains available. Closed barriers isolate the exit and reward room; removing the reward barrier connects the player proxy through its wall gap. These checks exclude the linked gate meshes and do not prove actual doorway, NavMesh or animated clearance. The overhead diagram uses schematic door symbols. Earlier Blender models and perspective images remain v0.1 references without the new reward room or gate revision.
+
+**Pending validation:** Unity 2022.3.55f1 import, gate/frame/threshold fitting, Gorilla hand/body collision, Listener turning and reach, safe-room exclusion, NavMesh, headset scale and performance, repair and capture rules, cross-level cards and saving, scanner/door interaction, personal rewards, exit qualification, sector travel and Photon PUN integration. The travel follow-up adds a SectorScene context, LevelTerminalActions binding and one enabled Build Settings entry. It reuses the persistent Bootstrap rig and adds no scene-owned rig, camera or Photon avatar.
 
 ## Future levels and remaining decisions
 
@@ -284,6 +341,7 @@ Place the mechanism away from the door openings. The two exits let players leave
 | Held card visibility | Cards and exits are personal. Decide whether other players see a held card; if shown, hide that visual on drop. The owner keeps their dropped card for recovery. |
 | Crawler and difficulty | Integrate Zombie Crawl while retaining existing vent systems. Start with one card; add a second only if playtests justify a distinct route and story purpose. |
 | Listener and final escape | Choose the repair mechanism and capture reset rule; tune the Listener. The eventual escape outside remains open. |
+| Optional reward rooms | Choose card identities and source levels, persistence/capture rules, personal access versus following friends, collectible type, currency repeatability and room safety. |
 | Hub lore and cosmetics | Decide the staff situation, cause of lockdown, shop identity, and missing-legs explanation. |
 
 ### Next prototype

@@ -20,6 +20,24 @@ To add a scene through Unity 2022.3, drag its `.unity` asset from the Project wi
 
 MiniGamesKidFirstRig is the current level monster. The inactive Zombie Crawl object is the chosen visual replacement. Sector monster synchronization is implemented on `level1split` and awaits multi-client validation. Zombie Crawl integration and the broader personal keycard/Level 2 exit lifecycle remain separate work.
 
+## Level 2 map blockout
+
+The editable Level 2 layout is in
+`Assets/RunawayChimps/Level2Blockout/Scenes/Level2_BehavioralConditioning_Blockout.unity`,
+with a reusable prefab in the adjacent `Prefabs` folder. Open the scene, select
+`Level2_Blockout_v03`, and press **F** over Scene view. Toggle the ceiling group
+for an overhead view. See the [map setup and validation notes](Assets/RunawayChimps/Level2Blockout/README.md).
+
+The map includes the repair-room escape loop, reused sci-fi gates and a locked
+reward-room blockout at the bottom right off the bypass. It references the
+existing MASH door assets. Scanner/reward shapes are placeholders. The Listener, repair progression and
+cross-level bonus-card saving/rewards remain unwired. Level 2 is registered at
+enabled build index 4 and uses Bootstrap's existing rig. Hub selection and Level 1
+completion now lead to its safe entry; future-terminal actions return to Level 1
+or the Hub computer. Start from Bootstrap for runtime travel tests.
+Source/box-layout checks pass; Unity import, gate mesh fit and headset checks
+remain pending.
+
 ## Audio and proximity fixes
 
 - `AudioScaler` stops its source when the vent filter, patrol/chase filter, or automatic distance threshold excludes playback. Disabling the scaler also stops its source. Mute-change logging respects `debugLogs`.
@@ -47,7 +65,7 @@ Run headset audio checks with the existing patrol and chase clips. The in-game T
 
 ## Scene travel checks
 
-Scene registration is published at `6443fd0`; the travel and additional cleanup are in the downloadable combined patch and have not been pushed. Apply and commit the latest `level1split-travel.patch` on `level1split`, then start from Bootstrap. Select **Tools > Runaway Chimps > Validate Sector Travel** outside Play Mode to audit enabled scenes, required references, distinct Hub markers, door/button wiring, the persistent rig arrangement, and baked navigation data. The validator leaves your open scenes unchanged; it does not replace runtime testing.
+Scene registration is published at `6443fd0`; the travel and additional cleanup are merged through PR #3. Start from Bootstrap. Select **Tools > Runaway Chimps > Validate Sector Travel** outside Play Mode to audit enabled scenes, required references, distinct Hub markers, door/button wiring, the persistent rig arrangement, and baked navigation data. The validator leaves your open scenes unchanged; it does not replace runtime testing.
 
 | Route | How to try it | Expected arrival |
 | --- | --- | --- |
@@ -82,3 +100,24 @@ The combined travel patch also fixes the Hub computer's Color action and name-sa
 9. Confirm the renamed HeldItemCollisionMode component imports on the existing Level 1 item. Test an item with different root/child layers, a second hand joining and releasing, final release, and disable/re-enable while held. Restore each original layer after final release/disable; travelling with the item must release it correctly. This does not complete personal keycard ownership or consumption.
 
 Source-level validation covers syntax, serialized references, whitespace, and applying the complete patch back to its base. Runtime behavior and performance still need Unity and headset validation.
+
+## Level 2 travel checks
+
+On this branch, the Hub computer has a **Level 2** menu option. Insert both
+personal Level 1 cards to travel automatically to the same Level 2 safe entry.
+Incomplete keyboxes do not qualify; a failed transition retains completed state
+for a local retry by selecting the keybox. Each new Level 1 visit starts fresh.
+
+Level 2's west safe-entry wall now has one **RETURN TO SECURITY** button.
+It calls `LevelTerminalActions.ReturnToHub()` and arrives at the Hub computer.
+The plate and cap are editable scene/prefab geometry; its plain text label appears
+at runtime. Only the local hand/fingertip can press it. There is no screen or
+Level 1 selection UI; `ReturnToLevelOne()` remains available as a code/context-menu
+hook. Check label readability, hand reach, held-contact suppression, rejection of
+remote hands/head/body/props, and release/retry after failed travel in Play Mode.
+
+Run the expanded Editor travel validator, then test all four routes, repeated
+inputs, rollback/retry, fresh Level 1 visits, two-client independent completion
+and sector visibility/voice, and headset floor/body/head clearance. C# syntax and
+serialized wiring checks passed; Unity compilation and runtime tests are pending.
+The card scripts' filenames now match their existing classes with GUIDs retained.
