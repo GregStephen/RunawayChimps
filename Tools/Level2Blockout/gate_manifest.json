@@ -9,10 +9,15 @@
     1.1564301,
     0.8
   ],
-  "frame_scale": [
+  "entry_frame_scale": [
     1,
     1.46,
     1.085
+  ],
+  "chase_frame_scale": [
+    1,
+    1.55,
+    1.42
   ],
   "gates": [
     {
@@ -25,48 +30,52 @@
         1.085
       ],
       "y": 2.07101,
-      "frame_only": true
+      "frame_only": true,
+      "axis": "z"
     },
     {
-      "name": "Repair_Hall_Frame_Only",
-      "center_x": 12,
-      "z": 10,
+      "name": "Repair_Gallery_Frame_Only",
+      "x": 20,
+      "center_z": 28,
       "scale": [
         1,
-        1.46,
-        1.085
+        1.55,
+        1.42
       ],
-      "y": 2.07101,
-      "frame_only": true
+      "y": 2.16,
+      "frame_only": true,
+      "axis": "x"
     },
     {
       "name": "Repair_Bypass_Frame_Only",
-      "center_x": 16,
-      "z": 10,
+      "center_x": 33,
+      "z": 24,
       "scale": [
         1,
-        1.46,
-        1.085
+        1.55,
+        1.42
       ],
-      "y": 2.07101,
-      "frame_only": true
+      "y": 2.16,
+      "frame_only": true,
+      "axis": "z"
     },
     {
       "name": "Exit_Gate__Matches_Level1_Scale",
-      "center_x": 3,
-      "z": 10,
+      "center_x": 4,
+      "z": 26,
       "scale": [
         1,
         1.1564301,
         0.8
       ],
       "y": 1.65,
-      "frame_only": false
+      "frame_only": false,
+      "axis": "z"
     },
     {
       "name": "Reward_Room_Gate__Level1_Small_Entrance",
-      "center_x": 16,
-      "z": 0,
+      "center_x": 33,
+      "z": 2,
       "scale": [
         1,
         1.3197935,
@@ -74,7 +83,8 @@
       ],
       "y": 1.5500001,
       "frame_only": false,
-      "small": true
+      "small": true,
+      "axis": "z"
     }
   ],
   "small_prefab_path": "Assets/MASH Virtual/Sci Fi Doors/Prefab/Gate_Small.prefab",
