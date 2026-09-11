@@ -10,23 +10,33 @@ A Photon PUN VR horror game about escaping a laboratory. Open this project with 
 
 The repository documents are the maintained versions; earlier Word documents are downloadable snapshots. Confirmed design, implemented code, and completed testing are separate statuses. The current reliability fixes remain pending Unity and headset validation.
 
-## September 10 codebase audit
-
-The `codex/codebase-reliability-audit` branch starts from main at `c388d87c` (merged PR #3). It fixes startup/room joining, script bindings, local keyboard input, turning/grounding, monster session state, cosmetics, inventory paging, and duplicate build registration. See the [audit report](docs/codebase-audit-2026-09-10.md) for all findings, remaining work and validation evidence.
-
-Run `python Tools/validate_source.py` for offline source/scene checks. Optional `--syntax` requires the `tree-sitter` and `tree-sitter-c-sharp` Python packages. In Unity 2022.3.55f1, run **Tools > Runaway Chimps > Run Reliability Regression Checks**, then **Validate Sector Travel**. All Unity, Photon and headset checks remain pending. Startup errors now offer either controller trigger to retry (desktop: R).
-
-PR #4 remains separate and unmerged at this audit's baseline. When combining it with this branch, preserve the active card GUID through the KeyCard1 → KeyCard filename change and retest personal completion.
-
 ## Current project layout
 
-Start from `Assets/Scenes/Bootstrap.unity`. On this audit branch, the enabled build scenes are Bootstrap (0), Loading (1), Hub_Base (2), and Level1_Containment (3). The new containment scene and its metadata are committed at `ac69718`; Greg reports the extraction and doors are added. Geometry, references, and runtime behavior still need validation.
+Start from `Assets/Scenes/Bootstrap.unity`. On `level1split`, the enabled build scenes are Bootstrap (0), Loading (1), Hub_Base (2), and Level1_Containment (3). The new containment scene and its metadata are committed at `ac69718`; Greg reports the extraction and doors are added. Geometry, references, and runtime behavior still need validation.
 
-Level1, Level1_2_Hall, and the other disabled scene iterations are experiments. Use `Assets/Scenes/Level1_Containment.unity` for the new destination; the earlier planned name `Level01_Containment` is superseded. Merged PR #3 wires the computer and both entrance doors to the travel service. Door returns use `HubDoorReturnSpawn` in the hallway; terminal returns use `HubReturnSpawn` in front of the computer. Both entrances to Level 1 use `Level1EntrySpawn` in its safe room. Each transition fades through Loading while keeping the same Photon room and XR rig. Unity and headset validation remain pending.
+Level1, Level1_2_Hall, and the other disabled scene iterations are experiments. Use `Assets/Scenes/Level1_Containment.unity` for the new destination; the earlier planned name `Level01_Containment` is superseded. The prepared `level1split-travel.patch` wires the computer and both entrance doors to the travel service. Door returns use `HubDoorReturnSpawn` in the hallway; terminal returns use `HubReturnSpawn` in front of the computer. Both entrances to Level 1 use `Level1EntrySpawn` in its safe room. Each transition fades through Loading while keeping the same Photon room and XR rig. Unity and headset validation remain pending.
 
 To add a scene through Unity 2022.3, drag its `.unity` asset from the Project window into **File > Build Settings > Scenes In Build**, or open it and click **Add Open Scenes**. Keep the intended scene checked and Bootstrap first. Commit `ProjectSettings/EditorBuildSettings.asset` after changing this list.
 
 MiniGamesKidFirstRig is the current level monster. The inactive Zombie Crawl object is the chosen visual replacement. Sector monster synchronization is implemented on `level1split` and awaits multi-client validation. Zombie Crawl integration and the broader personal keycard/Level 2 exit lifecycle remain separate work.
+
+## Level 2 map blockout
+
+The editable Level 2 layout is in
+`Assets/RunawayChimps/Level2Blockout/Scenes/Level2_BehavioralConditioning_Blockout.unity`,
+with a reusable prefab in the adjacent `Prefabs` folder. Open the scene, select
+`Level2_Blockout_v03`, and press **F** over Scene view. Toggle the ceiling group
+for an overhead view. See the [map setup and validation notes](Assets/RunawayChimps/Level2Blockout/README.md).
+
+The map includes the repair-room escape loop, reused sci-fi gates and a locked
+reward-room blockout at the bottom right off the bypass. It references the
+existing MASH door assets. Scanner/reward shapes are placeholders. The Listener, repair progression and
+cross-level bonus-card saving/rewards remain unwired. Level 2 is registered at
+enabled build index 4 and uses Bootstrap's existing rig. Hub selection and Level 1
+completion now lead to its safe entry; future-terminal actions return to Level 1
+or the Hub computer. Start from Bootstrap for runtime travel tests.
+Source/box-layout checks pass; Unity import, gate mesh fit and headset checks
+remain pending.
 
 ## Audio and proximity fixes
 
@@ -55,7 +65,7 @@ Run headset audio checks with the existing patrol and chase clips. The in-game T
 
 ## Scene travel checks
 
-Scene registration, travel and the earlier cleanup are merged in PR #3. Start from Bootstrap on the branch being validated. Select **Tools > Runaway Chimps > Validate Sector Travel** outside Play Mode to audit enabled scenes, required references, distinct Hub markers, door/button wiring, the persistent rig arrangement, and baked navigation data. The validator leaves your open scenes unchanged; it does not replace runtime testing.
+Scene registration is published at `6443fd0`; the travel and additional cleanup are merged through PR #3. Start from Bootstrap. Select **Tools > Runaway Chimps > Validate Sector Travel** outside Play Mode to audit enabled scenes, required references, distinct Hub markers, door/button wiring, the persistent rig arrangement, and baked navigation data. The validator leaves your open scenes unchanged; it does not replace runtime testing.
 
 | Route | How to try it | Expected arrival |
 | --- | --- | --- |
@@ -80,7 +90,7 @@ Source syntax and serialized-reference checks passed in the editing environment.
 The combined travel patch also fixes the Hub computer's Color action and name-save handling, room-specific player spawn cancellation, local-only visual readiness, stale physical-button presses, verbose trigger/proximity logs, unnecessary material cloning, hand-impact audio, and held-item collision-layer restoration. The Color page now includes a preview label and hex value. Existing component class names and asset GUIDs are preserved; the held-item script and its metadata are renamed from `DisableCollisionWhileHeld` to `HeldItemCollisionMode` to match the class.
 
 1. At the computer, adjust Color and press Enter. Confirm the avatar changes, the value survives returning to Hub and restarting, and another player sees the update.
-2. Leave/disconnect while the player spawner is waiting, then rejoin. Reconnect while Level 1 is active and Hub is unloaded. Confirm one local avatar in the current room, no late spawn from an old attempt, and no waiting forever for an unloaded Hub. Force a missing environment to check the 30-second timeout diagnostic; startup retry is implemented on the audit branch and remains pending runtime validation.
+2. Leave/disconnect while the player spawner is waiting, then rejoin. Reconnect while Level 1 is active and Hub is unloaded. Confirm one local avatar in the current room, no late spawn from an old attempt, and no waiting forever for an unloaded Hub. Force a missing environment to check the 30-second timeout diagnostic; full startup retry UI is still pending.
 3. Confirm only the local avatar's settle check marks local visuals ready. A remote avatar or a cancelled old-room coroutine must not do so.
 4. Press a button, disable the pressing collider or the button, restore it, and press again. It should return to its resting position and accept one new press.
 5. Verify zone/audio transitions with diagnostics off. Repeated proximity swaps should preserve other material-slot references and should not create material copies merely to replace one binding.
@@ -90,3 +100,24 @@ The combined travel patch also fixes the Hub computer's Color action and name-sa
 9. Confirm the renamed HeldItemCollisionMode component imports on the existing Level 1 item. Test an item with different root/child layers, a second hand joining and releasing, final release, and disable/re-enable while held. Restore each original layer after final release/disable; travelling with the item must release it correctly. This does not complete personal keycard ownership or consumption.
 
 Source-level validation covers syntax, serialized references, whitespace, and applying the complete patch back to its base. Runtime behavior and performance still need Unity and headset validation.
+
+## Level 2 travel checks
+
+On this branch, the Hub computer has a **Level 2** menu option. Insert both
+personal Level 1 cards to travel automatically to the same Level 2 safe entry.
+Incomplete keyboxes do not qualify; a failed transition retains completed state
+for a local retry by selecting the keybox. Each new Level 1 visit starts fresh.
+
+Level 2's west safe-entry wall now has one **RETURN TO SECURITY** button.
+It calls `LevelTerminalActions.ReturnToHub()` and arrives at the Hub computer.
+The plate and cap are editable scene/prefab geometry; its plain text label appears
+at runtime. Only the local hand/fingertip can press it. There is no screen or
+Level 1 selection UI; `ReturnToLevelOne()` remains available as a code/context-menu
+hook. Check label readability, hand reach, held-contact suppression, rejection of
+remote hands/head/body/props, and release/retry after failed travel in Play Mode.
+
+Run the expanded Editor travel validator, then test all four routes, repeated
+inputs, rollback/retry, fresh Level 1 visits, two-client independent completion
+and sector visibility/voice, and headset floor/body/head clearance. C# syntax and
+serialized wiring checks passed; Unity compilation and runtime tests are pending.
+The card scripts' filenames now match their existing classes with GUIDs retained.

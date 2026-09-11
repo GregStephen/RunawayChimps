@@ -17,6 +17,9 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/Level1_Containment.unity
     guid: 1a67d7f7a6e6dc64094eff3267980158
+  - enabled: 1
+    path: Assets/RunawayChimps/Level2Blockout/Scenes/Level2_BehavioralConditioning_Blockout.unity
+    guid: 20c8ae1dacc6ef59879b2d62938d719d
   - enabled: 0
     path: Assets/Scenes/Hub_Base_1.unity
     guid: c6749cc85f3ac104598d8ab2634c9671

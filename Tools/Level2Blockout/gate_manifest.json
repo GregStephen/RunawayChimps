@@ -1,0 +1,90 @@
+{
+  "prefab_path": "Assets/MASH Virtual/Sci Fi Doors/Prefab/Sci Fi Gates.prefab",
+  "prefab_guid": "22d2c44fed4ffa743aac7afe4d993905",
+  "source_scene": "Assets/Scenes/Level1_Containment.unity",
+  "source_object": "Level2_Entrance_Door",
+  "source_instance": 702843205,
+  "exit_scale": [
+    1,
+    1.1564301,
+    0.8
+  ],
+  "frame_scale": [
+    1,
+    1.46,
+    1.085
+  ],
+  "gates": [
+    {
+      "name": "Entry_Frame_Only",
+      "center_x": 3,
+      "z": 0,
+      "scale": [
+        1,
+        1.46,
+        1.085
+      ],
+      "y": 2.07101,
+      "frame_only": true
+    },
+    {
+      "name": "Repair_Hall_Frame_Only",
+      "center_x": 12,
+      "z": 10,
+      "scale": [
+        1,
+        1.46,
+        1.085
+      ],
+      "y": 2.07101,
+      "frame_only": true
+    },
+    {
+      "name": "Repair_Bypass_Frame_Only",
+      "center_x": 16,
+      "z": 10,
+      "scale": [
+        1,
+        1.46,
+        1.085
+      ],
+      "y": 2.07101,
+      "frame_only": true
+    },
+    {
+      "name": "Exit_Gate__Matches_Level1_Scale",
+      "center_x": 3,
+      "z": 10,
+      "scale": [
+        1,
+        1.1564301,
+        0.8
+      ],
+      "y": 1.65,
+      "frame_only": false
+    },
+    {
+      "name": "Reward_Room_Gate__Level1_Small_Entrance",
+      "center_x": 16,
+      "z": 0,
+      "scale": [
+        1,
+        1.3197935,
+        1.2965604
+      ],
+      "y": 1.5500001,
+      "frame_only": false,
+      "small": true
+    }
+  ],
+  "small_prefab_path": "Assets/MASH Virtual/Sci Fi Doors/Prefab/Gate_Small.prefab",
+  "small_prefab_guid": "b581fdbd127292d44ab21c4b16d91d05",
+  "small_source_object": "Level1_Entrance_Door",
+  "small_source_instance": 1294156995,
+  "small_scale": [
+    1,
+    1.3197935,
+    1.2965604
+  ],
+  "reference_status": "Existing project assets required; no source prefab modified"
+}

@@ -1,0 +1,4714 @@
+{
+  "version": "0.3",
+  "units": "metres",
+  "axes": "Unity X right, Y up, Z north",
+  "bounds": [
+    0,
+    18,
+    -4,
+    14
+  ],
+  "open_passage_wall_gap_width": 3.2,
+  "open_passage_wall_gap_height": 3.8,
+  "exit_wall_gap": [
+    2.35,
+    3.0
+  ],
+  "reward_wall_gap": [
+    2.2,
+    3.1
+  ],
+  "gate_clearance_status": "Wall gaps only; actual mesh opening and threshold need Unity inspection",
+  "room_height": 4.2,
+  "wall_thickness": 0.2,
+  "room_dimensions": "Wall centreline dimensions",
+  "rooms": [
+    [
+      "Safe_Entry",
+      0,
+      6,
+      -4,
+      0,
+      "SafeFloor"
+    ],
+    [
+      "Test_Hall",
+      0,
+      14,
+      0,
+      10,
+      "Floor"
+    ],
+    [
+      "Bypass",
+      14,
+      18,
+      0,
+      10,
+      "BypassFloor"
+    ],
+    [
+      "Repair_Room",
+      10,
+      18,
+      10,
+      14,
+      "RepairFloor"
+    ],
+    [
+      "Completed_Exit",
+      0,
+      6,
+      10,
+      14,
+      "SafeFloor"
+    ],
+    [
+      "Optional_Reward_Room",
+      14,
+      18,
+      -4,
+      0,
+      "BypassFloor"
+    ]
+  ],
+  "colors": {
+    "Concrete": [
+      0.39,
+      0.45,
+      0.47
+    ],
+    "Floor": [
+      0.23,
+      0.29,
+      0.31
+    ],
+    "SafeFloor": [
+      0.19,
+      0.38,
+      0.34
+    ],
+    "RepairFloor": [
+      0.39,
+      0.3,
+      0.22
+    ],
+    "BypassFloor": [
+      0.25,
+      0.33,
+      0.37
+    ],
+    "Obstacles": [
+      0.23,
+      0.32,
+      0.36
+    ],
+    "Metal": [
+      0.15,
+      0.19,
+      0.2
+    ],
+    "Amber": [
+      0.94,
+      0.51,
+      0.13
+    ],
+    "SafeTrim": [
+      0.32,
+      0.78,
+      0.61
+    ],
+    "LightStrip": [
+      0.71,
+      0.84,
+      0.84
+    ],
+    "RedMarker": [
+      0.8,
+      0.22,
+      0.18
+    ],
+    "Grid": [
+      0.34,
+      0.4,
+      0.41
+    ],
+    "RewardCyan": [
+      0.15,
+      0.68,
+      0.8
+    ]
+  },
+  "nodes": [
+    {
+      "id": 1000,
+      "name": "Level2_Blockout_v03",
+      "parent": null,
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "material": null,
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "empty"
+    },
+    {
+      "id": 1010,
+      "name": "01_Floors",
+      "parent": 1000,
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "material": null,
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "empty"
+    },
+    {
+      "id": 1020,
+      "name": "02_Walls_and_Doorways",
+      "parent": 1000,
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "material": null,
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "empty"
+    },
+    {
+      "id": 1030,
+      "name": "03_Ceilings__Toggle_for_Top_View",
+      "parent": 1000,
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "material": null,
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "empty"
+    },
+    {
+      "id": 1040,
+      "name": "04_Two_Solid_Hall_Obstacles",
+      "parent": 1000,
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "material": null,
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "empty"
+    },
+    {
+      "id": 1050,
+      "name": "05_Repair_Station__Visual_Only",
+      "parent": 1000,
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "material": null,
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "empty"
+    },
+    {
+      "id": 1060,
+      "name": "06_Exit_Shutter__Disable_Leaf_to_Inspect_Exit",
+      "parent": 1000,
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "material": null,
+      "collider": false,
+      "active": false,
+      "trigger": false,
+      "kind": "empty"
+    },
+    {
+      "id": 1070,
+      "name": "07_Trim_and_Wayfinding",
+      "parent": 1000,
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "material": null,
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "empty"
+    },
+    {
+      "id": 1080,
+      "name": "08_Gameplay_Markers__Not_Wired",
+      "parent": 1000,
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "material": null,
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "empty"
+    },
+    {
+      "id": 1090,
+      "name": "09_Listener_Size_Guide__Enable_to_Check_Fit",
+      "parent": 1000,
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "material": null,
+      "collider": false,
+      "active": false,
+      "trigger": false,
+      "kind": "empty"
+    },
+    {
+      "id": 1100,
+      "name": "10_Blockout_Lighting",
+      "parent": 1000,
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "material": null,
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "empty"
+    },
+    {
+      "id": 1110,
+      "name": "11_Existing_SciFi_Gates",
+      "parent": 1000,
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "material": null,
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "empty"
+    },
+    {
+      "id": 1120,
+      "name": "12_Optional_Reward_Room__Visual_Only",
+      "parent": 1000,
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "material": null,
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "empty"
+    },
+    {
+      "id": 1130,
+      "name": "Safe_Entry_Floor",
+      "parent": 1010,
+      "position": [
+        3.0,
+        -0.125,
+        -2.0
+      ],
+      "scale": [
+        6,
+        0.25,
+        4
+      ],
+      "material": "SafeFloor",
+      "collider": true,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1140,
+      "name": "Safe_Entry_Ceiling",
+      "parent": 1030,
+      "position": [
+        3.0,
+        4.3,
+        -2.0
+      ],
+      "scale": [
+        6,
+        0.2,
+        4
+      ],
+      "material": "Concrete",
+      "collider": true,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1150,
+      "name": "Test_Hall_Floor",
+      "parent": 1010,
+      "position": [
+        7.0,
+        -0.125,
+        5.0
+      ],
+      "scale": [
+        14,
+        0.25,
+        10
+      ],
+      "material": "Floor",
+      "collider": true,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1160,
+      "name": "Test_Hall_Ceiling",
+      "parent": 1030,
+      "position": [
+        7.0,
+        4.3,
+        5.0
+      ],
+      "scale": [
+        14,
+        0.2,
+        10
+      ],
+      "material": "Concrete",
+      "collider": true,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1170,
+      "name": "Bypass_Floor",
+      "parent": 1010,
+      "position": [
+        16.0,
+        -0.125,
+        5.0
+      ],
+      "scale": [
+        4,
+        0.25,
+        10
+      ],
+      "material": "BypassFloor",
+      "collider": true,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1180,
+      "name": "Bypass_Ceiling",
+      "parent": 1030,
+      "position": [
+        16.0,
+        4.3,
+        5.0
+      ],
+      "scale": [
+        4,
+        0.2,
+        10
+      ],
+      "material": "Concrete",
+      "collider": true,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1190,
+      "name": "Repair_Room_Floor",
+      "parent": 1010,
+      "position": [
+        14.0,
+        -0.125,
+        12.0
+      ],
+      "scale": [
+        8,
+        0.25,
+        4
+      ],
+      "material": "RepairFloor",
+      "collider": true,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1200,
+      "name": "Repair_Room_Ceiling",
+      "parent": 1030,
+      "position": [
+        14.0,
+        4.3,
+        12.0
+      ],
+      "scale": [
+        8,
+        0.2,
+        4
+      ],
+      "material": "Concrete",
+      "collider": true,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1210,
+      "name": "Completed_Exit_Floor",
+      "parent": 1010,
+      "position": [
+        3.0,
+        -0.125,
+        12.0
+      ],
+      "scale": [
+        6,
+        0.25,
+        4
+      ],
+      "material": "SafeFloor",
+      "collider": true,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1220,
+      "name": "Completed_Exit_Ceiling",
+      "parent": 1030,
+      "position": [
+        3.0,
+        4.3,
+        12.0
+      ],
+      "scale": [
+        6,
+        0.2,
+        4
+      ],
+      "material": "Concrete",
+      "collider": true,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1230,
+      "name": "Optional_Reward_Room_Floor",
+      "parent": 1010,
+      "position": [
+        16.0,
+        -0.125,
+        -2.0
+      ],
+      "scale": [
+        4,
+        0.25,
+        4
+      ],
+      "material": "BypassFloor",
+      "collider": true,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1240,
+      "name": "Optional_Reward_Room_Ceiling",
+      "parent": 1030,
+      "position": [
+        16.0,
+        4.3,
+        -2.0
+      ],
+      "scale": [
+        4,
+        0.2,
+        4
+      ],
+      "material": "Concrete",
+      "collider": true,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1250,
+      "name": "West_Outer",
+      "parent": 1020,
+      "position": [
+        0.0,
+        2.1,
+        5.0
+      ],
+      "scale": [
+        0.2,
+        4.2,
+        18
+      ],
+      "material": "Concrete",
+      "collider": true,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1260,
+      "name": "Entry_South",
+      "parent": 1020,
+      "position": [
+        3.0,
+        2.1,
+        -4.0
+      ],
+      "scale": [
+        6,
+        4.2,
+        0.2
+      ],
+      "material": "Concrete",
+      "collider": true,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1270,
+      "name": "Entry_East",
+      "parent": 1020,
+      "position": [
+        6.0,
+        2.1,
+        -2.0
+      ],
+      "scale": [
+        0.2,
+        4.2,
+        4
+      ],
+      "material": "Concrete",
+      "collider": true,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1280,
+      "name": "Hall_South",
+      "parent": 1020,
+      "position": [
+        10.0,
+        2.1,
+        0.0
+      ],
+      "scale": [
+        8,
+        4.2,
+        0.2
+      ],
+      "material": "Concrete",
+      "collider": true,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1290,
+      "name": "East_Outer",
+      "parent": 1020,
+      "position": [
+        18.0,
+        2.1,
+        5.0
+      ],
+      "scale": [
+        0.2,
+        4.2,
+        18
+      ],
+      "material": "Concrete",
+      "collider": true,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1300,
+      "name": "Repair_North",
+      "parent": 1020,
+      "position": [
+        14.0,
+        2.1,
+        14.0
+      ],
+      "scale": [
+        8,
+        4.2,
+        0.2
+      ],
+      "material": "Concrete",
+      "collider": true,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1310,
+      "name": "Repair_West",
+      "parent": 1020,
+      "position": [
+        10.0,
+        2.1,
+        12.0
+      ],
+      "scale": [
+        0.2,
+        4.2,
+        4
+      ],
+      "material": "Concrete",
+      "collider": true,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1320,
+      "name": "Hall_North_Blank",
+      "parent": 1020,
+      "position": [
+        8.0,
+        2.1,
+        10.0
+      ],
+      "scale": [
+        4,
+        4.2,
+        0.2
+      ],
+      "material": "Concrete",
+      "collider": true,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1330,
+      "name": "Reward_West",
+      "parent": 1020,
+      "position": [
+        14.0,
+        2.1,
+        -2.0
+      ],
+      "scale": [
+        0.2,
+        4.2,
+        4
+      ],
+      "material": "Concrete",
+      "collider": true,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1340,
+      "name": "Reward_South",
+      "parent": 1020,
+      "position": [
+        16.0,
+        2.1,
+        -4.0
+      ],
+      "scale": [
+        4,
+        4.2,
+        0.2
+      ],
+      "material": "Concrete",
+      "collider": true,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1350,
+      "name": "Exit_East",
+      "parent": 1020,
+      "position": [
+        6.0,
+        2.1,
+        12.0
+      ],
+      "scale": [
+        0.2,
+        4.2,
+        4
+      ],
+      "material": "Concrete",
+      "collider": true,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1360,
+      "name": "Exit_North",
+      "parent": 1020,
+      "position": [
+        3.0,
+        2.1,
+        14.0
+      ],
+      "scale": [
+        6,
+        4.2,
+        0.2
+      ],
+      "material": "Concrete",
+      "collider": true,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1370,
+      "name": "Bypass_Upper_Divider",
+      "parent": 1020,
+      "position": [
+        14.0,
+        2.1,
+        7.0
+      ],
+      "scale": [
+        0.2,
+        4.2,
+        6.0
+      ],
+      "material": "Concrete",
+      "collider": true,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1380,
+      "name": "Bypass_Lower_Divider",
+      "parent": 1020,
+      "position": [
+        14.0,
+        2.1,
+        0.25
+      ],
+      "scale": [
+        0.2,
+        4.2,
+        0.5
+      ],
+      "material": "Concrete",
+      "collider": true,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1390,
+      "name": "Entry_Door_Pier_0",
+      "parent": 1020,
+      "position": [
+        0.7,
+        2.1,
+        0.0
+      ],
+      "scale": [
+        1.4,
+        4.2,
+        0.2
+      ],
+      "material": "Concrete",
+      "collider": true,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1400,
+      "name": "Entry_Door_Header_0",
+      "parent": 1020,
+      "position": [
+        3.0,
+        4.0,
+        0.0
+      ],
+      "scale": [
+        3.1999999999999997,
+        0.40000000000000036,
+        0.2
+      ],
+      "material": "Concrete",
+      "collider": true,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1410,
+      "name": "Entry_Door_Trim_0L",
+      "parent": 1070,
+      "position": [
+        1.365,
+        1.8,
+        -0.115
+      ],
+      "scale": [
+        0.06,
+        3.6,
+        0.04
+      ],
+      "material": "SafeTrim",
+      "collider": false,
+      "active": false,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1420,
+      "name": "Entry_Door_Trim_0R",
+      "parent": 1070,
+      "position": [
+        4.635,
+        1.8,
+        -0.115
+      ],
+      "scale": [
+        0.06,
+        3.6,
+        0.04
+      ],
+      "material": "SafeTrim",
+      "collider": false,
+      "active": false,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1430,
+      "name": "Entry_Door_Lintel_Trim_0",
+      "parent": 1070,
+      "position": [
+        3.0,
+        3.64,
+        -0.115
+      ],
+      "scale": [
+        3.32,
+        0.07,
+        0.04
+      ],
+      "material": "SafeTrim",
+      "collider": false,
+      "active": false,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1440,
+      "name": "Entry_Door_Threshold_0",
+      "parent": 1070,
+      "position": [
+        3.0,
+        0.006,
+        0
+      ],
+      "scale": [
+        3.1999999999999997,
+        0.012,
+        0.16
+      ],
+      "material": "SafeTrim",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1450,
+      "name": "Entry_Door_Pier_End",
+      "parent": 1020,
+      "position": [
+        5.3,
+        2.1,
+        0.0
+      ],
+      "scale": [
+        1.4000000000000004,
+        4.2,
+        0.2
+      ],
+      "material": "Concrete",
+      "collider": true,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1460,
+      "name": "Exit_Door_Pier_0",
+      "parent": 1020,
+      "position": [
+        0.9125,
+        2.1,
+        10.0
+      ],
+      "scale": [
+        1.825,
+        4.2,
+        0.2
+      ],
+      "material": "Concrete",
+      "collider": true,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1470,
+      "name": "Exit_Door_Header_0",
+      "parent": 1020,
+      "position": [
+        3.0,
+        3.6,
+        10.0
+      ],
+      "scale": [
+        2.3499999999999996,
+        1.2000000000000002,
+        0.2
+      ],
+      "material": "Concrete",
+      "collider": true,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1480,
+      "name": "Exit_Door_Trim_0L",
+      "parent": 1070,
+      "position": [
+        1.79,
+        1.8,
+        9.885
+      ],
+      "scale": [
+        0.06,
+        3.6,
+        0.04
+      ],
+      "material": "SafeTrim",
+      "collider": false,
+      "active": false,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1490,
+      "name": "Exit_Door_Trim_0R",
+      "parent": 1070,
+      "position": [
+        4.21,
+        1.8,
+        9.885
+      ],
+      "scale": [
+        0.06,
+        3.6,
+        0.04
+      ],
+      "material": "SafeTrim",
+      "collider": false,
+      "active": false,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1500,
+      "name": "Exit_Door_Lintel_Trim_0",
+      "parent": 1070,
+      "position": [
+        3.0,
+        3.64,
+        9.885
+      ],
+      "scale": [
+        2.4699999999999998,
+        0.07,
+        0.04
+      ],
+      "material": "SafeTrim",
+      "collider": false,
+      "active": false,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1510,
+      "name": "Exit_Door_Threshold_0",
+      "parent": 1070,
+      "position": [
+        3.0,
+        0.006,
+        10
+      ],
+      "scale": [
+        2.3499999999999996,
+        0.012,
+        0.16
+      ],
+      "material": "SafeTrim",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1520,
+      "name": "Exit_Door_Pier_End",
+      "parent": 1020,
+      "position": [
+        5.0875,
+        2.1,
+        10.0
+      ],
+      "scale": [
+        1.8250000000000002,
+        4.2,
+        0.2
+      ],
+      "material": "Concrete",
+      "collider": true,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1530,
+      "name": "Repair_Doors_Pier_0",
+      "parent": 1020,
+      "position": [
+        10.2,
+        2.1,
+        10.0
+      ],
+      "scale": [
+        0.40000000000000036,
+        4.2,
+        0.2
+      ],
+      "material": "Concrete",
+      "collider": true,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1540,
+      "name": "Repair_Doors_Header_0",
+      "parent": 1020,
+      "position": [
+        12.0,
+        4.0,
+        10.0
+      ],
+      "scale": [
+        3.1999999999999993,
+        0.40000000000000036,
+        0.2
+      ],
+      "material": "Concrete",
+      "collider": true,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1550,
+      "name": "Repair_Doors_Trim_0L",
+      "parent": 1070,
+      "position": [
+        10.365,
+        1.8,
+        9.885
+      ],
+      "scale": [
+        0.06,
+        3.6,
+        0.04
+      ],
+      "material": "Amber",
+      "collider": false,
+      "active": false,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1560,
+      "name": "Repair_Doors_Trim_0R",
+      "parent": 1070,
+      "position": [
+        13.635,
+        1.8,
+        9.885
+      ],
+      "scale": [
+        0.06,
+        3.6,
+        0.04
+      ],
+      "material": "Amber",
+      "collider": false,
+      "active": false,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1570,
+      "name": "Repair_Doors_Lintel_Trim_0",
+      "parent": 1070,
+      "position": [
+        12.0,
+        3.64,
+        9.885
+      ],
+      "scale": [
+        3.3199999999999994,
+        0.07,
+        0.04
+      ],
+      "material": "Amber",
+      "collider": false,
+      "active": false,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1580,
+      "name": "Repair_Doors_Threshold_0",
+      "parent": 1070,
+      "position": [
+        12.0,
+        0.006,
+        10
+      ],
+      "scale": [
+        3.1999999999999993,
+        0.012,
+        0.16
+      ],
+      "material": "Amber",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1590,
+      "name": "Repair_Doors_Pier_1",
+      "parent": 1020,
+      "position": [
+        14.0,
+        2.1,
+        10.0
+      ],
+      "scale": [
+        0.8000000000000007,
+        4.2,
+        0.2
+      ],
+      "material": "Concrete",
+      "collider": true,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1600,
+      "name": "Repair_Doors_Header_1",
+      "parent": 1020,
+      "position": [
+        16.0,
+        4.0,
+        10.0
+      ],
+      "scale": [
+        3.200000000000001,
+        0.40000000000000036,
+        0.2
+      ],
+      "material": "Concrete",
+      "collider": true,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1610,
+      "name": "Repair_Doors_Trim_1L",
+      "parent": 1070,
+      "position": [
+        14.365,
+        1.8,
+        9.885
+      ],
+      "scale": [
+        0.06,
+        3.6,
+        0.04
+      ],
+      "material": "Amber",
+      "collider": false,
+      "active": false,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1620,
+      "name": "Repair_Doors_Trim_1R",
+      "parent": 1070,
+      "position": [
+        17.635,
+        1.8,
+        9.885
+      ],
+      "scale": [
+        0.06,
+        3.6,
+        0.04
+      ],
+      "material": "Amber",
+      "collider": false,
+      "active": false,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1630,
+      "name": "Repair_Doors_Lintel_Trim_1",
+      "parent": 1070,
+      "position": [
+        16.0,
+        3.64,
+        9.885
+      ],
+      "scale": [
+        3.320000000000001,
+        0.07,
+        0.04
+      ],
+      "material": "Amber",
+      "collider": false,
+      "active": false,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1640,
+      "name": "Repair_Doors_Threshold_1",
+      "parent": 1070,
+      "position": [
+        16.0,
+        0.006,
+        10
+      ],
+      "scale": [
+        3.200000000000001,
+        0.012,
+        0.16
+      ],
+      "material": "Amber",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1650,
+      "name": "Repair_Doors_Pier_End",
+      "parent": 1020,
+      "position": [
+        17.8,
+        2.1,
+        10.0
+      ],
+      "scale": [
+        0.3999999999999986,
+        4.2,
+        0.2
+      ],
+      "material": "Concrete",
+      "collider": true,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1660,
+      "name": "Reward_Door_Pier_0",
+      "parent": 1020,
+      "position": [
+        14.45,
+        2.1,
+        0.0
+      ],
+      "scale": [
+        0.9000000000000004,
+        4.2,
+        0.2
+      ],
+      "material": "Concrete",
+      "collider": true,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1670,
+      "name": "Reward_Door_Header_0",
+      "parent": 1020,
+      "position": [
+        16.0,
+        3.6500000000000004,
+        0.0
+      ],
+      "scale": [
+        2.200000000000001,
+        1.1,
+        0.2
+      ],
+      "material": "Concrete",
+      "collider": true,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1680,
+      "name": "Reward_Door_Trim_0L",
+      "parent": 1070,
+      "position": [
+        14.865,
+        1.8,
+        -0.115
+      ],
+      "scale": [
+        0.06,
+        3.6,
+        0.04
+      ],
+      "material": "RewardCyan",
+      "collider": false,
+      "active": false,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1690,
+      "name": "Reward_Door_Trim_0R",
+      "parent": 1070,
+      "position": [
+        17.135,
+        1.8,
+        -0.115
+      ],
+      "scale": [
+        0.06,
+        3.6,
+        0.04
+      ],
+      "material": "RewardCyan",
+      "collider": false,
+      "active": false,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1700,
+      "name": "Reward_Door_Lintel_Trim_0",
+      "parent": 1070,
+      "position": [
+        16.0,
+        3.64,
+        -0.115
+      ],
+      "scale": [
+        2.320000000000001,
+        0.07,
+        0.04
+      ],
+      "material": "RewardCyan",
+      "collider": false,
+      "active": false,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1710,
+      "name": "Reward_Door_Threshold_0",
+      "parent": 1070,
+      "position": [
+        16.0,
+        0.006,
+        0
+      ],
+      "scale": [
+        2.200000000000001,
+        0.012,
+        0.16
+      ],
+      "material": "RewardCyan",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1720,
+      "name": "Reward_Door_Pier_End",
+      "parent": 1020,
+      "position": [
+        17.55,
+        2.1,
+        0.0
+      ],
+      "scale": [
+        0.8999999999999986,
+        4.2,
+        0.2
+      ],
+      "material": "Concrete",
+      "collider": true,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1730,
+      "name": "Reward_Scanner__Not_Wired",
+      "parent": 1120,
+      "position": [
+        17.55,
+        1.25,
+        0.21
+      ],
+      "scale": [
+        0.28,
+        0.44,
+        0.18
+      ],
+      "material": "Metal",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1740,
+      "name": "Reward_Scanner_Cyan_Face",
+      "parent": 1120,
+      "position": [
+        17.55,
+        1.27,
+        0.31
+      ],
+      "scale": [
+        0.22,
+        0.31,
+        0.025
+      ],
+      "material": "RewardCyan",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1750,
+      "name": "Required_Card_Sign__Cyan_Three_Bars_Proposed",
+      "parent": 1120,
+      "position": [
+        17.55,
+        1.92,
+        0.21
+      ],
+      "scale": [
+        0.56,
+        0.46,
+        0.09
+      ],
+      "material": "RewardCyan",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1760,
+      "name": "Card_Symbol_Bar",
+      "parent": 1120,
+      "position": [
+        17.4,
+        1.92,
+        0.265
+      ],
+      "scale": [
+        0.06,
+        0.27,
+        0.025
+      ],
+      "material": "LightStrip",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1770,
+      "name": "Card_Symbol_Bar",
+      "parent": 1120,
+      "position": [
+        17.55,
+        1.92,
+        0.265
+      ],
+      "scale": [
+        0.06,
+        0.27,
+        0.025
+      ],
+      "material": "LightStrip",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1780,
+      "name": "Card_Symbol_Bar",
+      "parent": 1120,
+      "position": [
+        17.7,
+        1.92,
+        0.265
+      ],
+      "scale": [
+        0.06,
+        0.27,
+        0.025
+      ],
+      "material": "LightStrip",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1790,
+      "name": "Collectible_Plinth__Reward_TBD",
+      "parent": 1120,
+      "position": [
+        16,
+        0.45,
+        -3.25
+      ],
+      "scale": [
+        1.1,
+        0.9,
+        0.65
+      ],
+      "material": "Metal",
+      "collider": true,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1800,
+      "name": "Collectible_Placeholder__No_Grant",
+      "parent": 1120,
+      "position": [
+        16,
+        1.1,
+        -3.25
+      ],
+      "scale": [
+        0.3,
+        0.4,
+        0.3
+      ],
+      "material": "RewardCyan",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1810,
+      "name": "Currency_Cache_Placeholder__Optional_No_Grant",
+      "parent": 1120,
+      "position": [
+        16.8,
+        0.22,
+        -3.25
+      ],
+      "scale": [
+        0.4,
+        0.44,
+        0.4
+      ],
+      "material": "Amber",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1820,
+      "name": "RewardRoomScannerMarker",
+      "parent": 1080,
+      "position": [
+        17.55,
+        1.25,
+        0.32
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "material": null,
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "empty"
+    },
+    {
+      "id": 1830,
+      "name": "RewardRoomClaimMarker",
+      "parent": 1080,
+      "position": [
+        16,
+        0.05,
+        -2
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "material": null,
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "empty"
+    },
+    {
+      "id": 1840,
+      "name": "Reward_Room_Blocker__Remove_When_Unlock_Wired",
+      "parent": 1080,
+      "position": [
+        16,
+        1.55,
+        0
+      ],
+      "scale": [
+        2.2,
+        3.1,
+        0.2
+      ],
+      "material": null,
+      "collider": true,
+      "active": true,
+      "trigger": false,
+      "kind": "empty"
+    },
+    {
+      "id": 1850,
+      "name": "Obstacle_A",
+      "parent": 1040,
+      "position": [
+        6.1,
+        1.7,
+        5.5
+      ],
+      "scale": [
+        3,
+        3.4,
+        3
+      ],
+      "material": "Obstacles",
+      "collider": true,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1860,
+      "name": "Obstacle_B",
+      "parent": 1040,
+      "position": [
+        10.2,
+        1.7,
+        5.1
+      ],
+      "scale": [
+        1.4,
+        3.4,
+        3
+      ],
+      "material": "Obstacles",
+      "collider": true,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1870,
+      "name": "Obstacle_A_Top",
+      "parent": 1070,
+      "position": [
+        6.1,
+        3.42,
+        5.5
+      ],
+      "scale": [
+        3.06,
+        0.04,
+        3.06
+      ],
+      "material": "Metal",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1880,
+      "name": "Obstacle_A_Stripe",
+      "parent": 1070,
+      "position": [
+        6.1,
+        0.6,
+        3.989
+      ],
+      "scale": [
+        3,
+        0.12,
+        0.02
+      ],
+      "material": "Amber",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1890,
+      "name": "Obstacle_B_Top",
+      "parent": 1070,
+      "position": [
+        10.2,
+        3.42,
+        5.1
+      ],
+      "scale": [
+        1.46,
+        0.04,
+        3.06
+      ],
+      "material": "Metal",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1900,
+      "name": "Obstacle_B_Stripe",
+      "parent": 1070,
+      "position": [
+        10.2,
+        0.6,
+        3.5889999999999995
+      ],
+      "scale": [
+        1.4,
+        0.12,
+        0.02
+      ],
+      "material": "Amber",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1910,
+      "name": "Workbench_Top",
+      "parent": 1050,
+      "position": [
+        14,
+        1.0,
+        13.62
+      ],
+      "scale": [
+        2.4,
+        0.14,
+        0.55
+      ],
+      "material": "Metal",
+      "collider": true,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1920,
+      "name": "Workbench_Leg",
+      "parent": 1050,
+      "position": [
+        13,
+        0.47,
+        13.62
+      ],
+      "scale": [
+        0.12,
+        0.94,
+        0.45
+      ],
+      "material": "Metal",
+      "collider": true,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1930,
+      "name": "Workbench_Leg",
+      "parent": 1050,
+      "position": [
+        15,
+        0.47,
+        13.62
+      ],
+      "scale": [
+        0.12,
+        0.94,
+        0.45
+      ],
+      "material": "Metal",
+      "collider": true,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1940,
+      "name": "Jammed_Release_Housing",
+      "parent": 1050,
+      "position": [
+        14,
+        1.4,
+        13.58
+      ],
+      "scale": [
+        0.8,
+        0.65,
+        0.38
+      ],
+      "material": "Amber",
+      "collider": true,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1950,
+      "name": "Strike_Plate",
+      "parent": 1050,
+      "position": [
+        14,
+        1.77,
+        13.56
+      ],
+      "scale": [
+        0.28,
+        0.09,
+        0.3
+      ],
+      "material": "LightStrip",
+      "collider": true,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1960,
+      "name": "Hammer_Handle__Placeholder",
+      "parent": 1050,
+      "position": [
+        14.8,
+        1.1,
+        13.6
+      ],
+      "scale": [
+        0.05,
+        0.05,
+        0.4
+      ],
+      "material": "Concrete",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1970,
+      "name": "Hammer_Head__Placeholder",
+      "parent": 1050,
+      "position": [
+        14.8,
+        1.13,
+        13.42
+      ],
+      "scale": [
+        0.25,
+        0.14,
+        0.12
+      ],
+      "material": "Metal",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1980,
+      "name": "Conduit_Up",
+      "parent": 1070,
+      "position": [
+        14,
+        2.6,
+        13.89
+      ],
+      "scale": [
+        0.07,
+        2.3,
+        0.07
+      ],
+      "material": "Amber",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 1990,
+      "name": "Conduit_Back",
+      "parent": 1070,
+      "position": [
+        14,
+        3.75,
+        12.1
+      ],
+      "scale": [
+        0.07,
+        0.07,
+        3.6
+      ],
+      "material": "Amber",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2000,
+      "name": "Conduit_To_Exit",
+      "parent": 1070,
+      "position": [
+        8.5,
+        3.75,
+        10.15
+      ],
+      "scale": [
+        11,
+        0.07,
+        0.07
+      ],
+      "material": "Amber",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2010,
+      "name": "Exit_Shutter_Leaf__Closed_Visual_Placeholder",
+      "parent": 1060,
+      "position": [
+        3,
+        1.78,
+        10
+      ],
+      "scale": [
+        3.16,
+        3.56,
+        0.18
+      ],
+      "material": "Metal",
+      "collider": true,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2020,
+      "name": "Shutter_Rib_0",
+      "parent": 1060,
+      "position": [
+        3,
+        0.18,
+        9.89
+      ],
+      "scale": [
+        3.1,
+        0.03,
+        0.035
+      ],
+      "material": "Concrete",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2030,
+      "name": "Shutter_Rib_1",
+      "parent": 1060,
+      "position": [
+        3,
+        0.5700000000000001,
+        9.89
+      ],
+      "scale": [
+        3.1,
+        0.03,
+        0.035
+      ],
+      "material": "Concrete",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2040,
+      "name": "Shutter_Rib_2",
+      "parent": 1060,
+      "position": [
+        3,
+        0.96,
+        9.89
+      ],
+      "scale": [
+        3.1,
+        0.03,
+        0.035
+      ],
+      "material": "Concrete",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2050,
+      "name": "Shutter_Rib_3",
+      "parent": 1060,
+      "position": [
+        3,
+        1.3499999999999999,
+        9.89
+      ],
+      "scale": [
+        3.1,
+        0.03,
+        0.035
+      ],
+      "material": "Concrete",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2060,
+      "name": "Shutter_Rib_4",
+      "parent": 1060,
+      "position": [
+        3,
+        1.74,
+        9.89
+      ],
+      "scale": [
+        3.1,
+        0.03,
+        0.035
+      ],
+      "material": "Concrete",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2070,
+      "name": "Shutter_Rib_5",
+      "parent": 1060,
+      "position": [
+        3,
+        2.1300000000000003,
+        9.89
+      ],
+      "scale": [
+        3.1,
+        0.03,
+        0.035
+      ],
+      "material": "Concrete",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2080,
+      "name": "Shutter_Rib_6",
+      "parent": 1060,
+      "position": [
+        3,
+        2.52,
+        9.89
+      ],
+      "scale": [
+        3.1,
+        0.03,
+        0.035
+      ],
+      "material": "Concrete",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2090,
+      "name": "Shutter_Rib_7",
+      "parent": 1060,
+      "position": [
+        3,
+        2.91,
+        9.89
+      ],
+      "scale": [
+        3.1,
+        0.03,
+        0.035
+      ],
+      "material": "Concrete",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2100,
+      "name": "Shutter_Rib_8",
+      "parent": 1060,
+      "position": [
+        3,
+        3.3000000000000003,
+        9.89
+      ],
+      "scale": [
+        3.1,
+        0.03,
+        0.035
+      ],
+      "material": "Concrete",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2110,
+      "name": "Shutter_Caution_Band",
+      "parent": 1060,
+      "position": [
+        3,
+        1.2,
+        9.875
+      ],
+      "scale": [
+        3.1,
+        0.16,
+        0.03
+      ],
+      "material": "Amber",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2120,
+      "name": "Hub_Return_Control_Placeholder",
+      "parent": 1070,
+      "position": [
+        0.25,
+        1.25,
+        -2
+      ],
+      "scale": [
+        0.3,
+        0.65,
+        0.5
+      ],
+      "material": "SafeTrim",
+      "collider": true,
+      "active": false,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2130,
+      "name": "Level2EntrySpawn",
+      "parent": 1080,
+      "position": [
+        3,
+        0.05,
+        -2.4
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "material": null,
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "empty"
+    },
+    {
+      "id": 2140,
+      "name": "RepairStrikeOrigin",
+      "parent": 1080,
+      "position": [
+        14,
+        1.8,
+        13.56
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "material": null,
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "empty"
+    },
+    {
+      "id": 2150,
+      "name": "RepairApproach_Hall",
+      "parent": 1080,
+      "position": [
+        12,
+        0.05,
+        11.7
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "material": null,
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "empty"
+    },
+    {
+      "id": 2160,
+      "name": "RepairApproach_Bypass",
+      "parent": 1080,
+      "position": [
+        16,
+        0.05,
+        11.7
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "material": null,
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "empty"
+    },
+    {
+      "id": 2170,
+      "name": "ListenerSpawn",
+      "parent": 1080,
+      "position": [
+        3,
+        0.05,
+        6.6
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "material": null,
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "empty"
+    },
+    {
+      "id": 2180,
+      "name": "ExitQualificationMarker",
+      "parent": 1080,
+      "position": [
+        3,
+        0.05,
+        9.2
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "material": null,
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "empty"
+    },
+    {
+      "id": 2190,
+      "name": "CompletedExitArrival",
+      "parent": 1080,
+      "position": [
+        3,
+        0.05,
+        12
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "material": null,
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "empty"
+    },
+    {
+      "id": 2200,
+      "name": "HubReturnControlMarker",
+      "parent": 1080,
+      "position": [
+        0.5,
+        1.3,
+        -2
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "material": null,
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "empty"
+    },
+    {
+      "id": 2210,
+      "name": "Suggested_Patrol_Points__Not_a_Chase_Path",
+      "parent": 1080,
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "material": null,
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "empty"
+    },
+    {
+      "id": 2220,
+      "name": "Patrol_1",
+      "parent": 2210,
+      "position": [
+        3,
+        0.05,
+        8.5
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "material": null,
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "empty"
+    },
+    {
+      "id": 2230,
+      "name": "Patrol_2",
+      "parent": 2210,
+      "position": [
+        12,
+        0.05,
+        8.5
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "material": null,
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "empty"
+    },
+    {
+      "id": 2240,
+      "name": "Patrol_3",
+      "parent": 2210,
+      "position": [
+        12,
+        0.05,
+        11.7
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "material": null,
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "empty"
+    },
+    {
+      "id": 2250,
+      "name": "Patrol_4",
+      "parent": 2210,
+      "position": [
+        16,
+        0.05,
+        11.7
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "material": null,
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "empty"
+    },
+    {
+      "id": 2260,
+      "name": "Patrol_5",
+      "parent": 2210,
+      "position": [
+        16,
+        0.05,
+        2.2
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "material": null,
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "empty"
+    },
+    {
+      "id": 2270,
+      "name": "Patrol_6",
+      "parent": 2210,
+      "position": [
+        8.4,
+        0.05,
+        1.9
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "material": null,
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "empty"
+    },
+    {
+      "id": 2280,
+      "name": "Patrol_7",
+      "parent": 2210,
+      "position": [
+        3,
+        0.05,
+        2.0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "material": null,
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "empty"
+    },
+    {
+      "id": 2290,
+      "name": "Entry_Safe_Volume__Marker_Only",
+      "parent": 1080,
+      "position": [
+        3,
+        2,
+        -2
+      ],
+      "scale": [
+        5.6,
+        4,
+        3.6
+      ],
+      "material": null,
+      "collider": true,
+      "active": true,
+      "trigger": true,
+      "kind": "empty"
+    },
+    {
+      "id": 2300,
+      "name": "Completed_Exit_Safe_Volume__Marker_Only",
+      "parent": 1080,
+      "position": [
+        3,
+        2,
+        12
+      ],
+      "scale": [
+        5.6,
+        4,
+        3.6
+      ],
+      "material": null,
+      "collider": true,
+      "active": true,
+      "trigger": true,
+      "kind": "empty"
+    },
+    {
+      "id": 2310,
+      "name": "Listener_Envelope_2.75w_3.2h_1.6d",
+      "parent": 1090,
+      "position": [
+        3,
+        1.6,
+        6.6
+      ],
+      "scale": [
+        2.75,
+        3.2,
+        1.6
+      ],
+      "material": "RedMarker",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2320,
+      "name": "Safe_Entry_Grid_X1",
+      "parent": 1070,
+      "position": [
+        1,
+        0.003,
+        -2.0
+      ],
+      "scale": [
+        0.012,
+        0.006,
+        3.75
+      ],
+      "material": "Grid",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2330,
+      "name": "Safe_Entry_Grid_X2",
+      "parent": 1070,
+      "position": [
+        2,
+        0.003,
+        -2.0
+      ],
+      "scale": [
+        0.012,
+        0.006,
+        3.75
+      ],
+      "material": "Grid",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2340,
+      "name": "Safe_Entry_Grid_X3",
+      "parent": 1070,
+      "position": [
+        3,
+        0.003,
+        -2.0
+      ],
+      "scale": [
+        0.012,
+        0.006,
+        3.75
+      ],
+      "material": "Grid",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2350,
+      "name": "Safe_Entry_Grid_X4",
+      "parent": 1070,
+      "position": [
+        4,
+        0.003,
+        -2.0
+      ],
+      "scale": [
+        0.012,
+        0.006,
+        3.75
+      ],
+      "material": "Grid",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2360,
+      "name": "Safe_Entry_Grid_X5",
+      "parent": 1070,
+      "position": [
+        5,
+        0.003,
+        -2.0
+      ],
+      "scale": [
+        0.012,
+        0.006,
+        3.75
+      ],
+      "material": "Grid",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2370,
+      "name": "Safe_Entry_Grid_Z-3",
+      "parent": 1070,
+      "position": [
+        3.0,
+        0.003,
+        -3
+      ],
+      "scale": [
+        5.75,
+        0.006,
+        0.012
+      ],
+      "material": "Grid",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2380,
+      "name": "Safe_Entry_Grid_Z-2",
+      "parent": 1070,
+      "position": [
+        3.0,
+        0.003,
+        -2
+      ],
+      "scale": [
+        5.75,
+        0.006,
+        0.012
+      ],
+      "material": "Grid",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2390,
+      "name": "Safe_Entry_Grid_Z-1",
+      "parent": 1070,
+      "position": [
+        3.0,
+        0.003,
+        -1
+      ],
+      "scale": [
+        5.75,
+        0.006,
+        0.012
+      ],
+      "material": "Grid",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2400,
+      "name": "Test_Hall_Grid_X1",
+      "parent": 1070,
+      "position": [
+        1,
+        0.003,
+        5.0
+      ],
+      "scale": [
+        0.012,
+        0.006,
+        9.75
+      ],
+      "material": "Grid",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2410,
+      "name": "Test_Hall_Grid_X2",
+      "parent": 1070,
+      "position": [
+        2,
+        0.003,
+        5.0
+      ],
+      "scale": [
+        0.012,
+        0.006,
+        9.75
+      ],
+      "material": "Grid",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2420,
+      "name": "Test_Hall_Grid_X3",
+      "parent": 1070,
+      "position": [
+        3,
+        0.003,
+        5.0
+      ],
+      "scale": [
+        0.012,
+        0.006,
+        9.75
+      ],
+      "material": "Grid",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2430,
+      "name": "Test_Hall_Grid_X4",
+      "parent": 1070,
+      "position": [
+        4,
+        0.003,
+        5.0
+      ],
+      "scale": [
+        0.012,
+        0.006,
+        9.75
+      ],
+      "material": "Grid",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2440,
+      "name": "Test_Hall_Grid_X5",
+      "parent": 1070,
+      "position": [
+        5,
+        0.003,
+        5.0
+      ],
+      "scale": [
+        0.012,
+        0.006,
+        9.75
+      ],
+      "material": "Grid",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2450,
+      "name": "Test_Hall_Grid_X6",
+      "parent": 1070,
+      "position": [
+        6,
+        0.003,
+        5.0
+      ],
+      "scale": [
+        0.012,
+        0.006,
+        9.75
+      ],
+      "material": "Grid",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2460,
+      "name": "Test_Hall_Grid_X7",
+      "parent": 1070,
+      "position": [
+        7,
+        0.003,
+        5.0
+      ],
+      "scale": [
+        0.012,
+        0.006,
+        9.75
+      ],
+      "material": "Grid",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2470,
+      "name": "Test_Hall_Grid_X8",
+      "parent": 1070,
+      "position": [
+        8,
+        0.003,
+        5.0
+      ],
+      "scale": [
+        0.012,
+        0.006,
+        9.75
+      ],
+      "material": "Grid",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2480,
+      "name": "Test_Hall_Grid_X9",
+      "parent": 1070,
+      "position": [
+        9,
+        0.003,
+        5.0
+      ],
+      "scale": [
+        0.012,
+        0.006,
+        9.75
+      ],
+      "material": "Grid",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2490,
+      "name": "Test_Hall_Grid_X10",
+      "parent": 1070,
+      "position": [
+        10,
+        0.003,
+        5.0
+      ],
+      "scale": [
+        0.012,
+        0.006,
+        9.75
+      ],
+      "material": "Grid",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2500,
+      "name": "Test_Hall_Grid_X11",
+      "parent": 1070,
+      "position": [
+        11,
+        0.003,
+        5.0
+      ],
+      "scale": [
+        0.012,
+        0.006,
+        9.75
+      ],
+      "material": "Grid",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2510,
+      "name": "Test_Hall_Grid_X12",
+      "parent": 1070,
+      "position": [
+        12,
+        0.003,
+        5.0
+      ],
+      "scale": [
+        0.012,
+        0.006,
+        9.75
+      ],
+      "material": "Grid",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2520,
+      "name": "Test_Hall_Grid_X13",
+      "parent": 1070,
+      "position": [
+        13,
+        0.003,
+        5.0
+      ],
+      "scale": [
+        0.012,
+        0.006,
+        9.75
+      ],
+      "material": "Grid",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2530,
+      "name": "Test_Hall_Grid_Z1",
+      "parent": 1070,
+      "position": [
+        7.0,
+        0.003,
+        1
+      ],
+      "scale": [
+        13.75,
+        0.006,
+        0.012
+      ],
+      "material": "Grid",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2540,
+      "name": "Test_Hall_Grid_Z2",
+      "parent": 1070,
+      "position": [
+        7.0,
+        0.003,
+        2
+      ],
+      "scale": [
+        13.75,
+        0.006,
+        0.012
+      ],
+      "material": "Grid",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2550,
+      "name": "Test_Hall_Grid_Z3",
+      "parent": 1070,
+      "position": [
+        7.0,
+        0.003,
+        3
+      ],
+      "scale": [
+        13.75,
+        0.006,
+        0.012
+      ],
+      "material": "Grid",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2560,
+      "name": "Test_Hall_Grid_Z4",
+      "parent": 1070,
+      "position": [
+        7.0,
+        0.003,
+        4
+      ],
+      "scale": [
+        13.75,
+        0.006,
+        0.012
+      ],
+      "material": "Grid",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2570,
+      "name": "Test_Hall_Grid_Z5",
+      "parent": 1070,
+      "position": [
+        7.0,
+        0.003,
+        5
+      ],
+      "scale": [
+        13.75,
+        0.006,
+        0.012
+      ],
+      "material": "Grid",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2580,
+      "name": "Test_Hall_Grid_Z6",
+      "parent": 1070,
+      "position": [
+        7.0,
+        0.003,
+        6
+      ],
+      "scale": [
+        13.75,
+        0.006,
+        0.012
+      ],
+      "material": "Grid",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2590,
+      "name": "Test_Hall_Grid_Z7",
+      "parent": 1070,
+      "position": [
+        7.0,
+        0.003,
+        7
+      ],
+      "scale": [
+        13.75,
+        0.006,
+        0.012
+      ],
+      "material": "Grid",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2600,
+      "name": "Test_Hall_Grid_Z8",
+      "parent": 1070,
+      "position": [
+        7.0,
+        0.003,
+        8
+      ],
+      "scale": [
+        13.75,
+        0.006,
+        0.012
+      ],
+      "material": "Grid",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2610,
+      "name": "Test_Hall_Grid_Z9",
+      "parent": 1070,
+      "position": [
+        7.0,
+        0.003,
+        9
+      ],
+      "scale": [
+        13.75,
+        0.006,
+        0.012
+      ],
+      "material": "Grid",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2620,
+      "name": "Bypass_Grid_X15",
+      "parent": 1070,
+      "position": [
+        15,
+        0.003,
+        5.0
+      ],
+      "scale": [
+        0.012,
+        0.006,
+        9.75
+      ],
+      "material": "Grid",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2630,
+      "name": "Bypass_Grid_X16",
+      "parent": 1070,
+      "position": [
+        16,
+        0.003,
+        5.0
+      ],
+      "scale": [
+        0.012,
+        0.006,
+        9.75
+      ],
+      "material": "Grid",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2640,
+      "name": "Bypass_Grid_X17",
+      "parent": 1070,
+      "position": [
+        17,
+        0.003,
+        5.0
+      ],
+      "scale": [
+        0.012,
+        0.006,
+        9.75
+      ],
+      "material": "Grid",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2650,
+      "name": "Bypass_Grid_Z1",
+      "parent": 1070,
+      "position": [
+        16.0,
+        0.003,
+        1
+      ],
+      "scale": [
+        3.75,
+        0.006,
+        0.012
+      ],
+      "material": "Grid",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2660,
+      "name": "Bypass_Grid_Z2",
+      "parent": 1070,
+      "position": [
+        16.0,
+        0.003,
+        2
+      ],
+      "scale": [
+        3.75,
+        0.006,
+        0.012
+      ],
+      "material": "Grid",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2670,
+      "name": "Bypass_Grid_Z3",
+      "parent": 1070,
+      "position": [
+        16.0,
+        0.003,
+        3
+      ],
+      "scale": [
+        3.75,
+        0.006,
+        0.012
+      ],
+      "material": "Grid",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2680,
+      "name": "Bypass_Grid_Z4",
+      "parent": 1070,
+      "position": [
+        16.0,
+        0.003,
+        4
+      ],
+      "scale": [
+        3.75,
+        0.006,
+        0.012
+      ],
+      "material": "Grid",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2690,
+      "name": "Bypass_Grid_Z5",
+      "parent": 1070,
+      "position": [
+        16.0,
+        0.003,
+        5
+      ],
+      "scale": [
+        3.75,
+        0.006,
+        0.012
+      ],
+      "material": "Grid",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2700,
+      "name": "Bypass_Grid_Z6",
+      "parent": 1070,
+      "position": [
+        16.0,
+        0.003,
+        6
+      ],
+      "scale": [
+        3.75,
+        0.006,
+        0.012
+      ],
+      "material": "Grid",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2710,
+      "name": "Bypass_Grid_Z7",
+      "parent": 1070,
+      "position": [
+        16.0,
+        0.003,
+        7
+      ],
+      "scale": [
+        3.75,
+        0.006,
+        0.012
+      ],
+      "material": "Grid",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2720,
+      "name": "Bypass_Grid_Z8",
+      "parent": 1070,
+      "position": [
+        16.0,
+        0.003,
+        8
+      ],
+      "scale": [
+        3.75,
+        0.006,
+        0.012
+      ],
+      "material": "Grid",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2730,
+      "name": "Bypass_Grid_Z9",
+      "parent": 1070,
+      "position": [
+        16.0,
+        0.003,
+        9
+      ],
+      "scale": [
+        3.75,
+        0.006,
+        0.012
+      ],
+      "material": "Grid",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2740,
+      "name": "Repair_Room_Grid_X11",
+      "parent": 1070,
+      "position": [
+        11,
+        0.003,
+        12.0
+      ],
+      "scale": [
+        0.012,
+        0.006,
+        3.75
+      ],
+      "material": "Grid",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2750,
+      "name": "Repair_Room_Grid_X12",
+      "parent": 1070,
+      "position": [
+        12,
+        0.003,
+        12.0
+      ],
+      "scale": [
+        0.012,
+        0.006,
+        3.75
+      ],
+      "material": "Grid",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2760,
+      "name": "Repair_Room_Grid_X13",
+      "parent": 1070,
+      "position": [
+        13,
+        0.003,
+        12.0
+      ],
+      "scale": [
+        0.012,
+        0.006,
+        3.75
+      ],
+      "material": "Grid",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2770,
+      "name": "Repair_Room_Grid_X14",
+      "parent": 1070,
+      "position": [
+        14,
+        0.003,
+        12.0
+      ],
+      "scale": [
+        0.012,
+        0.006,
+        3.75
+      ],
+      "material": "Grid",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2780,
+      "name": "Repair_Room_Grid_X15",
+      "parent": 1070,
+      "position": [
+        15,
+        0.003,
+        12.0
+      ],
+      "scale": [
+        0.012,
+        0.006,
+        3.75
+      ],
+      "material": "Grid",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2790,
+      "name": "Repair_Room_Grid_X16",
+      "parent": 1070,
+      "position": [
+        16,
+        0.003,
+        12.0
+      ],
+      "scale": [
+        0.012,
+        0.006,
+        3.75
+      ],
+      "material": "Grid",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2800,
+      "name": "Repair_Room_Grid_X17",
+      "parent": 1070,
+      "position": [
+        17,
+        0.003,
+        12.0
+      ],
+      "scale": [
+        0.012,
+        0.006,
+        3.75
+      ],
+      "material": "Grid",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2810,
+      "name": "Repair_Room_Grid_Z11",
+      "parent": 1070,
+      "position": [
+        14.0,
+        0.003,
+        11
+      ],
+      "scale": [
+        7.75,
+        0.006,
+        0.012
+      ],
+      "material": "Grid",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2820,
+      "name": "Repair_Room_Grid_Z12",
+      "parent": 1070,
+      "position": [
+        14.0,
+        0.003,
+        12
+      ],
+      "scale": [
+        7.75,
+        0.006,
+        0.012
+      ],
+      "material": "Grid",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2830,
+      "name": "Repair_Room_Grid_Z13",
+      "parent": 1070,
+      "position": [
+        14.0,
+        0.003,
+        13
+      ],
+      "scale": [
+        7.75,
+        0.006,
+        0.012
+      ],
+      "material": "Grid",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2840,
+      "name": "Completed_Exit_Grid_X1",
+      "parent": 1070,
+      "position": [
+        1,
+        0.003,
+        12.0
+      ],
+      "scale": [
+        0.012,
+        0.006,
+        3.75
+      ],
+      "material": "Grid",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2850,
+      "name": "Completed_Exit_Grid_X2",
+      "parent": 1070,
+      "position": [
+        2,
+        0.003,
+        12.0
+      ],
+      "scale": [
+        0.012,
+        0.006,
+        3.75
+      ],
+      "material": "Grid",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2860,
+      "name": "Completed_Exit_Grid_X3",
+      "parent": 1070,
+      "position": [
+        3,
+        0.003,
+        12.0
+      ],
+      "scale": [
+        0.012,
+        0.006,
+        3.75
+      ],
+      "material": "Grid",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2870,
+      "name": "Completed_Exit_Grid_X4",
+      "parent": 1070,
+      "position": [
+        4,
+        0.003,
+        12.0
+      ],
+      "scale": [
+        0.012,
+        0.006,
+        3.75
+      ],
+      "material": "Grid",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2880,
+      "name": "Completed_Exit_Grid_X5",
+      "parent": 1070,
+      "position": [
+        5,
+        0.003,
+        12.0
+      ],
+      "scale": [
+        0.012,
+        0.006,
+        3.75
+      ],
+      "material": "Grid",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2890,
+      "name": "Completed_Exit_Grid_Z11",
+      "parent": 1070,
+      "position": [
+        3.0,
+        0.003,
+        11
+      ],
+      "scale": [
+        5.75,
+        0.006,
+        0.012
+      ],
+      "material": "Grid",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2900,
+      "name": "Completed_Exit_Grid_Z12",
+      "parent": 1070,
+      "position": [
+        3.0,
+        0.003,
+        12
+      ],
+      "scale": [
+        5.75,
+        0.006,
+        0.012
+      ],
+      "material": "Grid",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2910,
+      "name": "Completed_Exit_Grid_Z13",
+      "parent": 1070,
+      "position": [
+        3.0,
+        0.003,
+        13
+      ],
+      "scale": [
+        5.75,
+        0.006,
+        0.012
+      ],
+      "material": "Grid",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2920,
+      "name": "Optional_Reward_Room_Grid_X15",
+      "parent": 1070,
+      "position": [
+        15,
+        0.003,
+        -2.0
+      ],
+      "scale": [
+        0.012,
+        0.006,
+        3.75
+      ],
+      "material": "Grid",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2930,
+      "name": "Optional_Reward_Room_Grid_X16",
+      "parent": 1070,
+      "position": [
+        16,
+        0.003,
+        -2.0
+      ],
+      "scale": [
+        0.012,
+        0.006,
+        3.75
+      ],
+      "material": "Grid",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2940,
+      "name": "Optional_Reward_Room_Grid_X17",
+      "parent": 1070,
+      "position": [
+        17,
+        0.003,
+        -2.0
+      ],
+      "scale": [
+        0.012,
+        0.006,
+        3.75
+      ],
+      "material": "Grid",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2950,
+      "name": "Optional_Reward_Room_Grid_Z-3",
+      "parent": 1070,
+      "position": [
+        16.0,
+        0.003,
+        -3
+      ],
+      "scale": [
+        3.75,
+        0.006,
+        0.012
+      ],
+      "material": "Grid",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2960,
+      "name": "Optional_Reward_Room_Grid_Z-2",
+      "parent": 1070,
+      "position": [
+        16.0,
+        0.003,
+        -2
+      ],
+      "scale": [
+        3.75,
+        0.006,
+        0.012
+      ],
+      "material": "Grid",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2970,
+      "name": "Optional_Reward_Room_Grid_Z-1",
+      "parent": 1070,
+      "position": [
+        16.0,
+        0.003,
+        -1
+      ],
+      "scale": [
+        3.75,
+        0.006,
+        0.012
+      ],
+      "material": "Grid",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2980,
+      "name": "Ceiling_Light_Housing",
+      "parent": 1070,
+      "position": [
+        3,
+        4.12,
+        -2
+      ],
+      "scale": [
+        1.4,
+        0.12,
+        0.24
+      ],
+      "material": "Metal",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 2990,
+      "name": "Ceiling_Light_Diffuser",
+      "parent": 1070,
+      "position": [
+        3,
+        4.045,
+        -2
+      ],
+      "scale": [
+        1.2,
+        0.035,
+        0.17
+      ],
+      "material": "LightStrip",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 3000,
+      "name": "Ceiling_Light_Housing",
+      "parent": 1070,
+      "position": [
+        3,
+        4.12,
+        12
+      ],
+      "scale": [
+        1.4,
+        0.12,
+        0.24
+      ],
+      "material": "Metal",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 3010,
+      "name": "Ceiling_Light_Diffuser",
+      "parent": 1070,
+      "position": [
+        3,
+        4.045,
+        12
+      ],
+      "scale": [
+        1.2,
+        0.035,
+        0.17
+      ],
+      "material": "LightStrip",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 3020,
+      "name": "Ceiling_Light_Housing",
+      "parent": 1070,
+      "position": [
+        3,
+        4.12,
+        5
+      ],
+      "scale": [
+        1.4,
+        0.12,
+        0.24
+      ],
+      "material": "Metal",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 3030,
+      "name": "Ceiling_Light_Diffuser",
+      "parent": 1070,
+      "position": [
+        3,
+        4.045,
+        5
+      ],
+      "scale": [
+        1.2,
+        0.035,
+        0.17
+      ],
+      "material": "LightStrip",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 3040,
+      "name": "Ceiling_Light_Housing",
+      "parent": 1070,
+      "position": [
+        9,
+        4.12,
+        8
+      ],
+      "scale": [
+        1.4,
+        0.12,
+        0.24
+      ],
+      "material": "Metal",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 3050,
+      "name": "Ceiling_Light_Diffuser",
+      "parent": 1070,
+      "position": [
+        9,
+        4.045,
+        8
+      ],
+      "scale": [
+        1.2,
+        0.035,
+        0.17
+      ],
+      "material": "LightStrip",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 3060,
+      "name": "Ceiling_Light_Housing",
+      "parent": 1070,
+      "position": [
+        16,
+        4.12,
+        5
+      ],
+      "scale": [
+        1.4,
+        0.12,
+        0.24
+      ],
+      "material": "Metal",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 3070,
+      "name": "Ceiling_Light_Diffuser",
+      "parent": 1070,
+      "position": [
+        16,
+        4.045,
+        5
+      ],
+      "scale": [
+        1.2,
+        0.035,
+        0.17
+      ],
+      "material": "LightStrip",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 3080,
+      "name": "Ceiling_Light_Housing",
+      "parent": 1070,
+      "position": [
+        14,
+        4.12,
+        12
+      ],
+      "scale": [
+        1.4,
+        0.12,
+        0.24
+      ],
+      "material": "Metal",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 3090,
+      "name": "Ceiling_Light_Diffuser",
+      "parent": 1070,
+      "position": [
+        14,
+        4.045,
+        12
+      ],
+      "scale": [
+        1.2,
+        0.035,
+        0.17
+      ],
+      "material": "LightStrip",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 3100,
+      "name": "Ceiling_Light_Housing",
+      "parent": 1070,
+      "position": [
+        16,
+        4.12,
+        -2
+      ],
+      "scale": [
+        1.4,
+        0.12,
+        0.24
+      ],
+      "material": "Metal",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 3110,
+      "name": "Ceiling_Light_Diffuser",
+      "parent": 1070,
+      "position": [
+        16,
+        4.045,
+        -2
+      ],
+      "scale": [
+        1.2,
+        0.035,
+        0.17
+      ],
+      "material": "LightStrip",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 3120,
+      "name": "Blockout_Fill_Light",
+      "parent": 1100,
+      "position": [
+        9,
+        6,
+        5
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "material": null,
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "light"
+    },
+    {
+      "id": 3130,
+      "name": "Exit_Blocker__Remove_When_Exit_Logic_Wired",
+      "parent": 1080,
+      "position": [
+        3,
+        1.5,
+        10
+      ],
+      "scale": [
+        2.35,
+        3.0,
+        0.2
+      ],
+      "material": null,
+      "collider": true,
+      "active": true,
+      "trigger": false,
+      "kind": "empty"
+    },
+    {
+      "id": 3140,
+      "name": "Return_To_Security_Button",
+      "parent": 1000,
+      "position": [
+        0.28,
+        1.25,
+        -2
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "material": null,
+      "collider": true,
+      "active": true,
+      "trigger": true,
+      "kind": "empty"
+    },
+    {
+      "id": 3150,
+      "name": "Return_Button_Plate",
+      "parent": 3140,
+      "position": [
+        -0.13,
+        0.12,
+        0
+      ],
+      "scale": [
+        0.08,
+        0.76,
+        0.62
+      ],
+      "material": "Metal",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 3160,
+      "name": "Return_Button_Cap",
+      "parent": 3140,
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        0.12,
+        0.3,
+        0.34
+      ],
+      "material": "RedMarker",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 3170,
+      "name": "Return_Plate_Bolt",
+      "parent": 3140,
+      "position": [
+        -0.08,
+        -0.2,
+        -0.25
+      ],
+      "scale": [
+        0.025,
+        0.035,
+        0.035
+      ],
+      "material": "Concrete",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 3180,
+      "name": "Return_Plate_Bolt",
+      "parent": 3140,
+      "position": [
+        -0.08,
+        -0.2,
+        0.25
+      ],
+      "scale": [
+        0.025,
+        0.035,
+        0.035
+      ],
+      "material": "Concrete",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 3190,
+      "name": "Return_Plate_Bolt",
+      "parent": 3140,
+      "position": [
+        -0.08,
+        0.44,
+        -0.25
+      ],
+      "scale": [
+        0.025,
+        0.035,
+        0.035
+      ],
+      "material": "Concrete",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 3200,
+      "name": "Return_Plate_Bolt",
+      "parent": 3140,
+      "position": [
+        -0.08,
+        0.44,
+        0.25
+      ],
+      "scale": [
+        0.025,
+        0.035,
+        0.035
+      ],
+      "material": "Concrete",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 3210,
+      "name": "Return_Plate_Paint_Chip",
+      "parent": 3140,
+      "position": [
+        -0.088,
+        0.38,
+        -0.2
+      ],
+      "scale": [
+        0.008,
+        0.025,
+        0.065
+      ],
+      "material": "Concrete",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 3220,
+      "name": "Return_Plate_Paint_Chip",
+      "parent": 3140,
+      "position": [
+        -0.088,
+        -0.18,
+        0.16
+      ],
+      "scale": [
+        0.008,
+        0.025,
+        0.065
+      ],
+      "material": "Concrete",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 3230,
+      "name": "Return_Plate_Paint_Chip",
+      "parent": 3140,
+      "position": [
+        -0.088,
+        0.04,
+        0.24
+      ],
+      "scale": [
+        0.008,
+        0.025,
+        0.065
+      ],
+      "material": "Concrete",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    }
+  ],
+  "gates": {
+    "prefab_path": "Assets/MASH Virtual/Sci Fi Doors/Prefab/Sci Fi Gates.prefab",
+    "prefab_guid": "22d2c44fed4ffa743aac7afe4d993905",
+    "source_scene": "Assets/Scenes/Level1_Containment.unity",
+    "source_object": "Level2_Entrance_Door",
+    "source_instance": 702843205,
+    "exit_scale": [
+      1,
+      1.1564301,
+      0.8
+    ],
+    "frame_scale": [
+      1,
+      1.46,
+      1.085
+    ],
+    "gates": [
+      {
+        "name": "Entry_Frame_Only",
+        "center_x": 3,
+        "z": 0,
+        "scale": [
+          1,
+          1.46,
+          1.085
+        ],
+        "y": 2.07101,
+        "frame_only": true
+      },
+      {
+        "name": "Repair_Hall_Frame_Only",
+        "center_x": 12,
+        "z": 10,
+        "scale": [
+          1,
+          1.46,
+          1.085
+        ],
+        "y": 2.07101,
+        "frame_only": true
+      },
+      {
+        "name": "Repair_Bypass_Frame_Only",
+        "center_x": 16,
+        "z": 10,
+        "scale": [
+          1,
+          1.46,
+          1.085
+        ],
+        "y": 2.07101,
+        "frame_only": true
+      },
+      {
+        "name": "Exit_Gate__Matches_Level1_Scale",
+        "center_x": 3,
+        "z": 10,
+        "scale": [
+          1,
+          1.1564301,
+          0.8
+        ],
+        "y": 1.65,
+        "frame_only": false
+      },
+      {
+        "name": "Reward_Room_Gate__Level1_Small_Entrance",
+        "center_x": 16,
+        "z": 0,
+        "scale": [
+          1,
+          1.3197935,
+          1.2965604
+        ],
+        "y": 1.5500001,
+        "frame_only": false,
+        "small": true
+      }
+    ],
+    "small_prefab_path": "Assets/MASH Virtual/Sci Fi Doors/Prefab/Gate_Small.prefab",
+    "small_prefab_guid": "b581fdbd127292d44ab21c4b16d91d05",
+    "small_source_object": "Level1_Entrance_Door",
+    "small_source_instance": 1294156995,
+    "small_scale": [
+      1,
+      1.3197935,
+      1.2965604
+    ],
+    "reference_status": "Existing project assets required; no source prefab modified"
+  }
+}
