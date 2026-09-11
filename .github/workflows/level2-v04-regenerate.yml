@@ -7,6 +7,7 @@ on:
     paths:
       - Tools/Level2Blockout/build_level2.py
       - Tools/Level2Blockout/gate_integration.py
+      - Tools/Level2Blockout/validate_level2.py
       - .github/workflows/level2-v04-regenerate.yml
   workflow_dispatch:
 
@@ -22,18 +23,34 @@ jobs:
         with:
           ref: design/level2-expanded-map-v04
           fetch-depth: 0
+      - name: Apply reviewed bypass-clearance correction
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('Tools/Level2Blockout/build_level2.py')
+          s = p.read_text()
+          old = "for i,(x,z) in enumerate([(30.4,7),(35.6,13),(30.4,19)]):"
+          new = "for i,(x,z) in enumerate([(35.6,7),(30.4,13),(35.6,19)]):"
+          if old in s:
+              s = s.replace(old, new)
+              p.write_text(s)
+          elif new not in s:
+              raise SystemExit('Expected East Bypass offset layout not found')
+          PY
       - name: Regenerate Level 2 assets
         run: python Tools/Level2Blockout/build_level2.py
+      - name: Validate generated source and routes
+        run: python Tools/Level2Blockout/validate_level2.py
       - name: Check generated diff
         run: git diff --check
       - name: Commit generated blockout
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add Assets/RunawayChimps/Level2Blockout Tools/Level2Blockout/layout.json Tools/Level2Blockout/gate_manifest.json
+          git add Tools/Level2Blockout/build_level2.py Assets/RunawayChimps/Level2Blockout Tools/Level2Blockout/layout.json Tools/Level2Blockout/gate_manifest.json Tools/Level2Blockout/validation.json
           if git diff --cached --quiet; then
             echo "No generated changes."
           else
-            git commit -m "Regenerate Level 2 v0.4 blockout [skip level2 regen]"
+            git commit -m "Fix Level 2 bypass clearance and regenerate v0.4 [skip level2 regen]"
             git push origin HEAD:design/level2-expanded-map-v04
           fi
