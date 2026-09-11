@@ -1,78 +1,82 @@
-# Runaway Chimps Level 2 blockout v0.3
+# Runaway Chimps Level 2 blockout v0.4
 
-Editable layout for Unity 2022.3.55f1, based on the noisy-repair plan. The optional reward room is at the bottom right beneath the bypass, as requested. This is an environment blockout with Level 1 completion, Hub selection and safe-entry travel actions wired in code. Repair, reward interactions and AI remain unwired.
+Expanded editable greybox for Unity 2022.3.55f1 and Photon PUN. This branch prototype supersedes the v0.3 18 × 18 m layout as the proposed Level 2 target while preserving its travel contract, noisy-repair objective, bottom-right reward-room direction, and existing gate asset language.
 
-**Repository status, September 10, 2026:** this blockout and its travel wiring were merged through PR #4 into `main` at `8657c3e`. Draft PR #5 (`codex/codebase-reliability-audit`) preserves the Level 2 scene/prefab and reconciles its travel/card/menu behavior with the reliability fixes in merge commit `ad1a424`. Unity/headset validation remains pending.
+**Implementation status, September 11, 2026:** v0.4 is implemented on branch `design/level2-expanded-map-v04`, not merged to `main`. `main` still contains the v0.3 Level 2 blockout. The v0.4 scene/prefab are generated from `Tools/Level2Blockout/build_level2.py`; repair gameplay, Listener AI, reward persistence and final exit qualification remain unwired. Unity, Photon and headset validation remain pending.
 
 ## Open the map
 
-1. Use current `main` or PR #5's reconciled branch in the Runaway Chimps project. The earlier downloadable map package predates the final travel update; importing that package alone does not install the runtime code.
+1. Check out `design/level2-expanded-map-v04`.
 2. Open `Assets/RunawayChimps/Level2Blockout/Scenes/Level2_BehavioralConditioning_Blockout.unity`.
-3. Select `Level2_Blockout_v03`, hover over Scene view and press **F**.
-4. Toggle `03_Ceilings__Toggle_for_Top_View` for an overhead look.
+3. Select `Level2_Blockout_v04`, hover over Scene view and press **F**.
+4. Disable `03_Ceilings__Toggle_for_Top_View` for an overhead inspection.
 
-The reusable `Prefabs/Level2_Blockout.prefab` contains the same environment. Use the scene or the prefab, not both together. The scene is an unpacked copy; editing it does not automatically update the reusable prefab.
+The reusable `Prefabs/Level2_Blockout.prefab` contains the same authored environment. Use the scene or prefab, not both together. The scene is an unpacked generated copy; editing it does not automatically update the prefab or generator.
 
-## Existing gate dependencies
+## Layout
 
-The blockout references these assets already in the project:
+The authored envelope is X=0–36 m, Z=-4–32 m: 36 m by 36 m overall, four times the floor area of v0.3. The map is enlarged by adding connected spaces rather than scaling the old root transform.
+
+| Space | Bounds / purpose |
+| --- | --- |
+| Safe Entry | X 0–6, Z -4–0. Existing arrival and RETURN TO SECURITY control remain here. |
+| Test Hall A | X 0–18, Z 0–14. Large blockers form the first chase area. |
+| Lower Service Hall | X 18–30, Z 0–14. Machinery islands create alternate movement lines. |
+| West Observation Wing | X 0–8, Z 14–24. Longer western branch and route variation. |
+| Conditioning Hall B | X 8–30, Z 14–24. Staggered acoustic baffles break sightlines. |
+| East Bypass | X 30–36, Z 2–24. Offset wall masses create a zig-zag without choking its entrances. |
+| Exit Approach | X 0–8, Z 24–26. Dangerous approach to the qualified exit. |
+| Completed Exit | X 0–8, Z 26–32. Intended safe completed area behind the temporary qualification blocker. |
+| North Gallery | X 8–20, Z 24–32. Connects the upper loop, exit approach and west repair doorway. |
+| Repair Lab | X 20–36, Z 24–32. Noisy objective sits on the north wall away from both escape openings. |
+| Optional Reward Room | X 30–36, Z -4–2. Bottom-right locked room; 6 × 6 m is a blockout proposal. |
+
+The main local repair loop is Repair Lab → North Gallery → Conditioning Hall B → East Bypass → Repair Lab. Longer escape branches run through West Observation, Test Hall A and Lower Service Hall. The two repair openings are intentionally separated so the Listener can approach from one side without deleting the other route.
+
+## Scale and gate dependencies
+
+- Ceiling underside is approximately 5.0 m for this scale prototype; walls are 0.20 m thick and floor slabs 0.25 m.
+- Common creature-traversable authored openings start at 4.0 m wide × 4.2 m high.
+- Entry wall gap remains 3.2 × 3.8 m.
+- Full exit wall gap remains 2.35 × 3.0 m and uses the complete Level 1 objective-exit gate at scale `(1, 1.1564301, 0.8)`.
+- Reward wall gap remains 2.2 × 3.1 m and uses the smaller Level 1 entrance gate at scale `(1, 1.3197935, 1.2965604)`.
+- Entry and both repair openings use frame-only linked copies of the existing sci-fi gate. The repair frames are provisionally widened for the giant; inspect actual bevel/collider clearance in Unity before treating the numeric wall gap as usable mesh clearance.
+
+Existing dependencies are unchanged:
 
 - `Assets/MASH Virtual/Sci Fi Doors/Prefab/Sci Fi Gates.prefab`
 - `Assets/MASH Virtual/Sci Fi Doors/Prefab/Gate_Small.prefab`
-- Their existing FBX, material and texture dependencies.
+- Their existing FBX/material/texture dependencies.
 
-The originals are not modified or bundled again. Importing into an empty project without those assets will leave missing references.
+The source prefabs are not modified.
 
-`11_Existing_SciFi_Gates` contains three frame-only copies for the entry and repair passages, the complete exit gate at the original Level 1 exit scale `(1, 1.1564301, 0.8)`, and the small reward-room gate at the Level 1 entrance scale `(1, 1.3197935, 1.2965604)`. Only placement/orientation changes for the full gates. Frame-only copies disable the door panels and are scaled provisionally to fit. The gate copies have static MeshColliders; there is no opening animation or logic.
+## Objective and replay placeholders
 
-Check their actual mesh alignment, bevelled clearance and floor thresholds in Unity. The wall openings are not a measurement of clear space inside the frames.
+The noisy repair remains the main objective. `05_Repair_Station__Visual_Only` contains the bench, jammed release, strike plate and hammer placeholders at the north side of the Repair Lab. No repair counter, sound event, Listener investigation, qualification, animation or hammer interaction is wired by this blockout.
 
-## Reward room and replay idea
+`12_Optional_Reward_Room__Visual_Only` keeps the scanner, cyan three-bar placeholder identity, collectible plinth and optional currency-cache shape. The identifying color/symbol is illustrative. Cross-level card ownership, persistence, scanning, door animation and personal rewards remain planned. The room is not designated safe.
 
-The 4 × 4 m room occupies X=14–18, Z=-4–0, with a north-facing door off the bypass. `12_Optional_Reward_Room__Visual_Only` contains the scanner, a cyan sign with three white bars, a collectible plinth and an optional currency-cache shape. The color and symbol are illustrative. A future card should carry the same identifying marking, with readable text in final art. The source card is on another level; Level 4 is an example, not a committed source. There is no Level 4/card asset here.
-
-The main level objective remains the noisy repair. Saved bonus-card ownership, scanner interaction, rewards and personal claim tracking are planned. Permanent non-consumed unlocks and a one-time collectible/optional first-claim currency bonus are recommendations for review. This blockout grants no currency.
-
-## Geometry and markers
-
-- Room envelope: 18 × 18 m, wall centrelines; floors top out at Y=0.
-- Hall: 14 × 10 m; repair room: 8 × 4 m; entry and exit: 6 × 4 m each.
-- Bypass: 4 m nominal; reward room: 4 × 4 m.
-- Ceiling underside: 4.2 m; walls: 0.20 m; floor slabs: 0.25 m.
-- Hall obstacles: 3.4 m high. Both repair escape routes remain in place.
-- Open-passage wall gaps: 3.2 × 3.8 m; exit gap: 2.35 × 3.0 m; reward gap: 2.2 × 3.1 m. Gate mesh clearance needs editor inspection.
-- Green floors mark intended safe entry/completed exit. No safety is enforced by those colors.
-- `08_Gameplay_Markers__Not_Wired` contains spawn, objective and reward markers, two safe-volume marker triggers and temporary closed exit/reward barriers.
-- `09_Listener_Size_Guide__Enable_to_Check_Fit` is an inactive 2.75 × 3.2 × 1.6 m box, not a monster. The final Listener scale remains open.
-- The historical `06_Exit_Shutter...` group is inactive; the linked gate replaces it.
-
-For geometry inspection only, disable the relevant gate's door child and its named `Exit_Blocker__...` or `Reward_Room_Blocker__...` in group 08. Restore both afterward. The reward room is not marked safe; its small-door effect on the Listener needs a design decision and playtest.
-
-## Travel wiring and return button
+## Travel wiring preserved
 
 | Action | Arrival |
 | --- | --- |
-| Hub computer: Level 2, then Enter | `Level2EntrySpawn` in the safe entry |
-| Insert both currently required personal Level 1 cards | Same Level 2 entry, for the completing player |
-| Deferred Level 1 option: code/context menu only | `Level1EntrySpawn` in the safe cage room |
+| Hub computer → Level 2 | `Level2EntrySpawn` in Safe Entry |
+| Personal Level 1 completion → Level 2 | Same Level 2 entry |
 | RETURN TO SECURITY physical button | `HubReturnSpawn` in front of the Hub computer |
+| Deferred Level 1 action | `Level1EntrySpawn`; code/context-menu only |
 
-All routes reuse `SectorTravelService`'s fade, Loading scene, grounding/collision checks and existing rig while keeping the same Photon room. Level 1's existing door return still uses the Hub hallway arrival. Level 2 uses sector `Conditioning` and `ZoneId.Level2`; this does not implement Listener safe-room exclusion.
+`Level2EntrySpawn` remains at `(3, 0.05, -2.4)`. `HubReturnControlMarker`, the safe-entry trigger and `Return_To_Security_Button` remain in the same entry area. The branch therefore changes the environment layout without intentionally changing the Level 2 travel contract.
 
-`LevelTerminalActions` remains attached to `08_Gameplay_Markers__Not_Wired/HubReturnControlMarker`. `Return_To_Security_Button` at `(0.28, 1.25, -2)` calls `ReturnToHub()` and checks that the local player's head is inside the assigned safe-entry area. Its plate/cap/bolts are editable scene and prefab shapes; the TextMeshPro label is created at runtime. Press with a local hand or fingertip. A remote hand, local head/body, or loose prop must not activate it. There is no Level 1 selection UI; that method remains available through the component's Play Mode context menu. No screen, keyboard or new audio asset is included.
+## Source validation
 
-The Level 1 keybox keeps its current two-card requirement. Each accepted card must have been picked up by the local rig. Repeated collider contacts cannot count a card twice. Completion starts travel; the gate remains a solid barrier if loading fails. After a failed attempt, select the completed keybox again to retry; no replacement cards are needed. Completion door sound/animation polish is still pending. Leaving Level 1 and returning starts a new scene visit with fresh objective state. The broader capture/drop/recovery behavior remains separate work and needs validation.
+`Tools/Level2Blockout/validate_level2.py` performs source/geometry checks only. It verifies unique generated Unity object IDs, local serialized references, five linked gate instances, required travel bindings, box-layout connectivity and temporary barriers. It uses both a human proxy and a conservative 2.75 m-wide / 3.2 m-tall Listener proxy.
 
-PR #5's reconciliation adds reliability safeguards around the same routes: in-room respawn checks, reconnect sector/zone preservation, pause cancellation/flush during travel, room-status/error feedback on the Hub terminal, and missing-script checks in the Editor validator. It does not change the approved Level 2 layout or RETURN TO SECURITY design.
+The intended acceptance for the greybox is that both proxies can reach the Repair Lab and that blocking either repair doorway still leaves the other route connected. The East Bypass offsets are positioned away from its entrances specifically to avoid an accidental Listener bottleneck. The completed exit and reward room remain isolated by their temporary blockers; removing the reward blocker should connect the player to the reward room.
 
-## Validation and remaining work
+These are source-level box checks. They deliberately exclude linked gate mesh bevels, animated body shape, NavMesh behavior and Gorilla locomotion contacts.
 
-Before PR #5 reconciliation, source checks passed for the Level 2 YAML, unique IDs, local/material references and original prefab object IDs. Five gate instance scales and panel overrides were checked. A 0.10 m box-layout grid preserved the repair loop for player and giant proxies when either repair opening was blocked. Closed barriers isolated the exit and reward room; disabling the reward barrier connected the player through its wall gap. These checks exclude linked gate meshes and do not prove Unity clearance.
+## Pending validation
 
-On PR #5, rerun the branch-wide offline source validator, then **Tools > Runaway Chimps > Run Reliability Regression Checks** and **Tools > Runaway Chimps > Validate Sector Travel** in Unity 2022.3.55f1. Test Hub → Level 2, Level 1 completion → Level 2, RETURN TO SECURITY → Hub, the deferred Level 1 hook, repeated input, failed-load rollback/keybox retry, reconnect/pause, and two players finishing at different times.
+Before merging, open the branch in Unity 2022.3.55f1 and run both Runaway Chimps Editor validators. Then verify actual linked gate/frame thresholds, hand/body collision, the 5 m vertical scale, Listener turning/reach, NavMesh, Safe Entry/Completed Exit safety rules, repair interruption pacing, RETURN TO SECURITY reach/filtering, all travel routes, two-client Photon sector behavior, voice/presentation, repeated transitions and Quest performance.
 
-Unity import/compile, runtime TextMeshPro label/font/orientation, physical hand reach, held-contact suppression, rejection of remote hands/head/body/props, actual gate opening/threshold/frame alignment, hand/body collision, giant clearance, NavMesh, AI, repair/capture rules, personal exit qualification, cross-level cards/saving/rewards, sector avatar/voice behavior, Photon PUN and Quest performance remain pending.
-
-The scene has a `SectorScene` arrival context and terminal action component and is registered once at enabled build index 4. It has no extra rig, camera or AudioListener. Start from Bootstrap for travel tests; opening Level 2 and pressing Play alone does not create the persistent rig or Photon session.
-
-The current overhead plan is a schematic derived from this geometry. Older Blender/perspective assets under `Reference_v01` predate the gate changes and reward room. The current deliverable is the merged Unity scene/prefab; materials use the inspected project's built-in Standard shader.
+Start from Bootstrap for runtime travel tests. Opening the Level 2 scene directly and pressing Play does not create the persistent rig or Photon session.
