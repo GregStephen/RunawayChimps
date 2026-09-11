@@ -121,10 +121,7 @@ public static class SectorTravelValidator
         }
         if (hub)
         {
-            var entrance = Find<PhysicalButton>(scene).FirstOrDefault(b => b.transform.root.name == "StartLevel1Button");
-            if (entrance == null || entrance.OnPressed == null || entrance.OnPressed.GetPersistentEventCount() != 1 ||
-                !(entrance.OnPressed.GetPersistentTarget(0) is SectorDoor) || entrance.OnPressed.GetPersistentMethodName(0) != "Travel")
-                errors.Add("The Hub entrance button must call SectorDoor.Travel.");
+            ValidateHubEntranceButton(scene, doors.Length == 1 ? doors[0] : null, errors);
         }
         else
         {
@@ -143,5 +140,65 @@ public static class SectorTravelValidator
             if (!surfaces.Any(c => new SerializedObject(c).FindProperty("m_NavMeshData")?.objectReferenceValue != null))
                 errors.Add("Containment requires its baked NavMeshSurface data.");
         }
+    }
+
+    private static void ValidateHubEntranceButton(Scene scene, SectorDoor hubDoor, List<string> errors)
+    {
+        var entranceRoot = scene.GetRootGameObjects().FirstOrDefault(root => root.name == "StartLevel1Button");
+        if (entranceRoot == null)
+        {
+            errors.Add("Hub requires the StartLevel1Button root before the Level 1 gate.");
+            return;
+        }
+
+        var entrance = entranceRoot.GetComponentsInChildren<PhysicalButton>(true).FirstOrDefault();
+        if (entrance == null)
+        {
+            errors.Add("StartLevel1Button requires one PhysicalButton component.");
+            return;
+        }
+
+        // Hub_Base currently carries this old authored root disabled. SectorDoor.Awake
+        // deliberately reactivates it so Play Mode cannot silently lose the entrance.
+        if (!entranceRoot.activeSelf)
+            Debug.LogWarning("[Sector travel] StartLevel1Button is authored inactive; the Hub SectorDoor reactivates it at runtime. Save it active in Hub_Base when editing the scene next.");
+
+        if (!entrance.enabled)
+            errors.Add("StartLevel1Button PhysicalButton must be enabled.");
+
+        if (hubDoor == null || hubDoor.AllowsDirectXRSelection)
+            errors.Add("The Hub Level 1 SectorDoor must be button-only and reject direct XR Select/Grip.");
+
+        if (entrance.OnPressed == null || entrance.OnPressed.GetPersistentEventCount() != 1 ||
+            entrance.OnPressed.GetPersistentTarget(0) != hubDoor ||
+            entrance.OnPressed.GetPersistentMethodName(0) != nameof(SectorDoor.Travel))
+            errors.Add("StartLevel1Button must call the exact Hub SectorDoor.Travel method once.");
+
+        var trigger = entrance.GetComponent<Collider>();
+        if (trigger == null || !trigger.enabled || !trigger.isTrigger)
+            errors.Add("StartLevel1Button requires an enabled trigger collider for hand-contact testing.");
+
+        var serialized = new SerializedObject(entrance);
+        var buttonVisual = serialized.FindProperty("buttonVisual")?.objectReferenceValue as Transform;
+        if (buttonVisual == null || !buttonVisual.GetComponentsInChildren<Renderer>(true).Any(renderer => renderer.enabled))
+            errors.Add("StartLevel1Button requires an assigned, enabled visible button mesh.");
+
+        var requireLocalRig = serialized.FindProperty("requireLocalRig");
+        var requireTag = serialized.FindProperty("requireTag");
+        var requiredTag = serialized.FindProperty("requiredTag");
+        var pressLayers = serialized.FindProperty("pressLayers");
+        if (requireLocalRig == null || !requireLocalRig.boolValue ||
+            requireTag == null || !requireTag.boolValue ||
+            requiredTag == null || requiredTag.stringValue != "HandTag" ||
+            pressLayers == null || pressLayers.intValue == 0)
+            errors.Add("StartLevel1Button must filter presses to the local tagged hand/fingertip layer.");
+
+        if (hubDoor == null) return;
+
+        Vector3 approachOffset = Vector3.ProjectOnPlane(entrance.transform.position - hubDoor.transform.position, Vector3.up);
+        if (approachOffset.sqrMagnitude > 2.5f * 2.5f)
+            errors.Add("StartLevel1Button must stay within 2.5 m of the Hub Level 1 gate.");
+        else if (Vector3.Dot(hubDoor.transform.forward, approachOffset) <= 0f)
+            errors.Add("StartLevel1Button must remain on the Hub approach side, before the Level 1 gate.");
     }
 }
