@@ -1,6 +1,7 @@
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
+using Photon.VR.Player;
 using UnityEngine;
 
 namespace peepeecaca
@@ -38,7 +39,6 @@ namespace peepeecaca
         [Range(0, 1)]
         public float SnapBackStrength = 1f;
 
-
         protected float[] BonesLength; //Target to Origin
         protected float CompleteLength;
         protected Transform[] Bones;
@@ -47,7 +47,6 @@ namespace peepeecaca
         protected Quaternion[] StartRotationBone;
         protected Quaternion StartRotationTarget;
         protected Transform Root;
-
 
         // Start is called before the first frame update
         void Awake()
@@ -73,14 +72,22 @@ namespace peepeecaca
                 Root = Root.parent;
             }
 
+            // The player prefab historically serialized each visual arm directly to the
+            // networked LeftHand / RightHand target. A September 9 prefab edit cleared
+            // those references, so recover the intended binding before falling back to a
+            // stationary dummy target. This keeps older/future prefabs from silently
+            // presenting a T-pose when their serialized target is accidentally lost.
+            if (Target == null)
+                TryBindPhotonHandTarget();
+
             //init target
             if (Target == null)
             {
+                Debug.LogWarning($"[FastIKFabric] {name} has no tracked hand target; using a stationary fallback target.", this);
                 Target = new GameObject(gameObject.name + " Target").transform;
                 SetPositionRootSpace(Target, GetPositionRootSpace(transform));
             }
             StartRotationTarget = GetRotationRootSpace(Target);
-
 
             //init data
             var current = transform;
@@ -105,9 +112,32 @@ namespace peepeecaca
 
                 current = current.parent;
             }
+        }
 
+        private void TryBindPhotonHandTarget()
+        {
+            var player = GetComponentInParent<PhotonVRPlayer>();
+            if (player == null)
+                return;
 
+            if (GetComponent<XRHandL>() != null)
+            {
+                Target = player.LeftHand;
+            }
+            else
+            {
+                var rightHand = GetComponent<XRHandController>();
+                if (rightHand != null)
+                {
+                    Target = player.RightHand;
+                    // This component is the right visual hand on the current Photon player
+                    // prefab. Restore the side that was also reset by the same prefab edit.
+                    rightHand.handType = HandType.Right;
+                }
+            }
 
+            if (Target != null)
+                Debug.Log($"[FastIKFabric] Rebound {name} to tracked target {Target.name}.", this);
         }
 
         // Update is called once per frame
@@ -244,6 +274,5 @@ namespace peepeecaca
             }
 #endif
         }
-
     }
 }
