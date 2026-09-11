@@ -61,6 +61,13 @@ public class MonsterNavigation : MonoBehaviour
         agent = GetComponent<NavMeshAgent>();
         sectorSync = GetComponent<SectorMonsterSync>();
         if (agent == null) { enabled = false; return; }
+
+        // Keep all navigation/capture/network behavior on this proven gameplay root.
+        // The visual controller swaps MiniGamesKidFirstRig's render rig for Zombie Crawl
+        // at runtime and matches crawl playback to the root's real motion on every client.
+        if (GetComponent<CrawlerVisualController>() == null)
+            gameObject.AddComponent<CrawlerVisualController>();
+
         agent.speed = MonsterSpeedWander;
         agent.updateRotation = false;
     }

@@ -42,6 +42,12 @@ public class MonsterActivationGate : MonoBehaviour
         }
     }
 
+    public void SetAnimator(Animator replacement)
+    {
+        animator = replacement;
+        Apply(ZoneStateService.Instance != null ? ZoneStateService.Instance.LocalZone : ZoneId.None);
+    }
+
     private void Apply(ZoneId z)
     {
         bool active = (z == activeZone);
