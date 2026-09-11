@@ -26,6 +26,8 @@ namespace Photon.VR.Player
         public TextMeshPro NameText;
         public bool HideLocalPlayer = true;
 
+        private bool warnedMissingTrackingRig;
+
         private void Awake()
         {
             if (photonView.IsMine)
@@ -55,21 +57,44 @@ namespace Photon.VR.Player
 
         private void Update()
         {
-            var mgr = PhotonVRManager.Manager; // or PhotonVRManager.Manager if you have the using
-            if (mgr == null || mgr.Head == null || mgr.LeftHand == null || mgr.RightHand == null ||
-                Head == null || LeftHand == null || RightHand == null)
-                return;
-            if (photonView.IsMine)
+            if (!photonView.IsMine) return;
+
+            var manager = PhotonVRManager.Manager;
+            if (manager == null)
             {
-                Head.transform.position = PhotonVRManager.Manager.Head.transform.position;
-                Head.transform.rotation = PhotonVRManager.Manager.Head.transform.rotation;
-
-                RightHand.transform.position = PhotonVRManager.Manager.RightHand.transform.position;
-                RightHand.transform.rotation = PhotonVRManager.Manager.RightHand.transform.rotation;
-
-                LeftHand.transform.position = PhotonVRManager.Manager.LeftHand.transform.position;
-                LeftHand.transform.rotation = PhotonVRManager.Manager.LeftHand.transform.rotation;
+                WarnMissingTrackingRig("PhotonVRManager");
+                return;
             }
+
+            // Keep each tracked point independent. A temporarily missing controller must not
+            // freeze the head and the other hand at their prefab/T-pose locations.
+            bool copiedAny = false;
+            copiedAny |= CopyTrackedPose(Head, manager.Head);
+            copiedAny |= CopyTrackedPose(RightHand, manager.RightHand);
+            copiedAny |= CopyTrackedPose(LeftHand, manager.LeftHand);
+
+            if (copiedAny)
+            {
+                warnedMissingTrackingRig = false;
+            }
+            else
+            {
+                WarnMissingTrackingRig("Head/LeftHand/RightHand tracking transforms");
+            }
+        }
+
+        private static bool CopyTrackedPose(Transform target, Transform source)
+        {
+            if (target == null || source == null) return false;
+            target.SetPositionAndRotation(source.position, source.rotation);
+            return true;
+        }
+
+        private void WarnMissingTrackingRig(string missing)
+        {
+            if (warnedMissingTrackingRig) return;
+            warnedMissingTrackingRig = true;
+            Debug.LogWarning($"[PhotonVRPlayer] Local avatar is waiting for {missing}. PhotonVRRigBinder should restore the tracking references.", this);
         }
 
         public void RefreshPlayerValues() => photonView.RPC("RPCRefreshPlayerValues", RpcTarget.All);
