@@ -3,7 +3,7 @@ using UnityEngine.XR.Interaction.Toolkit;
 
 namespace RunawayChimps.Level2
 {
-    [RequireComponent(typeof(Rigidbody), typeof(Collider), typeof(XRGrabInteractable))]
+    [RequireComponent(typeof(Rigidbody), typeof(CapsuleCollider), typeof(XRGrabInteractable))]
     public sealed class Level2Fuse : MonoBehaviour
     {
         public int fuseId = 1;
