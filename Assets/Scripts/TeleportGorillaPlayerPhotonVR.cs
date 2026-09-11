@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using Photon.VR;
 using Photon.VR.Player;
 using UnityEngine;
@@ -21,16 +21,19 @@ public class TeleportGorillaPlayerPhotonVR : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        if (!other.CompareTag("MainCamera"))
-            return;
-
+        // The current Bootstrap rig has several meaningful collision shapes (head,
+        // body and hands). Requiring the collider itself to be tagged MainCamera made
+        // most visible Crawler/player contacts do nothing. LocalRigMarker is the
+        // authoritative local-rig filter used by the rest of the travel interactions.
+        var localRig = other.GetComponentInParent<LocalRigMarker>();
         var travel = RunawayChimps.Travel.SectorTravelService.I;
         if (travel != null)
         {
-            if (other.GetComponentInParent<LocalRigMarker>() == null || travel.IsBusy) return;
+            if (localRig == null || travel.IsBusy) return;
             if (travel.CurrentSector != RunawayChimps.Travel.SectorId.Containment ||
                 RunawayChimps.Zones.ZoneStateService.Instance == null ||
                 RunawayChimps.Zones.ZoneStateService.Instance.LocalZone != RunawayChimps.Zones.ZoneId.Level1_Vents) return;
+
             Vector3 capturePosition = other.transform.position;
             if (travel.RespawnAt(TeleportLocation))
             {
@@ -39,6 +42,12 @@ public class TeleportGorillaPlayerPhotonVR : MonoBehaviour
             }
             return;
         }
+
+        // Preserve the old standalone-scene fallback. That path was built around the
+        // camera collider and an XRRig hierarchy and is not the supported split-scene
+        // capture route.
+        if (!other.CompareTag("MainCamera"))
+            return;
 
         var localPlayer = PhotonVRManager.Manager.LocalPlayer;
         if (localPlayer == null)
@@ -80,23 +89,18 @@ public class TeleportGorillaPlayerPhotonVR : MonoBehaviour
             yield break;
         }
 
-        // 🌟 DROP ALL KEYCARDS (right where the monster caught them)
         Debug.Log("[Teleport] Dropping all keycards at player's position...");
         PlayerInventory.LocalInventory?.DropAllKeyCards(player.transform.position);
 
-        // Store current locomotion layers
         int originalLayers = player.locomotionEnabledLayers;
 
-        // Disable locomotion and collisions
         player.locomotionEnabledLayers = 0;
         player.headCollider.enabled = false;
         player.bodyCollider.enabled = false;
 
-        // Make kinematic
         rb.isKinematic = true;
         rb.velocity = Vector3.zero;
 
-        // Teleport: maintain head offset
         Vector3 headOffset = localPlayer.Head.position - player.transform.position;
         player.transform.position = TeleportLocation.position - headOffset;
         player.transform.rotation = TeleportLocation.rotation;
@@ -105,17 +109,14 @@ public class TeleportGorillaPlayerPhotonVR : MonoBehaviour
 
         yield return new WaitForSeconds(WaitTime);
 
-        // Restore locomotion and collisions
         player.locomotionEnabledLayers = originalLayers;
         player.headCollider.enabled = true;
         player.bodyCollider.enabled = true;
         rb.isKinematic = false;
 
-        // Fade back in
         Debug.Log("[Teleport] Starting fade in...");
         yield return StartCoroutine(Fade(1f, 0f));
 
-        // Optional overlay off
         if (TeleportOverlay != null) TeleportOverlay.SetActive(false);
 
         Debug.Log("[Teleport] Teleport sequence completed.");
