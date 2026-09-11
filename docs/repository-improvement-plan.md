@@ -6,7 +6,7 @@ Read the [design and lore](design-and-lore.md) for intended behavior and [AGENTS
 
 ## September 11 Level 2 size correction and v0.4 design
 
-**Confirmed design correction:** the current Level 2 v0.3 blockout is too small. Its implemented footprint is 18 × 18 m; the replacement must be at least twice that size in both horizontal dimensions, making **36 × 36 m the minimum v0.4 target**. This supersedes the earlier design instruction to keep the Listener level small. Preserve the noisy-repair objective, two distinct repair escape routes, safe entry and qualified safe exit, the bottom-right reward-room relationship, the established gate language, and the RETURN TO SECURITY control.
+**Confirmed design correction:** the current Level 2 v0.3 blockout is too small. Its implemented footprint is 18 × 18 m; the replacement must be at least twice that size in both horizontal dimensions, making **36 × 36 m the minimum v0.4 target**. This supersedes the earlier design instruction to keep the Listener level small. Preserve the confirmed four-fuse power-restoration objective, two distinct Repair Lab escape routes, safe entry and qualified safe exit, the bottom-right reward-room relationship, the established gate language, and the RETURN TO SECURITY control.
 
 **Current implementation evidence:** `main` still contains the 18 × 18 m v0.3 map, but branch `design/level2-expanded-map-v04` now regenerates `Assets/RunawayChimps/Level2Blockout/Scenes/Level2_BehavioralConditioning_Blockout.unity`, its reusable prefab and `Tools/Level2Blockout/layout.json` as a **36 × 36 m v0.4 review blockout**. It preserves `Level2EntrySpawn`, RETURN TO SECURITY and the existing sector/travel bindings while adding Test Hall A, Lower Service Hall, West Observation, Conditioning Hall B, East Bypass, North Gallery and a larger Repair Lab. The exact room bounds, obstacle placements, 5 m ceiling target and provisional repair-frame scaling remain **proposed for review**, not final confirmed design.
 
@@ -40,7 +40,7 @@ Read the [design and lore](design-and-lore.md) for intended behavior and [AGENTS
 
 **Conflict-resolution decisions implemented in `ad1a424`:** preserve PR #4's active `KeyCard` local-pickup ownership check and both script GUID identities; combine Level 2 destination/completion travel with PR #5 reconnect/pause/in-room-respawn safeguards; combine the Hub terminal's Level 2 menu with room-switch status/error handling under the corrected `ComputerTerminalUI.cs` filename; combine Level 2 validation with missing-script/null-trigger checks; keep current main's five enabled build scenes with Level 2 exactly once.
 
-**Still open:** the authored vent graph/NavMesh boundary, production platform-proof verification/account migration, backend reward/ownership review, Listener/repair gameplay, cross-level reward-card lifecycle, Zombie Crawl visual integration, and measured Quest performance. This audit does not upgrade SDKs or claim runtime validation.
+**Still open:** the authored vent graph/NavMesh boundary, production platform-proof verification/account migration, backend reward/ownership review, Listener/fuse-power gameplay, cross-level reward-card lifecycle, Zombie Crawl visual integration, and measured Quest performance. This audit does not upgrade SDKs or claim runtime validation.
 
 ## Earlier PR #2 implementation and validation status
 
