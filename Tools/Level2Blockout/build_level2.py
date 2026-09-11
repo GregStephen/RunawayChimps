@@ -116,7 +116,7 @@ for n,x,z,sx,sz in [('A',22.0,4.0,5.0,2.0),('B',26.2,10.2,4.6,2.2)]:
 for i,(x,z,sx,sz) in enumerate([(12.0,18.0,5.0,.7),(20.5,20.5,6.0,.7),(26.0,16.5,4.0,.7)]):
  node('Acoustic_Baffle_'+str(i+1),obstacles,(x,1.9,z),(sx,3.8,sz),'Obstacles',True)
 # East bypass offset stubs, keeping >5m remaining clear width.
-for i,(x,z) in enumerate([(30.4,7),(35.6,13),(30.4,19)]):
+for i,(x,z) in enumerate([(35.6,7),(30.4,13),(35.6,19)]):
  node('Bypass_Offset_'+str(i+1),obstacles,(x,1.7,z),(.8,3.4,3.2),'Obstacles',True)
 
 # Repair station on north wall, away from both escape gates.

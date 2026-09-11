@@ -6,7 +6,7 @@ Recorded: 2026-09-11.
 
 **Confirmed:** Level 2 must be at least twice the current v0.3 blockout's length and width. The current blockout is 18 x 18 m, so v0.4 targets a minimum 36 x 36 m footprint.
 
-**Proposed:** the room arrangement and dimensions below. The existing v0.3 Unity scene remains the implemented map until a larger scene/prefab is built and validated.
+**Implemented for review:** branch `design/level2-expanded-map-v04` now builds the room arrangement below into the normal Level 2 Unity scene and reusable prefab. The exact arrangement/dimensions remain **proposed for final design approval** until the blockout is reviewed. `main` still contains v0.3.
 
 Do not implement the size change by scaling the v0.3 root transform to 2x. Build larger authored spaces so normal room scale, gate scale, colliders and traversal remain believable.
 
@@ -54,14 +54,14 @@ Proposed starting clearance targets are 5-6 m for common chase routes, roughly 4
 
 The expansion should create more uncertainty and route choice, not just more walking. Players should enter the dangerous area quickly from Safe Entry. Once they reach the repair side, local loops should let them disengage and return without running all the way back to spawn. The larger footprint must not make the repair objective trivial simply because the creature is farther away.
 
-## Implementation after layout approval
+## Branch implementation status
 
-1. Rebuild the Level 2 blockout as v0.4 from authored geometry instead of scaling the old root.
-2. Update `Tools/Level2Blockout/layout.json`, its generator/drawing tools, the reusable prefab and the standalone scene together.
-3. Preserve existing travel components and RETURN TO SECURITY behavior; move markers only when the new geometry requires it.
-4. Re-place linked gates using the confirmed standards and measure actual mesh/collider clearance in Unity.
-5. Rebuild navigation after the physical layout is stable.
-6. Rerun source checks, both Runaway Chimps Editor validators, Unity 2022.3.55f1 compile/import, Play Mode travel, two-client Photon tests and headset checks.
+1. **Implemented:** rebuild v0.4 from authored geometry instead of scaling the old root.
+2. **Implemented:** synchronize `layout.json`, generator, reusable prefab and standalone scene.
+3. **Implemented:** preserve existing travel components, `Level2EntrySpawn` and RETURN TO SECURITY behavior.
+4. **Implemented / pending Unity measurement:** re-place linked gates using the confirmed asset families; actual mesh/collider clearance still needs Unity inspection.
+5. **Pending:** rebuild NavMesh and Listener runtime navigation after layout approval.
+6. **Source validated / runtime pending:** generated source and box-route checks pass; Runaway Chimps Editor validators, Unity 2022.3.55f1 compile/import, Play Mode travel, two-client Photon and headset checks remain pending.
 
 ## Pending decisions
 

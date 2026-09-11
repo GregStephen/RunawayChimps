@@ -18,13 +18,13 @@ The combined `level1split-travel.patch` also includes focused source cleanup for
 
 **September 10 integration status:** PR #4 is merged into `main` at `8657c3e`, including the Level 2 blockout, Level 2 travel routes, personal Level 1 completion handoff, and RETURN TO SECURITY control. PR #5 (`codex/codebase-reliability-audit`) was reconciled with that mainline in merge commit `ad1a424`. The conflict resolution preserves PR #4's Level 2 behavior and personal-card pickup checks while adding the audit branch's startup, room-switch, reconnect/pause, validator, filename, and reliability fixes. GitHub reports PR #5 mergeable/clean. This records implementation state only: the reconciled five-scene tree still requires the offline source checker to be rerun, followed by Unity 2022.3.55f1, Photon, and headset validation.
 
-**September 11 Level 2 design correction:** Greg confirmed that the current 18 × 18 m Level 2 blockout is too small and that the replacement must be at least twice as large in both length and width, making **36 × 36 m the minimum target footprint**. This supersedes the earlier instruction to keep the Listener level small. The detailed v0.4 arrangement is proposed on `design/level2-expanded-map-v04` in [the expanded layout plan](level2-expanded-layout-v04.md). The current v0.3 Unity scene/prefab remains the implemented asset until the larger blockout is built and validated.
+**September 11 Level 2 design correction:** Greg confirmed that the current 18 × 18 m Level 2 blockout is too small and that the replacement must be at least twice as large in both length and width, making **36 × 36 m the minimum target footprint**. This supersedes the earlier instruction to keep the Listener level small. Branch `design/level2-expanded-map-v04` now contains an **implemented v0.4 review blockout** at that minimum footprint, generated as the existing Level 2 scene/prefab with the travel contract preserved. The exact v0.4 room proportions and obstacle placements remain proposed until the blockout is reviewed. `main` still contains v0.3. Source/box-route validation has passed on v0.4; Unity 2022.3.55f1, Photon and headset validation remain pending.
 
 ## Decision and correction record
 
 | Recorded | Decision or correction | Status |
 | --- | --- | --- |
-| 2026-09-11 | Expand Level 2 to at least twice the current v0.3 blockout's length and width. Since v0.3 is 18 × 18 m, the replacement target is at least 36 × 36 m. Do not treat the earlier “keep the proposed small layout” instruction as active. Preserve the noisy-repair loop, two repair escape routes, safe entry/qualified exit, bottom-right reward-room rule and established gate language while redesigning the larger space. | Confirmed size correction; v0.4 arrangement proposed on `design/level2-expanded-map-v04`; Unity scene/prefab implementation and validation pending. |
+| 2026-09-11 | Expand Level 2 to at least twice the current v0.3 blockout's length and width. Since v0.3 is 18 × 18 m, the replacement target is at least 36 × 36 m. Do not treat the earlier “keep the proposed small layout” instruction as active. Preserve the noisy-repair loop, two repair escape routes, safe entry/qualified exit, bottom-right reward-room rule and established gate language while redesigning the larger space. | Confirmed size correction. V0.4 review geometry is implemented on `design/level2-expanded-map-v04` and passes generated-source/box-route checks; exact arrangement still proposed for review; Unity, Photon and headset validation pending. |
 | 2026-09-11 | Hub hallway → Level 1 uses the physical `StartLevel1Button` beside the gate as the only player-facing activation. Touch/press it with the local monkey hand or fingertip; do not require Grip, Trigger, or XR Select on the door itself. This keeps headset play and non-headset editor testing on the same hand-collision interaction. The door remains a barrier/visual, not an interactable. | Confirmed correction. The existing `StartLevel1Button` is already wired to `SectorDoor.Travel`; removing the Hub door's XR-select shortcut and generated select prompt is still pending implementation and validation. Level 1 → Hub return interaction is unchanged by this correction. |
 | 2026-09-10 | Reconcile the reliability-audit branch with merged PR #4 without dropping Level 2 or the audit fixes. Preserve the active `KeyCard`/`VRKeyCard` GUID identities, PR #4's local-pickup ownership check, Level 2 menu/completion routes, and current five-scene Build Settings; combine them with the audit reconnect/pause and missing-script safeguards. | Implemented in PR #5 merge commit `ad1a424`; GitHub mergeable/clean; source checker, Unity, Photon and headset validation pending |
 | 2026-09-10 | Replace the proposed elaborate Level 2 terminal with one large wall button labeled RETURN TO SECURITY. It returns to the Hub computer; no Level 1 selection UI for now. Internal Hub naming is unchanged. | Confirmed; simple geometry and local-hand interaction merged through PR #4; Unity/headset checks pending |
@@ -307,11 +307,11 @@ Proposed behavior: it is blind and locates players through hammer strikes and lo
 
 Use a hunched floor walk and a short listening pause as the first animations. Preserve an audible approach warning. Test a looming size in the headset while ensuring the body can pass through both repair-room doorways and turn around the hall obstacles. The sketch's original 2 m openings were starting dimensions. The current blockout uses a proposed 3.2 m clear width; the expanded v0.4 plan proposes larger common routes and approximately 4 m actual framed clearance as a starting test target. Final creature scale and speed remain open.
 
-### Expanded v0.4 layout proposal
+### Expanded v0.4 review blockout
 
-The September 11 correction sets **36 × 36 m as the minimum Level 2 footprint**. The branch design keeps the existing entry end where practical, expands mainly north/east, and proposes Test Hall A, Lower Service Hall, West Observation Wing, Conditioning Hall B, East Bypass, North Gallery, a larger Repair Lab, the qualified exit and a bottom-right reward room. This creates multiple connected loops instead of a single oversized room.
+The September 11 correction sets **36 × 36 m as the minimum Level 2 footprint**. Branch `design/level2-expanded-map-v04` now implements that review blockout in the normal Level 2 scene/prefab. It keeps the existing safe-entry end where practical and expands mainly north/east into Test Hall A, Lower Service Hall, West Observation Wing, Conditioning Hall B, East Bypass, North Gallery, a larger Repair Lab, the qualified exit and the bottom-right reward room. This creates multiple connected loops instead of a single oversized room.
 
-The proposed Repair Lab has one route into North Gallery and another toward the east/bypass side. Large partitions, acoustic baffles and service blocks break long views without creating extra safe rooms. The exact room bounds, obstacle locations, ceiling target and repair-door positions remain proposals until the enlarged Unity blockout is reviewed. See [Level 2 expanded layout v0.4](level2-expanded-layout-v04.md) for the planning grid and implementation checklist.
+The Repair Lab has one route into North Gallery and another into the East Bypass. Large partitions, acoustic baffles, service blocks and offset bypass walls break long views without creating extra safe rooms. Source-level geometry checks confirm the player proxy and conservative Listener proxy can reach the Repair Lab through either route when the other repair doorway is blocked. This is **implemented review geometry, not final layout approval**: exact room bounds, obstacle locations, the 5 m ceiling target and provisional repair-frame scaling remain proposed until Greg reviews the blockout in Unity/headset. See [Level 2 expanded layout v0.4](level2-expanded-layout-v04.md).
 
 ## Listener level floorplan
 
@@ -332,6 +332,14 @@ Place the mechanism away from the door openings. The two exits let players leave
 The inspected Level 1 objective exit is `Level2_Entrance_Door`, an instance of `Assets/MASH Virtual/Sci Fi Doors/Prefab/Sci Fi Gates.prefab` (GUID `22d2c44fed4ffa743aac7afe4d993905`). Its root scale is `(1, 1.1564301, 0.8)` under an unscaled parent. It contains separate Frame, Door_Left and Door_Right children. Frame-only copies disable both door panels and retain frame collision; the original prefab remains unchanged.
 
 **Implemented in v0.3 and merged through PR #4:** three linked frame-only instances at the entry and repair openings, the complete exit at the Level 1 scale, and the small Level 1 entrance gate for the bottom-right reward room. The interrupted v0.2 generation was rebuilt and source-checked before the merge. Both original prefab assets remain unchanged. Import requires the existing MASH sci-fi-door assets in this project. V0.4 should reuse the same standards while re-placing passages for the larger map.
+
+### Editable Level 2 blockout v0.4 — branch review prototype
+
+**Implemented on `design/level2-expanded-map-v04`:** the existing Level 2 scene path and reusable prefab are regenerated as `Level2_Blockout_v04` with a 36 × 36 m authored envelope, 5 m ceiling target, multiple connected chase spaces, two separated Repair Lab exits, retained Safe Entry/RETURN TO SECURITY wiring, the existing full exit gate family and bottom-right reward-room gate family. The v0.3 root was not uniformly scaled.
+
+**Source validated on the branch:** generated Unity object IDs are unique, local serialized references resolve, five linked gate instances remain present, required travel bindings remain serialized, human and conservative Listener proxies reach the gameplay spaces, either repair doorway can be blocked while the other route still reaches the Repair Lab, and the temporary exit/reward blockers isolate their spaces as intended. These checks exclude actual linked-gate bevel/collider clearance, NavMesh, animated Listener dimensions, Unity import/runtime, Photon and headset performance.
+
+**Pending validation:** Unity 2022.3.55f1 import/compile, both Runaway Chimps Editor validators, actual gate thresholds, Gorilla hand/body collision, 5 m scale judgment in headset, Listener turning/reach, NavMesh, safe-zone enforcement, repair pacing, travel, two-client Photon and Quest performance. `main` remains on v0.3 until this review branch is approved and merged.
 
 ### Editable Level 2 blockout v0.3
 
@@ -361,7 +369,7 @@ The inspected Level 1 objective exit is `Level2_Entrance_Door`, an instance of `
 
 ### Next prototype
 
-Prototype with the hub, Level 1, and the Level 2 safe entry currently present in the merged v0.3 blockout while the expanded v0.4 map is designed.
+For layout review, prototype with branch `design/level2-expanded-map-v04`; `main` still retains the merged v0.3 blockout until the enlarged geometry is approved and merged.
 
 1. Verify the Hub/Level 1 scene split at the Security Gate; check each side has complete geometry and colliders.
 
@@ -377,7 +385,7 @@ Prototype with the hub, Level 1, and the Level 2 safe entry currently present in
 
 1. Test the fade and scene activation on the target Quest hardware, then add the cage-to-vent clues.
 
-1. After the v0.4 layout arrangement is approved, rebuild the Level 2 scene/prefab and generator artifacts to the minimum 36 × 36 m target, then repeat Level 2 navigation, travel, collision, Photon and headset validation on the enlarged geometry.
+1. Review the implemented v0.4 blockout's room proportions, route readability and pacing. After layout approval, tune/regenerate the geometry as needed, then complete Level 2 navigation, travel, collision, Photon and headset validation on the enlarged map.
 
 ### Keeping this document current
 
