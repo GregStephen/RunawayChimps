@@ -22,6 +22,8 @@ The combined `level1split-travel.patch` also includes focused source cleanup for
 
 **September 11 Level 1 runtime follow-up:** after the first Zombie Crawl integration and emergency lighting fallback reached `main` through PR #8, Greg reported that Level 1 remained almost impossible to see, Zombie Crawl rendered far too small, translated without convincing crawl motion, did not appear to pursue the player, and did not capture on ordinary player contact. Branch `codex/fix-level1-crawler-lighting` now implements a focused correction: a brighter but still cool/shadowless readable baseline, authored-world-scale preservation for Zombie Crawl, retuned crawl/chase pacing and detection, local-rig contact capture, and a directional safe-room-to-vent zone repair for the second Level 1 route. A follow-up source pass further makes both safe-room boundaries head-authoritative, retries capture during continued overlap, records card drops from the Gorilla body position, restricts Zombie lookup to its own scene including inactive authored objects, restarts a non-looping crawl state while moving, and keeps the shared Crawler Animator active independently of the local viewer's safe-room audio gate. This is implemented source behavior, not yet Unity/headset validation. A local headset-style vent headlamp/flashlight cone is a **proposed** presentation idea only and is not implemented by this branch.
 
+**September 11 spawn/arrival stability follow-up:** Greg then reported an intermittent local Hub spawn partially inside the floor and two Hub → Level 1 arrivals that glitched severely. This does **not** change any confirmed arrival marker or route. On `codex/fix-level1-crawler-lighting`, Hub startup now keeps locomotion/colliders/physics frozen while repeatedly grounding the XR rig over fixed-physics settle ticks, checks body/head clearance before startup can become ready, and uses a slightly larger floor skin. Sector travel and capture respawn now repeat the same floor/body/head placement validation across multiple fixed ticks while the rig remains frozen before locomotion and colliders are restored. These are implementation safeguards based on runtime feedback; repeated Unity/headset/Photon validation is still required before the intermittent issue is considered resolved.
+
 ## Decision and correction record
 
 | Recorded | Decision or correction | Status |
@@ -394,6 +396,8 @@ For layout review, prototype with branch `design/level2-expanded-map-v04`; `main
 1. Verify the Hub/Level 1 scene split at the Security Gate; check each side has complete geometry and colliders.
 
 1. Verify PR #6's Hub hallway `StartLevel1Button` appears before the gate in Play Mode, activates travel from a local hand/fingertip in both headset play and non-headset editor testing, and leaves the Hub gate itself non-selectable.
+
+1. Repeatedly cold-start into the Hub and travel Hub → Level 1 on `codex/fix-level1-crawler-lighting`; verify the new multi-fixed-step spawn/arrival stabilization prevents floor penetration, post-fade jitter/launch, stuck hands and delayed physics kicks before judging other gameplay behavior.
 
 1. Verify that two clients share one Photon room while one stays in the hub and the other plays Level 1.
 
