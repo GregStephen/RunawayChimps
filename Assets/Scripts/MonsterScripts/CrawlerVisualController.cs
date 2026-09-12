@@ -3,7 +3,8 @@ using UnityEngine;
 /// <summary>
 /// Keeps the proven Crawler gameplay root (navigation, capture, Photon sync, audio)
 /// while replacing MiniGamesKidFirstRig's visible rig with the authored Zombie Crawl model.
-/// Navigation owns world movement; the Animator only supplies visual crawl motion.
+/// Navigation owns world movement; the Animator supplies limb motion while
+/// CrawlerBodyPathFollower keeps the long torso aligned to the traveled vent path.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class CrawlerVisualController : MonoBehaviour
@@ -24,6 +25,7 @@ public sealed class CrawlerVisualController : MonoBehaviour
     [SerializeField, Range(0.05f, 0.5f)] private float detectionInterval = 0.1f;
 
     [Header("Animation matching")]
+    [SerializeField] private string crawlStateName = "Base Layer.mixamo_com";
     [SerializeField, Min(0.01f)] private float referenceMetersPerSecond = 2.25f;
     [SerializeField, Min(0f)] private float stationaryThreshold = 0.04f;
     [SerializeField, Min(0f)] private float minimumMovingPlayback = 0.55f;
@@ -32,12 +34,29 @@ public sealed class CrawlerVisualController : MonoBehaviour
     [SerializeField, Min(0f)] private float playbackSmoothing = 12f;
     [SerializeField, Min(0.1f)] private float teleportDistance = 2f;
 
+    [Header("Animation verification")]
+    [SerializeField, Min(0.25f)] private float animationProbeWindow = 0.75f;
+    [SerializeField, Min(0.01f)] private float minimumProbeRotationDegrees = 0.08f;
+
     private MonsterNavigation navigation;
+    private Transform visualAnchor;
     private Transform zombieVisual;
     private Animator zombieAnimator;
+    private CrawlerBodyPathFollower bodyPathFollower;
     private Vector3 previousPosition;
     private float smoothedPlayback;
     private bool initialized;
+
+    private int crawlStateHash;
+    private int crawlShortStateHash;
+    private Transform[] animationProbeBones;
+    private Quaternion[] previousProbeRotations;
+    private float probeElapsed;
+    private float probeRotationDegrees;
+    private float previousNormalizedTime;
+    private bool probeSawStateAdvance;
+    private bool attemptedAnimationRecovery;
+    private bool warnedAnimationBinding;
 
     public Animator VisualAnimator => zombieAnimator;
     public Transform VisualRoot => zombieVisual;
@@ -71,7 +90,11 @@ public sealed class CrawlerVisualController : MonoBehaviour
         // Scene travel, controller handoff, respawn and network correction must not
         // make the crawl animation flash at extreme speed for a single frame.
         if (distance >= teleportDistance)
+        {
             actualSpeed = 0f;
+            if (bodyPathFollower != null)
+                bodyPathFollower.ResetTrail();
+        }
 
         float targetPlayback = 0f;
         if (actualSpeed >= stationaryThreshold)
@@ -91,17 +114,17 @@ public sealed class CrawlerVisualController : MonoBehaviour
         if (targetPlayback == 0f && smoothedPlayback < 0.02f)
             smoothedPlayback = 0f;
 
-        // The controller currently has one crawl state. If the imported clip is ever
-        // authored as non-looping, explicitly restart it while moving so the Crawler
-        // cannot finish one cycle and then slide through the vents in a frozen pose.
         if (targetPlayback > 0f && zombieAnimator.enabled)
         {
+            EnsureCrawlState();
+
             AnimatorStateInfo state = zombieAnimator.GetCurrentAnimatorStateInfo(0);
             if (!state.loop && state.normalizedTime >= 0.98f)
                 zombieAnimator.Play(state.fullPathHash, 0, Mathf.Repeat(state.normalizedTime, 1f));
         }
 
         zombieAnimator.speed = smoothedPlayback;
+        VerifyAnimationMotion(targetPlayback > 0f);
     }
 
     private bool TryInitialize()
@@ -124,13 +147,23 @@ public sealed class CrawlerVisualController : MonoBehaviour
         Vector3 desiredWorldScale = preserveAuthoredScale ? zombieVisual.lossyScale : fallbackLocalScale;
         desiredWorldScale *= visualScaleMultiplier;
 
-        zombieVisual.SetParent(transform, false);
-        zombieVisual.localPosition = visualLocalPosition;
-        zombieVisual.localRotation = Quaternion.Euler(visualLocalEuler);
-        zombieVisual.localScale = WorldScaleToLocalScale(transform, desiredWorldScale);
+        GameObject anchorObject = new GameObject("CrawlerVisualAnchor");
+        visualAnchor = anchorObject.transform;
+        visualAnchor.SetParent(transform, false);
+        visualAnchor.localPosition = visualLocalPosition;
+        visualAnchor.localRotation = Quaternion.Euler(visualLocalEuler);
+        visualAnchor.localScale = Vector3.one;
+
+        zombieVisual.SetParent(visualAnchor, false);
+        zombieVisual.localPosition = Vector3.zero;
+        zombieVisual.localRotation = Quaternion.identity;
+        zombieVisual.localScale = WorldScaleToLocalScale(visualAnchor, desiredWorldScale);
         zombieObject.SetActive(true);
 
         zombieAnimator = zombieObject.GetComponent<Animator>();
+        if (zombieAnimator == null)
+            zombieAnimator = zombieObject.GetComponentInChildren<Animator>(true);
+
         if (zombieAnimator == null)
         {
             Debug.LogError($"{name}: '{zombieObjectName}' has no Animator.", this);
@@ -138,7 +171,18 @@ public sealed class CrawlerVisualController : MonoBehaviour
         }
 
         zombieAnimator.applyRootMotion = false;
-        zombieAnimator.speed = 0f;
+        zombieAnimator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+        zombieAnimator.updateMode = AnimatorUpdateMode.Normal;
+
+        PrepareCrawlState();
+        ConfigureAnimationProbes();
+
+        bodyPathFollower = GetComponent<CrawlerBodyPathFollower>();
+        if (bodyPathFollower == null)
+            bodyPathFollower = gameObject.AddComponent<CrawlerBodyPathFollower>();
+
+        if (!bodyPathFollower.Configure(zombieVisual, zombieAnimator))
+            Debug.LogWarning($"{name}: Zombie Crawl visual was aligned, but full path-following body bending could not be configured.", this);
 
         DisableLegacyVisuals();
 
@@ -150,8 +194,187 @@ public sealed class CrawlerVisualController : MonoBehaviour
             gate.SetAnimator(zombieAnimator);
 
         initialized = true;
-        Debug.Log($"{name}: Zombie Crawl visual is now driven by the existing Crawler gameplay root at world scale {zombieVisual.lossyScale}.", this);
+        previousPosition = transform.position;
+
+        Debug.Log(
+            $"{name}: Zombie Crawl visual is driven by the existing Crawler gameplay root at world scale {zombieVisual.lossyScale}; " +
+            $"body-path corner following is {(bodyPathFollower != null && bodyPathFollower.HasUsableBodyChain ? "active" : "limited")}.",
+            this);
+
         return true;
+    }
+
+    private void PrepareCrawlState()
+    {
+        crawlStateHash = Animator.StringToHash(crawlStateName);
+        crawlShortStateHash = Animator.StringToHash("mixamo_com");
+
+        zombieAnimator.Rebind();
+        zombieAnimator.Update(0f);
+
+        int stateHash = ResolveCrawlStateHash();
+        if (stateHash != 0)
+        {
+            zombieAnimator.Play(stateHash, 0, 0f);
+            zombieAnimator.Update(0f);
+        }
+        else
+        {
+            Debug.LogError(
+                $"{name}: Zombie Crawl Animator does not contain '{crawlStateName}'/'mixamo_com'. " +
+                "The Crawler cannot visibly crawl until its controller/clip binding is corrected.",
+                this);
+        }
+
+        zombieAnimator.speed = 0f;
+    }
+
+    private int ResolveCrawlStateHash()
+    {
+        if (zombieAnimator == null)
+            return 0;
+
+        if (zombieAnimator.HasState(0, crawlStateHash))
+            return crawlStateHash;
+
+        if (zombieAnimator.HasState(0, crawlShortStateHash))
+            return crawlShortStateHash;
+
+        return 0;
+    }
+
+    private void EnsureCrawlState()
+    {
+        int stateHash = ResolveCrawlStateHash();
+        if (stateHash == 0)
+            return;
+
+        AnimatorStateInfo state = zombieAnimator.GetCurrentAnimatorStateInfo(0);
+        if (state.fullPathHash != stateHash &&
+            state.shortNameHash != crawlShortStateHash)
+        {
+            zombieAnimator.Play(stateHash, 0, 0f);
+        }
+    }
+
+    private void ConfigureAnimationProbes()
+    {
+        Transform[] all = zombieVisual.GetComponentsInChildren<Transform>(true);
+        Transform leftHand = FindTransform(all, "mixamoriglefthand", "lefthand", "handl");
+        Transform rightHand = FindTransform(all, "mixamorigrighthand", "righthand", "handr");
+        Transform leftForeArm = FindTransform(all, "mixamorigleftforearm", "leftforearm", "leftlowerarm", "lowerarml");
+        Transform rightForeArm = FindTransform(all, "mixamorigrightforearm", "rightforearm", "rightlowerarm", "lowerarmr");
+        Transform head = FindTransform(all, "mixamorighead", "head");
+
+        Transform[] candidates = { leftHand, rightHand, leftForeArm, rightForeArm, head };
+        int count = 0;
+        for (int i = 0; i < candidates.Length; i++)
+        {
+            if (candidates[i] != null)
+                count++;
+        }
+
+        animationProbeBones = new Transform[count];
+        previousProbeRotations = new Quaternion[count];
+
+        int index = 0;
+        for (int i = 0; i < candidates.Length; i++)
+        {
+            if (candidates[i] == null)
+                continue;
+
+            animationProbeBones[index] = candidates[i];
+            previousProbeRotations[index] = candidates[i].localRotation;
+            index++;
+        }
+
+        AnimatorStateInfo state = zombieAnimator.GetCurrentAnimatorStateInfo(0);
+        previousNormalizedTime = state.normalizedTime;
+    }
+
+    private void VerifyAnimationMotion(bool shouldBeMoving)
+    {
+        if (!shouldBeMoving || zombieAnimator == null || !zombieAnimator.enabled)
+        {
+            ResetAnimationProbeWindow();
+            return;
+        }
+
+        AnimatorStateInfo state = zombieAnimator.GetCurrentAnimatorStateInfo(0);
+        float normalizedDelta = Mathf.Abs(state.normalizedTime - previousNormalizedTime);
+        if (normalizedDelta > 0.0001f)
+            probeSawStateAdvance = true;
+
+        previousNormalizedTime = state.normalizedTime;
+
+        if (animationProbeBones != null)
+        {
+            for (int i = 0; i < animationProbeBones.Length; i++)
+            {
+                Transform probe = animationProbeBones[i];
+                if (probe == null) continue;
+
+                Quaternion current = probe.localRotation;
+                probeRotationDegrees += Quaternion.Angle(previousProbeRotations[i], current);
+                previousProbeRotations[i] = current;
+            }
+        }
+
+        probeElapsed += Time.deltaTime;
+        if (probeElapsed < animationProbeWindow)
+            return;
+
+        bool hasBoneMotion = probeRotationDegrees >= minimumProbeRotationDegrees;
+        if (probeSawStateAdvance && !hasBoneMotion)
+        {
+            if (!attemptedAnimationRecovery)
+            {
+                attemptedAnimationRecovery = true;
+                Debug.LogWarning(
+                    $"{name}: crawl state time advanced but the Zombie limb probes did not move; rebinding and restarting the crawl state once.",
+                    this);
+
+                PrepareCrawlState();
+                ConfigureAnimationProbes();
+                ResetAnimationProbeWindow();
+                return;
+            }
+
+            if (!warnedAnimationBinding)
+            {
+                warnedAnimationBinding = true;
+                Debug.LogError(
+                    $"{name}: Zombie Crawl animation state is advancing but its limb bones are not changing. " +
+                    "This indicates the standalone crawl clip is not bound to the imported Generic skeleton paths; " +
+                    "the model will continue to path-follow, but the animation asset must be rebound/re-exported.",
+                    this);
+            }
+        }
+        else if (hasBoneMotion)
+        {
+            attemptedAnimationRecovery = false;
+        }
+
+        ResetAnimationProbeWindow();
+    }
+
+    private void ResetAnimationProbeWindow()
+    {
+        probeElapsed = 0f;
+        probeRotationDegrees = 0f;
+        probeSawStateAdvance = false;
+
+        if (zombieAnimator != null)
+            previousNormalizedTime = zombieAnimator.GetCurrentAnimatorStateInfo(0).normalizedTime;
+
+        if (animationProbeBones == null || previousProbeRotations == null)
+            return;
+
+        for (int i = 0; i < animationProbeBones.Length; i++)
+        {
+            if (animationProbeBones[i] != null)
+                previousProbeRotations[i] = animationProbeBones[i].localRotation;
+        }
     }
 
     private GameObject FindInOwnScene(string objectName)
@@ -213,5 +436,41 @@ public sealed class CrawlerVisualController : MonoBehaviour
             if (animator == null || animator == zombieAnimator) continue;
             animator.enabled = false;
         }
+    }
+
+    private static Transform FindTransform(Transform[] transforms, params string[] candidateNames)
+    {
+        for (int c = 0; c < candidateNames.Length; c++)
+        {
+            string candidate = Normalize(candidateNames[c]);
+            for (int i = 0; i < transforms.Length; i++)
+            {
+                Transform transform = transforms[i];
+                if (transform != null && Normalize(transform.name) == candidate)
+                    return transform;
+            }
+        }
+
+        return null;
+    }
+
+    private static string Normalize(string value)
+    {
+        if (string.IsNullOrEmpty(value))
+            return string.Empty;
+
+        char[] buffer = new char[value.Length];
+        int length = 0;
+
+        for (int i = 0; i < value.Length; i++)
+        {
+            char ch = value[i];
+            if (!char.IsLetterOrDigit(ch))
+                continue;
+
+            buffer[length++] = char.ToLowerInvariant(ch);
+        }
+
+        return new string(buffer, 0, length);
     }
 }
