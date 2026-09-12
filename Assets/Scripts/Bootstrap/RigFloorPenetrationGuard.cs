@@ -118,7 +118,7 @@ public sealed class RigFloorPenetrationGuard : MonoBehaviour
 
         bool found = false;
         float nearestVerticalDistance = float.MaxValue;
-        float highestRecoverableFloor = bodyBottom + maxRecoveryDepth;
+        float highestRecoverableFloor = Mathf.Min(bodyBottom + maxRecoveryDepth, center.y);
         float lowestSupportFloor = bodyBottom - probeBelowBody;
 
         for (int i = 0; i < hitCount; i++)
