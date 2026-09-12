@@ -470,26 +470,6 @@
     },
     {
       "id": 1140,
-      "name": "14_Player_Interaction_Scale_Guide__Enable_to_Check_Fit",
-      "parent": 1000,
-      "position": [
-        0,
-        0,
-        0
-      ],
-      "scale": [
-        1,
-        1,
-        1
-      ],
-      "material": null,
-      "collider": false,
-      "active": false,
-      "trigger": false,
-      "kind": "empty"
-    },
-    {
-      "id": 1150,
       "name": "Safe_Entry_Floor",
       "parent": 1010,
       "position": [
@@ -509,7 +489,7 @@
       "kind": "box"
     },
     {
-      "id": 1160,
+      "id": 1150,
       "name": "Safe_Entry_Ceiling",
       "parent": 1030,
       "position": [
@@ -529,7 +509,7 @@
       "kind": "box"
     },
     {
-      "id": 1170,
+      "id": 1160,
       "name": "Test_Hall_A_Floor",
       "parent": 1010,
       "position": [
@@ -549,7 +529,7 @@
       "kind": "box"
     },
     {
-      "id": 1180,
+      "id": 1170,
       "name": "Test_Hall_A_Ceiling",
       "parent": 1030,
       "position": [
@@ -569,7 +549,7 @@
       "kind": "box"
     },
     {
-      "id": 1190,
+      "id": 1180,
       "name": "Lower_Service_Hall_Floor",
       "parent": 1010,
       "position": [
@@ -589,7 +569,7 @@
       "kind": "box"
     },
     {
-      "id": 1200,
+      "id": 1190,
       "name": "Lower_Service_Hall_Ceiling",
       "parent": 1030,
       "position": [
@@ -609,7 +589,7 @@
       "kind": "box"
     },
     {
-      "id": 1210,
+      "id": 1200,
       "name": "West_Observation_Wing_Floor",
       "parent": 1010,
       "position": [
@@ -629,7 +609,7 @@
       "kind": "box"
     },
     {
-      "id": 1220,
+      "id": 1210,
       "name": "West_Observation_Wing_Ceiling",
       "parent": 1030,
       "position": [
@@ -649,7 +629,7 @@
       "kind": "box"
     },
     {
-      "id": 1230,
+      "id": 1220,
       "name": "Conditioning_Hall_B_Floor",
       "parent": 1010,
       "position": [
@@ -669,7 +649,7 @@
       "kind": "box"
     },
     {
-      "id": 1240,
+      "id": 1230,
       "name": "Conditioning_Hall_B_Ceiling",
       "parent": 1030,
       "position": [
@@ -689,7 +669,7 @@
       "kind": "box"
     },
     {
-      "id": 1250,
+      "id": 1240,
       "name": "East_Bypass_Floor",
       "parent": 1010,
       "position": [
@@ -709,7 +689,7 @@
       "kind": "box"
     },
     {
-      "id": 1260,
+      "id": 1250,
       "name": "East_Bypass_Ceiling",
       "parent": 1030,
       "position": [
@@ -729,7 +709,7 @@
       "kind": "box"
     },
     {
-      "id": 1270,
+      "id": 1260,
       "name": "Exit_Approach_Floor",
       "parent": 1010,
       "position": [
@@ -749,7 +729,7 @@
       "kind": "box"
     },
     {
-      "id": 1280,
+      "id": 1270,
       "name": "Exit_Approach_Ceiling",
       "parent": 1030,
       "position": [
@@ -769,7 +749,7 @@
       "kind": "box"
     },
     {
-      "id": 1290,
+      "id": 1280,
       "name": "Completed_Exit_Floor",
       "parent": 1010,
       "position": [
@@ -789,7 +769,7 @@
       "kind": "box"
     },
     {
-      "id": 1300,
+      "id": 1290,
       "name": "Completed_Exit_Ceiling",
       "parent": 1030,
       "position": [
@@ -809,7 +789,7 @@
       "kind": "box"
     },
     {
-      "id": 1310,
+      "id": 1300,
       "name": "North_Gallery_Floor",
       "parent": 1010,
       "position": [
@@ -829,7 +809,7 @@
       "kind": "box"
     },
     {
-      "id": 1320,
+      "id": 1310,
       "name": "North_Gallery_Ceiling",
       "parent": 1030,
       "position": [
@@ -849,7 +829,7 @@
       "kind": "box"
     },
     {
-      "id": 1330,
+      "id": 1320,
       "name": "Repair_Lab_Floor",
       "parent": 1010,
       "position": [
@@ -869,7 +849,7 @@
       "kind": "box"
     },
     {
-      "id": 1340,
+      "id": 1330,
       "name": "Repair_Lab_Ceiling",
       "parent": 1030,
       "position": [
@@ -889,7 +869,7 @@
       "kind": "box"
     },
     {
-      "id": 1350,
+      "id": 1340,
       "name": "Optional_Reward_Room_Floor",
       "parent": 1010,
       "position": [
@@ -909,7 +889,7 @@
       "kind": "box"
     },
     {
-      "id": 1360,
+      "id": 1350,
       "name": "Optional_Reward_Room_Ceiling",
       "parent": 1030,
       "position": [
@@ -929,7 +909,7 @@
       "kind": "box"
     },
     {
-      "id": 1370,
+      "id": 1360,
       "name": "West_Outer",
       "parent": 1020,
       "position": [
@@ -949,7 +929,7 @@
       "kind": "box"
     },
     {
-      "id": 1380,
+      "id": 1370,
       "name": "North_Outer",
       "parent": 1020,
       "position": [
@@ -969,7 +949,7 @@
       "kind": "box"
     },
     {
-      "id": 1390,
+      "id": 1380,
       "name": "East_Outer",
       "parent": 1020,
       "position": [
@@ -989,7 +969,7 @@
       "kind": "box"
     },
     {
-      "id": 1400,
+      "id": 1390,
       "name": "Safe_South",
       "parent": 1020,
       "position": [
@@ -1009,7 +989,7 @@
       "kind": "box"
     },
     {
-      "id": 1410,
+      "id": 1400,
       "name": "Safe_East",
       "parent": 1020,
       "position": [
@@ -1029,7 +1009,7 @@
       "kind": "box"
     },
     {
-      "id": 1420,
+      "id": 1410,
       "name": "South_Test",
       "parent": 1020,
       "position": [
@@ -1049,7 +1029,7 @@
       "kind": "box"
     },
     {
-      "id": 1430,
+      "id": 1420,
       "name": "South_Service",
       "parent": 1020,
       "position": [
@@ -1069,7 +1049,7 @@
       "kind": "box"
     },
     {
-      "id": 1440,
+      "id": 1430,
       "name": "Reward_South",
       "parent": 1020,
       "position": [
@@ -1089,7 +1069,7 @@
       "kind": "box"
     },
     {
-      "id": 1450,
+      "id": 1440,
       "name": "Reward_West",
       "parent": 1020,
       "position": [
@@ -1109,7 +1089,7 @@
       "kind": "box"
     },
     {
-      "id": 1460,
+      "id": 1450,
       "name": "Exit_East",
       "parent": 1020,
       "position": [
@@ -1129,7 +1109,7 @@
       "kind": "box"
     },
     {
-      "id": 1470,
+      "id": 1460,
       "name": "Gallery_Repair_North_Shell",
       "parent": 1020,
       "position": [
@@ -1149,7 +1129,7 @@
       "kind": "box"
     },
     {
-      "id": 1480,
+      "id": 1470,
       "name": "Entry_Door_Pier_0",
       "parent": 1020,
       "position": [
@@ -1169,7 +1149,7 @@
       "kind": "box"
     },
     {
-      "id": 1490,
+      "id": 1480,
       "name": "Entry_Door_Header_0",
       "parent": 1020,
       "position": [
@@ -1189,7 +1169,7 @@
       "kind": "box"
     },
     {
-      "id": 1500,
+      "id": 1490,
       "name": "Entry_Door_Threshold_0",
       "parent": 1070,
       "position": [
@@ -1209,7 +1189,7 @@
       "kind": "box"
     },
     {
-      "id": 1510,
+      "id": 1500,
       "name": "Entry_Door_Pier_End",
       "parent": 1020,
       "position": [
@@ -1229,7 +1209,7 @@
       "kind": "box"
     },
     {
-      "id": 1520,
+      "id": 1510,
       "name": "Reward_Door_Pier_0",
       "parent": 1020,
       "position": [
@@ -1249,7 +1229,7 @@
       "kind": "box"
     },
     {
-      "id": 1530,
+      "id": 1520,
       "name": "Reward_Door_Header_0",
       "parent": 1020,
       "position": [
@@ -1269,7 +1249,7 @@
       "kind": "box"
     },
     {
-      "id": 1540,
+      "id": 1530,
       "name": "Reward_Door_Threshold_0",
       "parent": 1070,
       "position": [
@@ -1289,7 +1269,7 @@
       "kind": "box"
     },
     {
-      "id": 1550,
+      "id": 1540,
       "name": "Reward_Door_Pier_End",
       "parent": 1020,
       "position": [
@@ -1309,7 +1289,7 @@
       "kind": "box"
     },
     {
-      "id": 1560,
+      "id": 1550,
       "name": "Exit_Door_Pier_0",
       "parent": 1020,
       "position": [
@@ -1329,7 +1309,7 @@
       "kind": "box"
     },
     {
-      "id": 1570,
+      "id": 1560,
       "name": "Exit_Door_Header_0",
       "parent": 1020,
       "position": [
@@ -1349,7 +1329,7 @@
       "kind": "box"
     },
     {
-      "id": 1580,
+      "id": 1570,
       "name": "Exit_Door_Threshold_0",
       "parent": 1070,
       "position": [
@@ -1369,7 +1349,7 @@
       "kind": "box"
     },
     {
-      "id": 1590,
+      "id": 1580,
       "name": "Exit_Door_Pier_End",
       "parent": 1020,
       "position": [
@@ -1389,7 +1369,7 @@
       "kind": "box"
     },
     {
-      "id": 1600,
+      "id": 1590,
       "name": "Repair_Gallery_Door_Pier_0",
       "parent": 1020,
       "position": [
@@ -1409,7 +1389,7 @@
       "kind": "box"
     },
     {
-      "id": 1610,
+      "id": 1600,
       "name": "Repair_Gallery_Door_Header_0",
       "parent": 1020,
       "position": [
@@ -1429,7 +1409,7 @@
       "kind": "box"
     },
     {
-      "id": 1620,
+      "id": 1610,
       "name": "Repair_Gallery_Door_Threshold_0",
       "parent": 1070,
       "position": [
@@ -1449,7 +1429,7 @@
       "kind": "box"
     },
     {
-      "id": 1630,
+      "id": 1620,
       "name": "Repair_Gallery_Door_Pier_End",
       "parent": 1020,
       "position": [
@@ -1469,7 +1449,7 @@
       "kind": "box"
     },
     {
-      "id": 1640,
+      "id": 1630,
       "name": "Repair_Bypass_Door_Pier_0",
       "parent": 1020,
       "position": [
@@ -1489,7 +1469,7 @@
       "kind": "box"
     },
     {
-      "id": 1650,
+      "id": 1640,
       "name": "Repair_Bypass_Door_Header_0",
       "parent": 1020,
       "position": [
@@ -1509,7 +1489,7 @@
       "kind": "box"
     },
     {
-      "id": 1660,
+      "id": 1650,
       "name": "Repair_Bypass_Door_Threshold_0",
       "parent": 1070,
       "position": [
@@ -1529,7 +1509,7 @@
       "kind": "box"
     },
     {
-      "id": 1670,
+      "id": 1660,
       "name": "Repair_Bypass_Door_Pier_End",
       "parent": 1020,
       "position": [
@@ -1549,7 +1529,7 @@
       "kind": "box"
     },
     {
-      "id": 1680,
+      "id": 1670,
       "name": "Test_Service_Divider_Pier_0",
       "parent": 1020,
       "position": [
@@ -1569,7 +1549,7 @@
       "kind": "box"
     },
     {
-      "id": 1690,
+      "id": 1680,
       "name": "Test_Service_Divider_Header_0",
       "parent": 1020,
       "position": [
@@ -1589,7 +1569,7 @@
       "kind": "box"
     },
     {
-      "id": 1700,
+      "id": 1690,
       "name": "Test_Service_Divider_Threshold_0",
       "parent": 1070,
       "position": [
@@ -1609,7 +1589,7 @@
       "kind": "box"
     },
     {
-      "id": 1710,
+      "id": 1700,
       "name": "Test_Service_Divider_Pier_End",
       "parent": 1020,
       "position": [
@@ -1629,7 +1609,7 @@
       "kind": "box"
     },
     {
-      "id": 1720,
+      "id": 1710,
       "name": "Hall_Middle_Divider_Pier_0",
       "parent": 1020,
       "position": [
@@ -1649,7 +1629,7 @@
       "kind": "box"
     },
     {
-      "id": 1730,
+      "id": 1720,
       "name": "Hall_Middle_Divider_Header_0",
       "parent": 1020,
       "position": [
@@ -1669,7 +1649,7 @@
       "kind": "box"
     },
     {
-      "id": 1740,
+      "id": 1730,
       "name": "Hall_Middle_Divider_Threshold_0",
       "parent": 1070,
       "position": [
@@ -1689,7 +1669,7 @@
       "kind": "box"
     },
     {
-      "id": 1750,
+      "id": 1740,
       "name": "Hall_Middle_Divider_Pier_1",
       "parent": 1020,
       "position": [
@@ -1709,7 +1689,7 @@
       "kind": "box"
     },
     {
-      "id": 1760,
+      "id": 1750,
       "name": "Hall_Middle_Divider_Header_1",
       "parent": 1020,
       "position": [
@@ -1729,7 +1709,7 @@
       "kind": "box"
     },
     {
-      "id": 1770,
+      "id": 1760,
       "name": "Hall_Middle_Divider_Threshold_1",
       "parent": 1070,
       "position": [
@@ -1749,7 +1729,7 @@
       "kind": "box"
     },
     {
-      "id": 1780,
+      "id": 1770,
       "name": "Hall_Middle_Divider_Pier_2",
       "parent": 1020,
       "position": [
@@ -1769,7 +1749,7 @@
       "kind": "box"
     },
     {
-      "id": 1790,
+      "id": 1780,
       "name": "Hall_Middle_Divider_Header_2",
       "parent": 1020,
       "position": [
@@ -1789,7 +1769,7 @@
       "kind": "box"
     },
     {
-      "id": 1800,
+      "id": 1790,
       "name": "Hall_Middle_Divider_Threshold_2",
       "parent": 1070,
       "position": [
@@ -1809,7 +1789,7 @@
       "kind": "box"
     },
     {
-      "id": 1810,
+      "id": 1800,
       "name": "Hall_Middle_Divider_Pier_End",
       "parent": 1020,
       "position": [
@@ -1829,7 +1809,7 @@
       "kind": "box"
     },
     {
-      "id": 1820,
+      "id": 1810,
       "name": "Observation_Conditioning_Divider_Pier_0",
       "parent": 1020,
       "position": [
@@ -1849,7 +1829,7 @@
       "kind": "box"
     },
     {
-      "id": 1830,
+      "id": 1820,
       "name": "Observation_Conditioning_Divider_Header_0",
       "parent": 1020,
       "position": [
@@ -1869,7 +1849,7 @@
       "kind": "box"
     },
     {
-      "id": 1840,
+      "id": 1830,
       "name": "Observation_Conditioning_Divider_Threshold_0",
       "parent": 1070,
       "position": [
@@ -1889,7 +1869,7 @@
       "kind": "box"
     },
     {
-      "id": 1850,
+      "id": 1840,
       "name": "Observation_Conditioning_Divider_Pier_End",
       "parent": 1020,
       "position": [
@@ -1909,7 +1889,7 @@
       "kind": "box"
     },
     {
-      "id": 1860,
+      "id": 1850,
       "name": "Service_Bypass_Divider_Pier_0",
       "parent": 1020,
       "position": [
@@ -1929,7 +1909,7 @@
       "kind": "box"
     },
     {
-      "id": 1870,
+      "id": 1860,
       "name": "Service_Bypass_Divider_Header_0",
       "parent": 1020,
       "position": [
@@ -1949,7 +1929,7 @@
       "kind": "box"
     },
     {
-      "id": 1880,
+      "id": 1870,
       "name": "Service_Bypass_Divider_Threshold_0",
       "parent": 1070,
       "position": [
@@ -1969,7 +1949,7 @@
       "kind": "box"
     },
     {
-      "id": 1890,
+      "id": 1880,
       "name": "Service_Bypass_Divider_Pier_End",
       "parent": 1020,
       "position": [
@@ -1989,7 +1969,7 @@
       "kind": "box"
     },
     {
-      "id": 1900,
+      "id": 1890,
       "name": "Conditioning_Bypass_Divider_Pier_0",
       "parent": 1020,
       "position": [
@@ -2009,7 +1989,7 @@
       "kind": "box"
     },
     {
-      "id": 1910,
+      "id": 1900,
       "name": "Conditioning_Bypass_Divider_Header_0",
       "parent": 1020,
       "position": [
@@ -2029,7 +2009,7 @@
       "kind": "box"
     },
     {
-      "id": 1920,
+      "id": 1910,
       "name": "Conditioning_Bypass_Divider_Threshold_0",
       "parent": 1070,
       "position": [
@@ -2049,7 +2029,7 @@
       "kind": "box"
     },
     {
-      "id": 1930,
+      "id": 1920,
       "name": "Conditioning_Bypass_Divider_Pier_End",
       "parent": 1020,
       "position": [
@@ -2069,7 +2049,7 @@
       "kind": "box"
     },
     {
-      "id": 1940,
+      "id": 1930,
       "name": "Conditioning_Gallery_Divider_Pier_0",
       "parent": 1020,
       "position": [
@@ -2089,7 +2069,7 @@
       "kind": "box"
     },
     {
-      "id": 1950,
+      "id": 1940,
       "name": "Conditioning_Gallery_Divider_Header_0",
       "parent": 1020,
       "position": [
@@ -2109,7 +2089,7 @@
       "kind": "box"
     },
     {
-      "id": 1960,
+      "id": 1950,
       "name": "Conditioning_Gallery_Divider_Threshold_0",
       "parent": 1070,
       "position": [
@@ -2129,7 +2109,7 @@
       "kind": "box"
     },
     {
-      "id": 1970,
+      "id": 1960,
       "name": "Conditioning_Gallery_Divider_Pier_End",
       "parent": 1020,
       "position": [
@@ -2149,7 +2129,7 @@
       "kind": "box"
     },
     {
-      "id": 1980,
+      "id": 1970,
       "name": "Exit_Approach_East",
       "parent": 1020,
       "position": [
@@ -2169,7 +2149,7 @@
       "kind": "box"
     },
     {
-      "id": 1990,
+      "id": 1980,
       "name": "Reward_Scanner__Not_Wired",
       "parent": 1120,
       "position": [
@@ -2189,7 +2169,7 @@
       "kind": "box"
     },
     {
-      "id": 2000,
+      "id": 1990,
       "name": "Reward_Scanner_Cyan_Face",
       "parent": 1120,
       "position": [
@@ -2209,7 +2189,7 @@
       "kind": "box"
     },
     {
-      "id": 2010,
+      "id": 2000,
       "name": "Required_Card_Sign__Cyan_Three_Bars_Proposed",
       "parent": 1120,
       "position": [
@@ -2229,7 +2209,7 @@
       "kind": "box"
     },
     {
-      "id": 2020,
+      "id": 2010,
       "name": "Card_Symbol_Bar",
       "parent": 1120,
       "position": [
@@ -2249,7 +2229,7 @@
       "kind": "box"
     },
     {
-      "id": 2030,
+      "id": 2020,
       "name": "Card_Symbol_Bar",
       "parent": 1120,
       "position": [
@@ -2269,7 +2249,7 @@
       "kind": "box"
     },
     {
-      "id": 2040,
+      "id": 2030,
       "name": "Card_Symbol_Bar",
       "parent": 1120,
       "position": [
@@ -2289,7 +2269,7 @@
       "kind": "box"
     },
     {
-      "id": 2050,
+      "id": 2040,
       "name": "Collectible_Plinth__Reward_TBD",
       "parent": 1120,
       "position": [
@@ -2309,7 +2289,7 @@
       "kind": "box"
     },
     {
-      "id": 2060,
+      "id": 2050,
       "name": "Collectible_Placeholder__No_Grant",
       "parent": 1120,
       "position": [
@@ -2329,7 +2309,7 @@
       "kind": "box"
     },
     {
-      "id": 2070,
+      "id": 2060,
       "name": "Currency_Cache_Placeholder__Optional_No_Grant",
       "parent": 1120,
       "position": [
@@ -2349,7 +2329,7 @@
       "kind": "box"
     },
     {
-      "id": 2080,
+      "id": 2070,
       "name": "RewardRoomScannerMarker",
       "parent": 1080,
       "position": [
@@ -2369,7 +2349,7 @@
       "kind": "empty"
     },
     {
-      "id": 2090,
+      "id": 2080,
       "name": "RewardRoomClaimMarker",
       "parent": 1080,
       "position": [
@@ -2389,7 +2369,7 @@
       "kind": "empty"
     },
     {
-      "id": 2100,
+      "id": 2090,
       "name": "Reward_Room_Blocker__Remove_When_Unlock_Wired",
       "parent": 1080,
       "position": [
@@ -2409,7 +2389,7 @@
       "kind": "empty"
     },
     {
-      "id": 2110,
+      "id": 2100,
       "name": "TestHall_Blocker_A",
       "parent": 1040,
       "position": [
@@ -2429,7 +2409,7 @@
       "kind": "box"
     },
     {
-      "id": 2120,
+      "id": 2110,
       "name": "TestHall_Blocker_A_Top",
       "parent": 1070,
       "position": [
@@ -2449,7 +2429,7 @@
       "kind": "box"
     },
     {
-      "id": 2130,
+      "id": 2120,
       "name": "TestHall_Blocker_B",
       "parent": 1040,
       "position": [
@@ -2469,7 +2449,7 @@
       "kind": "box"
     },
     {
-      "id": 2140,
+      "id": 2130,
       "name": "TestHall_Blocker_B_Top",
       "parent": 1070,
       "position": [
@@ -2489,7 +2469,7 @@
       "kind": "box"
     },
     {
-      "id": 2150,
+      "id": 2140,
       "name": "TestHall_Blocker_C",
       "parent": 1040,
       "position": [
@@ -2509,7 +2489,7 @@
       "kind": "box"
     },
     {
-      "id": 2160,
+      "id": 2150,
       "name": "TestHall_Blocker_C_Top",
       "parent": 1070,
       "position": [
@@ -2529,7 +2509,7 @@
       "kind": "box"
     },
     {
-      "id": 2170,
+      "id": 2160,
       "name": "Service_Machinery_A",
       "parent": 1040,
       "position": [
@@ -2549,7 +2529,7 @@
       "kind": "box"
     },
     {
-      "id": 2180,
+      "id": 2170,
       "name": "Service_Machinery_A_Band",
       "parent": 1070,
       "position": [
@@ -2569,7 +2549,7 @@
       "kind": "box"
     },
     {
-      "id": 2190,
+      "id": 2180,
       "name": "Service_Machinery_B",
       "parent": 1040,
       "position": [
@@ -2589,7 +2569,7 @@
       "kind": "box"
     },
     {
-      "id": 2200,
+      "id": 2190,
       "name": "Service_Machinery_B_Band",
       "parent": 1070,
       "position": [
@@ -2609,7 +2589,7 @@
       "kind": "box"
     },
     {
-      "id": 2210,
+      "id": 2200,
       "name": "Acoustic_Baffle_1",
       "parent": 1040,
       "position": [
@@ -2629,7 +2609,7 @@
       "kind": "box"
     },
     {
-      "id": 2220,
+      "id": 2210,
       "name": "Acoustic_Baffle_2",
       "parent": 1040,
       "position": [
@@ -2649,7 +2629,7 @@
       "kind": "box"
     },
     {
-      "id": 2230,
+      "id": 2220,
       "name": "Acoustic_Baffle_3",
       "parent": 1040,
       "position": [
@@ -2669,7 +2649,7 @@
       "kind": "box"
     },
     {
-      "id": 2240,
+      "id": 2230,
       "name": "Bypass_Offset_1",
       "parent": 1040,
       "position": [
@@ -2689,7 +2669,7 @@
       "kind": "box"
     },
     {
-      "id": 2250,
+      "id": 2240,
       "name": "Bypass_Offset_2",
       "parent": 1040,
       "position": [
@@ -2709,7 +2689,7 @@
       "kind": "box"
     },
     {
-      "id": 2260,
+      "id": 2250,
       "name": "Bypass_Offset_3",
       "parent": 1040,
       "position": [
@@ -2729,7 +2709,7 @@
       "kind": "box"
     },
     {
-      "id": 2270,
+      "id": 2260,
       "name": "Power_Island_Core",
       "parent": 1050,
       "position": [
@@ -2749,7 +2729,7 @@
       "kind": "box"
     },
     {
-      "id": 2280,
+      "id": 2270,
       "name": "Power_Island_Top",
       "parent": 1050,
       "position": [
@@ -2769,7 +2749,7 @@
       "kind": "box"
     },
     {
-      "id": 2290,
+      "id": 2280,
       "name": "Power_Island_Center_Band",
       "parent": 1050,
       "position": [
@@ -2789,7 +2769,7 @@
       "kind": "box"
     },
     {
-      "id": 2300,
+      "id": 2290,
       "name": "Power_Island_Center_Band_North",
       "parent": 1050,
       "position": [
@@ -2809,7 +2789,7 @@
       "kind": "box"
     },
     {
-      "id": 2310,
+      "id": 2300,
       "name": "Fuse_Socket_1_Plate",
       "parent": 1050,
       "position": [
@@ -2829,7 +2809,7 @@
       "kind": "box"
     },
     {
-      "id": 2320,
+      "id": 2310,
       "name": "Fuse_Socket_1_Opening",
       "parent": 1050,
       "position": [
@@ -2849,7 +2829,7 @@
       "kind": "box"
     },
     {
-      "id": 2330,
+      "id": 2320,
       "name": "Fuse_Socket_1_Charge_Indicator",
       "parent": 1050,
       "position": [
@@ -2869,7 +2849,7 @@
       "kind": "box"
     },
     {
-      "id": 2340,
+      "id": 2330,
       "name": "Fuse_Socket_1_Lever_Base",
       "parent": 1050,
       "position": [
@@ -2889,7 +2869,7 @@
       "kind": "box"
     },
     {
-      "id": 2350,
+      "id": 2340,
       "name": "Fuse_Socket_1_Lever_Handle",
       "parent": 1050,
       "position": [
@@ -2909,7 +2889,7 @@
       "kind": "box"
     },
     {
-      "id": 2360,
+      "id": 2350,
       "name": "FuseSocket1Marker",
       "parent": 1080,
       "position": [
@@ -2929,7 +2909,7 @@
       "kind": "empty"
     },
     {
-      "id": 2370,
+      "id": 2360,
       "name": "Fuse_Socket_2_Plate",
       "parent": 1050,
       "position": [
@@ -2949,7 +2929,7 @@
       "kind": "box"
     },
     {
-      "id": 2380,
+      "id": 2370,
       "name": "Fuse_Socket_2_Opening",
       "parent": 1050,
       "position": [
@@ -2969,7 +2949,7 @@
       "kind": "box"
     },
     {
-      "id": 2390,
+      "id": 2380,
       "name": "Fuse_Socket_2_Charge_Indicator",
       "parent": 1050,
       "position": [
@@ -2989,7 +2969,7 @@
       "kind": "box"
     },
     {
-      "id": 2400,
+      "id": 2390,
       "name": "Fuse_Socket_2_Lever_Base",
       "parent": 1050,
       "position": [
@@ -3009,7 +2989,7 @@
       "kind": "box"
     },
     {
-      "id": 2410,
+      "id": 2400,
       "name": "Fuse_Socket_2_Lever_Handle",
       "parent": 1050,
       "position": [
@@ -3029,7 +3009,7 @@
       "kind": "box"
     },
     {
-      "id": 2420,
+      "id": 2410,
       "name": "FuseSocket2Marker",
       "parent": 1080,
       "position": [
@@ -3049,7 +3029,7 @@
       "kind": "empty"
     },
     {
-      "id": 2430,
+      "id": 2420,
       "name": "Fuse_Socket_3_Plate",
       "parent": 1050,
       "position": [
@@ -3069,7 +3049,7 @@
       "kind": "box"
     },
     {
-      "id": 2440,
+      "id": 2430,
       "name": "Fuse_Socket_3_Opening",
       "parent": 1050,
       "position": [
@@ -3089,7 +3069,7 @@
       "kind": "box"
     },
     {
-      "id": 2450,
+      "id": 2440,
       "name": "Fuse_Socket_3_Charge_Indicator",
       "parent": 1050,
       "position": [
@@ -3109,7 +3089,7 @@
       "kind": "box"
     },
     {
-      "id": 2460,
+      "id": 2450,
       "name": "Fuse_Socket_3_Lever_Base",
       "parent": 1050,
       "position": [
@@ -3129,7 +3109,7 @@
       "kind": "box"
     },
     {
-      "id": 2470,
+      "id": 2460,
       "name": "Fuse_Socket_3_Lever_Handle",
       "parent": 1050,
       "position": [
@@ -3149,7 +3129,7 @@
       "kind": "box"
     },
     {
-      "id": 2480,
+      "id": 2470,
       "name": "FuseSocket3Marker",
       "parent": 1080,
       "position": [
@@ -3169,7 +3149,7 @@
       "kind": "empty"
     },
     {
-      "id": 2490,
+      "id": 2480,
       "name": "Fuse_Socket_4_Plate",
       "parent": 1050,
       "position": [
@@ -3189,7 +3169,7 @@
       "kind": "box"
     },
     {
-      "id": 2500,
+      "id": 2490,
       "name": "Fuse_Socket_4_Opening",
       "parent": 1050,
       "position": [
@@ -3209,7 +3189,7 @@
       "kind": "box"
     },
     {
-      "id": 2510,
+      "id": 2500,
       "name": "Fuse_Socket_4_Charge_Indicator",
       "parent": 1050,
       "position": [
@@ -3229,7 +3209,7 @@
       "kind": "box"
     },
     {
-      "id": 2520,
+      "id": 2510,
       "name": "Fuse_Socket_4_Lever_Base",
       "parent": 1050,
       "position": [
@@ -3249,7 +3229,7 @@
       "kind": "box"
     },
     {
-      "id": 2530,
+      "id": 2520,
       "name": "Fuse_Socket_4_Lever_Handle",
       "parent": 1050,
       "position": [
@@ -3269,7 +3249,7 @@
       "kind": "box"
     },
     {
-      "id": 2540,
+      "id": 2530,
       "name": "FuseSocket4Marker",
       "parent": 1080,
       "position": [
@@ -3289,7 +3269,7 @@
       "kind": "empty"
     },
     {
-      "id": 2550,
+      "id": 2540,
       "name": "Exit_Power_Cable_EastWest",
       "parent": 1070,
       "position": [
@@ -3309,7 +3289,7 @@
       "kind": "box"
     },
     {
-      "id": 2560,
+      "id": 2550,
       "name": "Exit_Power_Cable_To_Island",
       "parent": 1070,
       "position": [
@@ -3329,7 +3309,7 @@
       "kind": "box"
     },
     {
-      "id": 2570,
+      "id": 2560,
       "name": "Exit_Power_Cable_Status_Node",
       "parent": 1070,
       "position": [
@@ -3349,7 +3329,7 @@
       "kind": "box"
     },
     {
-      "id": 2580,
+      "id": 2570,
       "name": "Exit_Power_Cable_Status_Node",
       "parent": 1070,
       "position": [
@@ -3369,7 +3349,7 @@
       "kind": "box"
     },
     {
-      "id": 2590,
+      "id": 2580,
       "name": "Exit_Power_Cable_Status_Node",
       "parent": 1070,
       "position": [
@@ -3389,7 +3369,7 @@
       "kind": "box"
     },
     {
-      "id": 2600,
+      "id": 2590,
       "name": "Exit_Power_Cable_Status_Node",
       "parent": 1070,
       "position": [
@@ -3409,7 +3389,7 @@
       "kind": "box"
     },
     {
-      "id": 2610,
+      "id": 2600,
       "name": "PowerIslandCenter",
       "parent": 1080,
       "position": [
@@ -3429,7 +3409,7 @@
       "kind": "empty"
     },
     {
-      "id": 2620,
+      "id": 2610,
       "name": "FuseChargeNoiseOrigin",
       "parent": 1080,
       "position": [
@@ -3449,7 +3429,7 @@
       "kind": "empty"
     },
     {
-      "id": 2630,
+      "id": 2620,
       "name": "Fuse_Cache_1_TestHall_Drawer_Body",
       "parent": 1130,
       "position": [
@@ -3469,7 +3449,7 @@
       "kind": "box"
     },
     {
-      "id": 2640,
+      "id": 2630,
       "name": "Fuse_Cache_1_TestHall_Drawer_DoorOrDrawer",
       "parent": 1130,
       "position": [
@@ -3489,7 +3469,7 @@
       "kind": "box"
     },
     {
-      "id": 2650,
+      "id": 2640,
       "name": "Fuse_Cache_1_Electrical_Label",
       "parent": 1130,
       "position": [
@@ -3509,7 +3489,7 @@
       "kind": "box"
     },
     {
-      "id": 2660,
+      "id": 2650,
       "name": "Fuse_1_Personal_Cylindrical_Placeholder",
       "parent": 1130,
       "position": [
@@ -3529,7 +3509,7 @@
       "kind": "cylinder"
     },
     {
-      "id": 2670,
+      "id": 2660,
       "name": "Fuse1Start",
       "parent": 1080,
       "position": [
@@ -3549,7 +3529,7 @@
       "kind": "empty"
     },
     {
-      "id": 2680,
+      "id": 2670,
       "name": "Fuse_Cache_2_Service_Cabinet_Body",
       "parent": 1130,
       "position": [
@@ -3569,7 +3549,7 @@
       "kind": "box"
     },
     {
-      "id": 2690,
+      "id": 2680,
       "name": "Fuse_Cache_2_Service_Cabinet_DoorOrDrawer",
       "parent": 1130,
       "position": [
@@ -3589,7 +3569,7 @@
       "kind": "box"
     },
     {
-      "id": 2700,
+      "id": 2690,
       "name": "Fuse_Cache_2_Electrical_Label",
       "parent": 1130,
       "position": [
@@ -3609,7 +3589,7 @@
       "kind": "box"
     },
     {
-      "id": 2710,
+      "id": 2700,
       "name": "Fuse_2_Personal_Cylindrical_Placeholder",
       "parent": 1130,
       "position": [
@@ -3629,7 +3609,7 @@
       "kind": "cylinder"
     },
     {
-      "id": 2720,
+      "id": 2710,
       "name": "Fuse2Start",
       "parent": 1080,
       "position": [
@@ -3649,7 +3629,7 @@
       "kind": "empty"
     },
     {
-      "id": 2730,
+      "id": 2720,
       "name": "Fuse_Cache_3_Observation_Drawer_Body",
       "parent": 1130,
       "position": [
@@ -3669,7 +3649,7 @@
       "kind": "box"
     },
     {
-      "id": 2740,
+      "id": 2730,
       "name": "Fuse_Cache_3_Observation_Drawer_DoorOrDrawer",
       "parent": 1130,
       "position": [
@@ -3689,7 +3669,7 @@
       "kind": "box"
     },
     {
-      "id": 2750,
+      "id": 2740,
       "name": "Fuse_Cache_3_Electrical_Label",
       "parent": 1130,
       "position": [
@@ -3709,7 +3689,7 @@
       "kind": "box"
     },
     {
-      "id": 2760,
+      "id": 2750,
       "name": "Fuse_3_Personal_Cylindrical_Placeholder",
       "parent": 1130,
       "position": [
@@ -3729,7 +3709,7 @@
       "kind": "cylinder"
     },
     {
-      "id": 2770,
+      "id": 2760,
       "name": "Fuse3Start",
       "parent": 1080,
       "position": [
@@ -3749,7 +3729,7 @@
       "kind": "empty"
     },
     {
-      "id": 2780,
+      "id": 2770,
       "name": "Fuse_Cache_4_Conditioning_AccessPanel_Body",
       "parent": 1130,
       "position": [
@@ -3769,7 +3749,7 @@
       "kind": "box"
     },
     {
-      "id": 2790,
+      "id": 2780,
       "name": "Fuse_Cache_4_Conditioning_AccessPanel_DoorOrDrawer",
       "parent": 1130,
       "position": [
@@ -3789,7 +3769,7 @@
       "kind": "box"
     },
     {
-      "id": 2800,
+      "id": 2790,
       "name": "Fuse_Cache_4_Electrical_Label",
       "parent": 1130,
       "position": [
@@ -3809,7 +3789,7 @@
       "kind": "box"
     },
     {
-      "id": 2810,
+      "id": 2800,
       "name": "Fuse_4_Personal_Cylindrical_Placeholder",
       "parent": 1130,
       "position": [
@@ -3829,7 +3809,7 @@
       "kind": "cylinder"
     },
     {
-      "id": 2820,
+      "id": 2810,
       "name": "Fuse4Start",
       "parent": 1080,
       "position": [
@@ -3849,107 +3829,7 @@
       "kind": "empty"
     },
     {
-      "id": 2830,
-      "name": "PlayerScale_BodyCapsule__Actual_Bootstrap_Rig",
-      "parent": 1140,
-      "position": [
-        22.8,
-        0.25,
-        30.3
-      ],
-      "scale": [
-        0.3,
-        0.25,
-        0.3
-      ],
-      "material": "RewardCyan",
-      "collider": false,
-      "active": true,
-      "trigger": false,
-      "kind": "cylinder"
-    },
-    {
-      "id": 2840,
-      "name": "PlayerScale_HandContact_Left__Actual_Bootstrap_Rig",
-      "parent": 1140,
-      "position": [
-        22.5,
-        0.72,
-        29.92
-      ],
-      "scale": [
-        0.04,
-        0.02,
-        0.04
-      ],
-      "material": "Amber",
-      "collider": false,
-      "active": true,
-      "trigger": false,
-      "kind": "cylinder"
-    },
-    {
-      "id": 2850,
-      "name": "PlayerScale_HandContact_Right__Actual_Bootstrap_Rig",
-      "parent": 1140,
-      "position": [
-        23.1,
-        0.72,
-        29.92
-      ],
-      "scale": [
-        0.04,
-        0.02,
-        0.04
-      ],
-      "material": "Amber",
-      "collider": false,
-      "active": true,
-      "trigger": false,
-      "kind": "cylinder"
-    },
-    {
-      "id": 2860,
-      "name": "PlayerScale_MaxArmReach__Actual_Bootstrap_Rig",
-      "parent": 1140,
-      "position": [
-        23.55,
-        0.92,
-        30.3
-      ],
-      "scale": [
-        1.5,
-        0.025,
-        0.025
-      ],
-      "material": "LightStrip",
-      "collider": false,
-      "active": true,
-      "trigger": false,
-      "kind": "box"
-    },
-    {
-      "id": 2870,
-      "name": "PlayerScale_ReachOrigin__Actual_Bootstrap_Rig",
-      "parent": 1140,
-      "position": [
-        22.8,
-        0.92,
-        30.3
-      ],
-      "scale": [
-        0.04,
-        0.2,
-        0.04
-      ],
-      "material": "Amber",
-      "collider": false,
-      "active": true,
-      "trigger": false,
-      "kind": "box"
-    },
-    {
-      "id": 2880,
+      "id": 2820,
       "name": "Exit_Shutter_Leaf__Historical",
       "parent": 1060,
       "position": [
@@ -3969,7 +3849,7 @@
       "kind": "box"
     },
     {
-      "id": 2890,
+      "id": 2830,
       "name": "Hub_Return_Control_Placeholder",
       "parent": 1070,
       "position": [
@@ -3989,7 +3869,7 @@
       "kind": "box"
     },
     {
-      "id": 2900,
+      "id": 2840,
       "name": "Level2EntrySpawn",
       "parent": 1080,
       "position": [
@@ -4009,7 +3889,7 @@
       "kind": "empty"
     },
     {
-      "id": 2910,
+      "id": 2850,
       "name": "RepairApproach_Gallery",
       "parent": 1080,
       "position": [
@@ -4029,7 +3909,7 @@
       "kind": "empty"
     },
     {
-      "id": 2920,
+      "id": 2860,
       "name": "RepairApproach_Bypass",
       "parent": 1080,
       "position": [
@@ -4049,7 +3929,7 @@
       "kind": "empty"
     },
     {
-      "id": 2930,
+      "id": 2870,
       "name": "ListenerSpawn",
       "parent": 1080,
       "position": [
@@ -4069,7 +3949,7 @@
       "kind": "empty"
     },
     {
-      "id": 2940,
+      "id": 2880,
       "name": "ExitQualificationMarker",
       "parent": 1080,
       "position": [
@@ -4089,7 +3969,7 @@
       "kind": "empty"
     },
     {
-      "id": 2950,
+      "id": 2890,
       "name": "CompletedExitArrival",
       "parent": 1080,
       "position": [
@@ -4109,7 +3989,7 @@
       "kind": "empty"
     },
     {
-      "id": 2960,
+      "id": 2900,
       "name": "HubReturnControlMarker",
       "parent": 1080,
       "position": [
@@ -4129,7 +4009,7 @@
       "kind": "empty"
     },
     {
-      "id": 2970,
+      "id": 2910,
       "name": "Suggested_Patrol_Points__Not_a_Chase_Path",
       "parent": 1080,
       "position": [
@@ -4149,9 +4029,9 @@
       "kind": "empty"
     },
     {
-      "id": 2980,
+      "id": 2920,
       "name": "Patrol_1",
-      "parent": 2970,
+      "parent": 2910,
       "position": [
         5,
         0.05,
@@ -4169,9 +4049,9 @@
       "kind": "empty"
     },
     {
-      "id": 2990,
+      "id": 2930,
       "name": "Patrol_2",
-      "parent": 2970,
+      "parent": 2910,
       "position": [
         15,
         0.05,
@@ -4189,9 +4069,9 @@
       "kind": "empty"
     },
     {
-      "id": 3000,
+      "id": 2940,
       "name": "Patrol_3",
-      "parent": 2970,
+      "parent": 2910,
       "position": [
         23,
         0.05,
@@ -4209,9 +4089,9 @@
       "kind": "empty"
     },
     {
-      "id": 3010,
+      "id": 2950,
       "name": "Patrol_4",
-      "parent": 2970,
+      "parent": 2910,
       "position": [
         33,
         0.05,
@@ -4229,9 +4109,9 @@
       "kind": "empty"
     },
     {
-      "id": 3020,
+      "id": 2960,
       "name": "Patrol_5",
-      "parent": 2970,
+      "parent": 2910,
       "position": [
         33,
         0.05,
@@ -4249,9 +4129,9 @@
       "kind": "empty"
     },
     {
-      "id": 3030,
+      "id": 2970,
       "name": "Patrol_6",
-      "parent": 2970,
+      "parent": 2910,
       "position": [
         33,
         0.05,
@@ -4269,9 +4149,9 @@
       "kind": "empty"
     },
     {
-      "id": 3040,
+      "id": 2980,
       "name": "Patrol_7",
-      "parent": 2970,
+      "parent": 2910,
       "position": [
         31.8,
         0.05,
@@ -4289,9 +4169,9 @@
       "kind": "empty"
     },
     {
-      "id": 3050,
+      "id": 2990,
       "name": "Patrol_8",
-      "parent": 2970,
+      "parent": 2910,
       "position": [
         28,
         0.05,
@@ -4309,9 +4189,9 @@
       "kind": "empty"
     },
     {
-      "id": 3060,
+      "id": 3000,
       "name": "Patrol_9",
-      "parent": 2970,
+      "parent": 2910,
       "position": [
         24.2,
         0.05,
@@ -4329,9 +4209,9 @@
       "kind": "empty"
     },
     {
-      "id": 3070,
+      "id": 3010,
       "name": "Patrol_10",
-      "parent": 2970,
+      "parent": 2910,
       "position": [
         20.8,
         0.05,
@@ -4349,9 +4229,9 @@
       "kind": "empty"
     },
     {
-      "id": 3080,
+      "id": 3020,
       "name": "Patrol_11",
-      "parent": 2970,
+      "parent": 2910,
       "position": [
         15,
         0.05,
@@ -4369,9 +4249,9 @@
       "kind": "empty"
     },
     {
-      "id": 3090,
+      "id": 3030,
       "name": "Patrol_12",
-      "parent": 2970,
+      "parent": 2910,
       "position": [
         15,
         0.05,
@@ -4389,9 +4269,9 @@
       "kind": "empty"
     },
     {
-      "id": 3100,
+      "id": 3040,
       "name": "Patrol_13",
-      "parent": 2970,
+      "parent": 2910,
       "position": [
         5,
         0.05,
@@ -4409,9 +4289,9 @@
       "kind": "empty"
     },
     {
-      "id": 3110,
+      "id": 3050,
       "name": "Patrol_14",
-      "parent": 2970,
+      "parent": 2910,
       "position": [
         4,
         0.05,
@@ -4429,9 +4309,9 @@
       "kind": "empty"
     },
     {
-      "id": 3120,
+      "id": 3060,
       "name": "Patrol_15",
-      "parent": 2970,
+      "parent": 2910,
       "position": [
         10,
         0.05,
@@ -4449,7 +4329,7 @@
       "kind": "empty"
     },
     {
-      "id": 3130,
+      "id": 3070,
       "name": "Entry_Safe_Volume__Marker_Only",
       "parent": 1080,
       "position": [
@@ -4469,7 +4349,7 @@
       "kind": "empty"
     },
     {
-      "id": 3140,
+      "id": 3080,
       "name": "Completed_Exit_Safe_Volume__Marker_Only",
       "parent": 1080,
       "position": [
@@ -4489,7 +4369,7 @@
       "kind": "empty"
     },
     {
-      "id": 3150,
+      "id": 3090,
       "name": "Listener_Envelope_2.75w_3.2h_1.6d",
       "parent": 1090,
       "position": [
@@ -4509,7 +4389,7 @@
       "kind": "box"
     },
     {
-      "id": 3160,
+      "id": 3100,
       "name": "Exit_Blocker__Remove_When_Exit_Logic_Wired",
       "parent": 1080,
       "position": [
@@ -4529,7 +4409,7 @@
       "kind": "empty"
     },
     {
-      "id": 3170,
+      "id": 3110,
       "name": "Safe_Entry_Grid_X2",
       "parent": 1070,
       "position": [
@@ -4549,7 +4429,7 @@
       "kind": "box"
     },
     {
-      "id": 3180,
+      "id": 3120,
       "name": "Safe_Entry_Grid_X4",
       "parent": 1070,
       "position": [
@@ -4569,7 +4449,7 @@
       "kind": "box"
     },
     {
-      "id": 3190,
+      "id": 3130,
       "name": "Safe_Entry_Grid_Z-2",
       "parent": 1070,
       "position": [
@@ -4589,7 +4469,7 @@
       "kind": "box"
     },
     {
-      "id": 3200,
+      "id": 3140,
       "name": "Test_Hall_A_Grid_X2",
       "parent": 1070,
       "position": [
@@ -4609,7 +4489,7 @@
       "kind": "box"
     },
     {
-      "id": 3210,
+      "id": 3150,
       "name": "Test_Hall_A_Grid_X4",
       "parent": 1070,
       "position": [
@@ -4629,7 +4509,7 @@
       "kind": "box"
     },
     {
-      "id": 3220,
+      "id": 3160,
       "name": "Test_Hall_A_Grid_X6",
       "parent": 1070,
       "position": [
@@ -4649,7 +4529,7 @@
       "kind": "box"
     },
     {
-      "id": 3230,
+      "id": 3170,
       "name": "Test_Hall_A_Grid_X8",
       "parent": 1070,
       "position": [
@@ -4669,7 +4549,7 @@
       "kind": "box"
     },
     {
-      "id": 3240,
+      "id": 3180,
       "name": "Test_Hall_A_Grid_X10",
       "parent": 1070,
       "position": [
@@ -4689,7 +4569,7 @@
       "kind": "box"
     },
     {
-      "id": 3250,
+      "id": 3190,
       "name": "Test_Hall_A_Grid_X12",
       "parent": 1070,
       "position": [
@@ -4709,7 +4589,7 @@
       "kind": "box"
     },
     {
-      "id": 3260,
+      "id": 3200,
       "name": "Test_Hall_A_Grid_X14",
       "parent": 1070,
       "position": [
@@ -4729,7 +4609,7 @@
       "kind": "box"
     },
     {
-      "id": 3270,
+      "id": 3210,
       "name": "Test_Hall_A_Grid_X16",
       "parent": 1070,
       "position": [
@@ -4749,7 +4629,7 @@
       "kind": "box"
     },
     {
-      "id": 3280,
+      "id": 3220,
       "name": "Test_Hall_A_Grid_Z2",
       "parent": 1070,
       "position": [
@@ -4769,7 +4649,7 @@
       "kind": "box"
     },
     {
-      "id": 3290,
+      "id": 3230,
       "name": "Test_Hall_A_Grid_Z4",
       "parent": 1070,
       "position": [
@@ -4789,7 +4669,7 @@
       "kind": "box"
     },
     {
-      "id": 3300,
+      "id": 3240,
       "name": "Test_Hall_A_Grid_Z6",
       "parent": 1070,
       "position": [
@@ -4809,7 +4689,7 @@
       "kind": "box"
     },
     {
-      "id": 3310,
+      "id": 3250,
       "name": "Test_Hall_A_Grid_Z8",
       "parent": 1070,
       "position": [
@@ -4829,7 +4709,7 @@
       "kind": "box"
     },
     {
-      "id": 3320,
+      "id": 3260,
       "name": "Test_Hall_A_Grid_Z10",
       "parent": 1070,
       "position": [
@@ -4849,7 +4729,7 @@
       "kind": "box"
     },
     {
-      "id": 3330,
+      "id": 3270,
       "name": "Test_Hall_A_Grid_Z12",
       "parent": 1070,
       "position": [
@@ -4869,7 +4749,7 @@
       "kind": "box"
     },
     {
-      "id": 3340,
+      "id": 3280,
       "name": "Lower_Service_Hall_Grid_X20",
       "parent": 1070,
       "position": [
@@ -4889,7 +4769,7 @@
       "kind": "box"
     },
     {
-      "id": 3350,
+      "id": 3290,
       "name": "Lower_Service_Hall_Grid_X22",
       "parent": 1070,
       "position": [
@@ -4909,7 +4789,7 @@
       "kind": "box"
     },
     {
-      "id": 3360,
+      "id": 3300,
       "name": "Lower_Service_Hall_Grid_X24",
       "parent": 1070,
       "position": [
@@ -4929,7 +4809,7 @@
       "kind": "box"
     },
     {
-      "id": 3370,
+      "id": 3310,
       "name": "Lower_Service_Hall_Grid_X26",
       "parent": 1070,
       "position": [
@@ -4949,7 +4829,7 @@
       "kind": "box"
     },
     {
-      "id": 3380,
+      "id": 3320,
       "name": "Lower_Service_Hall_Grid_X28",
       "parent": 1070,
       "position": [
@@ -4969,7 +4849,7 @@
       "kind": "box"
     },
     {
-      "id": 3390,
+      "id": 3330,
       "name": "Lower_Service_Hall_Grid_Z2",
       "parent": 1070,
       "position": [
@@ -4989,7 +4869,7 @@
       "kind": "box"
     },
     {
-      "id": 3400,
+      "id": 3340,
       "name": "Lower_Service_Hall_Grid_Z4",
       "parent": 1070,
       "position": [
@@ -5009,7 +4889,7 @@
       "kind": "box"
     },
     {
-      "id": 3410,
+      "id": 3350,
       "name": "Lower_Service_Hall_Grid_Z6",
       "parent": 1070,
       "position": [
@@ -5029,7 +4909,7 @@
       "kind": "box"
     },
     {
-      "id": 3420,
+      "id": 3360,
       "name": "Lower_Service_Hall_Grid_Z8",
       "parent": 1070,
       "position": [
@@ -5049,7 +4929,7 @@
       "kind": "box"
     },
     {
-      "id": 3430,
+      "id": 3370,
       "name": "Lower_Service_Hall_Grid_Z10",
       "parent": 1070,
       "position": [
@@ -5069,7 +4949,7 @@
       "kind": "box"
     },
     {
-      "id": 3440,
+      "id": 3380,
       "name": "Lower_Service_Hall_Grid_Z12",
       "parent": 1070,
       "position": [
@@ -5089,7 +4969,7 @@
       "kind": "box"
     },
     {
-      "id": 3450,
+      "id": 3390,
       "name": "West_Observation_Wing_Grid_X2",
       "parent": 1070,
       "position": [
@@ -5109,7 +4989,7 @@
       "kind": "box"
     },
     {
-      "id": 3460,
+      "id": 3400,
       "name": "West_Observation_Wing_Grid_X4",
       "parent": 1070,
       "position": [
@@ -5129,7 +5009,7 @@
       "kind": "box"
     },
     {
-      "id": 3470,
+      "id": 3410,
       "name": "West_Observation_Wing_Grid_X6",
       "parent": 1070,
       "position": [
@@ -5149,7 +5029,7 @@
       "kind": "box"
     },
     {
-      "id": 3480,
+      "id": 3420,
       "name": "West_Observation_Wing_Grid_Z16",
       "parent": 1070,
       "position": [
@@ -5169,7 +5049,7 @@
       "kind": "box"
     },
     {
-      "id": 3490,
+      "id": 3430,
       "name": "West_Observation_Wing_Grid_Z18",
       "parent": 1070,
       "position": [
@@ -5189,7 +5069,7 @@
       "kind": "box"
     },
     {
-      "id": 3500,
+      "id": 3440,
       "name": "West_Observation_Wing_Grid_Z20",
       "parent": 1070,
       "position": [
@@ -5209,7 +5089,7 @@
       "kind": "box"
     },
     {
-      "id": 3510,
+      "id": 3450,
       "name": "Conditioning_Hall_B_Grid_X10",
       "parent": 1070,
       "position": [
@@ -5229,7 +5109,7 @@
       "kind": "box"
     },
     {
-      "id": 3520,
+      "id": 3460,
       "name": "Conditioning_Hall_B_Grid_X12",
       "parent": 1070,
       "position": [
@@ -5249,7 +5129,7 @@
       "kind": "box"
     },
     {
-      "id": 3530,
+      "id": 3470,
       "name": "Conditioning_Hall_B_Grid_X14",
       "parent": 1070,
       "position": [
@@ -5269,7 +5149,7 @@
       "kind": "box"
     },
     {
-      "id": 3540,
+      "id": 3480,
       "name": "Conditioning_Hall_B_Grid_X16",
       "parent": 1070,
       "position": [
@@ -5289,7 +5169,7 @@
       "kind": "box"
     },
     {
-      "id": 3550,
+      "id": 3490,
       "name": "Conditioning_Hall_B_Grid_X18",
       "parent": 1070,
       "position": [
@@ -5309,7 +5189,7 @@
       "kind": "box"
     },
     {
-      "id": 3560,
+      "id": 3500,
       "name": "Conditioning_Hall_B_Grid_X20",
       "parent": 1070,
       "position": [
@@ -5329,7 +5209,7 @@
       "kind": "box"
     },
     {
-      "id": 3570,
+      "id": 3510,
       "name": "Conditioning_Hall_B_Grid_X22",
       "parent": 1070,
       "position": [
@@ -5349,7 +5229,7 @@
       "kind": "box"
     },
     {
-      "id": 3580,
+      "id": 3520,
       "name": "Conditioning_Hall_B_Grid_X24",
       "parent": 1070,
       "position": [
@@ -5369,7 +5249,7 @@
       "kind": "box"
     },
     {
-      "id": 3590,
+      "id": 3530,
       "name": "Conditioning_Hall_B_Grid_X26",
       "parent": 1070,
       "position": [
@@ -5389,7 +5269,7 @@
       "kind": "box"
     },
     {
-      "id": 3600,
+      "id": 3540,
       "name": "Conditioning_Hall_B_Grid_X28",
       "parent": 1070,
       "position": [
@@ -5409,7 +5289,7 @@
       "kind": "box"
     },
     {
-      "id": 3610,
+      "id": 3550,
       "name": "Conditioning_Hall_B_Grid_Z16",
       "parent": 1070,
       "position": [
@@ -5429,7 +5309,7 @@
       "kind": "box"
     },
     {
-      "id": 3620,
+      "id": 3560,
       "name": "Conditioning_Hall_B_Grid_Z18",
       "parent": 1070,
       "position": [
@@ -5449,7 +5329,7 @@
       "kind": "box"
     },
     {
-      "id": 3630,
+      "id": 3570,
       "name": "Conditioning_Hall_B_Grid_Z20",
       "parent": 1070,
       "position": [
@@ -5469,7 +5349,7 @@
       "kind": "box"
     },
     {
-      "id": 3640,
+      "id": 3580,
       "name": "East_Bypass_Grid_X32",
       "parent": 1070,
       "position": [
@@ -5489,7 +5369,7 @@
       "kind": "box"
     },
     {
-      "id": 3650,
+      "id": 3590,
       "name": "East_Bypass_Grid_X34",
       "parent": 1070,
       "position": [
@@ -5509,7 +5389,7 @@
       "kind": "box"
     },
     {
-      "id": 3660,
+      "id": 3600,
       "name": "East_Bypass_Grid_Z4",
       "parent": 1070,
       "position": [
@@ -5529,7 +5409,7 @@
       "kind": "box"
     },
     {
-      "id": 3670,
+      "id": 3610,
       "name": "East_Bypass_Grid_Z6",
       "parent": 1070,
       "position": [
@@ -5549,7 +5429,7 @@
       "kind": "box"
     },
     {
-      "id": 3680,
+      "id": 3620,
       "name": "East_Bypass_Grid_Z8",
       "parent": 1070,
       "position": [
@@ -5569,7 +5449,7 @@
       "kind": "box"
     },
     {
-      "id": 3690,
+      "id": 3630,
       "name": "East_Bypass_Grid_Z10",
       "parent": 1070,
       "position": [
@@ -5589,7 +5469,7 @@
       "kind": "box"
     },
     {
-      "id": 3700,
+      "id": 3640,
       "name": "East_Bypass_Grid_Z12",
       "parent": 1070,
       "position": [
@@ -5609,7 +5489,7 @@
       "kind": "box"
     },
     {
-      "id": 3710,
+      "id": 3650,
       "name": "East_Bypass_Grid_Z14",
       "parent": 1070,
       "position": [
@@ -5629,7 +5509,7 @@
       "kind": "box"
     },
     {
-      "id": 3720,
+      "id": 3660,
       "name": "East_Bypass_Grid_Z16",
       "parent": 1070,
       "position": [
@@ -5649,7 +5529,7 @@
       "kind": "box"
     },
     {
-      "id": 3730,
+      "id": 3670,
       "name": "East_Bypass_Grid_Z18",
       "parent": 1070,
       "position": [
@@ -5669,7 +5549,7 @@
       "kind": "box"
     },
     {
-      "id": 3740,
+      "id": 3680,
       "name": "East_Bypass_Grid_Z20",
       "parent": 1070,
       "position": [
@@ -5689,7 +5569,7 @@
       "kind": "box"
     },
     {
-      "id": 3750,
+      "id": 3690,
       "name": "Exit_Approach_Grid_X2",
       "parent": 1070,
       "position": [
@@ -5709,7 +5589,7 @@
       "kind": "box"
     },
     {
-      "id": 3760,
+      "id": 3700,
       "name": "Exit_Approach_Grid_X4",
       "parent": 1070,
       "position": [
@@ -5729,7 +5609,7 @@
       "kind": "box"
     },
     {
-      "id": 3770,
+      "id": 3710,
       "name": "Exit_Approach_Grid_X6",
       "parent": 1070,
       "position": [
@@ -5749,7 +5629,7 @@
       "kind": "box"
     },
     {
-      "id": 3780,
+      "id": 3720,
       "name": "Exit_Approach_Grid_Z24",
       "parent": 1070,
       "position": [
@@ -5769,7 +5649,7 @@
       "kind": "box"
     },
     {
-      "id": 3790,
+      "id": 3730,
       "name": "Completed_Exit_Grid_X2",
       "parent": 1070,
       "position": [
@@ -5789,7 +5669,7 @@
       "kind": "box"
     },
     {
-      "id": 3800,
+      "id": 3740,
       "name": "Completed_Exit_Grid_X4",
       "parent": 1070,
       "position": [
@@ -5809,7 +5689,7 @@
       "kind": "box"
     },
     {
-      "id": 3810,
+      "id": 3750,
       "name": "Completed_Exit_Grid_X6",
       "parent": 1070,
       "position": [
@@ -5829,7 +5709,7 @@
       "kind": "box"
     },
     {
-      "id": 3820,
+      "id": 3760,
       "name": "Completed_Exit_Grid_Z28",
       "parent": 1070,
       "position": [
@@ -5849,7 +5729,7 @@
       "kind": "box"
     },
     {
-      "id": 3830,
+      "id": 3770,
       "name": "Completed_Exit_Grid_Z30",
       "parent": 1070,
       "position": [
@@ -5869,7 +5749,7 @@
       "kind": "box"
     },
     {
-      "id": 3840,
+      "id": 3780,
       "name": "North_Gallery_Grid_X10",
       "parent": 1070,
       "position": [
@@ -5889,7 +5769,7 @@
       "kind": "box"
     },
     {
-      "id": 3850,
+      "id": 3790,
       "name": "North_Gallery_Grid_X12",
       "parent": 1070,
       "position": [
@@ -5909,7 +5789,7 @@
       "kind": "box"
     },
     {
-      "id": 3860,
+      "id": 3800,
       "name": "North_Gallery_Grid_X14",
       "parent": 1070,
       "position": [
@@ -5929,7 +5809,7 @@
       "kind": "box"
     },
     {
-      "id": 3870,
+      "id": 3810,
       "name": "North_Gallery_Grid_X16",
       "parent": 1070,
       "position": [
@@ -5949,7 +5829,7 @@
       "kind": "box"
     },
     {
-      "id": 3880,
+      "id": 3820,
       "name": "North_Gallery_Grid_X18",
       "parent": 1070,
       "position": [
@@ -5969,7 +5849,7 @@
       "kind": "box"
     },
     {
-      "id": 3890,
+      "id": 3830,
       "name": "North_Gallery_Grid_Z24",
       "parent": 1070,
       "position": [
@@ -5989,7 +5869,7 @@
       "kind": "box"
     },
     {
-      "id": 3900,
+      "id": 3840,
       "name": "North_Gallery_Grid_Z26",
       "parent": 1070,
       "position": [
@@ -6009,7 +5889,7 @@
       "kind": "box"
     },
     {
-      "id": 3910,
+      "id": 3850,
       "name": "North_Gallery_Grid_Z28",
       "parent": 1070,
       "position": [
@@ -6029,7 +5909,7 @@
       "kind": "box"
     },
     {
-      "id": 3920,
+      "id": 3860,
       "name": "North_Gallery_Grid_Z30",
       "parent": 1070,
       "position": [
@@ -6049,7 +5929,7 @@
       "kind": "box"
     },
     {
-      "id": 3930,
+      "id": 3870,
       "name": "Repair_Lab_Grid_X22",
       "parent": 1070,
       "position": [
@@ -6069,7 +5949,7 @@
       "kind": "box"
     },
     {
-      "id": 3940,
+      "id": 3880,
       "name": "Repair_Lab_Grid_X24",
       "parent": 1070,
       "position": [
@@ -6089,7 +5969,7 @@
       "kind": "box"
     },
     {
-      "id": 3950,
+      "id": 3890,
       "name": "Repair_Lab_Grid_X26",
       "parent": 1070,
       "position": [
@@ -6109,7 +5989,7 @@
       "kind": "box"
     },
     {
-      "id": 3960,
+      "id": 3900,
       "name": "Repair_Lab_Grid_X28",
       "parent": 1070,
       "position": [
@@ -6129,7 +6009,7 @@
       "kind": "box"
     },
     {
-      "id": 3970,
+      "id": 3910,
       "name": "Repair_Lab_Grid_X30",
       "parent": 1070,
       "position": [
@@ -6149,7 +6029,7 @@
       "kind": "box"
     },
     {
-      "id": 3980,
+      "id": 3920,
       "name": "Repair_Lab_Grid_X32",
       "parent": 1070,
       "position": [
@@ -6169,7 +6049,7 @@
       "kind": "box"
     },
     {
-      "id": 3990,
+      "id": 3930,
       "name": "Repair_Lab_Grid_X34",
       "parent": 1070,
       "position": [
@@ -6189,7 +6069,7 @@
       "kind": "box"
     },
     {
-      "id": 4000,
+      "id": 3940,
       "name": "Repair_Lab_Grid_Z24",
       "parent": 1070,
       "position": [
@@ -6209,7 +6089,7 @@
       "kind": "box"
     },
     {
-      "id": 4010,
+      "id": 3950,
       "name": "Repair_Lab_Grid_Z26",
       "parent": 1070,
       "position": [
@@ -6229,7 +6109,7 @@
       "kind": "box"
     },
     {
-      "id": 4020,
+      "id": 3960,
       "name": "Repair_Lab_Grid_Z28",
       "parent": 1070,
       "position": [
@@ -6249,7 +6129,7 @@
       "kind": "box"
     },
     {
-      "id": 4030,
+      "id": 3970,
       "name": "Repair_Lab_Grid_Z30",
       "parent": 1070,
       "position": [
@@ -6269,7 +6149,7 @@
       "kind": "box"
     },
     {
-      "id": 4040,
+      "id": 3980,
       "name": "Optional_Reward_Room_Grid_X32",
       "parent": 1070,
       "position": [
@@ -6289,7 +6169,7 @@
       "kind": "box"
     },
     {
-      "id": 4050,
+      "id": 3990,
       "name": "Optional_Reward_Room_Grid_X34",
       "parent": 1070,
       "position": [
@@ -6309,7 +6189,7 @@
       "kind": "box"
     },
     {
-      "id": 4060,
+      "id": 4000,
       "name": "Optional_Reward_Room_Grid_Z-2",
       "parent": 1070,
       "position": [
@@ -6329,7 +6209,7 @@
       "kind": "box"
     },
     {
-      "id": 4070,
+      "id": 4010,
       "name": "Optional_Reward_Room_Grid_Z0",
       "parent": 1070,
       "position": [
@@ -6349,13 +6229,133 @@
       "kind": "box"
     },
     {
-      "id": 4080,
+      "id": 4020,
       "name": "Ceiling_Light_Housing",
       "parent": 1070,
       "position": [
         3,
         4.82,
         -2
+      ],
+      "scale": [
+        1.6,
+        0.12,
+        0.26
+      ],
+      "material": "Metal",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 4030,
+      "name": "Ceiling_Light_Diffuser",
+      "parent": 1070,
+      "position": [
+        3,
+        4.745,
+        -2
+      ],
+      "scale": [
+        1.35,
+        0.035,
+        0.18
+      ],
+      "material": "LightStrip",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 4040,
+      "name": "Ceiling_Light_Housing",
+      "parent": 1070,
+      "position": [
+        6,
+        4.82,
+        6
+      ],
+      "scale": [
+        1.6,
+        0.12,
+        0.26
+      ],
+      "material": "Metal",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 4050,
+      "name": "Ceiling_Light_Diffuser",
+      "parent": 1070,
+      "position": [
+        6,
+        4.745,
+        6
+      ],
+      "scale": [
+        1.35,
+        0.035,
+        0.18
+      ],
+      "material": "LightStrip",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 4060,
+      "name": "Ceiling_Light_Housing",
+      "parent": 1070,
+      "position": [
+        14,
+        4.82,
+        11
+      ],
+      "scale": [
+        1.6,
+        0.12,
+        0.26
+      ],
+      "material": "Metal",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 4070,
+      "name": "Ceiling_Light_Diffuser",
+      "parent": 1070,
+      "position": [
+        14,
+        4.745,
+        11
+      ],
+      "scale": [
+        1.35,
+        0.035,
+        0.18
+      ],
+      "material": "LightStrip",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 4080,
+      "name": "Ceiling_Light_Housing",
+      "parent": 1070,
+      "position": [
+        23,
+        4.82,
+        6
       ],
       "scale": [
         1.6,
@@ -6373,9 +6373,9 @@
       "name": "Ceiling_Light_Diffuser",
       "parent": 1070,
       "position": [
-        3,
+        23,
         4.745,
-        -2
+        6
       ],
       "scale": [
         1.35,
@@ -6393,9 +6393,9 @@
       "name": "Ceiling_Light_Housing",
       "parent": 1070,
       "position": [
-        6,
+        5,
         4.82,
-        6
+        19
       ],
       "scale": [
         1.6,
@@ -6413,9 +6413,9 @@
       "name": "Ceiling_Light_Diffuser",
       "parent": 1070,
       "position": [
-        6,
+        5,
         4.745,
-        6
+        19
       ],
       "scale": [
         1.35,
@@ -6433,9 +6433,9 @@
       "name": "Ceiling_Light_Housing",
       "parent": 1070,
       "position": [
-        14,
+        15,
         4.82,
-        11
+        19
       ],
       "scale": [
         1.6,
@@ -6453,9 +6453,9 @@
       "name": "Ceiling_Light_Diffuser",
       "parent": 1070,
       "position": [
-        14,
+        15,
         4.745,
-        11
+        19
       ],
       "scale": [
         1.35,
@@ -6473,9 +6473,9 @@
       "name": "Ceiling_Light_Housing",
       "parent": 1070,
       "position": [
-        23,
+        25,
         4.82,
-        6
+        19
       ],
       "scale": [
         1.6,
@@ -6493,9 +6493,9 @@
       "name": "Ceiling_Light_Diffuser",
       "parent": 1070,
       "position": [
-        23,
+        25,
         4.745,
-        6
+        19
       ],
       "scale": [
         1.35,
@@ -6513,9 +6513,9 @@
       "name": "Ceiling_Light_Housing",
       "parent": 1070,
       "position": [
-        5,
+        33,
         4.82,
-        19
+        8
       ],
       "scale": [
         1.6,
@@ -6533,9 +6533,9 @@
       "name": "Ceiling_Light_Diffuser",
       "parent": 1070,
       "position": [
-        5,
+        33,
         4.745,
-        19
+        8
       ],
       "scale": [
         1.35,
@@ -6553,7 +6553,7 @@
       "name": "Ceiling_Light_Housing",
       "parent": 1070,
       "position": [
-        15,
+        33,
         4.82,
         19
       ],
@@ -6573,7 +6573,7 @@
       "name": "Ceiling_Light_Diffuser",
       "parent": 1070,
       "position": [
-        15,
+        33,
         4.745,
         19
       ],
@@ -6593,9 +6593,9 @@
       "name": "Ceiling_Light_Housing",
       "parent": 1070,
       "position": [
-        25,
+        14,
         4.82,
-        19
+        28
       ],
       "scale": [
         1.6,
@@ -6613,9 +6613,9 @@
       "name": "Ceiling_Light_Diffuser",
       "parent": 1070,
       "position": [
-        25,
+        14,
         4.745,
-        19
+        28
       ],
       "scale": [
         1.35,
@@ -6633,9 +6633,9 @@
       "name": "Ceiling_Light_Housing",
       "parent": 1070,
       "position": [
-        33,
+        28,
         4.82,
-        8
+        28
       ],
       "scale": [
         1.6,
@@ -6653,9 +6653,9 @@
       "name": "Ceiling_Light_Diffuser",
       "parent": 1070,
       "position": [
-        33,
+        28,
         4.745,
-        8
+        28
       ],
       "scale": [
         1.35,
@@ -6673,9 +6673,9 @@
       "name": "Ceiling_Light_Housing",
       "parent": 1070,
       "position": [
-        33,
+        4,
         4.82,
-        19
+        29
       ],
       "scale": [
         1.6,
@@ -6693,9 +6693,9 @@
       "name": "Ceiling_Light_Diffuser",
       "parent": 1070,
       "position": [
-        33,
+        4,
         4.745,
-        19
+        29
       ],
       "scale": [
         1.35,
@@ -6710,126 +6710,6 @@
     },
     {
       "id": 4260,
-      "name": "Ceiling_Light_Housing",
-      "parent": 1070,
-      "position": [
-        14,
-        4.82,
-        28
-      ],
-      "scale": [
-        1.6,
-        0.12,
-        0.26
-      ],
-      "material": "Metal",
-      "collider": false,
-      "active": true,
-      "trigger": false,
-      "kind": "box"
-    },
-    {
-      "id": 4270,
-      "name": "Ceiling_Light_Diffuser",
-      "parent": 1070,
-      "position": [
-        14,
-        4.745,
-        28
-      ],
-      "scale": [
-        1.35,
-        0.035,
-        0.18
-      ],
-      "material": "LightStrip",
-      "collider": false,
-      "active": true,
-      "trigger": false,
-      "kind": "box"
-    },
-    {
-      "id": 4280,
-      "name": "Ceiling_Light_Housing",
-      "parent": 1070,
-      "position": [
-        28,
-        4.82,
-        28
-      ],
-      "scale": [
-        1.6,
-        0.12,
-        0.26
-      ],
-      "material": "Metal",
-      "collider": false,
-      "active": true,
-      "trigger": false,
-      "kind": "box"
-    },
-    {
-      "id": 4290,
-      "name": "Ceiling_Light_Diffuser",
-      "parent": 1070,
-      "position": [
-        28,
-        4.745,
-        28
-      ],
-      "scale": [
-        1.35,
-        0.035,
-        0.18
-      ],
-      "material": "LightStrip",
-      "collider": false,
-      "active": true,
-      "trigger": false,
-      "kind": "box"
-    },
-    {
-      "id": 4300,
-      "name": "Ceiling_Light_Housing",
-      "parent": 1070,
-      "position": [
-        4,
-        4.82,
-        29
-      ],
-      "scale": [
-        1.6,
-        0.12,
-        0.26
-      ],
-      "material": "Metal",
-      "collider": false,
-      "active": true,
-      "trigger": false,
-      "kind": "box"
-    },
-    {
-      "id": 4310,
-      "name": "Ceiling_Light_Diffuser",
-      "parent": 1070,
-      "position": [
-        4,
-        4.745,
-        29
-      ],
-      "scale": [
-        1.35,
-        0.035,
-        0.18
-      ],
-      "material": "LightStrip",
-      "collider": false,
-      "active": true,
-      "trigger": false,
-      "kind": "box"
-    },
-    {
-      "id": 4320,
       "name": "Blockout_Fill_Light",
       "parent": 1100,
       "position": [
@@ -6849,7 +6729,7 @@
       "kind": "light"
     },
     {
-      "id": 4330,
+      "id": 4270,
       "name": "Return_To_Security_Button",
       "parent": 1000,
       "position": [
@@ -6869,9 +6749,9 @@
       "kind": "empty"
     },
     {
-      "id": 4340,
+      "id": 4280,
       "name": "Return_Button_Plate",
-      "parent": 4330,
+      "parent": 4270,
       "position": [
         -0.13,
         0.12,
@@ -6889,9 +6769,9 @@
       "kind": "box"
     },
     {
-      "id": 4350,
+      "id": 4290,
       "name": "Return_Button_Cap",
-      "parent": 4330,
+      "parent": 4270,
       "position": [
         0,
         0,
@@ -6909,9 +6789,9 @@
       "kind": "box"
     },
     {
-      "id": 4360,
+      "id": 4300,
       "name": "Return_Plate_Bolt",
-      "parent": 4330,
+      "parent": 4270,
       "position": [
         -0.08,
         -0.2,
@@ -6929,9 +6809,9 @@
       "kind": "box"
     },
     {
-      "id": 4370,
+      "id": 4310,
       "name": "Return_Plate_Bolt",
-      "parent": 4330,
+      "parent": 4270,
       "position": [
         -0.08,
         -0.2,
@@ -6949,9 +6829,9 @@
       "kind": "box"
     },
     {
-      "id": 4380,
+      "id": 4320,
       "name": "Return_Plate_Bolt",
-      "parent": 4330,
+      "parent": 4270,
       "position": [
         -0.08,
         0.44,
@@ -6969,9 +6849,9 @@
       "kind": "box"
     },
     {
-      "id": 4390,
+      "id": 4330,
       "name": "Return_Plate_Bolt",
-      "parent": 4330,
+      "parent": 4270,
       "position": [
         -0.08,
         0.44,
@@ -6989,9 +6869,9 @@
       "kind": "box"
     },
     {
-      "id": 4400,
+      "id": 4340,
       "name": "Return_Plate_Paint_Chip",
-      "parent": 4330,
+      "parent": 4270,
       "position": [
         -0.088,
         0.38,
@@ -7009,9 +6889,9 @@
       "kind": "box"
     },
     {
-      "id": 4410,
+      "id": 4350,
       "name": "Return_Plate_Paint_Chip",
-      "parent": 4330,
+      "parent": 4270,
       "position": [
         -0.088,
         -0.18,
@@ -7029,9 +6909,9 @@
       "kind": "box"
     },
     {
-      "id": 4420,
+      "id": 4360,
       "name": "Return_Plate_Paint_Chip",
-      "parent": 4330,
+      "parent": 4270,
       "position": [
         -0.088,
         0.04,
@@ -7043,6 +6923,126 @@
         0.065
       ],
       "material": "Concrete",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 4370,
+      "name": "14_Player_Interaction_Scale_Guide__Enable_to_Check_Fit",
+      "parent": 1000,
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "material": null,
+      "collider": false,
+      "active": false,
+      "trigger": false,
+      "kind": "empty"
+    },
+    {
+      "id": 4380,
+      "name": "PlayerScale_BodyCapsule__Actual_Bootstrap_Rig",
+      "parent": 4370,
+      "position": [
+        22.8,
+        0.25,
+        30.3
+      ],
+      "scale": [
+        0.3,
+        0.25,
+        0.3
+      ],
+      "material": "RewardCyan",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "cylinder"
+    },
+    {
+      "id": 4390,
+      "name": "PlayerScale_HandContact_Left__Actual_Bootstrap_Rig",
+      "parent": 4370,
+      "position": [
+        22.5,
+        0.72,
+        29.92
+      ],
+      "scale": [
+        0.04,
+        0.02,
+        0.04
+      ],
+      "material": "Amber",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "cylinder"
+    },
+    {
+      "id": 4400,
+      "name": "PlayerScale_HandContact_Right__Actual_Bootstrap_Rig",
+      "parent": 4370,
+      "position": [
+        23.1,
+        0.72,
+        29.92
+      ],
+      "scale": [
+        0.04,
+        0.02,
+        0.04
+      ],
+      "material": "Amber",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "cylinder"
+    },
+    {
+      "id": 4410,
+      "name": "PlayerScale_MaxArmReach__Actual_Bootstrap_Rig",
+      "parent": 4370,
+      "position": [
+        23.55,
+        0.92,
+        30.3
+      ],
+      "scale": [
+        1.5,
+        0.025,
+        0.025
+      ],
+      "material": "LightStrip",
+      "collider": false,
+      "active": true,
+      "trigger": false,
+      "kind": "box"
+    },
+    {
+      "id": 4420,
+      "name": "PlayerScale_ReachOrigin__Actual_Bootstrap_Rig",
+      "parent": 4370,
+      "position": [
+        22.8,
+        0.92,
+        30.3
+      ],
+      "scale": [
+        0.04,
+        0.2,
+        0.04
+      ],
+      "material": "Amber",
       "collider": false,
       "active": true,
       "trigger": false,

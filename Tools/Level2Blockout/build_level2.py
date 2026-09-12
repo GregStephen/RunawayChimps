@@ -34,7 +34,6 @@ scale_group=node('09_Listener_Size_Guide__Enable_to_Check_Fit',root,active=False
 lights=group('10_Blockout_Lighting',root); gates=group('11_Existing_SciFi_Gates',root)
 reward=group('12_Optional_Reward_Room__Visual_Only',root)
 fuse_search=group('13_Fuse_Search_Containers__Visual_Only',root)
-player_scale_group=node('14_Player_Interaction_Scale_Guide__Enable_to_Check_Fit',root,active=False,kind='empty')
 rooms=[
  ('Safe_Entry',0,6,-4,0,'SafeFloor'),
  ('Test_Hall_A',0,18,0,14,'Floor'),
@@ -158,17 +157,6 @@ for i,label,x,z in fuse_caches:
  node(f'Fuse_{i}_Personal_Cylindrical_Placeholder',fuse_search,(x,.52,z-.30),(.06,.10,.06),'Amber',kind='cylinder')
  node(f'Fuse{i}Start',markers,(x,.52,z-.30),kind='empty')
 
-# Disabled player interaction-scale guide derived from the active Bootstrap Gorilla rig.
-# The body capsule is a locomotion collision proxy, not a standing-height proxy.
-guide_x,guide_z=22.8,30.3
-body_w=PLAYER_SCALE['body_width_m']; body_h=PLAYER_SCALE['body_capsule_height_m']
-hand_d=PLAYER_SCALE['hand_contact_diameter_m']; arm_reach=PLAYER_SCALE['max_arm_length_m']
-node('PlayerScale_BodyCapsule__Actual_Bootstrap_Rig',player_scale_group,(guide_x,body_h/2,guide_z),(body_w,body_h/2,body_w),'RewardCyan',kind='cylinder')
-node('PlayerScale_HandContact_Left__Actual_Bootstrap_Rig',player_scale_group,(guide_x-.30,.72,guide_z-.38),(hand_d,hand_d/2,hand_d),'Amber',kind='cylinder')
-node('PlayerScale_HandContact_Right__Actual_Bootstrap_Rig',player_scale_group,(guide_x+.30,.72,guide_z-.38),(hand_d,hand_d/2,hand_d),'Amber',kind='cylinder')
-node('PlayerScale_MaxArmReach__Actual_Bootstrap_Rig',player_scale_group,(guide_x+arm_reach/2,.92,guide_z),(arm_reach,.025,.025),'LightStrip')
-node('PlayerScale_ReachOrigin__Actual_Bootstrap_Rig',player_scale_group,(guide_x,.92,guide_z),(.04,.20,.04),'Amber')
-
 # Historical exit shutter visual remains inactive; gate + blocker are authoritative blockout visuals.
 node('Exit_Shutter_Leaf__Historical',shutter,(4,1.78,26),(3.16,3.56,.18),'Metal',True)
 # Return control placeholder retained inactive; physical button below is wired.
@@ -209,6 +197,19 @@ node('Return_Button_Cap',button,(0,0,0),(.12,.30,.34),'RedMarker')
 for y in [-.20,.44]:
  for z in [-.25,.25]: node('Return_Plate_Bolt',button,(-.08,y,z),(.025,.035,.035),'Concrete')
 for y,z in [(.38,-.20),(-.18,.16),(.04,.24)]: node('Return_Plate_Paint_Chip',button,(-.088,y,z),(.008,.025,.065),'Concrete')
+player_scale_group=node('14_Player_Interaction_Scale_Guide__Enable_to_Check_Fit',root,active=False,kind='empty')
+
+# Disabled player interaction-scale guide derived from the active Bootstrap Gorilla rig.
+# The body capsule is a locomotion collision proxy, not a standing-height proxy.
+guide_x,guide_z=22.8,30.3
+body_w=PLAYER_SCALE['body_width_m']; body_h=PLAYER_SCALE['body_capsule_height_m']
+hand_d=PLAYER_SCALE['hand_contact_diameter_m']; arm_reach=PLAYER_SCALE['max_arm_length_m']
+node('PlayerScale_BodyCapsule__Actual_Bootstrap_Rig',player_scale_group,(guide_x,body_h/2,guide_z),(body_w,body_h/2,body_w),'RewardCyan',kind='cylinder')
+node('PlayerScale_HandContact_Left__Actual_Bootstrap_Rig',player_scale_group,(guide_x-.30,.72,guide_z-.38),(hand_d,hand_d/2,hand_d),'Amber',kind='cylinder')
+node('PlayerScale_HandContact_Right__Actual_Bootstrap_Rig',player_scale_group,(guide_x+.30,.72,guide_z-.38),(hand_d,hand_d/2,hand_d),'Amber',kind='cylinder')
+node('PlayerScale_MaxArmReach__Actual_Bootstrap_Rig',player_scale_group,(guide_x+arm_reach/2,.92,guide_z),(arm_reach,.025,.025),'LightStrip')
+node('PlayerScale_ReachOrigin__Actual_Bootstrap_Rig',player_scale_group,(guide_x,.92,guide_z),(.04,.20,.04),'Amber')
+
 # Historical group hidden.
 nodes[[n['id'] for n in nodes].index(shutter)]['active']=False
 
