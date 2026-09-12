@@ -1,0 +1,37 @@
+name: TEMP apply Crawler turn follow-up docs
+
+on:
+  push:
+    branches:
+      - fix/runtime-keycard-crawler-loading
+
+jobs:
+  sync-docs:
+    if: github.actor != 'github-actions[bot]'
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/runtime-keycard-crawler-loading
+          fetch-depth: 0
+
+      - name: Update maintained docs and contracts
+        run: python Tools/record_crawler_turn_followup.py
+
+      - name: Commit follow-up
+        shell: bash
+        run: |
+          git diff --check
+          git add docs/design-and-lore.md docs/repository-improvement-plan.md Tools/validate_level1_contracts.py
+          if git diff --cached --quiet; then
+            echo "Follow-up already current."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Record Crawler direction and turn retest"
+          git fetch origin fix/runtime-keycard-crawler-loading
+          git rebase origin/fix/runtime-keycard-crawler-loading
+          git push origin HEAD:fix/runtime-keycard-crawler-loading
