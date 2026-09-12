@@ -136,7 +136,7 @@ def main():
         "GetComponentsInChildren<Collider>(true)",
         "WaitForTrackingOffsetStability()",
         "GroundCorrect(spawnGo.transform.position, hubScene, locomotionPlayer)",
-        "out string blocker",
+        "out blocker",
     ])
     positive_defaults(errors, spawn_path, spawn, [
         "FixedSettleSteps", "TrackingOffsetStableFrames", "TrackingOffsetMaxWaitFrames", "TrackingOffsetEpsilon", "GroundSkin"

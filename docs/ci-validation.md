@@ -24,7 +24,7 @@ The workflow uses read-only repository permissions and a 10-minute timeout. It r
 4. `python Tools/validate_level1_contracts.py` protects the active Level 1 implementation from source-level regression: local-only vent headlamp gating/equip behavior, Crawler visual anchor/path-following and no-root-motion assumptions, head-authoritative safe boundaries, guarded capture/drop behavior, XR startup settling, and the bounded non-allocating floor-penetration guard. It also checks the Level 1 scene still serializes at least two safe-boundary zone triggers, a vent zone trigger, and the Crawler capture component.
 5. `python -m compileall -q Tools` prevents tracked Python tooling from containing basic syntax errors.
 6. A merge-marker scan rejects unresolved `<<<<<<<`, `=======`, and `>>>>>>>` conflict markers.
-7. `git diff --check` runs against the complete pull-request diff or pushed commit range and catches whitespace errors introduced by the change.
+7. `git diff --check` runs against the pull-request or pushed range for human-authored source, documentation, and configuration formats such as C#, Python, Markdown, JSON, YAML, shell, text, asmdef/asmref, XML/project files, and UI text assets. Unity-authored serialized files such as `.unity`, `.meta`, `.mat`, `.prefab`, `.asset`, animation/controller data, and importer metadata are intentionally outside this whitespace-only check because Unity commonly emits empty YAML values with a trailing space. Their structural integrity remains covered by the repository/source validators.
 
 The contract checks intentionally protect behavior categories rather than exact tuning values where practical. For example, they require positive trail/reset/headlamp settings and the local-only/vent-gated architecture without freezing the current 8 m beam range forever.
 
@@ -32,11 +32,13 @@ The contract checks intentionally protect behavior categories rather than exact 
 
 The initial workflow exposed an existing syntax error in `Tools/Level2Blockout/draw_plan.py`: several intended multiline labels were stored as literal newlines inside single-quoted strings. The script was corrected to use escaped `\n` labels.
 
-The first pull-request run then exposed trailing whitespace in the three newly added Unity script metadata files for `RigFloorPenetrationGuard`, `VentHeadlampController`, and `CrawlerBodyPathFollower`. Those metadata files were normalized rather than weakening the whitespace rule.
+The first pull-request run then exposed trailing whitespace in the three newly added Unity script metadata files for `RigFloorPenetrationGuard`, `VentHeadlampController`, and `CrawlerBodyPathFollower`. Those metadata files were normalized while the initial whitespace rule was still repository-wide.
 
 After the repository-wide metadata check was added, CI found five tracked `*.png~` editor/backup copies under `Assets/Models/Materials/Faces` plus an orphaned `Assets/StreamingAssets.meta` whose target folder no longer existed. The backup files duplicated real face textures, the orphaned folder GUID had no repository references, and all six stale entries were removed. The existing `.gitignore` already contains `*~`; these files remained only because they had been committed before the ignore rule could help.
 
-After those corrections, both **push** and **pull_request** Source integrity runs passed on the same PR head. The core source validator reports **116 first-party scripts and 5 enabled scenes** passing its component, metadata, build-registration, local-reference, and C# syntax checks; the additional repository and Level 1 contract checks also pass.
+A later PR #13 run exposed a limitation in applying `git diff --check` indiscriminately to Unity serialization: newly imported cage materials, texture/model metadata, and Unity scene data contained normal Unity-authored empty values such as `userData: `, `value: `, and `m_Data: `. All source/syntax, metadata/GUID, Level 1 contract, Python, and merge-marker stages passed; only the whitespace stage failed. The workflow was therefore corrected to keep whitespace enforcement on human-authored text formats while relying on the dedicated Unity validators for serialized asset integrity instead of rewriting Unity-generated YAML.
+
+After the original corrections, both **push** and **pull_request** Source integrity runs passed on the same PR head. The core source validator reports **116 first-party scripts and 5 enabled scenes** passing its component, metadata, build-registration, local-reference and C# syntax checks; the additional repository and Level 1 contract checks also pass. Subsequent changes still require their own CI result before being described as validated.
 
 ## What a green check does not prove
 
