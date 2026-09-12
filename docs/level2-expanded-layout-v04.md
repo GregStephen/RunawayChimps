@@ -6,7 +6,7 @@ Recorded: 2026-09-11.
 
 **Confirmed:** Level 2 must be at least twice the current v0.3 blockout's length and width. The current blockout is 18 x 18 m, so v0.4 targets a minimum 36 x 36 m footprint.
 
-**Confirmed room sizing / implemented blockout:** Greg reviewed the fuse-power v0.4 blockout and approved the current room sizing/proportions below. Branch `design/level2-expanded-map-v04` builds that arrangement into the normal Level 2 Unity scene and reusable prefab. Obstacle placement and runtime Listener navigation may still be tuned. `main` still contains v0.3.
+**Confirmed room sizing / implemented blockout:** Greg reviewed the fuse-power v0.4 blockout and approved the current room sizing/proportions below. Branch `design/level2-expanded-map-v04` builds that arrangement into the normal Level 2 Unity scene and reusable prefab. Obstacle placement and runtime Listener navigation may still be tuned. `main` contains the merged v0.4 blockout through PR #7.
 
 Do not implement the size change by scaling the v0.3 root transform to 2x. Build larger authored spaces so normal room scale, gate scale, colliders and traversal remain believable.
 
@@ -43,6 +43,10 @@ These room bounds/sizes are now the confirmed v0.4 design target. Individual obs
 The larger level should use multiple connected loops rather than one oversized room. Test Hall A and Lower Service Hall form the lower loop. West Observation Wing and Conditioning Hall B form a second middle route. East Bypass reconnects the lower half to the repair side. North Gallery connects the upper route to the qualified exit and one side of the repair room.
 
 The Repair Lab has one opening into North Gallery and a second toward the East Bypass/Conditioning side. Its central power island creates a full circulation ring instead of a wall-mounted dead end. A normal local loop can be Repair Lab -> North Gallery -> Conditioning Hall B -> East Bypass -> Repair Lab, with longer branches through West Observation, Test Hall A and Lower Service Hall. Four fuse-search locations deliberately pull the player into those larger branches before returning to charge each fuse.
+
+## Player-scale objective correction — confirmed September 12
+
+The approved room bounds remain unchanged. Runtime testing showed the initial power island, fuses, sockets and levers were scaled for the large environment rather than the gorilla player. Player-facing hardware must now be checked against the active Bootstrap locomotion rig. The current serialized values resolve to a 0.04 m hand sphere-cast diameter, approximately 0.30 m body-capsule width / 0.50 m capsule height, and a 1.5 m max arm reach; the body capsule is not treated as standing height. The corrected prototype targets a ~20 cm fuse, ~0.58 m socket center, ~0.70 m lever center and ~0.95 m island height. The generator includes a disabled `14_Player_Interaction_Scale_Guide__Enable_to_Check_Fit` whose body, hand-contact and reach references are generated from Bootstrap, and the persistent validator reads those same serialized values rather than copied constants. Small comfort tuning may still occur without reopening the confirmed room sizes.
 
 ## Confirmed four-fuse power objective
 

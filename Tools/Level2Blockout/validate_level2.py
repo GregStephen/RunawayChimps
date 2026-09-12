@@ -5,16 +5,55 @@ It does not prove Unity import, linked mesh clearance, NavMesh, Photon, or heads
 """
 from pathlib import Path
 import collections,json,math,re
+from player_scale import read_player_scale
 HERE=Path(__file__).resolve().parent
 ROOT=HERE.parents[1]
 ASSETS=ROOT/'Assets/RunawayChimps/Level2Blockout'
-d=json.loads((HERE/'layout.json').read_text()); nodes=d['nodes']; byid={n['id']:n for n in nodes}
+d=json.loads((HERE/'layout.json').read_text()); nodes=d['nodes']; byid={n['id']:n for n in nodes}; byname={n['name']:n for n in nodes}
 manifest=json.loads((HERE/'gate_manifest.json').read_text())
 assert d['version']=='0.4' and d['bounds']==[0,36,-4,32]
 assert d['room_height']==5.0 and d['open_passage_wall_gap_width']==4.0
 assert d['fuse_count']==4 and 'four personal' in d['objective'].lower()
 assert len(manifest['gates'])==5
-results={'version':'0.4','bounds_m':d['bounds']}
+
+# Player-scale interaction guardrails are derived from the actual active Bootstrap rig.
+player_scale=read_player_scale(ROOT)
+assert .02 <= player_scale['hand_contact_diameter_m'] <= .20,player_scale
+assert .20 <= player_scale['body_width_m'] <= .80,player_scale
+assert .30 <= player_scale['body_capsule_height_m'] <= 2.0,player_scale
+assert .50 <= player_scale['max_arm_length_m'] <= 2.5,player_scale
+
+# The disabled Scene-view guide must stay synchronized with the active serialized rig.
+body_guide=byname['PlayerScale_BodyCapsule__Actual_Bootstrap_Rig']
+left_hand_guide=byname['PlayerScale_HandContact_Left__Actual_Bootstrap_Rig']
+right_hand_guide=byname['PlayerScale_HandContact_Right__Actual_Bootstrap_Rig']
+reach_guide=byname['PlayerScale_MaxArmReach__Actual_Bootstrap_Rig']
+assert abs(body_guide['scale'][0]-player_scale['body_width_m'])<1e-6,body_guide
+assert abs(body_guide['scale'][1]*2-player_scale['body_capsule_height_m'])<1e-6,body_guide
+for hand in (left_hand_guide,right_hand_guide):
+    assert abs(hand['scale'][0]-player_scale['hand_contact_diameter_m'])<1e-6,hand
+    assert abs(hand['scale'][1]*2-player_scale['hand_contact_diameter_m'])<1e-6,hand
+assert abs(reach_guide['scale'][0]-player_scale['max_arm_length_m'])<1e-6,reach_guide
+assert not byname['14_Player_Interaction_Scale_Guide__Enable_to_Check_Fit']['active']
+
+# Vertical interaction reach is governed by the Gorilla arm limit, not the small locomotion body capsule.
+core=byname['Power_Island_Core']
+assert core['position']==[28,0.475,27] and core['scale']==[2.4,0.95,1.3],core
+assert core['scale'][1] <= player_scale['max_arm_length_m'],core
+for i in range(1,5):
+    socket=byname[f'FuseSocket{i}Marker']; lever=byname[f'Fuse_Socket_{i}_Lever_Handle']; fuse=byname[f'Fuse_{i}_Personal_Cylindrical_Placeholder']
+    assert abs(socket['position'][1]-.58)<1e-6,(i,socket['position'])
+    assert abs(lever['position'][1]-.70)<1e-6,(i,lever['position'])
+    assert socket['position'][1] <= player_scale['max_arm_length_m']*.55,(i,socket['position'],player_scale)
+    assert lever['position'][1] <= player_scale['max_arm_length_m']*.60,(i,lever['position'],player_scale)
+    fuse_diameter=fuse['scale'][0]; fuse_length=fuse['scale'][1]*2
+    assert fuse_diameter <= player_scale['hand_contact_diameter_m']*2.0+1e-6,(i,fuse_diameter,player_scale)
+    assert fuse_length <= player_scale['max_arm_length_m']*.20+1e-6,(i,fuse_length,player_scale)
+    assert byname[f'Fuse_Cache_{i}_Electrical_Label']['position'][1] <= lever['position'][1]+1e-6
+results={'version':'0.4','bounds_m':d['bounds'],
+         'player_scale_reference':player_scale,
+         'objective_ergonomics':{'power_island_size_m':[2.4,.95,1.3],'socket_center_height_m':.58,'lever_center_height_m':.70,'fuse_placeholder_scale':[.06,.10,.06],
+                                 'disabled_scene_guide':'14_Player_Interaction_Scale_Guide__Enable_to_Check_Fit'}}
 
 # Serialized YAML/object-reference checks without requiring a YAML package.
 for p in [ASSETS/'Scenes/Level2_BehavioralConditioning_Blockout.unity',ASSETS/'Prefabs/Level2_Blockout.prefab']:
@@ -91,6 +130,6 @@ assert reachable(unlocked_reward,(33,-2)),'reward room unreachable after blocker
 results['temporary_barriers']={'closed_exit_separates_safe_exit':True,'locked_reward_room_separate':True,'reward_reachable_when_blocker_removed':True}
 results['fuse_power_objective']={'fuse_count':4,'all_cache_approaches_reachable':True,'player_and_listener_can_circle_power_island':True,'charge_noise_gameplay':'pending runtime wiring'}
 results['counts']={'authored_objects':len(nodes),'mesh_boxes':sum(bool(n['material']) for n in nodes),'solid_box_colliders':sum(n['collider'] and not n['trigger'] for n in nodes),'marker_triggers':sum(n['trigger'] for n in nodes)}
-results['pending']=['Unity 2022.3.55f1 import/compile','actual linked gate mesh clearance','NavMesh bake','Listener animated turning/reach','Play Mode travel','two-client Photon PUN','Quest headset scale/performance']
+results['pending']=['Unity 2022.3.55f1 import/compile','actual linked gate mesh clearance','NavMesh bake','Listener animated turning/reach','Play Mode travel','two-client Photon PUN','Quest headset scale/performance','player-scale fuse/socket/lever ergonomics']
 (HERE/'validation.json').write_text(json.dumps(results,indent=2)+'\n')
 print(json.dumps(results,indent=2))

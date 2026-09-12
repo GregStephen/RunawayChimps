@@ -1,6 +1,7 @@
 """Generate Level 2 Behavioral Conditioning blockout v0.4 for Unity 2022.3."""
 from pathlib import Path
 import json, hashlib
+from player_scale import read_player_scale
 
 ROOT=Path(__file__).resolve().parents[2]
 ASSET=ROOT/'Assets/RunawayChimps/Level2Blockout'
@@ -8,6 +9,7 @@ OUT=ROOT/'Tools/Level2Blockout'
 HEADER='%YAML 1.1\n%TAG !u! tag:unity3d.com,2011:\n'
 BUILTIN='0000000000000000e000000000000000'
 ROOM_HEIGHT=5.0
+PLAYER_SCALE=read_player_scale(ROOT)
 COLORS={
  'Concrete':[0.39,0.45,0.47],'Floor':[0.23,0.29,0.31],
  'SafeFloor':[0.19,0.38,0.34],'RepairFloor':[0.39,0.30,0.22],
@@ -122,25 +124,25 @@ for i,(x,z) in enumerate([(35.6,7),(30.4,13),(35.6,19)]):
 
 # Confirmed four-fuse power-restoration objective. Geometry is visual-only until gameplay is wired.
 # The central island leaves a complete circulation ring for the player and conservative Listener proxy.
-node('Power_Island_Core',repair,(28,1.2,27),(4.4,2.4,2.4),'Metal',True)
-node('Power_Island_Top',repair,(28,2.43,27),(4.65,.08,2.65),'Concrete')
-node('Power_Island_Center_Band',repair,(28,1.25,25.77),(4.0,.22,.08),'Amber')
-node('Power_Island_Center_Band_North',repair,(28,1.25,28.23),(4.0,.22,.08),'Amber')
+node('Power_Island_Core',repair,(28,.475,27),(2.4,.95,1.30),'Metal',True)
+node('Power_Island_Top',repair,(28,.985,27),(2.55,.07,1.42),'Concrete')
+node('Power_Island_Center_Band',repair,(28,.48,26.34),(2.15,.10,.05),'Amber')
+node('Power_Island_Center_Band_North',repair,(28,.48,27.66),(2.15,.10,.05),'Amber')
 slot_specs=[
- (1,27.0,25.72,-1),(2,29.0,25.72,-1),(3,27.0,28.28,1),(4,29.0,28.28,1),
+ (1,27.45,26.30,-1),(2,28.55,26.30,-1),(3,27.45,27.70,1),(4,28.55,27.70,1),
 ]
 for i,x,z,side in slot_specs:
- node(f'Fuse_Socket_{i}_Plate',repair,(x,1.28,z),(.82,.62,.10),'Concrete')
- node(f'Fuse_Socket_{i}_Opening',repair,(x,1.28,z+side*.06),(.42,.38,.06),'Amber')
- node(f'Fuse_Socket_{i}_Charge_Indicator',repair,(x,1.72,z+side*.07),(.42,.10,.04),'LightStrip')
- node(f'Fuse_Socket_{i}_Lever_Base',repair,(x+.62,1.18,z),(.18,.46,.18),'Metal')
- node(f'Fuse_Socket_{i}_Lever_Handle',repair,(x+.62,1.55,z),(.10,.64,.10),'Amber')
- node(f'FuseSocket{i}Marker',markers,(x,1.28,z),kind='empty')
-node('Exit_Power_Cable_EastWest',details,(16,0.10,25.55),(24,.12,.22),'Amber')
-node('Exit_Power_Cable_To_Island',details,(28,0.10,26.28),(.22,.12,1.46),'Amber')
-for x in [8,13,18,23]: node('Exit_Power_Cable_Status_Node',details,(x,.18,25.55),(.42,.08,.34),'LightStrip')
-node('PowerIslandCenter',markers,(28,1.2,27),kind='empty')
-node('FuseChargeNoiseOrigin',markers,(28,1.2,27),kind='empty')
+ node(f'Fuse_Socket_{i}_Plate',repair,(x,.58,z),(.30,.24,.055),'Concrete')
+ node(f'Fuse_Socket_{i}_Opening',repair,(x,.58,z+side*.035),(.12,.15,.035),'Amber')
+ node(f'Fuse_Socket_{i}_Charge_Indicator',repair,(x,.78,z+side*.04),(.16,.05,.025),'LightStrip')
+ node(f'Fuse_Socket_{i}_Lever_Base',repair,(x+.30,.56,z),(.08,.20,.08),'Metal')
+ node(f'Fuse_Socket_{i}_Lever_Handle',repair,(x+.30,.70,z),(.05,.25,.05),'Amber')
+ node(f'FuseSocket{i}Marker',markers,(x,.58,z),kind='empty')
+node('Exit_Power_Cable_EastWest',details,(16,.08,25.55),(24,.08,.12),'Amber')
+node('Exit_Power_Cable_To_Island',details,(28,.08,25.95),(.12,.08,.80),'Amber')
+for x in [8,13,18,23]: node('Exit_Power_Cable_Status_Node',details,(x,.13,25.55),(.22,.05,.18),'LightStrip')
+node('PowerIslandCenter',markers,(28,.475,27),kind='empty')
+node('FuseChargeNoiseOrigin',markers,(28,.60,27),kind='empty')
 
 fuse_caches=[
  (1,'TestHall_Drawer',2.4,11.3),
@@ -149,11 +151,11 @@ fuse_caches=[
  (4,'Conditioning_AccessPanel',26.0,20.3),
 ]
 for i,label,x,z in fuse_caches:
- node(f'Fuse_Cache_{i}_{label}_Body',fuse_search,(x,1.0,z),(1.5,2.0,.70),'Metal',True)
- node(f'Fuse_Cache_{i}_{label}_DoorOrDrawer',fuse_search,(x,1.0,z-.39),(1.28,.62,.10),'Concrete')
- node(f'Fuse_Cache_{i}_Electrical_Label',fuse_search,(x,1.58,z-.45),(.62,.22,.04),'Amber')
- node(f'Fuse_{i}_Personal_Cylindrical_Placeholder',fuse_search,(x,.78,z-.52),(.18,.36,.18),'Amber',kind='cylinder')
- node(f'Fuse{i}Start',markers,(x,.78,z-.52),kind='empty')
+ node(f'Fuse_Cache_{i}_{label}_Body',fuse_search,(x,.40,z),(.75,.80,.45),'Metal',True)
+ node(f'Fuse_Cache_{i}_{label}_DoorOrDrawer',fuse_search,(x,.42,z-.255),(.62,.28,.07),'Concrete')
+ node(f'Fuse_Cache_{i}_Electrical_Label',fuse_search,(x,.70,z-.295),(.28,.10,.02),'Amber')
+ node(f'Fuse_{i}_Personal_Cylindrical_Placeholder',fuse_search,(x,.52,z-.30),(.06,.10,.06),'Amber',kind='cylinder')
+ node(f'Fuse{i}Start',markers,(x,.52,z-.30),kind='empty')
 
 # Historical exit shutter visual remains inactive; gate + blocker are authoritative blockout visuals.
 node('Exit_Shutter_Leaf__Historical',shutter,(4,1.78,26),(3.16,3.56,.18),'Metal',True)
@@ -195,6 +197,19 @@ node('Return_Button_Cap',button,(0,0,0),(.12,.30,.34),'RedMarker')
 for y in [-.20,.44]:
  for z in [-.25,.25]: node('Return_Plate_Bolt',button,(-.08,y,z),(.025,.035,.035),'Concrete')
 for y,z in [(.38,-.20),(-.18,.16),(.04,.24)]: node('Return_Plate_Paint_Chip',button,(-.088,y,z),(.008,.025,.065),'Concrete')
+player_scale_group=node('14_Player_Interaction_Scale_Guide__Enable_to_Check_Fit',root,active=False,kind='empty')
+
+# Disabled player interaction-scale guide derived from the active Bootstrap Gorilla rig.
+# The body capsule is a locomotion collision proxy, not a standing-height proxy.
+guide_x,guide_z=22.8,30.3
+body_w=PLAYER_SCALE['body_width_m']; body_h=PLAYER_SCALE['body_capsule_height_m']
+hand_d=PLAYER_SCALE['hand_contact_diameter_m']; arm_reach=PLAYER_SCALE['max_arm_length_m']
+node('PlayerScale_BodyCapsule__Actual_Bootstrap_Rig',player_scale_group,(guide_x,body_h/2,guide_z),(body_w,body_h/2,body_w),'RewardCyan',kind='cylinder')
+node('PlayerScale_HandContact_Left__Actual_Bootstrap_Rig',player_scale_group,(guide_x-.30,.72,guide_z-.38),(hand_d,hand_d/2,hand_d),'Amber',kind='cylinder')
+node('PlayerScale_HandContact_Right__Actual_Bootstrap_Rig',player_scale_group,(guide_x+.30,.72,guide_z-.38),(hand_d,hand_d/2,hand_d),'Amber',kind='cylinder')
+node('PlayerScale_MaxArmReach__Actual_Bootstrap_Rig',player_scale_group,(guide_x+arm_reach/2,.92,guide_z),(arm_reach,.025,.025),'LightStrip')
+node('PlayerScale_ReachOrigin__Actual_Bootstrap_Rig',player_scale_group,(guide_x,.92,guide_z),(.04,.20,.04),'Amber')
+
 # Historical group hidden.
 nodes[[n['id'] for n in nodes].index(shutter)]['active']=False
 

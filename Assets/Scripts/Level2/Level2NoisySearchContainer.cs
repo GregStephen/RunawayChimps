@@ -7,8 +7,8 @@ namespace RunawayChimps.Level2
         public float noiseRadius = 10f;
         public float cooldown = .35f;
         public Transform movingPart;
-        public Vector3 openLocalOffset = new Vector3(0,0,-.45f);
-        public float moveSeconds = .35f;
+        public Vector3 openLocalOffset = new Vector3(0, 0, -.18f);
+        public float moveSeconds = .25f;
         public bool IsOpen { get; private set; }
         Vector3 closed;
         Vector3 target;

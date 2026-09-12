@@ -6,14 +6,37 @@
     -4,
     32
   ],
+  "player_scale_reference": {
+    "hand_contact_diameter_m": 0.04,
+    "body_width_m": 0.3,
+    "body_capsule_height_m": 0.5,
+    "max_arm_length_m": 1.5,
+    "source": "Assets/Scenes/Bootstrap.unity",
+    "hand_source": "GorillaLocomotion.Player.minimumRaycastDistance x 2"
+  },
+  "objective_ergonomics": {
+    "power_island_size_m": [
+      2.4,
+      0.95,
+      1.3
+    ],
+    "socket_center_height_m": 0.58,
+    "lever_center_height_m": 0.7,
+    "fuse_placeholder_scale": [
+      0.06,
+      0.1,
+      0.06
+    ],
+    "disabled_scene_guide": "14_Player_Interaction_Scale_Guide__Enable_to_Check_Fit"
+  },
   "Level2_BehavioralConditioning_Blockout.unity": {
-    "serialized_objects": 1364,
+    "serialized_objects": 1386,
     "unique_ids": true,
     "local_references_resolve": true,
     "linked_gate_instances": 5
   },
   "Level2_Blockout.prefab": {
-    "serialized_objects": 1363,
+    "serialized_objects": 1385,
     "unique_ids": true,
     "local_references_resolve": true,
     "linked_gate_instances": 5
@@ -40,7 +63,7 @@
       "island_north"
     ],
     "either_repair_route_can_be_blocked": true,
-    "reachable_grid_points": 20842
+    "reachable_grid_points": 21222
   },
   "listener_proxy": {
     "radius_m": 1.375,
@@ -59,7 +82,7 @@
       "island_north"
     ],
     "either_repair_route_can_be_blocked": true,
-    "reachable_grid_points": 9843
+    "reachable_grid_points": 10519
   },
   "temporary_barriers": {
     "closed_exit_separates_safe_exit": true,
@@ -73,8 +96,8 @@
     "charge_noise_gameplay": "pending runtime wiring"
   },
   "counts": {
-    "authored_objects": 337,
-    "mesh_boxes": 282,
+    "authored_objects": 343,
+    "mesh_boxes": 287,
     "solid_box_colliders": 92,
     "marker_triggers": 3
   },
@@ -85,6 +108,7 @@
     "Listener animated turning/reach",
     "Play Mode travel",
     "two-client Photon PUN",
-    "Quest headset scale/performance"
+    "Quest headset scale/performance",
+    "player-scale fuse/socket/lever ergonomics"
   ]
 }
