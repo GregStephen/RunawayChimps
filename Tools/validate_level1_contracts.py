@@ -113,6 +113,42 @@ def main():
         errors.append(f"{rel(follower_path)}: experimental per-bone/hand deformation must remain disabled until a rig-safe solution is headset-validated.")
     positive_defaults(errors, follower_path, follower, ["floorClearance"])
 
+    legacy_cleaner_path = ROOT / "Assets/Scripts/MonsterScripts/CrawlerLegacyVisualCleaner.cs"
+    legacy_cleaner = require(errors, legacy_cleaner_path, [
+        "RemoveLegacyVisuals(GameObject gameplayRoot, Transform keepVisual, bool immediate)",
+        '"shoulderl"',
+        '"shoulderr"',
+        "ContainsLegacyVisualRig",
+        "IsVisualOnlySubtree",
+        "Anything else is gameplay/physics/audio/state until proven otherwise.",
+        "component is Renderer",
+        "component is Animator",
+    ])
+    if "DestroyObject(gameplayRoot" in legacy_cleaner or "DestroyObject(root.gameObject" in legacy_cleaner:
+        errors.append(f"{rel(legacy_cleaner_path)}: legacy cleanup must never destroy the Crawler gameplay root.")
+
+    runtime_cleanup_path = ROOT / "Assets/Scripts/MonsterScripts/CrawlerLegacyVisualRuntimeCleanup.cs"
+    require(errors, runtime_cleanup_path, [
+        "RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)",
+        "SceneManager.sceneLoaded += HandleSceneLoaded",
+        "monster.gameObject.AddComponent<CrawlerLegacyVisualRuntimeCleanup>()",
+        "visualController.VisualRoot",
+        "CrawlerLegacyVisualCleaner.RemoveLegacyVisuals(",
+        "Crawler gameplay root plus Zombie Crawl visual rig",
+    ])
+
+    editor_cleanup_path = ROOT / "Assets/Scripts/Editor/CrawlerLegacyVisualSceneCleanup.cs"
+    editor_cleanup = require(errors, editor_cleanup_path, [
+        'LevelOneScenePath = "Assets/Scenes/Level1_Containment.unity"',
+        'LegacyModelPathFragment = "MiniGamesKidFirstRig.fbx"',
+        "Clean Legacy Level 1 Crawler Rig",
+        "PrefabUtility.UnpackPrefabInstance(",
+        "CrawlerLegacyVisualCleaner.RemoveLegacyVisuals(",
+        "EditorSceneManager.SaveScene(scene)",
+    ])
+    if "DestroyImmediate(monster.gameObject" in editor_cleanup:
+        errors.append(f"{rel(editor_cleanup_path)}: editor migration must preserve the Crawler gameplay root.")
+
     zone_path = ROOT / "Assets/Scripts/Zones/ZoneTrigger.cs"
     require(errors, zone_path, [
         "IsLevelOneSafeBoundary",
@@ -236,7 +272,7 @@ def main():
         print(f"FAILED: {len(errors)} Level 1/runtime contract issue(s).")
         return 1
 
-    print("PASS: Level 1/runtime hand visual contact, authored Crawler skeleton, keycard recovery, loading coverage, headlamp, safe-zone, capture, and floor-recovery source contracts.")
+    print("PASS: Level 1/runtime hand visual contact, Animator-owned Crawler skeleton, legacy visual-rig cleanup, keycard recovery, loading coverage, headlamp, safe-zone, capture, and floor-recovery source contracts.")
     print("PASS: Runtime/Photon/XR/Quest validation remains separate.")
     return 0
 
