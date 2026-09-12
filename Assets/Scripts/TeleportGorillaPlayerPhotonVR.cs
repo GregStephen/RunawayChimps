@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using Photon.VR;
 using Photon.VR.Player;
 using UnityEngine;
@@ -21,24 +21,18 @@ public class TeleportGorillaPlayerPhotonVR : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        if (!other.CompareTag("MainCamera"))
-            return;
-
         var travel = RunawayChimps.Travel.SectorTravelService.I;
         if (travel != null)
         {
-            if (other.GetComponentInParent<LocalRigMarker>() == null || travel.IsBusy) return;
-            if (travel.CurrentSector != RunawayChimps.Travel.SectorId.Containment ||
-                RunawayChimps.Zones.ZoneStateService.Instance == null ||
-                RunawayChimps.Zones.ZoneStateService.Instance.LocalZone != RunawayChimps.Zones.ZoneId.Level1_Vents) return;
-            Vector3 capturePosition = other.transform.position;
-            if (travel.RespawnAt(TeleportLocation))
-            {
-                PlayerInventory.LocalInventory?.DropAllKeyCards(capturePosition);
-                if (TeleportSound != null) TeleportSound.Play();
-            }
+            TryCaptureThroughTravel(other, travel);
             return;
         }
+
+        // Preserve the old standalone-scene fallback. That path was built around the
+        // camera collider and an XRRig hierarchy and is not the supported split-scene
+        // capture route.
+        if (!other.CompareTag("MainCamera"))
+            return;
 
         var localPlayer = PhotonVRManager.Manager.LocalPlayer;
         if (localPlayer == null)
@@ -48,8 +42,39 @@ public class TeleportGorillaPlayerPhotonVR : MonoBehaviour
         }
 
         Debug.Log("[Teleport] Triggered by local player.");
-
         StartCoroutine(TeleportSequence(localPlayer));
+    }
+
+    private void OnTriggerStay(Collider other)
+    {
+        // A player can begin overlapping the Crawler while a zone/travel transition is
+        // still finishing. Retry the guarded split-scene path while overlap continues so
+        // that contact cannot be permanently missed just because the first Enter frame
+        // was ineligible. SectorTravelService.IsBusy prevents duplicate captures.
+        var travel = RunawayChimps.Travel.SectorTravelService.I;
+        if (travel != null)
+            TryCaptureThroughTravel(other, travel);
+    }
+
+    private void TryCaptureThroughTravel(Collider other, RunawayChimps.Travel.SectorTravelService travel)
+    {
+        var localRig = other.GetComponentInParent<LocalRigMarker>();
+        if (localRig == null || travel.IsBusy)
+            return;
+
+        var zones = RunawayChimps.Zones.ZoneStateService.Instance;
+        if (travel.CurrentSector != RunawayChimps.Travel.SectorId.Containment ||
+            zones == null || zones.LocalZone != RunawayChimps.Zones.ZoneId.Level1_Vents)
+            return;
+
+        var player = GorillaLocomotion.Player.Instance;
+        Vector3 capturePosition = player != null ? player.transform.position : other.bounds.center;
+
+        if (travel.RespawnAt(TeleportLocation))
+        {
+            PlayerInventory.LocalInventory?.DropAllKeyCards(capturePosition);
+            if (TeleportSound != null) TeleportSound.Play();
+        }
     }
 
     private IEnumerator TeleportSequence(PhotonVRPlayer localPlayer)
@@ -80,23 +105,18 @@ public class TeleportGorillaPlayerPhotonVR : MonoBehaviour
             yield break;
         }
 
-        // 🌟 DROP ALL KEYCARDS (right where the monster caught them)
         Debug.Log("[Teleport] Dropping all keycards at player's position...");
         PlayerInventory.LocalInventory?.DropAllKeyCards(player.transform.position);
 
-        // Store current locomotion layers
         int originalLayers = player.locomotionEnabledLayers;
 
-        // Disable locomotion and collisions
         player.locomotionEnabledLayers = 0;
         player.headCollider.enabled = false;
         player.bodyCollider.enabled = false;
 
-        // Make kinematic
         rb.isKinematic = true;
         rb.velocity = Vector3.zero;
 
-        // Teleport: maintain head offset
         Vector3 headOffset = localPlayer.Head.position - player.transform.position;
         player.transform.position = TeleportLocation.position - headOffset;
         player.transform.rotation = TeleportLocation.rotation;
@@ -105,17 +125,14 @@ public class TeleportGorillaPlayerPhotonVR : MonoBehaviour
 
         yield return new WaitForSeconds(WaitTime);
 
-        // Restore locomotion and collisions
         player.locomotionEnabledLayers = originalLayers;
         player.headCollider.enabled = true;
         player.bodyCollider.enabled = true;
         rb.isKinematic = false;
 
-        // Fade back in
         Debug.Log("[Teleport] Starting fade in...");
         yield return StartCoroutine(Fade(1f, 0f));
 
-        // Optional overlay off
         if (TeleportOverlay != null) TeleportOverlay.SetActive(false);
 
         Debug.Log("[Teleport] Teleport sequence completed.");

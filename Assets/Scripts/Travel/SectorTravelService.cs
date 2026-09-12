@@ -23,6 +23,11 @@ namespace RunawayChimps.Travel
         public Shader fadeShader;
         public float fadeSeconds = 0.3f;
         public float operationTimeout = 30f;
+
+        [Header("Arrival stabilization")]
+        [Min(1)] public int arrivalSettleFixedSteps = 3;
+        [Min(0.03f)] public float arrivalGroundSkin = 0.06f;
+
         public string LastError { get; private set; }
 
         private XROrigin origin;
@@ -166,14 +171,15 @@ namespace RunawayChimps.Travel
             yield return Fade(1);
             var targetScene = SceneManager.GetSceneByName(destination);
             var target = SectorScene.Find(targetScene);
-            if (target == null || target.GetArrival(arrivalRoute) == null)
+            Transform arrival = target != null ? target.GetArrival(arrivalRoute) : null;
+            if (target == null || arrival == null)
                 throw new InvalidOperationException("Destination has no SectorScene/arrivalSpawn.");
             foreach (var pair in targetRoots) if (pair.Key != null) pair.Key.SetActive(pair.Value);
             // Start/OnEnable registrations and physics transforms must settle before grounding.
             RebindInteractions(targetScene);
             yield return null;
             Physics.SyncTransforms();
-            PlaceRig(target.GetArrival(arrivalRoute), targetScene);
+            yield return SettleRigAtSpawn(arrival, targetScene);
             if (!SceneManager.SetActiveScene(targetScene))
                 throw new InvalidOperationException("Could not set the destination active.");
             committed = true;
@@ -190,7 +196,7 @@ namespace RunawayChimps.Travel
             FreezeRig();
             yield return Fade(1);
             CheckConnection();
-            PlaceRig(spawn, source);
+            yield return SettleRigAtSpawn(spawn, source);
             committed = true;
             var context = SectorScene.Find(source);
             Publish(oldSector, context != null ? context.entryZone : oldZone);
@@ -369,6 +375,19 @@ namespace RunawayChimps.Travel
             frozen = false;
         }
 
+        private IEnumerator SettleRigAtSpawn(Transform spawn, Scene scene)
+        {
+            int steps = Mathf.Max(1, arrivalSettleFixedSteps);
+            PlaceRig(spawn, scene);
+            for (int i = 0; i < steps; i++)
+            {
+                yield return new WaitForFixedUpdate();
+                CheckConnection();
+                Physics.SyncTransforms();
+                PlaceRig(spawn, scene);
+            }
+        }
+
         private void PlaceRig(Transform spawn, Scene scene)
         {
             var hits = Physics.RaycastAll(spawn.position + Vector3.up * 0.5f, Vector3.down, 6f,
@@ -391,7 +410,7 @@ namespace RunawayChimps.Travel
             player.bodyCollider.transform.eulerAngles = new Vector3(0, camera.eulerAngles.y, 0);
             GetCapsule(player.bodyCollider, out var a, out var b, out var radius);
             float bottom = Mathf.Min(a.y, b.y) - radius;
-            origin.transform.position += Vector3.up * (floor.point.y + 0.04f - bottom);
+            origin.transform.position += Vector3.up * (floor.point.y + Mathf.Max(0.03f, arrivalGroundSkin) - bottom);
             Physics.SyncTransforms();
             GetCapsule(player.bodyCollider, out a, out b, out radius);
             foreach (var collider in Physics.OverlapCapsule(a, b, radius, player.locomotionEnabledLayers, QueryTriggerInteraction.Ignore))

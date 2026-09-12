@@ -51,16 +51,19 @@ public class MonsterActivationGate : MonoBehaviour
     private void Apply(ZoneId z)
     {
         bool active = (z == activeZone);
+        bool sharedMonster = GetComponent<RunawayChimps.Travel.SectorMonsterSync>() != null;
         Debug.Log($"[MonsterActivationGate] localZone={z} activeZone={activeZone} active={active}", this);
 
-        // Preferred: gate components
-        if (animator != null) animator.enabled = active;
+        // A shared Crawler continues moving for players in the vent even when this
+        // client is standing in a safe room. Keep its visual Animator running so a
+        // visible shared monster never degrades into a frozen-pose slide. Local audio
+        // can still be gated by the viewer's zone below.
+        if (animator != null) animator.enabled = sharedMonster || active;
 
         if (aiScripts != null)
             foreach (var s in aiScripts)
             {
                 if (s == null) continue;
-                bool sharedMonster = GetComponent<RunawayChimps.Travel.SectorMonsterSync>() != null;
                 if (sharedMonster && (s is MonsterNavigation || s is RunawayChimps.Travel.SectorMonsterSync)) continue;
                 s.enabled = active;
             }
@@ -83,7 +86,6 @@ public class MonsterActivationGate : MonoBehaviour
                 }
             }
         }
-
 
         // Optional: also toggle root (use only if monster is tiny)
         if (monsterRootOptional != null)
