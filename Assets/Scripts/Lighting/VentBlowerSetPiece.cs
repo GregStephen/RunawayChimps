@@ -9,19 +9,24 @@ public sealed class VentBlowerSetPiece : MonoBehaviour
     private const string LevelOneScene = "Level1_Containment";
     private const string VentRoomName = "VentRoom";
     private const string RuntimeRootName = "Level1_VentRoom_Blower";
+    private const string BlowerResourcePath = "RunawayChimps_VentBlower";
+    private const string RotorName = "FanRotor";
+    private const string RedLensName = "RedLightLens";
     private const float FanDegreesPerSecond = 230f;
     private const float BaseRedLightIntensity = 0.85f;
 
-    // VentRoom is a ProBuilder mesh whose widened chamber is authored in this local-space range.
-    // Keep the blower against the +Z wall so the existing player/Crawler center path remains clear.
-    private static readonly Vector3 BlowerLocalPosition = new Vector3(-0.25f, 0.72f, 22.08f);
+    // The approved Blender model's origin is its wall plane, so place that plane just inside
+    // VentRoom's authored +Z wall (22.5) instead of using the old generated-housing center.
+    // The tunnel route and VentRoom geometry remain untouched.
+    private static readonly Vector3 BlowerLocalPosition = new Vector3(-0.25f, 0.72f, 22.46f);
 
     private static AudioClip blowerLoop;
 
-    private readonly List<Material> ownedMaterials = new List<Material>(4);
+    private readonly List<Material> ownedMaterials = new List<Material>(5);
     private Transform rotor;
     private Light maintenanceLight;
     private AudioSource humSource;
+    private GameObject visualInstance;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetStatics()
@@ -68,12 +73,21 @@ public sealed class VentBlowerSetPiece : MonoBehaviour
     {
         foreach (GameObject root in scene.GetRootGameObjects())
         {
-            Transform[] transforms = root.GetComponentsInChildren<Transform>(true);
-            foreach (Transform candidate in transforms)
-            {
-                if (candidate.name == objectName)
-                    return candidate;
-            }
+            Transform found = FindDescendant(root.transform, objectName);
+            if (found != null)
+                return found;
+        }
+
+        return null;
+    }
+
+    private static Transform FindDescendant(Transform root, string objectName)
+    {
+        Transform[] transforms = root.GetComponentsInChildren<Transform>(true);
+        foreach (Transform candidate in transforms)
+        {
+            if (candidate.name == objectName)
+                return candidate;
         }
 
         return null;
@@ -109,100 +123,107 @@ public sealed class VentBlowerSetPiece : MonoBehaviour
 
     private void BuildBlower()
     {
-        Material housing = CreateMaterial("VentBlower_Housing", new Color(0.12f, 0.13f, 0.14f), 0.55f, 0.18f);
-        Material steel = CreateMaterial("VentBlower_Steel", new Color(0.24f, 0.26f, 0.27f), 0.72f, 0.24f);
-        Material dark = CreateMaterial("VentBlower_Dark", new Color(0.035f, 0.038f, 0.042f), 0.25f, 0.08f);
-        Material red = CreateMaterial("VentBlower_RedLens", new Color(0.36f, 0.015f, 0.01f), 0.2f, 0.4f, new Color(2.6f, 0.035f, 0.02f));
-
-        CreatePrimitive("Housing", PrimitiveType.Cube, transform, new Vector3(0f, 0f, 0.20f),
-            Quaternion.identity, new Vector3(1.38f, 1.22f, 0.30f), housing);
-
-        CreatePrimitive("Intake_Backplate", PrimitiveType.Cylinder, transform, new Vector3(0f, 0f, -0.005f),
-            Quaternion.Euler(90f, 0f, 0f), new Vector3(0.57f, 0.055f, 0.57f), dark);
-
-        Transform fanRotor = new GameObject("Fan_Rotor").transform;
-        fanRotor.SetParent(transform, false);
-        fanRotor.localPosition = new Vector3(0f, 0f, -0.105f);
-        rotor = fanRotor;
-
-        const int bladeCount = 6;
-        for (int i = 0; i < bladeCount; i++)
+        GameObject blowerPrefab = Resources.Load<GameObject>(BlowerResourcePath);
+        if (blowerPrefab == null)
         {
-            var bladePivot = new GameObject($"BladePivot_{i + 1:00}").transform;
-            bladePivot.SetParent(fanRotor, false);
-            bladePivot.localRotation = Quaternion.Euler(0f, 0f, i * (360f / bladeCount));
-
-            CreatePrimitive($"Blade_{i + 1:00}", PrimitiveType.Cube, bladePivot, new Vector3(0f, 0.27f, 0f),
-                Quaternion.Euler(0f, 0f, -12f), new Vector3(0.18f, 0.45f, 0.045f), steel);
+            Debug.LogError($"[VentBlowerSetPiece] Missing Resources asset '{BlowerResourcePath}'. The approved Blender blower cannot be created.");
+            enabled = false;
+            return;
         }
 
-        CreatePrimitive("Fan_Hub", PrimitiveType.Cylinder, fanRotor, Vector3.zero,
-            Quaternion.Euler(90f, 0f, 0f), new Vector3(0.17f, 0.065f, 0.17f), housing);
+        visualInstance = Instantiate(blowerPrefab, transform, false);
+        visualInstance.name = "VentBlower_Visual";
+        visualInstance.transform.localPosition = Vector3.zero;
+        visualInstance.transform.localRotation = Quaternion.identity;
+        visualInstance.transform.localScale = Vector3.one;
 
-        Transform guard = new GameObject("Fan_Guard").transform;
-        guard.SetParent(transform, false);
-        guard.localPosition = new Vector3(0f, 0f, -0.165f);
+        // Blender's asset faces away from its wall plane. FBX axis conversion can flip which local
+        // Z direction that becomes in Unity, so determine it from the imported render bounds and
+        // guarantee that the model projects into the room (-Z), never through the +Z wall.
+        OrientVisualIntoVentRoom(visualInstance.transform);
+        ConfigureImportedVisual(visualInstance);
 
-        const int ringSegments = 14;
-        const float ringRadius = 0.565f;
-        for (int i = 0; i < ringSegments; i++)
-        {
-            float angle = i * (360f / ringSegments);
-            float radians = angle * Mathf.Deg2Rad;
-            Vector3 position = new Vector3(Mathf.Cos(radians) * ringRadius, Mathf.Sin(radians) * ringRadius, 0f);
-            CreatePrimitive($"Guard_Ring_{i + 1:00}", PrimitiveType.Cube, guard, position,
-                Quaternion.Euler(0f, 0f, -angle), new Vector3(0.038f, 0.265f, 0.028f), steel);
-        }
+        rotor = FindDescendant(visualInstance.transform, RotorName);
+        if (rotor == null)
+            Debug.LogError($"[VentBlowerSetPiece] Imported blower is missing required '{RotorName}' transform; fan will not rotate.");
 
-        const int guardSpokes = 6;
-        for (int i = 0; i < guardSpokes; i++)
-        {
-            float angle = i * (360f / guardSpokes);
-            var spokePivot = new GameObject($"GuardSpokePivot_{i + 1:00}").transform;
-            spokePivot.SetParent(guard, false);
-            spokePivot.localRotation = Quaternion.Euler(0f, 0f, angle);
-            CreatePrimitive($"Guard_Spoke_{i + 1:00}", PrimitiveType.Cube, spokePivot, new Vector3(0f, 0.285f, 0f),
-                Quaternion.identity, new Vector3(0.025f, 0.57f, 0.025f), steel);
-        }
+        Transform redLens = FindDescendant(visualInstance.transform, RedLensName);
+        if (redLens == null)
+            Debug.LogWarning($"[VentBlowerSetPiece] Imported blower is missing '{RedLensName}'; maintenance light will use the visual root.");
 
-        // A chunky wall conduit visually ties the unit into the facility instead of making it feel placed at random.
-        CreatePrimitive("Power_Conduit", PrimitiveType.Cylinder, transform, new Vector3(0.52f, 0.61f, 0.18f),
-            Quaternion.identity, new Vector3(0.045f, 0.30f, 0.045f), steel);
-
-        Transform lampBracket = CreatePrimitive("Maintenance_Light_Housing", PrimitiveType.Cube, transform,
-            new Vector3(-0.51f, 0.47f, -0.005f), Quaternion.identity, new Vector3(0.18f, 0.13f, 0.10f), dark).transform;
-        CreatePrimitive("Maintenance_Light_Lens", PrimitiveType.Sphere, lampBracket,
-            new Vector3(0f, 0f, -0.075f), Quaternion.identity, new Vector3(0.095f, 0.095f, 0.055f), red);
-
-        GameObject lightObject = new GameObject("Maintenance_RedLight");
-        lightObject.transform.SetParent(lampBracket, false);
-        lightObject.transform.localPosition = new Vector3(0f, 0f, -0.13f);
-        maintenanceLight = lightObject.AddComponent<Light>();
-        maintenanceLight.type = LightType.Point;
-        maintenanceLight.color = new Color(0.95f, 0.035f, 0.02f);
-        maintenanceLight.intensity = BaseRedLightIntensity;
-        maintenanceLight.range = 2.35f;
-        maintenanceLight.shadows = LightShadows.None;
-        maintenanceLight.bounceIntensity = 0f;
-        maintenanceLight.renderMode = LightRenderMode.ForceVertex;
-
-        // This is a fixed environmental source on every client, not a Photon-synchronized gameplay event.
-        humSource = gameObject.AddComponent<AudioSource>();
-        humSource.clip = GetOrCreateBlowerLoop();
-        humSource.loop = true;
-        humSource.playOnAwake = false;
-        humSource.volume = 0.43f;
-        humSource.spatialBlend = 1f;
-        humSource.rolloffMode = AudioRolloffMode.Linear;
-        humSource.minDistance = 0.75f;
-        humSource.maxDistance = 6.5f;
-        humSource.dopplerLevel = 0f;
-        humSource.spread = 45f;
-        humSource.priority = 180;
-        humSource.Play();
+        CreateMaintenanceLight(redLens != null ? redLens : visualInstance.transform);
+        CreateMotorAudio();
     }
 
-    private Material CreateMaterial(string materialName, Color baseColor, float metallic, float smoothness, Color? emission = null)
+    private void OrientVisualIntoVentRoom(Transform visualRoot)
+    {
+        Renderer[] renderers = visualRoot.GetComponentsInChildren<Renderer>(true);
+        if (renderers.Length == 0)
+            return;
+
+        Bounds bounds = renderers[0].bounds;
+        for (int i = 1; i < renderers.Length; i++)
+            bounds.Encapsulate(renderers[i].bounds);
+
+        float localCenterZ = transform.InverseTransformPoint(bounds.center).z;
+        if (localCenterZ > 0f)
+            visualRoot.localRotation = Quaternion.Euler(0f, 180f, 0f);
+    }
+
+    private void ConfigureImportedVisual(GameObject visualRoot)
+    {
+        // The FBX is decorative environmental art. Never allow imported/generated colliders to
+        // obstruct Gorilla locomotion or the Crawler's already-approved route through VentRoom.
+        Collider[] colliders = visualRoot.GetComponentsInChildren<Collider>(true);
+        foreach (Collider collider in colliders)
+        {
+            collider.enabled = false;
+            Destroy(collider);
+        }
+
+        Material dark = CreateRuntimeMaterial("VentBlower_DarkPaintedMetal", new Color(0.075f, 0.082f, 0.085f), 0.25f, 0.18f);
+        Material steel = CreateRuntimeMaterial("VentBlower_DullSteel", new Color(0.17f, 0.18f, 0.18f), 0.55f, 0.26f);
+        Material blade = CreateRuntimeMaterial("VentBlower_FanBlade", new Color(0.12f, 0.125f, 0.12f), 0.45f, 0.21f);
+        Material conduit = CreateRuntimeMaterial("VentBlower_Conduit", new Color(0.035f, 0.038f, 0.04f), 0.10f, 0.10f);
+        Material red = CreateRuntimeMaterial("VentBlower_RedMaintenanceLens", new Color(0.35f, 0.01f, 0.008f), 0f, 0.40f,
+            new Color(2.6f, 0.035f, 0.02f));
+
+        Renderer[] renderers = visualRoot.GetComponentsInChildren<Renderer>(true);
+        foreach (Renderer renderer in renderers)
+        {
+            renderer.shadowCastingMode = ShadowCastingMode.Off;
+            renderer.receiveShadows = false;
+            renderer.lightProbeUsage = LightProbeUsage.Off;
+            renderer.reflectionProbeUsage = ReflectionProbeUsage.Off;
+
+            Material replacement = ResolveMaterial(renderer.gameObject.name, dark, steel, blade, conduit, red);
+            Material[] replacements = new Material[renderer.sharedMaterials.Length];
+            for (int i = 0; i < replacements.Length; i++)
+                replacements[i] = replacement;
+            renderer.sharedMaterials = replacements;
+        }
+    }
+
+    private static Material ResolveMaterial(string objectName, Material dark, Material steel, Material blade,
+        Material conduit, Material red)
+    {
+        if (objectName == RedLensName)
+            return red;
+        if (objectName.StartsWith("Blade_"))
+            return blade;
+        if (objectName.Contains("Conduit"))
+            return conduit;
+        if (objectName.StartsWith("Guard") || objectName.StartsWith("LampGuard") ||
+            objectName.StartsWith("MountBolt") || objectName == "FanOuterRing" ||
+            objectName == "FanHub" || objectName == "Housing_LeftLip" ||
+            objectName == "Housing_RightLip" || objectName == "MotorCap")
+            return steel;
+
+        return dark;
+    }
+
+    private Material CreateRuntimeMaterial(string materialName, Color baseColor, float metallic, float smoothness,
+        Color? emission = null)
     {
         Shader shader = Shader.Find("Universal Render Pipeline/Lit");
         if (shader == null)
@@ -212,11 +233,11 @@ public sealed class VentBlowerSetPiece : MonoBehaviour
 
         if (shader == null)
         {
-            Debug.LogError("[VentBlowerSetPiece] No compatible lit shader found.");
+            Debug.LogError("[VentBlowerSetPiece] No compatible lit shader found for the imported blower.");
             return null;
         }
 
-        var material = new Material(shader) { name = materialName };
+        var material = new Material(shader) { name = materialName, enableInstancing = true };
         if (material.HasProperty("_BaseColor"))
             material.SetColor("_BaseColor", baseColor);
         if (material.HasProperty("_Color"))
@@ -238,35 +259,37 @@ public sealed class VentBlowerSetPiece : MonoBehaviour
         return material;
     }
 
-    private static GameObject CreatePrimitive(string objectName, PrimitiveType primitiveType, Transform parent,
-        Vector3 localPosition, Quaternion localRotation, Vector3 localScale, Material material)
+    private void CreateMaintenanceLight(Transform anchor)
     {
-        GameObject go = GameObject.CreatePrimitive(primitiveType);
-        go.name = objectName;
-        go.transform.SetParent(parent, false);
-        go.transform.localPosition = localPosition;
-        go.transform.localRotation = localRotation;
-        go.transform.localScale = localScale;
+        GameObject lightObject = new GameObject("Maintenance_RedLight");
+        lightObject.transform.SetParent(anchor, false);
+        lightObject.transform.localPosition = Vector3.zero;
+        maintenanceLight = lightObject.AddComponent<Light>();
+        maintenanceLight.type = LightType.Point;
+        maintenanceLight.color = new Color(0.95f, 0.035f, 0.02f);
+        maintenanceLight.intensity = BaseRedLightIntensity;
+        maintenanceLight.range = 2.35f;
+        maintenanceLight.shadows = LightShadows.None;
+        maintenanceLight.bounceIntensity = 0f;
+        maintenanceLight.renderMode = LightRenderMode.ForceVertex;
+    }
 
-        Collider primitiveCollider = go.GetComponent<Collider>();
-        if (primitiveCollider != null)
-        {
-            // Decorative moving machinery must never become a first-frame locomotion/NavMesh obstacle.
-            primitiveCollider.enabled = false;
-            Destroy(primitiveCollider);
-        }
-
-        MeshRenderer renderer = go.GetComponent<MeshRenderer>();
-        if (renderer != null)
-        {
-            renderer.sharedMaterial = material;
-            renderer.shadowCastingMode = ShadowCastingMode.Off;
-            renderer.receiveShadows = false;
-            renderer.lightProbeUsage = LightProbeUsage.Off;
-            renderer.reflectionProbeUsage = ReflectionProbeUsage.Off;
-        }
-
-        return go;
+    private void CreateMotorAudio()
+    {
+        // This is a fixed environmental source on every client, not a Photon-synchronized gameplay event.
+        humSource = gameObject.AddComponent<AudioSource>();
+        humSource.clip = GetOrCreateBlowerLoop();
+        humSource.loop = true;
+        humSource.playOnAwake = false;
+        humSource.volume = 0.43f;
+        humSource.spatialBlend = 1f;
+        humSource.rolloffMode = AudioRolloffMode.Linear;
+        humSource.minDistance = 0.75f;
+        humSource.maxDistance = 6.5f;
+        humSource.dopplerLevel = 0f;
+        humSource.spread = 45f;
+        humSource.priority = 180;
+        humSource.Play();
     }
 
     private static AudioClip GetOrCreateBlowerLoop()
