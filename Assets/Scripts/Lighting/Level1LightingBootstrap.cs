@@ -34,11 +34,12 @@ public static class Level1LightingBootstrap
 
     private static void ApplyAmbient(Scene scene)
     {
-        // Level 1 was split out of Hub_Base without any serialized Light components.
-        // Give the standalone scene a dim, cool baseline so it remains readable after
-        // the Hub unloads while leaving room for authored horror lighting later.
+        // Level 1 was split out of Hub_Base without serialized Light components.
+        // The original emergency fallback was still too dark in actual play. Keep
+        // the cool horror baseline, but raise the floor enough to read walls, vents,
+        // junctions and the Crawler without requiring a flashlight just to navigate.
         RenderSettings.ambientMode = AmbientMode.Flat;
-        RenderSettings.ambientLight = new Color(0.10f, 0.12f, 0.16f, 1f);
+        RenderSettings.ambientLight = new Color(0.18f, 0.20f, 0.25f, 1f);
         RenderSettings.ambientIntensity = 1f;
         EnsureFillLight(scene);
     }
@@ -46,17 +47,26 @@ public static class Level1LightingBootstrap
     private static void EnsureFillLight(Scene scene)
     {
         foreach (var root in scene.GetRootGameObjects())
-            if (root.name == FillLightName)
-                return;
+        {
+            if (root.name != FillLightName) continue;
+
+            var existing = root.GetComponent<Light>();
+            if (existing != null) ConfigureFill(existing);
+            return;
+        }
 
         var lightObject = new GameObject(FillLightName);
         SceneManager.MoveGameObjectToScene(lightObject, scene);
         lightObject.transform.rotation = Quaternion.Euler(50f, -30f, 0f);
 
-        var light = lightObject.AddComponent<Light>();
+        ConfigureFill(lightObject.AddComponent<Light>());
+    }
+
+    private static void ConfigureFill(Light light)
+    {
         light.type = LightType.Directional;
-        light.color = new Color(0.42f, 0.48f, 0.60f, 1f);
-        light.intensity = 0.22f;
+        light.color = new Color(0.50f, 0.56f, 0.68f, 1f);
+        light.intensity = 0.55f;
         light.shadows = LightShadows.None;
     }
 }
