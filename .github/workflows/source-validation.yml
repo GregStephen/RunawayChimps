@@ -1,0 +1,76 @@
+name: Source validation
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - 'codex/**'
+      - 'design/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: source-validation-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-source:
+    name: Source integrity
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+
+      - name: Install syntax-parser dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install \
+            'tree-sitter==0.25.2' \
+            'tree-sitter-c-sharp==0.23.5'
+
+      - name: Verify Unity editor version
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+          import sys
+
+          expected = '2022.3.55f1'
+          text = Path('ProjectSettings/ProjectVersion.txt').read_text(encoding='utf-8-sig')
+          match = re.search(r'^m_EditorVersion:\s*(\S+)\s*$', text, re.MULTILINE)
+          actual = match.group(1) if match else None
+          if actual != expected:
+              print(f'ERROR: expected Unity {expected}, found {actual!r}.')
+              sys.exit(1)
+          print(f'PASS: Unity editor version is {actual}.')
+
+      - name: Validate first-party source and enabled scenes
+        run: python Tools/validate_source.py --syntax
+
+      - name: Compile Python validation tools
+        run: python -m compileall -q Tools
+
+      - name: Check changed-file whitespace
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            git diff --check "${{ github.event.pull_request.base.sha }}...HEAD"
+          elif git rev-parse HEAD^ >/dev/null 2>&1; then
+            git diff --check HEAD^..HEAD
+          else
+            git diff --check HEAD
+          fi
