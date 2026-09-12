@@ -5,10 +5,20 @@ using UnityEngine.XR.Interaction.Toolkit;
 namespace RunawayChimps.Level2
 {
     // PROTOTYPE-ONLY adapter: converts v0.4 generated markers into interactive objects at runtime.
+    // Interaction dimensions are intentionally based on the active gorilla rig: ~10 cm hand-contact
+    // diameter, ~36 cm body width, ~1.16 m body capsule height, and 1.5 m max arm length.
     // Replace with authored prefabs after Unity/XR scale validation.
     public static class Level2FuseRuntimeBootstrap
     {
         const string SceneName = "Level2_BehavioralConditioning_Blockout";
+
+        // Hand-scale prototype dimensions. These should stay human/gorilla-hand sized even though
+        // the surrounding room and Listener are intentionally oversized.
+        const float FuseLength = .20f;
+        const float FuseCoreDiameter = .052f;
+        const float FuseEndCapDiameter = .068f;
+        const float FuseColliderRadius = .031f;
+        const float FuseColliderHeight = .22f;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         static void Install()
@@ -41,9 +51,11 @@ namespace RunawayChimps.Level2
                 if (marker != null)
                 {
                     var trigger = marker.GetComponent<BoxCollider>() ?? marker.AddComponent<BoxCollider>();
-                    trigger.size = new Vector3(.7f,.7f,.65f); trigger.isTrigger = true;
+                    trigger.size = new Vector3(.26f, .28f, .22f);
+                    trigger.isTrigger = true;
                     var socket = marker.AddComponent<Level2FuseSocket>();
-                    socket.socketId = i; socket.chargeSeconds = 10f;
+                    socket.socketId = i;
+                    socket.chargeSeconds = 10f;
                     var indicatorObject = GameObject.Find($"Fuse_Socket_{i}_Charge_Indicator");
                     if (indicatorObject != null) socket.indicator = indicatorObject.GetComponent<Renderer>();
                     objective.RegisterSocket(socket);
@@ -51,9 +63,16 @@ namespace RunawayChimps.Level2
                     var leverObject = GameObject.Find($"Fuse_Socket_{i}_Lever_Handle");
                     if (leverObject != null)
                     {
-                        var leverCollider = leverObject.GetComponent<BoxCollider>() ?? leverObject.AddComponent<BoxCollider>();
+                        // Keep the interaction volume in world-scale metres instead of inheriting the
+                        // decorative lever mesh scale. A 10 cm hand proxy can contact this reliably.
+                        var leverTrigger = new GameObject($"FuseLever{i}Trigger_Runtime");
+                        leverTrigger.transform.SetPositionAndRotation(leverObject.transform.position, leverObject.transform.rotation);
+                        SceneManager.MoveGameObjectToScene(leverTrigger, scene);
+                        var leverCollider = leverTrigger.AddComponent<BoxCollider>();
+                        leverCollider.size = new Vector3(.16f, .30f, .16f);
                         leverCollider.isTrigger = true;
-                        var lever = leverObject.AddComponent<Level2ChargeLever>(); lever.socket = socket;
+                        var lever = leverTrigger.AddComponent<Level2ChargeLever>();
+                        lever.socket = socket;
                     }
                 }
 
@@ -80,30 +99,57 @@ namespace RunawayChimps.Level2
         static void CreateFuse(int id, Vector3 position, Scene scene)
         {
             var root = new GameObject($"Level2Fuse_{id}_Runtime");
-            root.transform.position = position + Vector3.up * .12f;
+            root.transform.position = position + Vector3.up * .06f;
             SceneManager.MoveGameObjectToScene(root, scene);
-            var rb = root.AddComponent<Rigidbody>(); rb.mass=.65f; rb.collisionDetectionMode=CollisionDetectionMode.ContinuousDynamic; rb.interpolation=RigidbodyInterpolation.Interpolate;
-            var capsule=root.AddComponent<CapsuleCollider>(); capsule.radius=.065f; capsule.height=.42f; capsule.direction=1;
-            var grab=root.AddComponent<XRGrabInteractable>(); grab.throwOnDetach=true;
+
+            var rb = root.AddComponent<Rigidbody>();
+            rb.mass = .25f;
+            rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+            rb.interpolation = RigidbodyInterpolation.Interpolate;
+
+            var capsule = root.AddComponent<CapsuleCollider>();
+            capsule.radius = FuseColliderRadius;
+            capsule.height = FuseColliderHeight;
+            capsule.direction = 1;
+
+            var grab = root.AddComponent<XRGrabInteractable>();
+            grab.throwOnDetach = true;
             root.AddComponent<HeldItemCollisionMode>();
-            var fuse=root.AddComponent<Level2Fuse>(); fuse.fuseId=id;
-            var dark=MakeMaterial(new Color(.09f,.11f,.12f)); var metal=MakeMaterial(new Color(.28f,.31f,.32f)); var amber=MakeMaterial(new Color(.94f,.51f,.13f));
-            AddCylinder(root.transform,"Core",.115f,.34f,dark,Vector3.zero);
-            AddCylinder(root.transform,"EndCap_A",.145f,.055f,metal,new Vector3(0,.195f,0));
-            AddCylinder(root.transform,"EndCap_B",.145f,.055f,metal,new Vector3(0,-.195f,0));
-            AddCylinder(root.transform,"StatusBand",.126f,.045f,amber,new Vector3(0,.08f,0));
+            var fuse = root.AddComponent<Level2Fuse>();
+            fuse.fuseId = id;
+
+            var dark = MakeMaterial(new Color(.09f, .11f, .12f));
+            var metal = MakeMaterial(new Color(.28f, .31f, .32f));
+            var amber = MakeMaterial(new Color(.94f, .51f, .13f));
+
+            const float endCapLength = .028f;
+            AddCylinder(root.transform, "Core", FuseCoreDiameter, FuseLength - endCapLength * 2f, dark, Vector3.zero);
+            AddCylinder(root.transform, "EndCap_A", FuseEndCapDiameter, endCapLength, metal,
+                new Vector3(0, FuseLength * .5f - endCapLength * .5f, 0));
+            AddCylinder(root.transform, "EndCap_B", FuseEndCapDiameter, endCapLength, metal,
+                new Vector3(0, -FuseLength * .5f + endCapLength * .5f, 0));
+            AddCylinder(root.transform, "StatusBand", .058f, .024f, amber, new Vector3(0, .035f, 0));
         }
 
-        static void AddCylinder(Transform parent,string name,float diameter,float length,Material material,Vector3 localPosition)
+        static void AddCylinder(Transform parent, string name, float diameter, float length, Material material, Vector3 localPosition)
         {
-            var go=GameObject.CreatePrimitive(PrimitiveType.Cylinder); go.name=name; go.transform.SetParent(parent,false); go.transform.localPosition=localPosition; go.transform.localScale=new Vector3(diameter,length*.5f,diameter);
-            var collider=go.GetComponent<Collider>(); if(collider!=null) Object.Destroy(collider); go.GetComponent<Renderer>().sharedMaterial=material;
+            var go = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            go.name = name;
+            go.transform.SetParent(parent, false);
+            go.transform.localPosition = localPosition;
+            go.transform.localScale = new Vector3(diameter, length * .5f, diameter);
+            var collider = go.GetComponent<Collider>();
+            if (collider != null) Object.Destroy(collider);
+            go.GetComponent<Renderer>().sharedMaterial = material;
         }
 
         static Material MakeMaterial(Color color)
         {
-            var shader=Shader.Find("Standard"); if(shader==null) shader=Shader.Find("Universal Render Pipeline/Lit");
-            var material=new Material(shader){color=color}; material.enableInstancing=true; return material;
+            var shader = Shader.Find("Standard");
+            if (shader == null) shader = Shader.Find("Universal Render Pipeline/Lit");
+            var material = new Material(shader) { color = color };
+            material.enableInstancing = true;
+            return material;
         }
     }
 }
