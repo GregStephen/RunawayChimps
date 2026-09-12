@@ -13,6 +13,11 @@ public class RigSpawnSnapper : MonoBehaviour
     public int FramesToWait = 2;
     [Min(1)] public int FixedSettleSteps = 3;
 
+    [Header("XR tracking-origin stability")]
+    [Min(2)] public int TrackingOffsetStableFrames = 6;
+    [Min(10)] public int TrackingOffsetMaxWaitFrames = 120;
+    [Min(0.0001f)] public float TrackingOffsetEpsilon = 0.001f;
+
     [Header("Grounding")]
     public LayerMask GroundMask = ~0;
     public float GroundSkin = 0.06f;
@@ -30,6 +35,12 @@ public class RigSpawnSnapper : MonoBehaviour
     {
         if (xrOrigin == null)
             xrOrigin = GetComponent<XROrigin>();
+
+        // The Bootstrap rig persists across sector travel. This guard is intentionally
+        // created at runtime so it protects startup, travel, capture respawns and later
+        // XR tracking-origin/recenter corrections without adding a scene-only reference.
+        if (GetComponent<RigFloorPenetrationGuard>() == null)
+            gameObject.AddComponent<RigFloorPenetrationGuard>();
 
         SceneManager.sceneLoaded += OnSceneLoaded;
     }
@@ -53,7 +64,6 @@ public class RigSpawnSnapper : MonoBehaviour
     public void RetrySnap()
     {
         if (!SceneManager.GetSceneByName(HubSceneName).isLoaded) return;
-        // Prevent double-starts if the event fires twice for any reason
         if (_snapping) return;
 
         StartCoroutine(CoSnapAndGround());
@@ -63,11 +73,9 @@ public class RigSpawnSnapper : MonoBehaviour
     {
         _snapping = true;
 
-        // Let Hub scene init and XR tracking deliver an initial pose.
+        // Let the scene initialize enough for the persistent tracked rig to exist.
         for (int i = 0; i < FramesToWait; i++)
             yield return null;
-
-        yield return new WaitForFixedUpdate();
 
         var hubScene = SceneManager.GetSceneByName(HubSceneName);
         var spawnGo = FindInScene(hubScene, HubSpawnObjectName);
@@ -87,9 +95,6 @@ public class RigSpawnSnapper : MonoBehaviour
             yield break;
         }
 
-        // Auto-find the GorillaPlayer rigidbody/body capsule via the floor offset object.
-        // Prefer the locomotion body's explicit collider so hand/head capsules cannot be
-        // selected accidentally if the hierarchy changes later.
         GorillaLocomotion.Player locomotionPlayer = GorillaLocomotion.Player.Instance;
         if (xrOrigin.CameraFloorOffsetObject != null)
         {
@@ -111,17 +116,23 @@ public class RigSpawnSnapper : MonoBehaviour
             yield break;
         }
 
-        // Keep locomotion and collision response frozen for the whole settling window.
-        // XR head pose can still change for a few frames after the Hub becomes visible;
-        // repeatedly grounding while frozen prevents that late pose from leaving the
-        // capsule partially inside the floor when physics resumes.
+        // GorillaPlayer is currently also the XROrigin CameraFloorOffsetObject. Freeze the
+        // entire compound collider hierarchy before waiting for that XR-managed offset to
+        // settle; otherwise hand/head/body physics and XROrigin can move the same hierarchy
+        // at the same time and make a seemingly-correct ground snap invalid a frame later.
         bool playerWasEnabled = locomotionPlayer != null && locomotionPlayer.enabled;
-        bool bodyColliderWasEnabled = gorillaBodyCapsule.enabled;
-        SphereCollider headCollider = locomotionPlayer != null ? locomotionPlayer.headCollider : null;
-        bool headColliderWasEnabled = headCollider != null && headCollider.enabled;
-        if (locomotionPlayer != null) locomotionPlayer.enabled = false;
-        gorillaBodyCapsule.enabled = false;
-        if (headCollider != null) headCollider.enabled = false;
+        if (locomotionPlayer != null)
+            locomotionPlayer.enabled = false;
+
+        Collider[] rigColliders = xrOrigin.GetComponentsInChildren<Collider>(true);
+        bool[] colliderStates = new bool[rigColliders.Length];
+        for (int i = 0; i < rigColliders.Length; i++)
+        {
+            Collider collider = rigColliders[i];
+            if (collider == null) continue;
+            colliderStates[i] = collider.enabled;
+            collider.enabled = false;
+        }
 
         bool hadRb = gorillaPlayerRigidbody != null;
         bool prevKinematic = false;
@@ -136,6 +147,9 @@ public class RigSpawnSnapper : MonoBehaviour
             gorillaPlayerRigidbody.isKinematic = true;
         }
 
+        yield return WaitForTrackingOffsetStability();
+        yield return new WaitForFixedUpdate();
+
         Transform cam = xrOrigin.Camera.transform;
         float targetYaw = spawnGo.transform.rotation.eulerAngles.y;
         float deltaYaw = Mathf.DeltaAngle(cam.eulerAngles.y, targetYaw);
@@ -147,32 +161,64 @@ public class RigSpawnSnapper : MonoBehaviour
 
         bool grounded = false;
         int settleSteps = Mathf.Max(1, FixedSettleSteps);
-        for (int step = 0; step < settleSteps; step++)
+        int stableFixedSteps = 0;
+        int settleAttempts = 0;
+        int maxSettleAttempts = settleSteps + 12;
+        Transform trackingOffset = xrOrigin.CameraFloorOffsetObject != null
+            ? xrOrigin.CameraFloorOffsetObject.transform
+            : null;
+        Vector3 lastTrackingOffset = trackingOffset != null ? trackingOffset.localPosition : Vector3.zero;
+        float trackingEpsilonSqr = TrackingOffsetEpsilon * TrackingOffsetEpsilon;
+
+        while (stableFixedSteps < settleSteps && settleAttempts < maxSettleAttempts)
         {
             Physics.SyncTransforms();
-            grounded = GroundCorrect(spawnGo.transform.position, hubScene);
+            grounded = GroundCorrect(spawnGo.transform.position, hubScene, locomotionPlayer);
             if (!grounded)
                 break;
 
             locomotionPlayer?.ResetAfterTeleport();
             Physics.SyncTransforms();
             yield return new WaitForFixedUpdate();
+            settleAttempts++;
+
+            if (trackingOffset != null &&
+                (trackingOffset.localPosition - lastTrackingOffset).sqrMagnitude > trackingEpsilonSqr)
+            {
+                lastTrackingOffset = trackingOffset.localPosition;
+                stableFixedSteps = 0;
+            }
+            else
+            {
+                stableFixedSteps++;
+            }
         }
 
-        // One final correction after the last fixed tick catches a late headset/body
-        // transform update before any collider or locomotion behaviour is restored.
+        // Give XROrigin one final rendered update while the compound rig is still frozen.
+        // If it applies a late floor/device tracking-origin offset, ground against the new
+        // physical body pose before any collider or Rigidbody response is restored.
         if (grounded)
         {
+            yield return null;
             Physics.SyncTransforms();
-            grounded = GroundCorrect(spawnGo.transform.position, hubScene);
+            grounded = GroundCorrect(spawnGo.transform.position, hubScene, locomotionPlayer);
             locomotionPlayer?.ResetAfterTeleport();
             Physics.SyncTransforms();
         }
 
-        bool clear = grounded && HasSafeClearance(hubScene, headCollider, out string blocker);
+        SphereCollider headCollider = locomotionPlayer != null ? locomotionPlayer.headCollider : null;
+        bool clear = grounded && HasSafeClearance(hubScene, headCollider, locomotionPlayer, out string blocker);
 
-        gorillaBodyCapsule.enabled = bodyColliderWasEnabled;
-        if (headCollider != null) headCollider.enabled = headColliderWasEnabled;
+        // Restore the entire compound collider set while the Rigidbody is still kinematic,
+        // then release physics. The post-release RigFloorPenetrationGuard catches any late
+        // XR/physics displacement without continuously changing normal locomotion height.
+        for (int i = 0; i < rigColliders.Length; i++)
+        {
+            if (rigColliders[i] != null)
+                rigColliders[i].enabled = colliderStates[i];
+        }
+        Physics.SyncTransforms();
+
         if (hadRb)
         {
             gorillaPlayerRigidbody.isKinematic = prevKinematic;
@@ -183,7 +229,8 @@ public class RigSpawnSnapper : MonoBehaviour
                 gorillaPlayerRigidbody.WakeUp();
             }
         }
-        if (locomotionPlayer != null) locomotionPlayer.enabled = playerWasEnabled;
+        if (locomotionPlayer != null)
+            locomotionPlayer.enabled = playerWasEnabled;
         Physics.SyncTransforms();
 
         if (!grounded)
@@ -204,17 +251,66 @@ public class RigSpawnSnapper : MonoBehaviour
         AppState.I?.MarkRigSnapped();
         AppState.I?.TryMarkReady();
 
-        Debug.Log($"[RigSpawnSnapper] Snapped + ground-corrected after {settleSteps} fixed settle step(s).");
+        Debug.Log(
+            $"[RigSpawnSnapper] Snapped + ground-corrected after {settleAttempts} fixed attempt(s) / " +
+            $"{stableFixedSteps} stable step(s); XR floor offset was stabilized before release.");
         _snapping = false;
     }
 
-    private bool GroundCorrect(Vector3 referencePos, Scene hubScene)
+    private IEnumerator WaitForTrackingOffsetStability()
+    {
+        if (xrOrigin == null || xrOrigin.CameraFloorOffsetObject == null)
+            yield break;
+
+        Transform offset = xrOrigin.CameraFloorOffsetObject.transform;
+        Vector3 last = offset.localPosition;
+        int stableFrames = 0;
+        int waitedFrames = 0;
+        int requiredStable = Mathf.Max(2, TrackingOffsetStableFrames);
+        int maxWait = Mathf.Max(requiredStable, TrackingOffsetMaxWaitFrames);
+        float epsilonSqr = TrackingOffsetEpsilon * TrackingOffsetEpsilon;
+
+        while (stableFrames < requiredStable && waitedFrames < maxWait)
+        {
+            yield return null;
+            waitedFrames++;
+
+            Vector3 current = offset.localPosition;
+            if ((current - last).sqrMagnitude <= epsilonSqr)
+            {
+                stableFrames++;
+            }
+            else
+            {
+                last = current;
+                stableFrames = 0;
+            }
+        }
+
+        if (stableFrames < requiredStable)
+        {
+            Debug.LogWarning(
+                $"[RigSpawnSnapper] XR floor-offset transform did not remain stable for {requiredStable} frames; " +
+                "continuing with guarded grounding and post-release recovery.",
+                this);
+        }
+    }
+
+    private bool GroundCorrect(Vector3 referencePos, Scene hubScene, GorillaLocomotion.Player locomotionPlayer)
     {
         if (gorillaBodyCapsule == null) return false;
-        Vector3 rayStart = referencePos + Vector3.up * RaycastUp;
+
+        GetCapsule(gorillaBodyCapsule, out Vector3 a, out Vector3 b, out float radius);
+        Vector3 bodyCenter = (a + b) * 0.5f;
+        float bodyTop = Mathf.Max(a.y, b.y) + radius;
+        float rayStartY = Mathf.Max(referencePos.y + RaycastUp, bodyTop + 0.25f);
+        Vector3 rayStart = new Vector3(bodyCenter.x, rayStartY, bodyCenter.z);
+        float rayDistance = rayStartY - (referencePos.y - RaycastDown);
+
+        int mask = GetGroundMask(locomotionPlayer);
         RaycastHit floor = default;
         bool found = false;
-        foreach (var hit in Physics.RaycastAll(rayStart, Vector3.down, RaycastUp + RaycastDown, GroundMask, QueryTriggerInteraction.Ignore))
+        foreach (var hit in Physics.RaycastAll(rayStart, Vector3.down, rayDistance, mask, QueryTriggerInteraction.Ignore))
         {
             if (hit.collider.transform.IsChildOf(xrOrigin.transform) || hit.collider.gameObject.scene != hubScene ||
                 hit.normal.y < 0.65f || hit.point.y > referencePos.y + 0.2f) continue;
@@ -222,18 +318,23 @@ public class RigSpawnSnapper : MonoBehaviour
         }
         if (!found) return false;
 
-        GetCapsule(gorillaBodyCapsule, out var a, out var b, out var radius);
         float bottom = Mathf.Min(a.y, b.y) - radius;
         xrOrigin.transform.position += Vector3.up * (floor.point.y + Mathf.Max(0.03f, GroundSkin) - bottom);
         Physics.SyncTransforms();
         return true;
     }
 
-    private bool HasSafeClearance(Scene scene, SphereCollider headCollider, out string blocker)
+    private bool HasSafeClearance(
+        Scene scene,
+        SphereCollider headCollider,
+        GorillaLocomotion.Player locomotionPlayer,
+        out string blocker)
     {
         blocker = null;
+        int mask = GetGroundMask(locomotionPlayer);
+
         GetCapsule(gorillaBodyCapsule, out var a, out var b, out var radius);
-        foreach (var collider in Physics.OverlapCapsule(a, b, radius, GroundMask, QueryTriggerInteraction.Ignore))
+        foreach (var collider in Physics.OverlapCapsule(a, b, radius, mask, QueryTriggerInteraction.Ignore))
         {
             if (!IsExternalSceneCollider(collider, scene)) continue;
             blocker = collider.name;
@@ -246,13 +347,24 @@ public class RigSpawnSnapper : MonoBehaviour
         Vector3 scale = headCollider.transform.lossyScale;
         float headRadius = headCollider.radius * Mathf.Max(Mathf.Abs(scale.x), Mathf.Abs(scale.y), Mathf.Abs(scale.z));
         Vector3 center = headCollider.transform.TransformPoint(headCollider.center);
-        foreach (var collider in Physics.OverlapSphere(center, headRadius, GroundMask, QueryTriggerInteraction.Ignore))
+        foreach (var collider in Physics.OverlapSphere(center, headRadius, mask, QueryTriggerInteraction.Ignore))
         {
             if (!IsExternalSceneCollider(collider, scene)) continue;
             blocker = collider.name;
             return false;
         }
         return true;
+    }
+
+    private int GetGroundMask(GorillaLocomotion.Player locomotionPlayer)
+    {
+        int mask = GroundMask.value;
+        if (locomotionPlayer == null)
+            return mask;
+
+        int locomotionMask = locomotionPlayer.locomotionEnabledLayers.value;
+        int intersection = mask & locomotionMask;
+        return intersection != 0 ? intersection : mask;
     }
 
     private bool IsExternalSceneCollider(Collider collider, Scene scene)
