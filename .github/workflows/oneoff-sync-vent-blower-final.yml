@@ -1,0 +1,130 @@
+name: One-off sync final vent blower integration
+
+on:
+  push:
+    branches:
+      - feature/level1-vent-blower
+    paths:
+      - '.github/workflows/oneoff-sync-vent-blower-final.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/level1-vent-blower
+          fetch-depth: 0
+
+      - name: Update contracts and project records
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          validator_path = Path('Tools/validate_level1_contracts.py')
+          validator = validator_path.read_text(encoding='utf-8')
+          old = '''    blower_path = ROOT / "Assets/Scripts/Lighting/VentBlowerSetPiece.cs"
+              blower = require(errors, blower_path, [
+                  'LevelOneScene = "Level1_Containment"',
+                  'VentRoomName = "VentRoom"',
+                  'RuntimeRootName = "Level1_VentRoom_Blower"',
+                  "BlowerLocalPosition = new Vector3(-0.25f, 0.72f, 22.08f)",
+                  "primitiveCollider.enabled = false;",
+                  "LightType.Point",
+                  "LightShadows.None",
+                  "bounceIntensity = 0f",
+                  "spatialBlend = 1f",
+                  "maxDistance = 6.5f",
+                  'AudioClip.Create("Vent_Blower_ProceduralLoop"',
+              ])
+              if re.search(r"^using\\s+Photon\\.", blower, re.M):
+                  errors.append(f"{rel(blower_path)}: decorative vent blower must not depend on Photon.")
+              positive_defaults(errors, blower_path, blower, ["FanDegreesPerSecond", "BaseRedLightIntensity"])
+          '''.replace('              ', '    ')
+          new = '''    blower_path = ROOT / "Assets/Scripts/Lighting/VentBlowerSetPiece.cs"
+              blower = require(errors, blower_path, [
+                  'LevelOneScene = "Level1_Containment"',
+                  'VentRoomName = "VentRoom"',
+                  'RuntimeRootName = "Level1_VentRoom_Blower"',
+                  'BlowerResourcePath = "RunawayChimps_VentBlower"',
+                  'RotorName = "FanRotor"',
+                  'RedLensName = "RedLightLens"',
+                  "BlowerLocalPosition = new Vector3(-0.25f, 0.72f, 22.46f)",
+                  "Resources.Load<GameObject>(BlowerResourcePath)",
+                  "Instantiate(blowerPrefab, transform, false)",
+                  "OrientVisualIntoVentRoom(visualInstance.transform)",
+                  "GetComponentsInChildren<Collider>(true)",
+                  "collider.enabled = false;",
+                  "ShadowCastingMode.Off",
+                  'Shader.Find("Universal Render Pipeline/Lit")',
+                  "LightType.Point",
+                  "LightShadows.None",
+                  "bounceIntensity = 0f",
+                  "spatialBlend = 1f",
+                  "maxDistance = 6.5f",
+                  'AudioClip.Create("Vent_Blower_ProceduralLoop"',
+              ])
+              if re.search(r"^using\\s+Photon\\.", blower, re.M):
+                  errors.append(f"{rel(blower_path)}: decorative vent blower must not depend on Photon.")
+              if "GameObject.CreatePrimitive(" in blower:
+                  errors.append(f"{rel(blower_path)}: approved Blender visual must not regress to generated primitive geometry.")
+              positive_defaults(errors, blower_path, blower, ["FanDegreesPerSecond", "BaseRedLightIntensity"])
+
+              blower_asset = ROOT / "Assets/Resources/RunawayChimps_VentBlower.fbx"
+              blower_meta = ROOT / "Assets/Resources/RunawayChimps_VentBlower.fbx.meta"
+              if not blower_asset.exists():
+                  errors.append(f"{rel(blower_asset)}: approved Blender FBX resource is missing.")
+              elif blower_asset.stat().st_size < 10000:
+                  errors.append(f"{rel(blower_asset)}: approved Blender FBX resource is unexpectedly small.")
+              meta = require(errors, blower_meta, [
+                  "ModelImporter:",
+                  "addColliders: 0",
+                  "importCameras: 0",
+                  "importLights: 0",
+                  "preserveHierarchy: 1",
+              ])
+              if meta:
+                  guid(blower_meta, errors)
+          '''.replace('              ', '    ')
+          if old not in validator:
+              raise SystemExit('Could not find old vent blower validator block')
+          validator = validator.replace(old, new, 1)
+          validator_path.write_text(validator, encoding='utf-8')
+
+          design_path = Path('docs/design-and-lore.md')
+          design = design_path.read_text(encoding='utf-8')
+          old_paragraph = re.compile(r'\*\*September 12 Level 1 VentRoom set-piece correction/implementation:\*\*.*?pending validation\.\n', re.S)
+          new_paragraph = '''**September 12 Level 1 VentRoom set-piece correction/implementation:** Greg explicitly confirmed that the existing Level 1 vent geometry and route must **not** be redesigned, and then approved the simple/chunky Blender blower preview as the final visual target. The already-authored widened/taller `VentRoom` remains a short equipment bay inside the same tunnel. PR #17 (`feature/level1-vent-blower`) now integrates the approved `Assets/Resources/RunawayChimps_VentBlower.fbx` instead of generating the visible blower from Unity primitives. `VentBlowerSetPiece` loads that authored Resource, mounts its wall-plane origin just inside the widened +Z wall, auto-corrects FBX facing so the model projects into the room, finds the separate `FanRotor` and `RedLightLens`, removes any imported colliders, applies simple URP-safe runtime materials, rotates only the rotor, adds the dim shadowless red maintenance light, and keeps the localized procedural 3D motor/thrum loop. This preserves the approved route and avoids the pink-material problem seen with earlier Blender imports. The Blender visual is now **source-integrated** on PR #17; Unity 2022.3.55f1 import/compile, exact in-headset scale/facing/clearance, Crawler traversal, audio/light tuning, two-client behavior and Quest performance remain pending validation.\n'''
+          design, count = old_paragraph.subn(new_paragraph, design, count=1)
+          if count != 1:
+              raise SystemExit('Could not update design VentRoom implementation paragraph')
+          table_anchor = '| 2026-09-12 | Preserve the existing Level 1 vent layout.'
+          approval_row = '| 2026-09-12 | Approve the simple/chunky Blender vent-blower preview as the final Level 1 blower visual. Use the authored FBX rather than generated Unity primitive geometry; keep `FanRotor` separate for rotation and retain runtime-controlled red light/audio. | Confirmed by Greg. Approved FBX is source-integrated on PR #17 through `Assets/Resources/RunawayChimps_VentBlower.fbx` and `VentBlowerSetPiece`; Unity/headset/Crawler/Quest validation pending. |\n'
+          if approval_row not in design:
+              design = design.replace(table_anchor, approval_row + table_anchor, 1)
+          design_path.write_text(design, encoding='utf-8')
+
+          plan_path = Path('docs/repository-improvement-plan.md')
+          plan = plan_path.read_text(encoding='utf-8')
+          start = '## September 12 Level 1 VentRoom blower set piece\n'
+          end = '## September 12 spawn-hand initialization follow-up\n'
+          if start not in plan or end not in plan:
+              raise SystemExit('Could not find VentRoom repository-plan section')
+          before, rest = plan.split(start, 1)
+          _, after = rest.split(end, 1)
+          replacement = '''## September 12 Level 1 VentRoom blower set piece\n\n**Confirmed design/art direction:** preserve the existing `VentRoom` geometry, route, zone behavior and Crawler path. Greg approved the simple/chunky Blender preview as the final blower visual and explicitly rejected the earlier polished/photorealistic direction.\n\n**Implemented on `feature/level1-vent-blower` / PR #17:** the approved 151 KB `Assets/Resources/RunawayChimps_VentBlower.fbx` is now part of the Unity source tree with a `ModelImporter` meta that preserves hierarchy, imports no lights/cameras and adds no colliders. `VentBlowerSetPiece` no longer creates visible cube/cylinder primitives. It loads the authored FBX with `Resources.Load`, instantiates one visual beneath the existing `VentRoom` runtime anchor, auto-orients the model so it extends away from the +Z wall into the chamber, resolves the separate `FanRotor` for rotation and `RedLightLens` for the runtime point-light anchor, and disables/destroys any collider that might appear after import.\n\n**Material/performance handling implemented:** imported mesh renderers receive small runtime-created URP-safe materials by object role rather than trusting Blender/FBX shader assignments, specifically to avoid a repeat of pink imported materials. The authored geometry remains approximately 2,972 triangles from its Blender build. Shadows, receive-shadows, light probes and reflection probes are disabled for these renderers; the red point light remains shadowless/zero-bounce and the existing procedural 3D motor loop remains local environmental audio. No Photon dependency was added.\n\n**Pending validation:** Unity 2022.3.55f1 must import the FBX/meta and compile the updated controller. In Play Mode/headset confirm exactly one blower appears on Level 1 load/re-entry, the auto-facing places it against the widened side wall rather than through it, scale/height match the approved preview, `FanRotor` spins around the intended axis, the red light aligns with `RedLightLens`, no Gorilla/Crawler snag occurs, and material colors remain non-pink. Then tune fan speed/light/audio if needed, repeat two-client Photon, and check target Quest frame time/build behavior. Source checks cannot close those runtime items.\n\n'''
+          plan = before + replacement + end + after
+          plan_path.write_text(plan, encoding='utf-8')
+          PY
+
+          git config user.name "Greg Stephen"
+          git config user.email "35859167+GregStephen@users.noreply.github.com"
+          git add Tools/validate_level1_contracts.py docs/design-and-lore.md docs/repository-improvement-plan.md
+          git rm .github/workflows/oneoff-sync-vent-blower-final.yml
+          git commit -m "Finalize authored vent blower integration"
+          git push origin HEAD:feature/level1-vent-blower
