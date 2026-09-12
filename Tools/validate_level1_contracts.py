@@ -78,6 +78,24 @@ def main():
     if lamp.get("innerSpotAngle", 0) >= lamp.get("outerSpotAngle", 999):
         errors.append(f"{rel(headlamp_path)}: innerSpotAngle must be smaller than outerSpotAngle.")
 
+    blower_path = ROOT / "Assets/Scripts/Lighting/VentBlowerSetPiece.cs"
+    blower = require(errors, blower_path, [
+        'LevelOneScene = "Level1_Containment"',
+        'VentRoomName = "VentRoom"',
+        'RuntimeRootName = "Level1_VentRoom_Blower"',
+        "BlowerLocalPosition = new Vector3(-0.25f, 0.72f, 22.08f)",
+        "primitiveCollider.enabled = false;",
+        "LightType.Point",
+        "LightShadows.None",
+        "bounceIntensity = 0f",
+        "spatialBlend = 1f",
+        "maxDistance = 6.5f",
+        'AudioClip.Create("Vent_Blower_ProceduralLoop"',
+    ])
+    if re.search(r"^using\s+Photon\.", blower, re.M):
+        errors.append(f"{rel(blower_path)}: decorative vent blower must not depend on Photon.")
+    positive_defaults(errors, blower_path, blower, ["FanDegreesPerSecond", "BaseRedLightIntensity"])
+
     nav_path = ROOT / "Assets/Scripts/MonsterScripts/MonsterNavigation.cs"
     require(errors, nav_path, ["gameObject.AddComponent<CrawlerVisualController>();", "agent.updateRotation = false;"])
 
@@ -174,6 +192,8 @@ def main():
         errors.append(f"{rel(scene_path)}: Level 1 scene is missing.")
     else:
         scene = read(scene_path)
+        if "\n  m_Name: VentRoom\n" not in scene:
+            errors.append(f"{rel(scene_path)}: VentRoom anchor for the blower set piece is missing.")
         blocks = mono_blocks(scene)
         zone_guid = guid(ROOT / "Assets/Scripts/Zones/ZoneTrigger.cs.meta", errors)
         capture_guid = guid(ROOT / "Assets/Scripts/TeleportGorillaPlayerPhotonVR.cs.meta", errors)
@@ -194,7 +214,7 @@ def main():
         print(f"FAILED: {len(errors)} Level 1 contract issue(s).")
         return 1
 
-    print("PASS: Level 1 headlamp, Crawler visual/path, safe-zone, capture, floor-recovery, and spawn-safe hand source contracts.")
+    print("PASS: Level 1 headlamp, vent blower, Crawler visual/path, safe-zone, capture, floor-recovery, and spawn-safe hand source contracts.")
     print("PASS: Runtime/Photon/XR/Quest validation remains separate.")
     return 0
 
