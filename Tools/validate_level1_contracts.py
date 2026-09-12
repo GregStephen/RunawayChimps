@@ -142,6 +142,18 @@ def main():
         "FixedSettleSteps", "TrackingOffsetStableFrames", "TrackingOffsetMaxWaitFrames", "TrackingOffsetEpsilon", "GroundSkin"
     ])
 
+    player_path = ROOT / "Assets/Scripts/NewGorillaLocomotionScripts/Player.cs"
+    player = require(errors, player_path, [
+        "ResolveHandPositionAfterTeleport",
+        "RefreshBlockedHandAfterTeleport",
+        "leftHandBlockedAfterTeleport",
+        "rightHandBlockedAfterTeleport",
+        "CollisionsSphereCast(",
+        "if (!suppressLeftHand && IterativeCollisionSphereCast",
+        "if (!suppressRightHand && IterativeCollisionSphereCast",
+    ])
+    positive_defaults(errors, player_path, player, ["teleportHandPenetrationTolerance"])
+
     guard_path = ROOT / "Assets/Scripts/Bootstrap/RigFloorPenetrationGuard.cs"
     guard = require(errors, guard_path, [
         "Physics.RaycastNonAlloc(",
@@ -181,7 +193,7 @@ def main():
         print(f"FAILED: {len(errors)} Level 1 contract issue(s).")
         return 1
 
-    print("PASS: Level 1 headlamp, Crawler visual/path, safe-zone, capture, and floor-recovery source contracts.")
+    print("PASS: Level 1 headlamp, Crawler visual/path, safe-zone, capture, floor-recovery, and spawn-safe hand source contracts.")
     print("PASS: Runtime/Photon/XR/Quest validation remains separate.")
     return 0
 
