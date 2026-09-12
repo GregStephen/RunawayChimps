@@ -1,0 +1,186 @@
+name: Add Level 2 player scale guardrails
+on:
+  push:
+    paths:
+      - '.github/workflows/level2-player-scale-guardrails.yml'
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/level2-player-scale-interactions
+          fetch-depth: 0
+      - name: Add Bootstrap-derived player scale parser
+        shell: bash
+        run: |
+          cat > Tools/Level2Blockout/player_scale.py <<'PY'
+          """Read the active local Gorilla locomotion interaction scale from Bootstrap.unity."""
+          from pathlib import Path
+          import json
+          import re
+
+          def _blocks(text):
+              return [b for b in re.split(r'(?=^--- !u!\d+ &-?\d+)', text, flags=re.M) if b.startswith('--- !u!')]
+
+          def _block_id(block):
+              m = re.match(r'^--- !u!\d+ &(-?\d+)', block)
+              if not m:
+                  raise ValueError('Serialized Unity block is missing a fileID header.')
+              return int(m.group(1))
+
+          def _vec3(block, field):
+              m = re.search(rf'^  {re.escape(field)}: \{{x: ([^,]+), y: ([^,]+), z: ([^}}]+)\}}$', block, re.M)
+              if not m:
+                  raise ValueError(f'Missing {field} in Unity block {_block_id(block)}')
+              return tuple(float(v) for v in m.groups())
+
+          def read_player_scale(root):
+              root = Path(root)
+              path = root / 'Assets/Scenes/Bootstrap.unity'
+              text = path.read_text(encoding='utf-8-sig')
+              blocks = _blocks(text)
+              by_id = {_block_id(b): b for b in blocks}
+
+              players = [b for b in blocks if 'bodyCollider: {fileID:' in b and 'maxArmLength:' in b and 'minimumRaycastDistance:' in b]
+              if len(players) != 1:
+                  raise ValueError(f'Expected one serialized GorillaLocomotion.Player in Bootstrap, found {len(players)}')
+              player = players[0]
+              body_id = int(re.search(r'bodyCollider: \{fileID: (-?\d+)\}', player).group(1))
+              max_arm = float(re.search(r'^  maxArmLength: ([^\n]+)$', player, re.M).group(1))
+              hand_radius = float(re.search(r'^  minimumRaycastDistance: ([^\n]+)$', player, re.M).group(1))
+
+              body = by_id[body_id]
+              if not body.startswith('--- !u!136 '):
+                  raise ValueError('Gorilla bodyCollider no longer references a CapsuleCollider.')
+              body_go = int(re.search(r'm_GameObject: \{fileID: (-?\d+)\}', body).group(1))
+              radius = float(re.search(r'^  m_Radius: ([^\n]+)$', body, re.M).group(1))
+              height = float(re.search(r'^  m_Height: ([^\n]+)$', body, re.M).group(1))
+              direction = int(re.search(r'^  m_Direction: (\d+)$', body, re.M).group(1))
+
+              def transform_for_game_object(go_id):
+                  go = by_id[go_id]
+                  for cid in map(int, re.findall(r'- component: \{fileID: (-?\d+)\}', go)):
+                      block = by_id.get(cid, '')
+                      if block.startswith('--- !u!4 '):
+                          return cid
+                  raise ValueError(f'GameObject {go_id} has no Transform component.')
+
+              memo = {}
+              def world_scale(transform_id):
+                  if transform_id in memo:
+                      return memo[transform_id]
+                  t = by_id[transform_id]
+                  local = _vec3(t, 'm_LocalScale')
+                  parent_match = re.search(r'^  m_Father: \{fileID: (-?\d+)\}$', t, re.M)
+                  parent = int(parent_match.group(1)) if parent_match else 0
+                  if parent == 0:
+                      result = local
+                  else:
+                      p = world_scale(parent)
+                      result = tuple(local[i] * p[i] for i in range(3))
+                  memo[transform_id] = result
+                  return result
+
+              sx, sy, sz = map(abs, world_scale(transform_for_game_object(body_go)))
+              if direction == 0:
+                  body_height = max(height * sx, 2 * radius * max(sy, sz))
+                  body_width = 2 * radius * max(sy, sz)
+              elif direction == 1:
+                  body_height = max(height * sy, 2 * radius * max(sx, sz))
+                  body_width = 2 * radius * max(sx, sz)
+              elif direction == 2:
+                  body_height = max(height * sz, 2 * radius * max(sx, sy))
+                  body_width = 2 * radius * max(sx, sy)
+              else:
+                  raise ValueError(f'Unsupported CapsuleCollider direction {direction}')
+
+              result = {
+                  'hand_contact_diameter_m': round(hand_radius * 2.0, 6),
+                  'body_width_m': round(body_width, 6),
+                  'body_capsule_height_m': round(body_height, 6),
+                  'max_arm_length_m': round(max_arm, 6),
+                  'source': 'Assets/Scenes/Bootstrap.unity',
+                  'hand_source': 'GorillaLocomotion.Player.minimumRaycastDistance x 2',
+              }
+              return result
+
+          if __name__ == '__main__':
+              root = Path(__file__).resolve().parents[2]
+              print(json.dumps(read_player_scale(root), indent=2))
+          PY
+      - name: Add disabled player interaction scale guide
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path('Tools/Level2Blockout/build_level2.py')
+          s=p.read_text()
+          if 'from player_scale import read_player_scale' not in s:
+              s=s.replace('import json, hashlib\n', 'import json, hashlib\nfrom player_scale import read_player_scale\n')
+          if 'PLAYER_SCALE=read_player_scale(ROOT)' not in s:
+              s=s.replace('ROOM_HEIGHT=5.0\n', 'ROOM_HEIGHT=5.0\nPLAYER_SCALE=read_player_scale(ROOT)\n')
+          if "player_scale_group=node('14_Player_Interaction_Scale_Guide__Enable_to_Check_Fit'" not in s:
+              s=s.replace("fuse_search=group('13_Fuse_Search_Containers__Visual_Only',root)\n", "fuse_search=group('13_Fuse_Search_Containers__Visual_Only',root)\nplayer_scale_group=node('14_Player_Interaction_Scale_Guide__Enable_to_Check_Fit',root,active=False,kind='empty')\n")
+          marker="# Historical exit shutter visual remains inactive; gate + blocker are authoritative blockout visuals.\n"
+          guide="""# Disabled player interaction-scale guide, derived from the active Bootstrap Gorilla rig.\n# Toggle this group in Scene view when authoring player-facing controls; it is not gameplay geometry.\nguide_x,guide_z=22.8,30.3\nbody_w=PLAYER_SCALE['body_width_m']; body_h=PLAYER_SCALE['body_capsule_height_m']\nhand_d=PLAYER_SCALE['hand_contact_diameter_m']; arm_reach=PLAYER_SCALE['max_arm_length_m']\nnode('PlayerScale_BodyCapsule__Actual_Bootstrap_Rig',player_scale_group,(guide_x,body_h/2,guide_z),(body_w,body_h/2,body_w),'RewardCyan',kind='cylinder')\nnode('PlayerScale_HandContact_Left__Actual_Bootstrap_Rig',player_scale_group,(guide_x-.30,.72,guide_z-.38),(hand_d,hand_d/2,hand_d),'Amber',kind='cylinder')\nnode('PlayerScale_HandContact_Right__Actual_Bootstrap_Rig',player_scale_group,(guide_x+.30,.72,guide_z-.38),(hand_d,hand_d/2,hand_d),'Amber',kind='cylinder')\nnode('PlayerScale_MaxArmReach__Actual_Bootstrap_Rig',player_scale_group,(guide_x+arm_reach/2,.92,guide_z),(arm_reach,.025,.025),'LightStrip')\nnode('PlayerScale_ReachOrigin__Actual_Bootstrap_Rig',player_scale_group,(guide_x,.92,guide_z),(.04,.20,.04),'Amber')\n\n"""
+          if 'PlayerScale_BodyCapsule__Actual_Bootstrap_Rig' not in s:
+              assert marker in s
+              s=s.replace(marker,guide+marker)
+          p.write_text(s)
+      - name: Tie Level 2 validator to actual Bootstrap rig
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path('Tools/Level2Blockout/validate_level2.py')
+          s=p.read_text()
+          if 'from player_scale import read_player_scale' not in s:
+              s=s.replace('import collections,json,math,re\n', 'import collections,json,math,re\nfrom player_scale import read_player_scale\n')
+          start=s.index('# Player-scale interaction guardrails.')
+          end=s.index('# Serialized YAML/object-reference checks without requiring a YAML package.')
+          replacement="""# Player-scale interaction guardrails are derived from the actual active Bootstrap rig.\nplayer_scale=read_player_scale(ROOT)\nassert .04 <= player_scale['hand_contact_diameter_m'] <= .20,player_scale\nassert .20 <= player_scale['body_width_m'] <= .80,player_scale\nassert .50 <= player_scale['body_capsule_height_m'] <= 2.0,player_scale\nassert .50 <= player_scale['max_arm_length_m'] <= 2.5,player_scale\n\n# The disabled Scene-view guide must stay synchronized with the active rig dimensions.\nbody_guide=byname['PlayerScale_BodyCapsule__Actual_Bootstrap_Rig']\nleft_hand_guide=byname['PlayerScale_HandContact_Left__Actual_Bootstrap_Rig']\nright_hand_guide=byname['PlayerScale_HandContact_Right__Actual_Bootstrap_Rig']\nreach_guide=byname['PlayerScale_MaxArmReach__Actual_Bootstrap_Rig']\nassert abs(body_guide['scale'][0]-player_scale['body_width_m'])<1e-6,body_guide\nassert abs(body_guide['scale'][1]*2-player_scale['body_capsule_height_m'])<1e-6,body_guide\nfor hand in (left_hand_guide,right_hand_guide):\n    assert abs(hand['scale'][0]-player_scale['hand_contact_diameter_m'])<1e-6,hand\n    assert abs(hand['scale'][1]*2-player_scale['hand_contact_diameter_m'])<1e-6,hand\nassert abs(reach_guide['scale'][0]-player_scale['max_arm_length_m'])<1e-6,reach_guide\nassert not byname['14_Player_Interaction_Scale_Guide__Enable_to_Check_Fit']['active']\n\n# Current objective dimensions must remain ergonomic relative to that rig.\ncore=byname['Power_Island_Core']\nassert core['position']==[28,0.475,27] and core['scale']==[2.4,0.95,1.3],core\nassert core['scale'][1] <= player_scale['body_capsule_height_m']+1e-6,core\nfor i in range(1,5):\n    socket=byname[f'FuseSocket{i}Marker']; lever=byname[f'Fuse_Socket_{i}_Lever_Handle']; fuse=byname[f'Fuse_{i}_Personal_Cylindrical_Placeholder']\n    assert abs(socket['position'][1]-.58)<1e-6,(i,socket['position'])\n    assert abs(lever['position'][1]-.70)<1e-6,(i,lever['position'])\n    assert socket['position'][1] <= player_scale['body_capsule_height_m']*.65,(i,socket['position'],player_scale)\n    assert lever['position'][1] <= player_scale['body_capsule_height_m']*.75,(i,lever['position'],player_scale)\n    fuse_diameter=fuse['scale'][0]; fuse_length=fuse['scale'][1]*2\n    assert fuse_diameter <= player_scale['hand_contact_diameter_m']*.75+1e-6,(i,fuse_diameter,player_scale)\n    assert fuse_length <= player_scale['max_arm_length_m']*.20+1e-6,(i,fuse_length,player_scale)\n    assert byname[f'Fuse_Cache_{i}_Electrical_Label']['position'][1] <= lever['position'][1]+1e-6\nresults={'version':'0.4','bounds_m':d['bounds'],\n         'player_scale_reference':player_scale,\n         'objective_ergonomics':{'power_island_size_m':[2.4,.95,1.3],'socket_center_height_m':.58,'lever_center_height_m':.70,'fuse_placeholder_scale':[.06,.10,.06],\n                                 'disabled_scene_guide':'14_Player_Interaction_Scale_Guide__Enable_to_Check_Fit'}}\n\n"""
+          s=s[:start]+replacement+s[end:]
+          p.write_text(s)
+      - name: Update maintained documentation
+        shell: python
+        run: |
+          from pathlib import Path
+          design=Path('docs/design-and-lore.md'); s=design.read_text()
+          old='Confirmed correction. Implemented on `fix/level2-player-scale-interactions`: ~20 cm hand-held fuse, ~0.58 m socket height, ~0.70 m lever height, ~0.95 m island height, smaller search containers/drawer travel. Unity 2022.3.55f1 headset/Play Mode ergonomic validation pending.'
+          new='Confirmed correction. Implemented on `fix/level2-player-scale-interactions`: ~20 cm hand-held fuse, ~0.58 m socket height, ~0.70 m lever height, ~0.95 m island height, smaller search containers/drawer travel, a disabled Scene-view player interaction-scale guide, and validation that derives the body/hand/reach reference from the active Bootstrap rig. Unity 2022.3.55f1 headset/Play Mode ergonomic validation pending.'
+          assert old in s
+          s=s.replace(old,new,1); design.write_text(s)
+
+          plan=Path('docs/repository-improvement-plan.md'); p=plan.read_text()
+          needle='**Implemented on `fix/level2-player-scale-interactions`:** the central power island is reduced from 4.4 × 2.4 × 2.4 m to approximately 2.4 × 0.95 × 1.3 m while staying centered in the Repair Lab. Socket centers move from 1.28 m to ~0.58 m, charge handles from 1.55 m to ~0.70 m, the physical fuse prototype from ~42 cm long / 13–15 cm diameter to ~20 cm long / 5–7 cm diameter, and socket/lever interaction triggers are resized for the ~10 cm hand proxy. Fuse search cabinets and drawer travel are also reduced to player-scale. Room bounds, Repair Lab size, two escape routes, Listener clearance targets and the four-fuse objective are unchanged.\n'
+          addition='\n**Scale guardrails implemented on the same branch:** `Tools/Level2Blockout/player_scale.py` now reads the active `GorillaLocomotion.Player` values and referenced body capsule directly from `Assets/Scenes/Bootstrap.unity`. The Level 2 generator uses those measurements to create a disabled `14_Player_Interaction_Scale_Guide__Enable_to_Check_Fit` with a body capsule, two hand-contact references and max-arm-reach bar. `validate_level2.py` derives the same values from Bootstrap, verifies the guide stays synchronized, and fails if the fuse island/socket/lever dimensions drift outside the current player reach envelope. This prevents a future rig or Level 2 regeneration change from silently reintroducing Listener/environment-scale controls.\n'
+          assert needle in p
+          if addition.strip() not in p: p=p.replace(needle,needle+addition,1)
+          plan.write_text(p)
+
+          layout=Path('docs/level2-expanded-layout-v04.md'); q=layout.read_text()
+          q=q.replace('`main` still contains v0.3.', '`main` contains the merged v0.4 blockout through PR #7.')
+          old2='The approved room bounds remain unchanged. Runtime testing showed the initial power island, fuses, sockets and levers were scaled for the large environment rather than the gorilla player. Interactive hardware must use the active rig as the scale reference: roughly 10 cm hand-contact diameter, 0.36 m body width, 1.16 m body-capsule height and 1.5 m max arm length. The corrected prototype targets a ~20 cm fuse, ~0.58 m socket center, ~0.70 m lever center and ~0.95 m island height. These values are implemented for the next Unity ergonomic test and may receive small reach/comfort tuning without reopening the confirmed room sizes.'
+          new2=old2+' The generator also includes a disabled `14_Player_Interaction_Scale_Guide__Enable_to_Check_Fit` in the Repair Lab; its body, hand-contact and reach references are generated from the active Bootstrap rig, and the persistent Level 2 validator reads those same serialized rig values rather than relying on copied constants.'
+          assert old2 in q
+          q=q.replace(old2,new2,1); layout.write_text(q)
+      - name: Regenerate and validate
+        run: |
+          python -m pip install --disable-pip-version-check 'tree-sitter==0.25.2' 'tree-sitter-c-sharp==0.23.5'
+          python Tools/Level2Blockout/player_scale.py
+          python Tools/Level2Blockout/build_level2.py
+          python Tools/Level2Blockout/validate_level2.py
+          python Tools/validate_source.py --syntax
+          python Tools/validate_repository_integrity.py
+          python Tools/validate_level1_contracts.py
+          python -m compileall -q Tools
+          git diff --check
+      - name: Commit guardrails
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add Tools/Level2Blockout/player_scale.py Tools/Level2Blockout/build_level2.py Tools/Level2Blockout/validate_level2.py Tools/Level2Blockout/layout.json Tools/Level2Blockout/validation.json Assets/RunawayChimps/Level2Blockout/Prefabs/Level2_Blockout.prefab Assets/RunawayChimps/Level2Blockout/Scenes/Level2_BehavioralConditioning_Blockout.unity docs/design-and-lore.md docs/repository-improvement-plan.md docs/level2-expanded-layout-v04.md
+          git diff --cached --check
+          git commit -m 'Add Level 2 player scale guardrails'
+          git push origin HEAD:fix/level2-player-scale-interactions
