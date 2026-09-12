@@ -44,6 +44,10 @@ The larger level should use multiple connected loops rather than one oversized r
 
 The Repair Lab has one opening into North Gallery and a second toward the East Bypass/Conditioning side. Its central power island creates a full circulation ring instead of a wall-mounted dead end. A normal local loop can be Repair Lab -> North Gallery -> Conditioning Hall B -> East Bypass -> Repair Lab, with longer branches through West Observation, Test Hall A and Lower Service Hall. Four fuse-search locations deliberately pull the player into those larger branches before returning to charge each fuse.
 
+## Player-scale objective correction — confirmed September 12
+
+The approved room bounds remain unchanged. Runtime testing showed the initial power island, fuses, sockets and levers were scaled for the large environment rather than the gorilla player. Interactive hardware must use the active rig as the scale reference: roughly 10 cm hand-contact diameter, 0.36 m body width, 1.16 m body-capsule height and 1.5 m max arm length. The corrected prototype targets a ~20 cm fuse, ~0.58 m socket center, ~0.70 m lever center and ~0.95 m island height. These values are implemented for the next Unity ergonomic test and may receive small reach/comfort tuning without reopening the confirmed room sizes.
+
 ## Confirmed four-fuse power objective
 
 Four personal hand-held cylindrical fuses are distributed in readable maintenance/search containers across major Level 2 spaces. Opening those drawers/cabinets/access panels is an audible transient event; dropping a fuse is also audible. The player transports each fuse to the Repair Lab's central four-slot distribution island. Two sockets are available on each long side so the player and Listener must move around the structure rather than treating it as a wall.

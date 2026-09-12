@@ -40,7 +40,7 @@
       "island_north"
     ],
     "either_repair_route_can_be_blocked": true,
-    "reachable_grid_points": 20842
+    "reachable_grid_points": 21222
   },
   "listener_proxy": {
     "radius_m": 1.375,
@@ -59,7 +59,7 @@
       "island_north"
     ],
     "either_repair_route_can_be_blocked": true,
-    "reachable_grid_points": 9843
+    "reachable_grid_points": 10519
   },
   "temporary_barriers": {
     "closed_exit_separates_safe_exit": true,
