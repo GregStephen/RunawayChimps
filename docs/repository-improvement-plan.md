@@ -12,6 +12,16 @@ Read the [design and lore](design-and-lore.md) for intended behavior and [AGENTS
 
 **Validation boundary:** this new green check is meaningful source evidence, but it is **not** Unity/runtime validation. It does not import or compile in Unity, execute the two Runaway Chimps Editor validators, run Play Mode, open Photon sessions, exercise XR interactions, build for Quest, or measure headset performance. Keep all existing Unity/Photon/headset acceptance checks pending until they are actually run. A future Unity-aware CI tier is optional and should be added only when its hosted Unity licensing/setup cost is justified. See `docs/ci-validation.md`.
 
+## September 12 Level 1 VentRoom blower set piece
+
+**Confirmed design correction:** Greg does not want the Level 1 vent system redesigned. The existing `VentRoom` mesh already provides the desired variation by widening and increasing height for a short chamber before tapering back to the same tunnel. Treat that space as an equipment bay only; preserve the route, geometry, zone behavior and Crawler path.
+
+**Implemented on `feature/level1-vent-blower` / PR #17:** `VentBlowerSetPiece` registers when `Level1_Containment` loads, finds the existing `VentRoom`, and mounts one runtime set piece against the widened +Z wall. The prototype uses a chunky six-blade rotor, guard, housing, conduit and maintenance-light housing. The fan rotates visually at a fixed slow rate. A small red point light is shadowless with zero bounce, and a spatial 3D `AudioSource` plays a generated low motor/blade-thrum loop with a 6.5 m maximum distance so the widened chamber has a distinct mechanical sound without adding a shipped audio asset. The implementation has no Photon dependency.
+
+**Traversal/performance boundary:** all runtime primitive colliders are disabled before destruction, the blower does not carve or rebuild NavMesh, and it is positioned against the side wall rather than across the player/Crawler center route. Generated renderers do not cast/receive shadows or use light/reflection probes. This is source intent, not runtime proof.
+
+**Pending validation:** Unity 2022.3.55f1 import/compile; confirm the blower appears exactly once after Level 1 load/re-entry; inspect scale, side-wall placement and clearance in Play Mode/headset; verify no Gorilla hand/body snag and no Crawler path obstruction; tune fan speed, red-light range/intensity and motor volume/rolloff; verify the machinery masks nearby vent cues without making the Crawler impossible to read; test two-client Photon sessions; and measure target Quest frame time/audio behavior.
+
 ## September 12 spawn-hand initialization follow-up
 
 **Confirmed failing runtime feedback:** Greg reports that players' hands can become stuck in the floor when they spawn unless the physical hands/controllers are already held up. This is a failed XR spawn/locomotion case, not a player instruction; players must not need a special pose to enter the game.
