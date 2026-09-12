@@ -23,16 +23,11 @@ for n in nodes:
  x,y,z=n['position']; sx,sy,sz=n['scale']
  if parent.startswith('02_') and y-sy/2<1:ax.add_patch(Rectangle((x-sx/2,z-sz/2),sx,sz,fc='#2e444a',zorder=7))
  if parent.startswith('04_'):ax.add_patch(Rectangle((x-sx/2,z-sz/2),sx,sz,fc='#82989e',ec='#334d56',lw=1.2,zorder=5))
-labels=[(3,-2,'SAFE ENTRY'),(9,7,'TEST HALL A'),(24,7,'LOWER SERVICE'),(4,18,'WEST OBSERVATION'),(19,18,'CONDITIONING HALL B'),(33,12,'EAST BYPASS'),(4,24,'EXIT APPROACH'),(4,29,'COMPLETED EXIT
-SAFE'),(14,27,'NORTH GALLERY
-12 × 10 m'),(28,27,'REPAIR LAB
-16 × 10 m'),(33,-1,'LOCKED REWARD
-6 × 6 m')]
+labels=[(3,-2,'SAFE ENTRY'),(9,7,'TEST HALL A'),(24,7,'LOWER SERVICE'),(4,18,'WEST OBSERVATION'),(19,18,'CONDITIONING HALL B'),(33,12,'EAST BYPASS'),(4,24,'EXIT APPROACH'),(4,29,'COMPLETED EXIT\nSAFE'),(14,27,'NORTH GALLERY\n12 × 10 m'),(28,27,'REPAIR LAB\n16 × 10 m'),(33,-1,'LOCKED REWARD\n6 × 6 m')]
 for x,z,t in labels:ax.text(x,z,t,ha='center',va='center',fontsize=9.3,fontweight='bold',color='#213c45',zorder=10)
 island=byname['Power_Island_Core']; x,y,z=island['position']; sx,sy,sz=island['scale']
 ax.add_patch(Rectangle((x-sx/2,z-sz/2),sx,sz,fc='#48595e',ec='#a86722',lw=2,zorder=8))
-ax.text(28,27,'4-FUSE
-POWER ISLAND',ha='center',va='center',fontsize=8.2,weight='bold',color='white',zorder=9)
+ax.text(28,27,'4-FUSE\nPOWER ISLAND',ha='center',va='center',fontsize=8.2,weight='bold',color='white',zorder=9)
 ax.plot([4,28],[25.55,25.55],lw=4,color='#a86722',zorder=6); ax.plot([28,28],[25.55,25.8],lw=4,color='#a86722',zorder=6)
 ax.text(14,25.9,'VISIBLE POWER CONDUIT →',ha='center',fontsize=7.8,color='#8e5c20',weight='bold',zorder=9)
 for i in range(1,5):
