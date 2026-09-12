@@ -2023,8 +2023,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ChainLength: 2
-  Target: {fileID: 0}
-  Pole: {fileID: 0}
+  Target: {fileID: 752089353315546107}
+  Pole: {fileID: 2768699113985102344}
   Iterations: 10
   Delta: 0.001
   SnapBackStrength: 1
@@ -2042,7 +2042,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   handType: 0
   thumbMoveSpeed: 0.1
-  view: {fileID: 0}
+  view: {fileID: 7780029385335637883}
 --- !u!95 &8502272792571493509
 Animator:
   serializedVersion: 5
@@ -2134,8 +2134,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ChainLength: 2
-  Target: {fileID: 0}
-  Pole: {fileID: 0}
+  Target: {fileID: 2837222685369851332}
+  Pole: {fileID: 4726460642201202213}
   Iterations: 10
   Delta: 0.001
   SnapBackStrength: 1
@@ -2151,9 +2151,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 36f1b2232114a224c8bfeaee9a1a6c84, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  handType: 0
+  handType: 1
   thumbMoveSpeed: 0.1
-  view: {fileID: 0}
+  view: {fileID: 7780029385335637883}
 --- !u!95 &3497979426801727507
 Animator:
   serializedVersion: 5

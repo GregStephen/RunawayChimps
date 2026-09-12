@@ -207,7 +207,9 @@ public class RigSpawnSnapper : MonoBehaviour
         }
 
         SphereCollider headCollider = locomotionPlayer != null ? locomotionPlayer.headCollider : null;
-        bool clear = grounded && HasSafeClearance(hubScene, headCollider, locomotionPlayer, out string blocker);
+        string blocker = null;
+        bool clear = grounded &&
+            HasSafeClearance(hubScene, headCollider, locomotionPlayer, out blocker);
 
         // Restore the entire compound collider set while the Rigidbody is still kinematic,
         // then release physics. The post-release RigFloorPenetrationGuard catches any late
