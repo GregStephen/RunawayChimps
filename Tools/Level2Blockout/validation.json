@@ -7,10 +7,12 @@
     32
   ],
   "player_scale_reference": {
-    "hand_contact_diameter_m": 0.1,
-    "body_width_m": 0.36,
-    "body_capsule_height_m": 1.16,
-    "max_arm_length_m": 1.5
+    "hand_contact_diameter_m": 0.04,
+    "body_width_m": 0.3,
+    "body_capsule_height_m": 0.5,
+    "max_arm_length_m": 1.5,
+    "source": "Assets/Scenes/Bootstrap.unity",
+    "hand_source": "GorillaLocomotion.Player.minimumRaycastDistance x 2"
   },
   "objective_ergonomics": {
     "power_island_size_m": [
@@ -24,16 +26,17 @@
       0.06,
       0.1,
       0.06
-    ]
+    ],
+    "disabled_scene_guide": "14_Player_Interaction_Scale_Guide__Enable_to_Check_Fit"
   },
   "Level2_BehavioralConditioning_Blockout.unity": {
-    "serialized_objects": 1364,
+    "serialized_objects": 1386,
     "unique_ids": true,
     "local_references_resolve": true,
     "linked_gate_instances": 5
   },
   "Level2_Blockout.prefab": {
-    "serialized_objects": 1363,
+    "serialized_objects": 1385,
     "unique_ids": true,
     "local_references_resolve": true,
     "linked_gate_instances": 5
@@ -93,8 +96,8 @@
     "charge_noise_gameplay": "pending runtime wiring"
   },
   "counts": {
-    "authored_objects": 337,
-    "mesh_boxes": 282,
+    "authored_objects": 343,
+    "mesh_boxes": 287,
     "solid_box_colliders": 92,
     "marker_triggers": 3
   },

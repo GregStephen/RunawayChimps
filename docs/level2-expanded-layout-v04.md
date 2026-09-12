@@ -6,7 +6,7 @@ Recorded: 2026-09-11.
 
 **Confirmed:** Level 2 must be at least twice the current v0.3 blockout's length and width. The current blockout is 18 x 18 m, so v0.4 targets a minimum 36 x 36 m footprint.
 
-**Confirmed room sizing / implemented blockout:** Greg reviewed the fuse-power v0.4 blockout and approved the current room sizing/proportions below. Branch `design/level2-expanded-map-v04` builds that arrangement into the normal Level 2 Unity scene and reusable prefab. Obstacle placement and runtime Listener navigation may still be tuned. `main` still contains v0.3.
+**Confirmed room sizing / implemented blockout:** Greg reviewed the fuse-power v0.4 blockout and approved the current room sizing/proportions below. Branch `design/level2-expanded-map-v04` builds that arrangement into the normal Level 2 Unity scene and reusable prefab. Obstacle placement and runtime Listener navigation may still be tuned. `main` contains the merged v0.4 blockout through PR #7.
 
 Do not implement the size change by scaling the v0.3 root transform to 2x. Build larger authored spaces so normal room scale, gate scale, colliders and traversal remain believable.
 
@@ -46,7 +46,7 @@ The Repair Lab has one opening into North Gallery and a second toward the East B
 
 ## Player-scale objective correction — confirmed September 12
 
-The approved room bounds remain unchanged. Runtime testing showed the initial power island, fuses, sockets and levers were scaled for the large environment rather than the gorilla player. Interactive hardware must use the active rig as the scale reference: roughly 10 cm hand-contact diameter, 0.36 m body width, 1.16 m body-capsule height and 1.5 m max arm length. The corrected prototype targets a ~20 cm fuse, ~0.58 m socket center, ~0.70 m lever center and ~0.95 m island height. These values are implemented for the next Unity ergonomic test and may receive small reach/comfort tuning without reopening the confirmed room sizes.
+The approved room bounds remain unchanged. Runtime testing showed the initial power island, fuses, sockets and levers were scaled for the large environment rather than the gorilla player. Player-facing hardware must now be checked against the active Bootstrap locomotion rig. The current serialized values resolve to a 0.04 m hand sphere-cast diameter, approximately 0.30 m body-capsule width / 0.50 m capsule height, and a 1.5 m max arm reach; the body capsule is not treated as standing height. The corrected prototype targets a ~20 cm fuse, ~0.58 m socket center, ~0.70 m lever center and ~0.95 m island height. The generator includes a disabled `14_Player_Interaction_Scale_Guide__Enable_to_Check_Fit` whose body, hand-contact and reach references are generated from Bootstrap, and the persistent validator reads those same serialized values rather than copied constants. Small comfort tuning may still occur without reopening the confirmed room sizes.
 
 ## Confirmed four-fuse power objective
 

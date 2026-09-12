@@ -1,6 +1,7 @@
 """Generate Level 2 Behavioral Conditioning blockout v0.4 for Unity 2022.3."""
 from pathlib import Path
 import json, hashlib
+from player_scale import read_player_scale
 
 ROOT=Path(__file__).resolve().parents[2]
 ASSET=ROOT/'Assets/RunawayChimps/Level2Blockout'
@@ -8,6 +9,7 @@ OUT=ROOT/'Tools/Level2Blockout'
 HEADER='%YAML 1.1\n%TAG !u! tag:unity3d.com,2011:\n'
 BUILTIN='0000000000000000e000000000000000'
 ROOM_HEIGHT=5.0
+PLAYER_SCALE=read_player_scale(ROOT)
 COLORS={
  'Concrete':[0.39,0.45,0.47],'Floor':[0.23,0.29,0.31],
  'SafeFloor':[0.19,0.38,0.34],'RepairFloor':[0.39,0.30,0.22],
@@ -32,6 +34,7 @@ scale_group=node('09_Listener_Size_Guide__Enable_to_Check_Fit',root,active=False
 lights=group('10_Blockout_Lighting',root); gates=group('11_Existing_SciFi_Gates',root)
 reward=group('12_Optional_Reward_Room__Visual_Only',root)
 fuse_search=group('13_Fuse_Search_Containers__Visual_Only',root)
+player_scale_group=node('14_Player_Interaction_Scale_Guide__Enable_to_Check_Fit',root,active=False,kind='empty')
 rooms=[
  ('Safe_Entry',0,6,-4,0,'SafeFloor'),
  ('Test_Hall_A',0,18,0,14,'Floor'),
@@ -154,6 +157,17 @@ for i,label,x,z in fuse_caches:
  node(f'Fuse_Cache_{i}_Electrical_Label',fuse_search,(x,.70,z-.295),(.28,.10,.02),'Amber')
  node(f'Fuse_{i}_Personal_Cylindrical_Placeholder',fuse_search,(x,.52,z-.30),(.06,.10,.06),'Amber',kind='cylinder')
  node(f'Fuse{i}Start',markers,(x,.52,z-.30),kind='empty')
+
+# Disabled player interaction-scale guide derived from the active Bootstrap Gorilla rig.
+# The body capsule is a locomotion collision proxy, not a standing-height proxy.
+guide_x,guide_z=22.8,30.3
+body_w=PLAYER_SCALE['body_width_m']; body_h=PLAYER_SCALE['body_capsule_height_m']
+hand_d=PLAYER_SCALE['hand_contact_diameter_m']; arm_reach=PLAYER_SCALE['max_arm_length_m']
+node('PlayerScale_BodyCapsule__Actual_Bootstrap_Rig',player_scale_group,(guide_x,body_h/2,guide_z),(body_w,body_h/2,body_w),'RewardCyan',kind='cylinder')
+node('PlayerScale_HandContact_Left__Actual_Bootstrap_Rig',player_scale_group,(guide_x-.30,.72,guide_z-.38),(hand_d,hand_d/2,hand_d),'Amber',kind='cylinder')
+node('PlayerScale_HandContact_Right__Actual_Bootstrap_Rig',player_scale_group,(guide_x+.30,.72,guide_z-.38),(hand_d,hand_d/2,hand_d),'Amber',kind='cylinder')
+node('PlayerScale_MaxArmReach__Actual_Bootstrap_Rig',player_scale_group,(guide_x+arm_reach/2,.92,guide_z),(arm_reach,.025,.025),'LightStrip')
+node('PlayerScale_ReachOrigin__Actual_Bootstrap_Rig',player_scale_group,(guide_x,.92,guide_z),(.04,.20,.04),'Amber')
 
 # Historical exit shutter visual remains inactive; gate + blocker are authoritative blockout visuals.
 node('Exit_Shutter_Leaf__Historical',shutter,(4,1.78,26),(3.16,3.56,.18),'Metal',True)
