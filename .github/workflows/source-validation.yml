@@ -77,7 +77,7 @@ jobs:
           fi
           echo 'PASS: no unresolved merge-conflict markers.'
 
-      - name: Check changed-file whitespace
+      - name: Check human-authored text whitespace
         shell: bash
         env:
           EVENT_NAME: ${{ github.event_name }}
@@ -88,11 +88,21 @@ jobs:
           ZERO_SHA='0000000000000000000000000000000000000000'
 
           if [[ "$EVENT_NAME" == "pull_request" ]]; then
-            git diff --check "$PR_BASE_SHA...HEAD"
+            RANGE="$PR_BASE_SHA...HEAD"
           elif [[ "$EVENT_NAME" == "push" && -n "${PUSH_BEFORE_SHA:-}" && "$PUSH_BEFORE_SHA" != "$ZERO_SHA" ]]; then
-            git diff --check "$PUSH_BEFORE_SHA...HEAD"
+            RANGE="$PUSH_BEFORE_SHA...HEAD"
           elif git rev-parse HEAD^ >/dev/null 2>&1; then
-            git diff --check HEAD^..HEAD
+            RANGE='HEAD^..HEAD'
           else
-            git diff --check HEAD
+            RANGE='HEAD'
           fi
+
+          # Unity intentionally serializes many empty YAML values with a trailing space
+          # (for example `userData: ` and `value: `). Checking those generated scene,
+          # asset and .meta files would make valid Unity saves fail CI. Keep whitespace
+          # enforcement on human-authored source, docs and configuration instead.
+          git diff --check "$RANGE" -- \
+            '*.cs' '*.py' '*.md' '*.json' '*.yml' '*.yaml' '*.sh' '*.txt' \
+            '*.asmdef' '*.asmref' '*.xml' '*.csproj' '*.props' '*.targets' \
+            '*.toml' '*.ini' '*.cfg' '*.config' '*.uxml' '*.uss' \
+            '.gitignore' '.gitattributes'
