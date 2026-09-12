@@ -98,23 +98,20 @@ def main():
     follower_path = ROOT / "Assets/Scripts/MonsterScripts/CrawlerBodyPathFollower.cs"
     follower = require(errors, follower_path, [
         "public void ResetTrail()",
-        "trail.Clear();",
-        "Physics.RaycastNonAlloc(",
-        "SamplePosition(binding.distanceBehind)",
-        "SampleForward(binding.distanceBehind)",
-        "RigidlyAlignFrontAnchor();",
-        "binding.bone.rotation = Quaternion.Slerp",
+        "PreservesAnimatorSkeleton => true",
+        "automatic pivot alignment",
+        "never writes a bone position or rotation",
+        "AlignVisualToLeader();",
+        "mixamorigspine2",
+        "mixamorighips",
     ])
     if re.search(r"^using\s+Photon\.", follower, re.M):
-        errors.append(f"{rel(follower_path)}: local visual body reconstruction must not depend on Photon.")
-    if re.search(r"binding\.bone\.position\s*=", follower):
-        errors.append(f"{rel(follower_path)}: path correction must not rewrite core torso bone positions and squash/stretch the skeleton.")
-    body = positive_defaults(errors, follower_path, follower, [
-        "trailSampleSpacing", "retainedTrailLength", "teleportResetDistance", "bodyFollowWeight", "tangentSampleDistance",
-        "maximumRigidAlignmentPerFrame"
-    ])
-    if body.get("bodyFollowWeight", 0) > 1:
-        errors.append(f"{rel(follower_path)}: bodyFollowWeight must remain <= 1.")
+        errors.append(f"{rel(follower_path)}: local visual alignment must not depend on Photon.")
+    if re.search(r"\b(?:binding\.)?bone\.(?:position|rotation)\s*=", follower):
+        errors.append(f"{rel(follower_path)}: failed runtime tests forbid post-Animator core-bone position/rotation writes.")
+    if "ApplyBodyPath();" in follower or "ConstrainHand(" in follower:
+        errors.append(f"{rel(follower_path)}: experimental per-bone/hand deformation must remain disabled until a rig-safe solution is headset-validated.")
+    positive_defaults(errors, follower_path, follower, ["floorClearance"])
 
     zone_path = ROOT / "Assets/Scripts/Zones/ZoneTrigger.cs"
     require(errors, zone_path, [
@@ -177,10 +174,28 @@ def main():
         "rightHandBlockedAfterTeleport",
         "CollisionsSphereCast(",
         "minimumRaycastDistance + 0.005f",
+        "MinimumVisualHandContactRadius = 0.05f",
+        "minimumRaycastDistance = Mathf.Max(minimumRaycastDistance, MinimumVisualHandContactRadius)",
         "if (!suppressLeftHand && IterativeCollisionSphereCast",
         "if (!suppressRightHand && IterativeCollisionSphereCast",
     ])
-    positive_defaults(errors, player_path, player, ["teleportHandPenetrationTolerance"])
+    hand = positive_defaults(errors, player_path, player, [
+        "teleportHandPenetrationTolerance", "MinimumVisualHandContactRadius"
+    ])
+    if hand.get("MinimumVisualHandContactRadius", 0) < 0.05:
+        errors.append(f"{rel(player_path)}: visual hand contact radius must remain at least 0.05 m.")
+
+    avatar_path = ROOT / "Assets/Resources/PhotonVR/Scripts/Player/PhotonVRPlayer.cs"
+    avatar = require(errors, avatar_path, [
+        "DefaultExecutionOrder(100)",
+        "CopyTrackedHandPose(",
+        "locomotion.rightHandFollower",
+        "locomotion.leftHandFollower",
+        "collisionSafePositionSource.position",
+        "trackedRotationSource.rotation",
+    ])
+    if "CopyTrackedPose(RightHand, manager.RightHand)" in avatar or "CopyTrackedPose(LeftHand, manager.LeftHand)" in avatar:
+        errors.append(f"{rel(avatar_path)}: local visible hands must not bypass Gorilla collision-safe follower positions.")
 
     guard_path = ROOT / "Assets/Scripts/Bootstrap/RigFloorPenetrationGuard.cs"
     guard = require(errors, guard_path, [
@@ -221,7 +236,7 @@ def main():
         print(f"FAILED: {len(errors)} Level 1/runtime contract issue(s).")
         return 1
 
-    print("PASS: Level 1/runtime headlamp, Crawler proportions/path, keycard recovery, loading coverage, safe-zone, capture, floor-recovery, and spawn-safe hand source contracts.")
+    print("PASS: Level 1/runtime hand visual contact, authored Crawler skeleton, keycard recovery, loading coverage, headlamp, safe-zone, capture, and floor-recovery source contracts.")
     print("PASS: Runtime/Photon/XR/Quest validation remains separate.")
     return 0
 
