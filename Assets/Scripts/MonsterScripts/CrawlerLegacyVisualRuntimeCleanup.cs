@@ -15,6 +15,8 @@ public sealed class CrawlerLegacyVisualRuntimeCleanup : MonoBehaviour
 
     private CrawlerVisualController visualController;
     private int waitFrames;
+    private int scheduledRemovalCount;
+    private bool cleanupRequested;
     private bool finished;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
@@ -72,22 +74,30 @@ public sealed class CrawlerLegacyVisualRuntimeCleanup : MonoBehaviour
             return;
         }
 
-        int removed = CrawlerLegacyVisualCleaner.RemoveLegacyVisuals(
-            gameObject,
-            zombie,
-            immediate: false);
+        if (!cleanupRequested)
+        {
+            // Runtime Destroy is deferred until the end of the frame. Schedule the cleanup
+            // now, then verify on the next LateUpdate so we do not mistake pending-destroy
+            // Unity objects for protected gameplay branches.
+            scheduledRemovalCount = CrawlerLegacyVisualCleaner.RemoveLegacyVisuals(
+                gameObject,
+                zombie,
+                immediate: false);
+            cleanupRequested = true;
+            return;
+        }
 
         bool legacyStillPresent = CrawlerLegacyVisualCleaner.ContainsLegacyVisualRig(gameObject, zombie);
         if (legacyStillPresent)
         {
             Debug.LogWarning(
-                $"{name}: removed {removed} obsolete legacy visual object/component(s), but part of the old rig was retained because it also owns a gameplay/physics/audio component. Inspect the remaining branch before deleting it manually.",
+                $"{name}: removed {scheduledRemovalCount} obsolete legacy visual object/component(s), but part of the old rig was retained because it also owns a gameplay/physics/audio component. Inspect the remaining branch before deleting it manually.",
                 this);
         }
-        else if (removed > 0)
+        else if (scheduledRemovalCount > 0)
         {
             Debug.Log(
-                $"{name}: removed {removed} obsolete MiniGamesKid visual object/component(s). Runtime hierarchy is now the Crawler gameplay root plus Zombie Crawl visual rig.",
+                $"{name}: removed {scheduledRemovalCount} obsolete MiniGamesKid visual object/component(s). Runtime hierarchy is now the Crawler gameplay root plus Zombie Crawl visual rig.",
                 this);
         }
 
