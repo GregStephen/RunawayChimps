@@ -29,12 +29,20 @@ public sealed class VentHeadlampController : MonoBehaviour
     [SerializeField, Min(0f)] private float fadeSeconds = 0.14f;
     [SerializeField] private bool debugLogs;
 
+    // The Level 1 prototype starts with the headlamp equipped. Keeping this state
+    // separate from zone activation lets a future inventory/tool wheel equip or stow
+    // the utility without changing the lighting implementation.
+    [SerializeField] private bool toolEquipped = true;
+
     private XROrigin origin;
     private Camera trackedCamera;
     private Light headlamp;
     private ZoneStateService zoneService;
     private bool wantsBeam;
     private bool warnedMissingRig;
+
+    public bool ToolEquipped => toolEquipped;
+    public bool BeamActive => headlamp != null && headlamp.enabled && headlamp.intensity > 0.01f;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     private static void Register()
@@ -85,6 +93,15 @@ public sealed class VentHeadlampController : MonoBehaviour
         Player player = Player.Instance;
         XROrigin xrOrigin = player != null ? player.GetComponentInParent<XROrigin>() : null;
         return xrOrigin != null ? xrOrigin.GetComponent<VentHeadlampController>() : null;
+    }
+
+    public void SetToolEquipped(bool equipped)
+    {
+        if (toolEquipped == equipped)
+            return;
+
+        toolEquipped = equipped;
+        RefreshDesiredState();
     }
 
     private void Awake()
@@ -164,6 +181,7 @@ public sealed class VentHeadlampController : MonoBehaviour
     private void RefreshDesiredState()
     {
         bool shouldEnable =
+            toolEquipped &&
             SceneManager.GetActiveScene().name == LevelOneScene &&
             zoneService != null &&
             zoneService.LocalZone == ZoneId.Level1_Vents;
