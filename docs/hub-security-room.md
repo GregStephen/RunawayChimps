@@ -18,6 +18,7 @@ This focused design note records the Hub security-room decisions while the room 
 - **Confirmed:** Surveillance footage remains silent.
 - **Confirmed:** The screen presentation should use grainy surveillance-style imagery. Keep the physical monitor simple/chunky and consistent with the game's rough low-poly facility aesthetic.
 - **Confirmed implementation contract:** Keep the monitor's display face as a separate mesh/material target (`*_Screen_Surface`) so Unity can replace the picture/material/UI without modifying the physical monitor model.
+- **Confirmed implementation direction:** Hub surveillance uses captured/recorded level imagery rather than keeping remote level scenes loaded solely to render live security feeds. Capture clean 4:3 images from authored in-level camera positions; apply grain/scanlines and dynamic sector text on the Hub monitor so the same physical screen can rotate to another level later.
 
 ### Display composition
 
@@ -32,5 +33,8 @@ The level label should be data-driven from the screen's current assignment rathe
 ## Implementation status
 
 - **Asset prototype created outside the repository, 2026-09-12:** a reusable single-monitor model, a four-monitor 2×2 convenience layout, a Blender generator script, a grain overlay, a neutral static placeholder and a screen-layout guide were generated for review/import. The monitor uses a separate named screen surface.
-- **Not yet integrated:** no monitor asset, Unity prefab, display controller, level-assignment scheduler, surveillance image sequence or Hub scene placement has been committed to the repository from this design pass.
-- **Pending validation:** Blender appearance/scale review; Unity 2022.3.55f1 import/material setup; Hub wall placement; VR readability of the dynamic label; screen rotation behavior; Quest performance; and confirmation that all monitor playback remains silent.
+- **Implemented on `feature/hub-surveillance-monitors`, pending validation:** `SecurityMonitorFeed` stores a sector label, captured still sequence and optional rare interrupt; `SecurityMonitorDisplay` drives one monitor's footage/grain/text UI; `SurveillanceWallController` completes a level's full view sequence before rotating that physical screen to another available feed and preserves each feed's loop state while off-screen; and **Tools > Runaway Chimps > Surveillance > Capture Still...** captures a clean 4:3 scene-camera PNG under `Assets/Art/Surveillance/Captures`.
+- **Not yet authored in the Hub:** the generated monitor model is still external to the repository; no monitor prefab, world-space display Canvas, captured Level 1 stills, feed ScriptableObject assets, or `Hub_Base` monitor placement has been committed yet.
+- **Pending validation:** Unity 2022.3.55f1 import/compile; capture-tool output; Blender monitor import/material setup; Hub wall placement; VR readability of the dynamic label; full-sequence and >4-feed rotation behavior; off-screen feed-state preservation; silent playback; and Quest texture/UI performance.
+
+See [Hub surveillance monitor setup](surveillance-monitor-setup.md) for the source wiring and capture workflow.
