@@ -83,8 +83,17 @@ def main():
         'LevelOneScene = "Level1_Containment"',
         'VentRoomName = "VentRoom"',
         'RuntimeRootName = "Level1_VentRoom_Blower"',
-        "BlowerLocalPosition = new Vector3(-0.25f, 0.72f, 22.08f)",
-        "primitiveCollider.enabled = false;",
+        'BlowerResourcePath = "RunawayChimps_VentBlower"',
+        'RotorName = "FanRotor"',
+        'RedLensName = "RedLightLens"',
+        "BlowerLocalPosition = new Vector3(-0.25f, 0.72f, 22.46f)",
+        "Resources.Load<GameObject>(BlowerResourcePath)",
+        "Instantiate(blowerPrefab, transform, false)",
+        "OrientVisualIntoVentRoom(visualInstance.transform)",
+        "GetComponentsInChildren<Collider>(true)",
+        "collider.enabled = false;",
+        "ShadowCastingMode.Off",
+        'Shader.Find("Universal Render Pipeline/Lit")',
         "LightType.Point",
         "LightShadows.None",
         "bounceIntensity = 0f",
@@ -94,7 +103,25 @@ def main():
     ])
     if re.search(r"^using\s+Photon\.", blower, re.M):
         errors.append(f"{rel(blower_path)}: decorative vent blower must not depend on Photon.")
+    if "GameObject.CreatePrimitive(" in blower:
+        errors.append(f"{rel(blower_path)}: approved Blender visual must not regress to generated primitive geometry.")
     positive_defaults(errors, blower_path, blower, ["FanDegreesPerSecond", "BaseRedLightIntensity"])
+
+    blower_asset = ROOT / "Assets/Resources/RunawayChimps_VentBlower.fbx"
+    blower_meta = ROOT / "Assets/Resources/RunawayChimps_VentBlower.fbx.meta"
+    if not blower_asset.exists():
+        errors.append(f"{rel(blower_asset)}: approved Blender FBX resource is missing.")
+    elif blower_asset.stat().st_size < 10000:
+        errors.append(f"{rel(blower_asset)}: approved Blender FBX resource is unexpectedly small.")
+    meta = require(errors, blower_meta, [
+        "ModelImporter:",
+        "addColliders: 0",
+        "importCameras: 0",
+        "importLights: 0",
+        "preserveHierarchy: 1",
+    ])
+    if meta:
+        guid(blower_meta, errors)
 
     nav_path = ROOT / "Assets/Scripts/MonsterScripts/MonsterNavigation.cs"
     require(errors, nav_path, ["gameObject.AddComponent<CrawlerVisualController>();", "agent.updateRotation = false;"])
