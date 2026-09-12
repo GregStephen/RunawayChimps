@@ -1,0 +1,35 @@
+name: TEMP apply Crawler cleanup docs
+
+on:
+  push:
+    branches:
+      - fix/runtime-keycard-crawler-loading
+
+jobs:
+  sync-docs:
+    if: github.actor != 'github-actions[bot]'
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/runtime-keycard-crawler-loading
+          fetch-depth: 0
+
+      - name: Update maintained project docs
+        run: python Tools/record_crawler_hierarchy_cleanup.py
+
+      - name: Commit documentation update
+        shell: bash
+        run: |
+          git diff --check
+          git add docs/design-and-lore.md docs/repository-improvement-plan.md
+          if git diff --cached --quiet; then
+            echo "Documentation already current."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Record Crawler hierarchy cleanup and failed retest"
+          git push origin HEAD:fix/runtime-keycard-crawler-loading
