@@ -33,3 +33,6 @@ Thumbs.db
 # Python repository validation tools
 __pycache__/
 *.py[cod]
+
+# Repository-local generated artifacts
+/TempAssembly.dll
