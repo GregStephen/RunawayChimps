@@ -24,6 +24,12 @@ A new `Shared.meta` was added for the new parent folder. Code search found no ha
 
 The tracked root `TempAssembly.dll` was removed after the existing codebase audit had already flagged it as a likely generated artifact and repository search found no runtime/code reference to it. `/TempAssembly.dll` is now ignored so it is not accidentally recommitted.
 
+## Validated source evidence
+
+**Validated 2026-09-12 on commit `b3679e0` through PR #13 Source integrity CI:** Unity 2022.3.55f1 was confirmed; `validate_source.py --syntax` passed 116 first-party C# scripts and 5 enabled scenes; repository-integrity checks passed 1,745 Unity metadata files with unique GUIDs and valid asset pairing; no case-only path collisions were found; Level 1 source contracts and Python tool compilation passed; no unresolved merge markers remained; and the full PR diff passed whitespace validation after correcting the new `Shared.meta` formatting.
+
+This is source/serialization evidence only. It does not establish Unity import/compile, material/model/animation/audio reference health after reimport, Play Mode behavior, Photon behavior, or headset behavior.
+
 ## Intentionally deferred
 
 - `Assets/Scenes`: Build Settings and tooling can depend on serialized/path strings. Leave in place until a dedicated scene-path migration updates and validates every consumer.
@@ -59,14 +65,14 @@ If `Scenes` or `Scripts` are eventually moved under `Assets/RunawayChimps`, trea
 
 ## Pending validation before merge
 
-Source-level checks are necessary but not sufficient. Before merging this organization branch:
+The source-level checks below are complete, but Unity/runtime checks are still required before merging this organization branch:
 
-1. Run `python Tools/validate_repository_integrity.py`.
-2. Run `python Tools/validate_source.py --syntax` and any Level 1/Level 2 contract validators used by current CI.
-3. Open the project in Unity 2022.3.55f1 and allow a full import/compile; confirm there are no missing scripts, missing materials, broken animation/controller references, or pink materials caused by lost references.
-4. Open the enabled scenes and inspect representative moved models/materials/textures/audio/animations.
-5. Run the existing reliability/editor validation menu items.
-6. Play from Bootstrap through Hub and Level 1/Level 2 entry paths.
-7. Run the two-client Photon PUN smoke test and headset smoke test already required by the repository validation plan.
+1. **Validated 2026-09-12:** `python Tools/validate_repository_integrity.py` via PR #13 Source integrity CI.
+2. **Validated 2026-09-12:** `python Tools/validate_source.py --syntax`, Level 1 contracts, Python compilation, merge-marker and whitespace checks via PR #13 Source integrity CI.
+3. **Pending:** open the project in Unity 2022.3.55f1 and allow a full import/compile; confirm there are no missing scripts, missing materials, broken animation/controller references, or pink materials caused by lost references.
+4. **Pending:** open the enabled scenes and inspect representative moved models/materials/textures/audio/animations.
+5. **Pending:** run the existing reliability/editor validation menu items.
+6. **Pending:** play from Bootstrap through Hub and Level 1/Level 2 entry paths.
+7. **Pending:** run the two-client Photon PUN smoke test and headset smoke test already required by the repository validation plan.
 
-Until those Unity/runtime checks are recorded, this branch is **implemented but pending validation**, not merge-ready.
+Until those Unity/runtime checks are recorded, this branch is **implemented and source-validated, but still pending Unity/runtime validation** and is not merge-ready.
