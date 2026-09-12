@@ -2,10 +2,10 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// Keeps the long Zombie Crawl visual inside the vent route by making its torso follow
-/// the recent path traveled by the authoritative gameplay/NavMesh root. The root is the
-/// leader at the front of the creature; chest/spine/hips progressively sample older
-/// positions so the body bends through corners instead of rotating as one rigid object.
+/// Keeps the long Zombie Crawl visual aligned to the recent vent route without changing
+/// authored skeleton segment lengths. Navigation remains authoritative at the front of
+/// the creature; torso bones rotate toward progressively older path tangents so the body
+/// can bend through corners, while visual alignment is applied as one rigid translation.
 /// </summary>
 [DefaultExecutionOrder(200)]
 [DisallowMultipleComponent]
@@ -23,6 +23,8 @@ public sealed class CrawlerBodyPathFollower : MonoBehaviour
     [Header("Visual alignment")]
     [Tooltip("Small clearance between the rendered Crawler bounds and the NavMesh floor.")]
     [SerializeField, Min(0f)] private float floorClearance = 0.015f;
+    [Tooltip("Maximum horizontal rigid correction applied in one frame if animation shifts the chest away from the gameplay leader.")]
+    [SerializeField, Min(0.05f)] private float maximumRigidAlignmentPerFrame = 0.75f;
 
     [Header("Hand containment")]
     [SerializeField] private bool constrainHandsToVent = true;
@@ -52,7 +54,6 @@ public sealed class CrawlerBodyPathFollower : MonoBehaviour
     {
         public Transform bone;
         public float distanceBehind;
-        public float heightAboveRoot;
         public Quaternion headingOffset;
     }
 
@@ -70,7 +71,8 @@ public sealed class CrawlerBodyPathFollower : MonoBehaviour
 
         ResolveBones();
 
-        // Animator evaluation establishes the crawl pose before we measure body spacing.
+        // Animator evaluation establishes the authored crawl pose before alignment and
+        // body-spacing calibration. The correction below never writes torso bone positions.
         if (animator != null && animator.enabled)
             animator.Update(0f);
 
@@ -97,6 +99,8 @@ public sealed class CrawlerBodyPathFollower : MonoBehaviour
         if (!configured) return;
 
         ApplyBodyPath();
+        RigidlyAlignFrontAnchor();
+
         if (constrainHandsToVent)
         {
             ConstrainHand(leftArmOrigin, leftHand);
@@ -121,10 +125,8 @@ public sealed class CrawlerBodyPathFollower : MonoBehaviour
         float seedLength = Mathf.Min(retainedTrailLength, bodyLength);
         int steps = Mathf.Max(1, Mathf.CeilToInt(seedLength / trailSampleSpacing));
 
-        // Seed a straight section behind the leader so the torso has valid samples on
-        // frame one and after teleports. Without this, every body bone would sample the
-        // same root point until enough movement history accumulated and the rig would
-        // collapse into itself.
+        // Seed a straight section behind the leader so every torso segment has a useful
+        // tangent immediately after initialization/teleport instead of all sampling one point.
         for (int i = steps; i >= 0; i--)
         {
             float distance = Mathf.Min(seedLength, i * trailSampleSpacing);
@@ -229,6 +231,25 @@ public sealed class CrawlerBodyPathFollower : MonoBehaviour
             Debug.LogWarning($"{name}: corrected Zombie Crawl visual pivot by {correction:0.00} m to align its body with the gameplay root.", this);
     }
 
+    private void RigidlyAlignFrontAnchor()
+    {
+        if (visualRoot == null || frontAnchor == null)
+            return;
+
+        // Torso bending must not move individual bone positions. Any residual drift from
+        // the crawl animation/path rotations is corrected by translating the entire visual
+        // hierarchy as one rigid unit, which preserves every authored bone segment length.
+        Vector3 target = SamplePosition(0f);
+        Vector3 correction = target - frontAnchor.position;
+        correction.y = 0f;
+
+        float maximum = Mathf.Max(0.05f, maximumRigidAlignmentPerFrame);
+        if (correction.magnitude > maximum)
+            correction = correction.normalized * maximum;
+
+        visualRoot.position += correction;
+    }
+
     private bool TryGetVisualBounds(out Bounds bounds)
     {
         Renderer[] renderers = visualRoot.GetComponentsInChildren<Renderer>(true);
@@ -306,7 +327,6 @@ public sealed class CrawlerBodyPathFollower : MonoBehaviour
             {
                 bone = bone,
                 distanceBehind = distanceBehind,
-                heightAboveRoot = bone.position.y - transform.position.y,
                 headingOffset = Quaternion.Inverse(rootHeading) * bone.rotation
             });
         }
@@ -323,21 +343,27 @@ public sealed class CrawlerBodyPathFollower : MonoBehaviour
         if (bodyBones.Count == 0 || bodyFollowWeight <= 0f)
             return;
 
-        // Work rear-to-front because Mixamo's Hips is the torso ancestor. Re-applying
-        // each descendant afterwards prevents a parent correction from dragging the
-        // already-targeted front of the Crawler off the vent centerline.
+        // The previous implementation wrote a world-space position into every core torso
+        // bone. Because these bones are parent/child transforms, that changed segment
+        // lengths and visibly compressed/stretched the skinned body. Preserve Animator
+        // positions and bend only by rotation; rigid visual translation handles alignment.
         for (int i = bodyBones.Count - 1; i >= 0; i--)
         {
             BodyBoneBinding binding = bodyBones[i];
             if (binding.bone == null) continue;
 
-            Vector3 desiredPosition = SamplePosition(binding.distanceBehind);
-            desiredPosition.y = transform.position.y + binding.heightAboveRoot;
-
+            Vector3 pathPoint = SamplePosition(binding.distanceBehind);
             Vector3 tangent = SampleForward(binding.distanceBehind);
-            Quaternion desiredRotation = FlatRotation(tangent) * binding.headingOffset;
 
-            binding.bone.position = Vector3.Lerp(binding.bone.position, desiredPosition, bodyFollowWeight);
+            // SamplePosition is retained as the intended path target/fallback direction,
+            // but it is deliberately never assigned to binding.bone.position.
+            if (tangent.sqrMagnitude < 0.0001f)
+            {
+                tangent = pathPoint - binding.bone.position;
+                tangent.y = 0f;
+            }
+
+            Quaternion desiredRotation = FlatRotation(tangent) * binding.headingOffset;
             binding.bone.rotation = Quaternion.Slerp(binding.bone.rotation, desiredRotation, bodyFollowWeight);
         }
     }
