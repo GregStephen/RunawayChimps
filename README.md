@@ -6,6 +6,7 @@ A Photon PUN VR horror game about escaping a laboratory. Open this project with 
 
 - [Design and lore](docs/design-and-lore.md): maintained game rules, level concepts, images, proposals, and decision corrections.
 - [Repository improvement plan](docs/repository-improvement-plan.md): review evidence, implementation status, priorities, and acceptance checks.
+- [Automated source validation](docs/ci-validation.md): what the GitHub `Source integrity` check verifies, first-run findings, and what remains manual.
 - [Codebase audit — September 10, 2026](docs/codebase-audit-2026-09-10.md): reliability findings, fixes, and remaining test scope for PR #5.
 - [AGENTS.md](AGENTS.md): instructions to read and update the relevant documents when decisions, implementation, or test results meaningfully change.
 
@@ -52,7 +53,22 @@ The `ad1a424` merge preserves PR #4 while combining these reliability changes:
 - `Tools/validate_source.py` plus **Tools > Runaway Chimps > Run Reliability Regression Checks**;
 - expanded **Validate Sector Travel** coverage, including Level 2 and missing-script detection.
 
-The offline validator is generic and reads every enabled build scene, so the current five-scene tree does not require a hard-coded scene-count change. **It still needs to be rerun after the PR #4/#5 reconciliation.**
+The offline validator is generic and reads every enabled build scene, so the current five-scene tree does not require a hard-coded scene-count change.
+
+## Automated source validation
+
+PR #11 adds `.github/workflows/source-validation.yml`, a read-only **Source integrity** GitHub Actions check. It runs for pull requests, pushes to `main`, `codex/**`, and `design/**`, and manual dispatches.
+
+The check pins its C# parser dependencies and verifies:
+
+- `ProjectSettings/ProjectVersion.txt` still declares Unity **2022.3.55f1**;
+- `python Tools/validate_source.py --syntax` passes for first-party component/class names, Unity script metadata/GUIDs, enabled scene registration, scene metadata, local object IDs/references, and C# syntax;
+- tracked Python tools compile with `python -m compileall -q Tools`; and
+- `git diff --check` passes for the full PR or pushed range.
+
+The first run immediately caught a real syntax error in `Tools/Level2Blockout/draw_plan.py` and then caught trailing whitespace in three newly added Unity `.meta` files. Those issues were fixed rather than weakening the check. On 2026-09-12 both the push and pull-request **Source integrity** runs passed; the source validator reported 116 first-party scripts and 5 enabled scenes passing its checks.
+
+A green Source integrity check is **not Unity validation**. It does not import or compile the project in Unity, run either Unity Editor validator, enter Play Mode, connect Photon clients, exercise XR interactions, or test Quest/headset performance. See [Automated source validation](docs/ci-validation.md) for the exact boundary and the possible future Unity-aware CI tier.
 
 ## Audio and proximity fixes
 
@@ -65,7 +81,7 @@ The offline validator is generic and reads every enabled build scene, so the cur
 
 ## Checks before merging PR #5
 
-First run the source check from the repository root:
+The `Source integrity` workflow now runs the offline source check automatically, and it can still be run locally from the repository root:
 
 ```bash
 python Tools/validate_source.py --syntax
@@ -135,8 +151,8 @@ Only the local hand/fingertip should activate it. A remote hand, local head/body
 
 ## Validation status
 
-**Implemented:** PR #3 scene travel foundation; PR #4 Level 2 blockout/travel/RETURN TO SECURITY and card filename/GUID correction; PR #5 reliability fixes reconciled with both in `ad1a424`; PR #6 Hub → Level 1 button-only interaction and runtime recovery of the existing inactive entrance button.
+**Implemented:** PR #3 scene travel foundation; PR #4 Level 2 blockout/travel/RETURN TO SECURITY and card filename/GUID correction; PR #5 reliability fixes reconciled with both in `ad1a424`; PR #6 Hub → Level 1 button-only interaction and runtime recovery of the existing inactive entrance button; PR #11 adds the read-only repository-wide Source integrity workflow.
 
-**Validated before reconciliation:** the separate PR #4 source/geometry checks and PR #5 audit-tree source checks recorded in their reports. For PR #6, repository inspection confirms the existing button is positioned beside/before the Hub gate, has an enabled visible mesh and trigger, requires the local `HandTag`/hand layer, and has one persistent `SectorDoor.Travel` binding. This is source evidence, not Play Mode validation.
+**Source validated on PR #11, 2026-09-12:** both push and pull-request Source integrity runs passed after the check first exposed and prompted fixes for the broken Level 2 floorplan drawing script and whitespace in three new Unity metadata files. This automated evidence covers source/serialization/tool syntax and whitespace only.
 
-**Pending on the current branches:** rerun offline source validation; Unity 2022.3.55f1 compile/import; both Editor validators; startup/live-service tests; Hub entrance button Play Mode/headset behavior; Level 1/2 routes; two-client Photon; capture/controller handover/reconnect; voice; headset pause/resume; repeated travel; Quest performance and comfort.
+**Pending on the current branches:** Unity 2022.3.55f1 compile/import; both Editor validators; startup/live-service tests; Hub entrance button Play Mode/headset behavior; Level 1/2 routes; two-client Photon; capture/controller handover/reconnect; voice; headset pause/resume; repeated travel; Quest performance and comfort.
