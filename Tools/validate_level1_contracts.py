@@ -110,7 +110,7 @@ def main():
     if re.search(r"\b(?:binding\.)?bone\.(?:position|rotation)\s*=", follower):
         errors.append(f"{rel(follower_path)}: failed runtime tests forbid post-Animator core-bone position/rotation writes.")
     if "ApplyBodyPath();" in follower or "ConstrainHand(" in follower:
-        errors.append(f"{rel(follower_path)}: experimental per-bone/hand deformation must remain disabled until a rig-safe solution is headset-validated.")
+        errors.append(f"{rel(follower_path)}: experimental torso/leaf deformation must remain disabled; limb contact belongs in the dedicated IK component.")
     positive_defaults(errors, follower_path, follower, ["floorClearance"])
 
     heading_path = ROOT / "Assets/Scripts/MonsterScripts/CrawlerVisualHeadingStabilizer.cs"
@@ -128,6 +128,37 @@ def main():
     positive_defaults(errors, heading_path, heading, [
         "headingLookbackDistance", "maximumTurnDegreesPerSecond", "sampleSpacing", "historyDistance", "discontinuityDistance"
     ])
+
+    surface_ik_path = ROOT / "Assets/Scripts/MonsterScripts/CrawlerSurfaceContactIK.cs"
+    surface_ik = require(errors, surface_ik_path, [
+        'LevelOneSceneName = "Level1_Containment"',
+        "DefaultExecutionOrder(350)",
+        "visualController.VisualRoot",
+        "visualController.VisualAnimator",
+        "Physics.SphereCastNonAlloc(",
+        "Physics.OverlapSphereNonAlloc(",
+        "QueryTriggerInteraction.Ignore",
+        "hit.point + hit.normal * (handRadius + surfaceClearance)",
+        "Quaternion.FromToRotation(",
+        '"mixamorigleftarm"',
+        '"mixamorigleftforearm"',
+        '"mixamoriglefthand"',
+        '"mixamorigrightarm"',
+        '"mixamorigrightforearm"',
+        '"mixamorigrighthand"',
+        "collider.transform.IsChildOf(transform)",
+        "collider.attachedRigidbody != null",
+        "Only upper-arm/forearm joints are corrected",
+    ])
+    surface_defaults = positive_defaults(errors, surface_ik_path, surface_ik, [
+        "handRadius", "surfaceClearance", "contactReleaseSpeed", "emergencyProbeRadiusScale"
+    ])
+    if surface_defaults.get("handRadius", 0) > 0.12:
+        errors.append(f"{rel(surface_ik_path)}: handRadius is unexpectedly large for vent contact IK.")
+    if re.search(r"(?:spine|hips).*\.(?:position|rotation)\s*=", surface_ik, re.I):
+        errors.append(f"{rel(surface_ik_path)}: surface-contact IK must never manipulate torso/core bones.")
+    if re.search(r"\btransform\.position\s*=", surface_ik):
+        errors.append(f"{rel(surface_ik_path)}: limb contact must not move the authoritative Crawler gameplay root.")
 
     legacy_cleaner_path = ROOT / "Assets/Scripts/MonsterScripts/CrawlerLegacyVisualCleaner.cs"
     legacy_cleaner = require(errors, legacy_cleaner_path, [
@@ -288,7 +319,7 @@ def main():
         print(f"FAILED: {len(errors)} Level 1/runtime contract issue(s).")
         return 1
 
-    print("PASS: Level 1/runtime hand visual contact, Animator-owned Crawler skeleton, legacy visual-rig cleanup, Crawler forward/turn continuity, keycard recovery, loading coverage, headlamp, safe-zone, capture, and floor-recovery source contracts.")
+    print("PASS: Level 1/runtime hand visual contact, Animator-owned Crawler torso, Crawler hand surface-contact IK, legacy visual-rig cleanup, Crawler forward/turn continuity, keycard recovery, loading coverage, headlamp, safe-zone, capture, and floor-recovery source contracts.")
     print("PASS: Runtime/Photon/XR/Quest validation remains separate.")
     return 0
 
