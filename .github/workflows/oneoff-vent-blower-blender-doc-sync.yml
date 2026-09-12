@@ -1,0 +1,55 @@
+name: One-off vent blower Blender doc sync
+
+on:
+  push:
+    branches:
+      - asset/vent-blower-blender
+    paths:
+      - '.github/workflows/oneoff-vent-blower-blender-doc-sync.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  sync-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: asset/vent-blower-blender
+          fetch-depth: 0
+
+      - name: Record Blender asset correction and status
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          design = Path('docs/design-and-lore.md')
+          text = design.read_text(encoding='utf-8')
+          marker = '**September 12 automated source-validation follow-up:**'
+          section = '''**September 12 VentRoom Blender-asset correction/delivery:** Greg rejected the polished industrial concept as too detailed for Runaway Chimps and confirmed that the blower's final visual direction should stay **simple, chunky and game-like**. Branch `asset/vent-blower-blender` now contains `Tools/BlenderAssets/build_vent_blower.py`, which was executed with Blender 4.2.23 LTS to produce an editable `RunawayChimps_VentBlower.blend`, a Unity-ready FBX export and a preview render. The delivered asset uses a coarse wall housing, six thick blades under a separate `FanRotor` hierarchy, three simple guard rings/spokes, blocky mounting hardware, a basic motor/control box and conduit, and a small red maintenance lens; it intentionally has no high-detail grime texture treatment. The successful build reports 37 mesh objects and approximately 2,972 evaluated triangles. This is an **implemented Blender asset delivery but not yet a Unity integration**: PR #17's runtime-generated primitive geometry remains the functional prototype until it is replaced by the imported Blender prefab while preserving the existing runtime fan rotation, red-light and localized-audio behavior. Unity 2022.3.55f1 import/material review, exact `VentRoom` fit, collider strategy, Quest performance and headset review remain pending.\n\n'''
+          if section not in text:
+              text = text.replace(marker, section + marker, 1)
+
+          table_marker = '| 2026-09-12 | Preserve the existing Level 1 vent layout.'
+          row = '| 2026-09-12 | Keep the VentRoom blower visual deliberately simple/chunky rather than polished or photorealistic. Use an authored Blender prop for the final visual, with `FanRotor` kept separate so Unity can rotate it; retain PR #17 for runtime light/audio behavior. | Confirmed correction from Greg after rejecting the polished concept. Blender 4.2.23 asset built/delivered from `asset/vent-blower-blender` (~2,972 triangles); Unity prefab swap and headset validation pending. |\n'
+          if row not in text:
+              text = text.replace(table_marker, row + table_marker, 1)
+          design.write_text(text, encoding='utf-8')
+
+          plan = Path('docs/repository-improvement-plan.md')
+          text = plan.read_text(encoding='utf-8')
+          marker = '## September 12 Level 1 VentRoom blower set piece'
+          section = '''## September 12 VentRoom Blender asset follow-up\n\n**Confirmed art correction:** the highly polished/rust-heavy concept render is not the Runaway Chimps target. Greg wants this landmark to match the game's simpler, chunkier environment assets. Keep the already-confirmed widened `VentRoom` placement and function, but graduate only the visual geometry from runtime primitives to an authored Blender asset.\n\n**Implemented asset delivery on `asset/vent-blower-blender`:** `Tools/BlenderAssets/build_vent_blower.py` was run successfully under Blender 4.2.23 LTS and produced `RunawayChimps_VentBlower.blend`, `RunawayChimps_VentBlower.fbx` and an 800×800 preview. The editable source has a separate `FanRotor`, coarse six-blade fan, simple guard, housing, mounting brackets, motor/control box, conduit and red-lens reference. The build reports 37 mesh objects / approximately 2,972 evaluated triangles. Materials are deliberately plain and do not bake the polished weathering seen in the rejected concept.\n\n**Integration boundary:** the Blender/FBX asset is built and downloadable, but it is not yet committed as a Unity binary asset or wired into `Level1_Containment`. PR #17 remains the current functional prototype and owns rotation/light/audio behavior. The intended next integration is to replace only PR #17's generated visual primitives with the imported prefab, bind its `FanRotor` to the existing rotation behavior, preserve the side-wall placement and no-route-redesign rule, and keep lighting/audio runtime-controlled.\n\n**Pending validation:** Unity 2022.3.55f1 FBX/material import; create and place the prefab in the existing `VentRoom`; confirm player/Crawler clearance; decide minimal static collider coverage if any (never colliderize the rotating blades); verify red lens/light alignment and audio position; headset scale/readability; two-client behavior; and target Quest performance.\n\n'''
+          if section not in text:
+              text = text.replace(marker, section + marker, 1)
+          plan.write_text(text, encoding='utf-8')
+          PY
+
+          git config user.name "Greg Stephen"
+          git config user.email "35859167+GregStephen@users.noreply.github.com"
+          git add docs/design-and-lore.md docs/repository-improvement-plan.md
+          git rm .github/workflows/oneoff-vent-blower-blender-doc-sync.yml
+          git commit -m "Record vent blower Blender asset delivery"
+          git push origin HEAD:asset/vent-blower-blender
