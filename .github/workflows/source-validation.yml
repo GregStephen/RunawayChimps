@@ -58,8 +58,24 @@ jobs:
       - name: Validate first-party source and enabled scenes
         run: python Tools/validate_source.py --syntax
 
+      - name: Validate Unity repository integrity
+        run: python Tools/validate_repository_integrity.py
+
+      - name: Validate Level 1 source contracts
+        run: python Tools/validate_level1_contracts.py
+
       - name: Compile Python validation tools
         run: python -m compileall -q Tools
+
+      - name: Reject unresolved merge markers
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git grep -n -E '^(<<<<<<< .+|>>>>>>> .+|=======$)' -- .; then
+            echo 'ERROR: unresolved merge-conflict markers found.'
+            exit 1
+          fi
+          echo 'PASS: no unresolved merge-conflict markers.'
 
       - name: Check changed-file whitespace
         shell: bash
