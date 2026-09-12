@@ -10,6 +10,7 @@ using UnityEngine.SceneManagement;
 [DisallowMultipleComponent]
 public sealed class CrawlerLegacyVisualRuntimeCleanup : MonoBehaviour
 {
+    private const string LevelOneSceneName = "Level1_Containment";
     private const int MaximumWaitFrames = 180;
 
     private CrawlerVisualController visualController;
@@ -25,7 +26,7 @@ public sealed class CrawlerLegacyVisualRuntimeCleanup : MonoBehaviour
 
     private static void HandleSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        if (!scene.IsValid() || !scene.isLoaded)
+        if (!scene.IsValid() || !scene.isLoaded || scene.name != LevelOneSceneName)
             return;
 
         GameObject[] roots = scene.GetRootGameObjects();
