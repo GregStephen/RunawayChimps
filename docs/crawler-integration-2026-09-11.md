@@ -4,7 +4,7 @@
 
 Level 1 keeps the existing Crawler gameplay behavior: it is confined to the vents, chases eligible players in the vent zone, safe rooms end pursuit, and loss of a target returns it to patrol. `Zombie Crawl` replaces the visible `MiniGamesKidFirstRig` model while the established navigation, capture, audio, proximity, patrol and Photon synchronization systems remain on the existing gameplay root.
 
-Level 1 must remain dark and threatening without becoming effectively unnavigable. The optional local vent headlamp discussed after play feedback remains a proposal, not an implemented requirement.
+Level 1 must remain dark and threatening without becoming effectively unnavigable. The local vent headlamp is now a **confirmed Level 1 presentation/tool direction** and is implemented on `codex/fix-level1-crawler-lighting` as a local-only tracked-camera Spot Light. Its exact beam tuning, future inventory/tool-wheel control, and remote-player visible equipment model remain pending validation/design work.
 
 ## Original integration merged through PR #8
 
@@ -37,6 +37,16 @@ Implemented corrections:
 - Retries guarded capture during continued overlap so an initial contact during a transient busy/zone state is not permanently missed.
 - Records held-card drops from the Gorilla locomotion body position before respawn instead of the particular hand/head collider that touched the Crawler.
 
+## Vent headlamp implementation
+
+**Confirmed and source-implemented on `codex/fix-level1-crawler-lighting`:** `VentHeadlampController` installs itself on the persistent local `XROrigin` when Level 1 is loaded and creates exactly one runtime `Local_Vent_Headlamp` Spot Light under the tracked XR camera. The current prototype starts with the utility equipped, enables the beam only while the local `ZoneStateService` is `Level1_Vents`, and fades it off again in either safe room or outside Level 1.
+
+Prototype beam values are intentionally tunable rather than final art decisions: approximately 46° outer cone, 30° inner cone, 8 m range, cool-white color, 1.8 intensity and a 0.14 s transition. The light uses no realtime shadows and no bounce contribution. The existing ambient/directional fallback remains readable on its own; the headlamp is a focus/atmosphere tool, not permission to make the global level black again.
+
+The real Spot Light is **local-only** and is not Photon-synchronized. Another player's headlamp therefore does not add another realtime Light to the local client's scene. This is deliberate for Quest performance and to prevent another player's equipment from washing out a client's horror lighting. Multiplayer-visible headlamp hardware is a separate proposed equipment-presentation layer: remote players may later see a small head utility model/emissive lens without automatically receiving a real dynamic beam.
+
+The controller already separates `toolEquipped` from vent-zone activation and exposes `SetToolEquipped(bool)`, so the future inventory/quick-wheel system can equip or stow the headlamp without rewriting the lighting logic. The inventory/wheel, exact Quest controller binding, `UtilityHead` mount, remote visual state, and head-cosmetic conflict handling are **proposed**, documented in [`tool-inventory-and-equipment-concept.md`](tool-inventory-and-equipment-concept.md), and not implemented by this Level 1 lighting change.
+
 ## Second runtime visual/animation follow-up
 
 **Confirmed failing validation:** Greg reports that on the current follow-up the visible Zombie Crawl still does not visibly crawl, appears several meters away from the invisible/sliding gameplay rig at times, and can leave the vent volume. The long visual also cannot currently negotiate corners convincingly because the entire imported visual is still driven as one rigid child of the navigation root. Therefore the earlier source-level crawl-playback work must **not** be treated as runtime-validated or visually complete.
@@ -65,6 +75,8 @@ The current Level 1 scene contains the established Crawler gameplay root, the Zo
 
 `MonsterNavigation` keeps world movement authoritative through the NavMesh/controller owner, returns immediately to patrol when a target becomes ineligible, and uses sector + `Level1_Vents` eligibility. `SectorMonsterSync` remains responsible for controller election and remote pose/chase replication. The authored VentGraph is still absent, so detection falls back to straight-line range when `VentGraph.Instance` is unavailable. Closest-player switching remains an open gameplay choice rather than a bug fixed by this branch.
 
+Source review of the player presentation also confirms that the Photon avatar already has separate cosmetic slots such as `Head` and `Face`. The future gameplay headlamp should therefore use a separate equipment mount/state instead of occupying or modifying the `Head` cosmetic slot. A top hat should remain a top hat; the proposed `UtilityHead` equipment anchor can use a forehead/temple/under-brim mount or a cosmetic-specific fallback rather than automatically attaching a lamp to the hat mesh.
+
 No GitHub CI/status workflow currently validates this branch. Source inspection is not a substitute for Unity compilation or headset testing.
 
 ## Pending validation
@@ -72,19 +84,22 @@ No GitHub CI/status workflow currently validates this branch. Source inspection 
 Do not mark the follow-up validated until it is run in Unity 2022.3.55f1. Required checks:
 
 1. Compile/import with no missing script or Animator errors and run the existing Runaway Chimps Editor/source validators.
-2. Travel Hub → Level 1 and verify containment/vents are readable while still clearly horror-dark; return/re-enter and confirm no duplicate fill lights or Hub-lighting contamination.
-3. Confirm only Zombie Crawl is visible and its physical scale is appropriate in the narrowest straight vent.
-4. Confirm the new calibrated chest/spine anchor eliminates the several-meter visual/gameplay-root separation and that render-bounds floor alignment does not float or bury the creature.
-5. Prove `mixamo_com` visibly deforms Zombie Crawl: while moving, hands/forearms/head must visibly animate and the Console must not emit the persistent clip/skeleton binding error. Verify stationary/patrol/chase playback, no frozen-pose sliding, and no one-frame speed spike after travel/controller correction.
-6. Verify the long body stays extended on spawn, bends through at least one 90-degree corner and one junction, and does not cut through the outer or inner vent walls. Tune trail spacing/body-follow weight only from this runtime result.
-7. Watch both hands at straight sections and corners. Confirm wall/floor containment does not create unacceptable arm stretching; if it does, replace the final hand-position correction with authored/two-bone IK while keeping the same safe target calculation.
-8. Stand in a safe room with the Crawler visible through the opening and confirm the moving shared Crawler still animates while local patrol/hunt audio remains correctly gated.
-9. Enter both safe rooms with the tracked head: pursuit stops. Reach a hand across first: the player's zone must not change early. Exit either safe room toward the vents: `Level1_Vents` returns and the player becomes eligible again.
-10. Verify pursuit at the 12 m prototype range and the 2.25/4.5 patrol/chase speeds. Adjust only from playtest evidence.
-11. Verify ordinary head/body/hand contact in the vents starts exactly one capture. Begin overlap during a transient busy/zone state and confirm continued overlap captures once valid.
-12. Capture while holding a card and confirm it drops at the Gorilla body position recorded before respawn; confirm no capture inside either safe room.
-13. Verify target loss immediately returns to patrol and both patrol/chase audio states recover correctly.
-14. Run two Photon clients: both see matching Crawler position/chase state, crawl animation, and locally derived corner bending; controller handoff leaves one functioning monster without a duplicate or persistent animation spike.
-15. Validate all of the above in-headset on target Quest hardware and record frame-time/memory impact of the brighter fallback plus continuously animated/path-corrected shared Crawler.
+2. Travel Hub → Level 1 and verify containment/vents are readable while still clearly horror-dark; return/re-enter and confirm no duplicate fill lights, duplicate `Local_Vent_Headlamp` children, or Hub-lighting contamination.
+3. Cross from either safe room into `Level1_Vents`: the local beam should fade on, follow head/camera aim, illuminate roughly the next junction rather than the entire maze, and fade off again as soon as the tracked head returns to a safe room. Confirm the beam never enables in Hub/Loading/Level 2.
+4. Test the headlamp in-headset with Level 1's current materials. Verify 46° / 8 m / 1.8 intensity is useful but not flat/overbright; tune only from headset evidence. Confirm one shadowless local light does not create an unacceptable Quest frame-time increase.
+5. Run two clients in the same Level 1 vents. Each client should receive only its own real headlamp illumination; one player's beam must not brighten the other client's scene. Remote visible headlamp hardware is not implemented yet and should not be mistaken for a missing lighting sync bug.
+6. Confirm only Zombie Crawl is visible and its physical scale is appropriate in the narrowest straight vent.
+7. Confirm the new calibrated chest/spine anchor eliminates the several-meter visual/gameplay-root separation and that render-bounds floor alignment does not float or bury the creature.
+8. Prove `mixamo_com` visibly deforms Zombie Crawl: while moving, hands/forearms/head must visibly animate and the Console must not emit the persistent clip/skeleton binding error. Verify stationary/patrol/chase playback, no frozen-pose sliding, and no one-frame speed spike after travel/controller correction.
+9. Verify the long body stays extended on spawn, bends through at least one 90-degree corner and one junction, and does not cut through the outer or inner vent walls. Tune trail spacing/body-follow weight only from this runtime result.
+10. Watch both hands at straight sections and corners. Confirm wall/floor containment does not create unacceptable arm stretching; if it does, replace the final hand-position correction with authored/two-bone IK while keeping the same safe target calculation.
+11. Stand in a safe room with the Crawler visible through the opening and confirm the moving shared Crawler still animates while local patrol/hunt audio remains correctly gated.
+12. Enter both safe rooms with the tracked head: pursuit stops. Reach a hand across first: the player's zone must not change early. Exit either safe room toward the vents: `Level1_Vents` returns and the player becomes eligible again.
+13. Verify pursuit at the 12 m prototype range and the 2.25/4.5 patrol/chase speeds. Adjust only from playtest evidence.
+14. Verify ordinary head/body/hand contact in the vents starts exactly one capture. Begin overlap during a transient busy/zone state and confirm continued overlap captures once valid.
+15. Capture while holding a card and confirm it drops at the Gorilla body position recorded before respawn; confirm no capture inside either safe room.
+16. Verify target loss immediately returns to patrol and both patrol/chase audio states recover correctly.
+17. Run two Photon clients: both see matching Crawler position/chase state, crawl animation, and locally derived corner bending; controller handoff leaves one functioning monster without a duplicate or persistent animation spike.
+18. Validate all of the above in-headset on target Quest hardware and record frame-time/memory impact of the brighter fallback, the one local shadowless headlamp and the continuously animated/path-corrected shared Crawler.
 
-Any visual offsets, scale, playback range, body-follow weight, trail spacing, hand-inset amount, lighting intensity/color, or smoothing changes found during these checks are tuning work, not changes to the confirmed Crawler gameplay rules.
+Any visual offsets, scale, playback range, body-follow weight, trail spacing, hand-inset amount, headlamp range/intensity/cone, lighting intensity/color, or smoothing changes found during these checks are tuning work, not changes to the confirmed Crawler gameplay rules.
