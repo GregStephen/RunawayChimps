@@ -1,0 +1,52 @@
+name: Resolve PR 12 conflicts
+on:
+  push:
+    paths:
+      - '.github/workflows/resolve-pr12-conflicts.yml'
+jobs:
+  resolve:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/level2-player-scale-interactions
+          fetch-depth: 0
+      - name: Merge main
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git fetch origin main
+          git merge --no-commit --no-ff origin/main || true
+          conflicts="$(git diff --name-only --diff-filter=U)"
+          unexpected="$(printf '%s\n' "$conflicts" | grep -Ev '^(docs/design-and-lore\.md|docs/repository-improvement-plan\.md)$' || true)"
+          test -z "$unexpected"
+          if [ -n "$conflicts" ]; then
+            git checkout --theirs -- docs/design-and-lore.md docs/repository-improvement-plan.md
+          fi
+      - name: Reapply Level 2 scale notes
+        shell: python
+        run: |
+          from pathlib import Path
+          design=Path('docs/design-and-lore.md'); s=design.read_text()
+          s=s.replace('`main` still contains v0.3. Source/box-route validation has passed on v0.4;','`main` now contains the merged v0.4 blockout through PR #7. Source/box-route validation has passed on v0.4;')
+          header='| Recorded | Decision or correction | Status |\n| --- | --- | --- |\n'
+          row='| 2026-09-12 | Correct Level 2 objective interaction scale without shrinking the approved rooms. Greg runtime-tested the merged blockout and found the fuses, central power island, sockets and charging handles far too large/high for the gorilla character. Size interactive hardware from the active local rig/hand scale rather than the Listener/room scale. | Confirmed correction. Implemented on `fix/level2-player-scale-interactions`: ~20 cm hand-held fuse, ~0.58 m socket height, ~0.70 m lever height, ~0.95 m island height, smaller search containers/drawer travel. Unity 2022.3.55f1 headset/Play Mode ergonomic validation pending. |\n'
+          if row not in s: s=s.replace(header,header+row,1)
+          design.write_text(s)
+          plan=Path('docs/repository-improvement-plan.md'); p=plan.read_text()
+          marker='## September 12 automated source validation\n'
+          section='''## September 12 Level 2 player-scale interaction correction\n\n**Confirmed runtime correction:** keep the approved 36 × 36 m room layout, but scale the fuse objective hardware to the gorilla player instead of to the oversized environment/Listener. Greg tested the merged Level 2 in Unity and reported that the fuses, socket locations and charging handles were dramatically oversized and physically unreachable. Repository inspection of the active Bootstrap rig shows ~10 cm hand-contact spheres, a ~0.36 m-wide / 1.16 m-high body capsule, and a 1.5 m max arm length.\n\n**Implemented on `fix/level2-player-scale-interactions`:** the central power island is reduced from 4.4 × 2.4 × 2.4 m to approximately 2.4 × 0.95 × 1.3 m while staying centered in the Repair Lab. Socket centers move from 1.28 m to ~0.58 m, charge handles from 1.55 m to ~0.70 m, the physical fuse prototype from ~42 cm long / 13–15 cm diameter to ~20 cm long / 5–7 cm diameter, and socket/lever interaction triggers are resized for the ~10 cm hand proxy. Fuse search cabinets and drawer travel are also reduced to player-scale. Room bounds, Repair Lab size, two escape routes, Listener clearance targets and the four-fuse objective are unchanged.\n\n**Validation status:** generated-source/box-route validation and explicit player-scale geometry checks pass on the branch. Unity 2022.3.55f1 Play Mode/headset validation is still required for comfortable reach, grab orientation, insertion, lever hold and drawer interaction.\n\n'''
+          if section not in p: p=p.replace(marker,section+marker,1)
+          p=p.replace('**Current implementation evidence:** `main` still contains the 18 × 18 m v0.3 map, but branch `design/level2-expanded-map-v04` now regenerates','**Current implementation evidence:** PR #7 merged the 36 × 36 m v0.4 blockout and fuse prototype into `main`. The retained generator regenerates')
+          plan.write_text(p)
+      - name: Validate and push
+        run: |
+          python Tools/Level2Blockout/validate_level2.py
+          git rm .github/workflows/resolve-pr12-conflicts.yml
+          git add -A
+          git diff --cached --check
+          test -z "$(git diff --name-only --diff-filter=U)"
+          git commit -m 'Merge main and resolve Level 2 scale conflicts'
+          git push origin HEAD:fix/level2-player-scale-interactions
