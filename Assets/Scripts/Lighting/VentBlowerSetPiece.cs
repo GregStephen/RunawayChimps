@@ -186,6 +186,7 @@ public sealed class VentBlowerSetPiece : MonoBehaviour
         maintenanceLight.bounceIntensity = 0f;
         maintenanceLight.renderMode = LightRenderMode.ForceVertex;
 
+        // This is a fixed environmental source on every client, not a Photon-synchronized gameplay event.
         humSource = gameObject.AddComponent<AudioSource>();
         humSource.clip = GetOrCreateBlowerLoop();
         humSource.loop = true;
