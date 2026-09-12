@@ -44,7 +44,7 @@ The generated Blender/GLB prototype keeps `*_Screen_Surface` separate from the p
 1. Create a prefab from the imported model.
 2. Add a world-space Canvas slightly in front of `*_Screen_Surface`.
 3. Add a full-screen `RawImage` for footage.
-4. Add a second full-screen `RawImage` for the transparent grain/scanline texture.
+4. Add a second full-screen `RawImage` for the transparent grain/scanline texture. Set the grain texture's **Wrap Mode to Repeat** so `SecurityMonitorDisplay` can scroll its UVs without smearing the edge pixels.
 5. Add TextMeshPro text for the sector number and sector name near the bottom of the screen, plus optional `REC` text.
 6. Add `SecurityMonitorDisplay` to the prefab root (or display root) and assign those references.
 7. Duplicate the completed prefab for the physical wall instead of rebuilding the UI four times.
