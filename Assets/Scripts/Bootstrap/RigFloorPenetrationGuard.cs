@@ -21,12 +21,14 @@ public sealed class RigFloorPenetrationGuard : MonoBehaviour
     [SerializeField, Min(0.1f)] private float probeBelowBody = 1.5f;
     [SerializeField, Min(0.05f)] private float recoveryCooldown = 0.2f;
 
+    private readonly RaycastHit[] floorHits = new RaycastHit[16];
     private XROrigin origin;
     private GorillaLocomotion.Player player;
     private Rigidbody body;
     private float nextRecoveryTime;
     private int recoveryCount;
     private bool warnedDeepPenetration;
+    private bool warnedHitBufferFull;
 
     private void Awake()
     {
@@ -98,21 +100,30 @@ public sealed class RigFloorPenetrationGuard : MonoBehaviour
 
         Vector3 rayStart = new Vector3(center.x, bodyTop + probeAboveBody, center.z);
         float rayDistance = probeAboveBody + (bodyTop - bodyBottom) + probeBelowBody + maxRecoveryDepth;
-        RaycastHit[] hits = Physics.RaycastAll(
+        int hitCount = Physics.RaycastNonAlloc(
             rayStart,
             Vector3.down,
+            floorHits,
             rayDistance,
             player.locomotionEnabledLayers,
             QueryTriggerInteraction.Ignore);
+
+        if (hitCount == floorHits.Length && !warnedHitBufferFull)
+        {
+            warnedHitBufferFull = true;
+            Debug.LogWarning(
+                "[RigFloorPenetrationGuard] Floor probe hit buffer filled; inspect unusually dense collision around the player if recovery becomes unreliable.",
+                this);
+        }
 
         bool found = false;
         float nearestVerticalDistance = float.MaxValue;
         float highestRecoverableFloor = bodyBottom + maxRecoveryDepth;
         float lowestSupportFloor = bodyBottom - probeBelowBody;
 
-        for (int i = 0; i < hits.Length; i++)
+        for (int i = 0; i < hitCount; i++)
         {
-            RaycastHit hit = hits[i];
+            RaycastHit hit = floorHits[i];
             if (hit.collider == null || hit.collider.gameObject.scene != scene ||
                 hit.collider.transform.IsChildOf(origin.transform) || hit.normal.y < 0.65f ||
                 hit.point.y > highestRecoverableFloor || hit.point.y < lowestSupportFloor)
