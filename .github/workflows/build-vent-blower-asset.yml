@@ -1,0 +1,54 @@
+name: Build vent blower Blender asset
+
+on:
+  push:
+    branches:
+      - asset/vent-blower-blender
+    paths:
+      - 'Tools/BlenderAssets/build_vent_blower.py'
+      - '.github/workflows/build-vent-blower-asset.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Download Blender 4.2.23 LTS
+        shell: bash
+        run: |
+          set -euxo pipefail
+          curl -L --fail --retry 3 \
+            https://download.blender.org/release/Blender4.2/blender-4.2.23-linux-x64.tar.xz \
+            -o /tmp/blender.tar.xz
+          mkdir -p /tmp/blender
+          tar -xJf /tmp/blender.tar.xz -C /tmp/blender --strip-components=1
+          /tmp/blender/blender --version
+
+      - name: Build blend, FBX and preview
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p Artifacts/VentBlower
+          /tmp/blender/blender -b --factory-startup \
+            --python Tools/BlenderAssets/build_vent_blower.py \
+            -- "${GITHUB_WORKSPACE}/Artifacts/VentBlower"
+          test -s Artifacts/VentBlower/RunawayChimps_VentBlower.blend
+          test -s Artifacts/VentBlower/RunawayChimps_VentBlower.fbx
+          test -s Artifacts/VentBlower/RunawayChimps_VentBlower_Preview.png
+          ls -lh Artifacts/VentBlower
+
+      - name: Upload Blender asset package
+        uses: actions/upload-artifact@v4
+        with:
+          name: RunawayChimps_VentBlower
+          path: Artifacts/VentBlower/*
+          if-no-files-found: error
+          compression-level: 6
+          retention-days: 7
