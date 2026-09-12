@@ -78,6 +78,51 @@ def main():
     if lamp.get("innerSpotAngle", 0) >= lamp.get("outerSpotAngle", 999):
         errors.append(f"{rel(headlamp_path)}: innerSpotAngle must be smaller than outerSpotAngle.")
 
+    blower_path = ROOT / "Assets/Scripts/Lighting/VentBlowerSetPiece.cs"
+    blower = require(errors, blower_path, [
+        'LevelOneScene = "Level1_Containment"',
+        'VentRoomName = "VentRoom"',
+        'RuntimeRootName = "Level1_VentRoom_Blower"',
+        'BlowerResourcePath = "RunawayChimps_VentBlower"',
+        'RotorName = "FanRotor"',
+        'RedLensName = "RedLightLens"',
+        "BlowerLocalPosition = new Vector3(-0.25f, 0.72f, 22.46f)",
+        "Resources.Load<GameObject>(BlowerResourcePath)",
+        "Instantiate(blowerPrefab, transform, false)",
+        "OrientVisualIntoVentRoom(visualInstance.transform)",
+        "GetComponentsInChildren<Collider>(true)",
+        "collider.enabled = false;",
+        "ShadowCastingMode.Off",
+        'Shader.Find("Universal Render Pipeline/Lit")',
+        "LightType.Point",
+        "LightShadows.None",
+        "bounceIntensity = 0f",
+        "spatialBlend = 1f",
+        "maxDistance = 6.5f",
+        'AudioClip.Create("Vent_Blower_ProceduralLoop"',
+    ])
+    if re.search(r"^using\s+Photon\.", blower, re.M):
+        errors.append(f"{rel(blower_path)}: decorative vent blower must not depend on Photon.")
+    if "GameObject.CreatePrimitive(" in blower:
+        errors.append(f"{rel(blower_path)}: approved Blender visual must not regress to generated primitive geometry.")
+    positive_defaults(errors, blower_path, blower, ["FanDegreesPerSecond", "BaseRedLightIntensity"])
+
+    blower_asset = ROOT / "Assets/Resources/RunawayChimps_VentBlower.fbx"
+    blower_meta = ROOT / "Assets/Resources/RunawayChimps_VentBlower.fbx.meta"
+    if not blower_asset.exists():
+        errors.append(f"{rel(blower_asset)}: approved Blender FBX resource is missing.")
+    elif blower_asset.stat().st_size < 10000:
+        errors.append(f"{rel(blower_asset)}: approved Blender FBX resource is unexpectedly small.")
+    meta = require(errors, blower_meta, [
+        "ModelImporter:",
+        "addColliders: 0",
+        "importCameras: 0",
+        "importLights: 0",
+        "preserveHierarchy: 1",
+    ])
+    if meta:
+        guid(blower_meta, errors)
+
     nav_path = ROOT / "Assets/Scripts/MonsterScripts/MonsterNavigation.cs"
     require(errors, nav_path, ["gameObject.AddComponent<CrawlerVisualController>();", "agent.updateRotation = false;"])
 
@@ -174,6 +219,8 @@ def main():
         errors.append(f"{rel(scene_path)}: Level 1 scene is missing.")
     else:
         scene = read(scene_path)
+        if "\n  m_Name: VentRoom\n" not in scene:
+            errors.append(f"{rel(scene_path)}: VentRoom anchor for the blower set piece is missing.")
         blocks = mono_blocks(scene)
         zone_guid = guid(ROOT / "Assets/Scripts/Zones/ZoneTrigger.cs.meta", errors)
         capture_guid = guid(ROOT / "Assets/Scripts/TeleportGorillaPlayerPhotonVR.cs.meta", errors)
@@ -194,7 +241,7 @@ def main():
         print(f"FAILED: {len(errors)} Level 1 contract issue(s).")
         return 1
 
-    print("PASS: Level 1 headlamp, Crawler visual/path, safe-zone, capture, floor-recovery, and spawn-safe hand source contracts.")
+    print("PASS: Level 1 headlamp, vent blower, Crawler visual/path, safe-zone, capture, floor-recovery, and spawn-safe hand source contracts.")
     print("PASS: Runtime/Photon/XR/Quest validation remains separate.")
     return 0
 

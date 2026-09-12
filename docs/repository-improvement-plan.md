@@ -12,6 +12,16 @@ Read the [design and lore](design-and-lore.md) for intended behavior and [AGENTS
 
 **Validation boundary:** this new green check is meaningful source evidence, but it is **not** Unity/runtime validation. It does not import or compile in Unity, execute the two Runaway Chimps Editor validators, run Play Mode, open Photon sessions, exercise XR interactions, build for Quest, or measure headset performance. Keep all existing Unity/Photon/headset acceptance checks pending until they are actually run. A future Unity-aware CI tier is optional and should be added only when its hosted Unity licensing/setup cost is justified. See `docs/ci-validation.md`.
 
+## September 12 Level 1 VentRoom blower set piece
+
+**Confirmed design/art direction:** preserve the existing `VentRoom` geometry, route, zone behavior and Crawler path. Greg approved the simple/chunky Blender preview as the final blower visual and explicitly rejected the earlier polished/photorealistic direction.
+
+**Implemented on `feature/level1-vent-blower` / PR #17:** the approved 151 KB `Assets/Resources/RunawayChimps_VentBlower.fbx` is now part of the Unity source tree with a `ModelImporter` meta that preserves hierarchy, imports no lights/cameras and adds no colliders. `VentBlowerSetPiece` no longer creates visible cube/cylinder primitives. It loads the authored FBX with `Resources.Load`, instantiates one visual beneath the existing `VentRoom` runtime anchor, auto-orients the model so it extends away from the +Z wall into the chamber, resolves the separate `FanRotor` for rotation and `RedLightLens` for the runtime point-light anchor, and disables/destroys any collider that might appear after import.
+
+**Material/performance handling implemented:** imported mesh renderers receive small runtime-created URP-safe materials by object role rather than trusting Blender/FBX shader assignments, specifically to avoid a repeat of pink imported materials. The authored geometry remains approximately 2,972 triangles from its Blender build. Shadows, receive-shadows, light probes and reflection probes are disabled for these renderers; the red point light remains shadowless/zero-bounce and the existing procedural 3D motor loop remains local environmental audio. No Photon dependency was added.
+
+**Pending validation:** Unity 2022.3.55f1 must import the FBX/meta and compile the updated controller. In Play Mode/headset confirm exactly one blower appears on Level 1 load/re-entry, the auto-facing places it against the widened side wall rather than through it, scale/height match the approved preview, `FanRotor` spins around the intended axis, the red light aligns with `RedLightLens`, no Gorilla/Crawler snag occurs, and material colors remain non-pink. Then tune fan speed/light/audio if needed, repeat two-client Photon, and check target Quest frame time/build behavior. Source checks cannot close those runtime items.
+
 ## September 12 spawn-hand initialization follow-up
 
 **Confirmed failing runtime feedback:** Greg reports that players' hands can become stuck in the floor when they spawn unless the physical hands/controllers are already held up. This is a failed XR spawn/locomotion case, not a player instruction; players must not need a special pose to enter the game.
