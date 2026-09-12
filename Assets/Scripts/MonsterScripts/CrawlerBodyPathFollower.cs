@@ -107,7 +107,29 @@ public sealed class CrawlerBodyPathFollower : MonoBehaviour
     public void ResetTrail()
     {
         trail.Clear();
-        trail.Add(transform.position);
+
+        Vector3 forward = transform.forward;
+        forward.y = 0f;
+        if (forward.sqrMagnitude < 0.0001f)
+            forward = Vector3.forward;
+        forward.Normalize();
+
+        float bodyLength = 1f;
+        if (bodyBones.Count > 0)
+            bodyLength = Mathf.Max(bodyLength, bodyBones[bodyBones.Count - 1].distanceBehind + tangentSampleDistance * 2f);
+
+        float seedLength = Mathf.Min(retainedTrailLength, bodyLength);
+        int steps = Mathf.Max(1, Mathf.CeilToInt(seedLength / trailSampleSpacing));
+
+        // Seed a straight section behind the leader so the torso has valid samples on
+        // frame one and after teleports. Without this, every body bone would sample the
+        // same root point until enough movement history accumulated and the rig would
+        // collapse into itself.
+        for (int i = steps; i >= 0; i--)
+        {
+            float distance = Mathf.Min(seedLength, i * trailSampleSpacing);
+            trail.Add(transform.position - forward * distance);
+        }
     }
 
     private void RecordTrail()
