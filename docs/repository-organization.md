@@ -28,7 +28,9 @@ The tracked root `TempAssembly.dll` was removed after the existing codebase audi
 
 **Validated 2026-09-12 on commit `b3679e0` through PR #13 Source integrity CI:** Unity 2022.3.55f1 was confirmed; `validate_source.py --syntax` passed 116 first-party C# scripts and 5 enabled scenes; repository-integrity checks passed 1,745 Unity metadata files with unique GUIDs and valid asset pairing; no case-only path collisions were found; Level 1 source contracts and Python tool compilation passed; no unresolved merge markers remained; and the then-current human-authored changes passed whitespace validation after correcting the new `Shared.meta` formatting.
 
-**CI follow-up after later branch additions:** a later PR #13 run still passed the Unity version, source/syntax, repository-integrity, Level 1 contract, Python compilation, and merge-marker stages, but failed the repository-wide `git diff --check` on Unity-generated cage/scene/import metadata containing normal empty YAML values such as `userData: ` and `value: `. The Source integrity workflow is now implemented to apply `git diff --check` to human-authored source/docs/config formats while leaving Unity-authored serialized YAML to the dedicated source/repository integrity validators. The corrected workflow and documentation are pushed on this branch; the new head must pass CI before this follow-up is recorded as validated.
+**CI follow-up after later branch additions:** a later PR #13 run still passed the Unity version, source/syntax, repository-integrity, Level 1 contract, Python compilation, and merge-marker stages, but failed the repository-wide `git diff --check` on Unity-generated cage/scene/import metadata containing normal empty YAML values such as `userData: ` and `value: `. The Source integrity workflow was corrected to apply `git diff --check` to human-authored source/docs/config formats while leaving Unity-authored serialized YAML to the dedicated source/repository integrity validators.
+
+**Validated 2026-09-12 on commit `156f622` through Source validation run #59:** the corrected workflow passed every stage, including Unity 2022.3.55f1 version verification, first-party source/C# syntax, 1,766 Unity metadata files with unique GUIDs and valid pairing, Level 1 source contracts, Python compilation, merge-marker scanning, and the new human-authored text whitespace check. This confirms the CI failure was a validation-rule problem rather than a failure in `RigSpawnSnapper`, the Level 1 contract update, or the imported Unity assets' metadata structure.
 
 This is source/serialization evidence only. It does not establish Unity import/compile, material/model/animation/audio reference health after reimport, Play Mode behavior, Photon behavior, or headset behavior.
 
@@ -67,14 +69,14 @@ If `Scenes` or `Scripts` are eventually moved under `Assets/RunawayChimps`, trea
 
 ## Pending validation before merge
 
-The original organization-only source checks passed, but later branch additions and the CI-rule correction require the current branch head to be revalidated. Unity/runtime checks are still required before merging this organization branch:
+The source-level checks now pass on the corrected workflow. Unity/runtime checks are still required before merging this organization branch:
 
-1. **Pending on current head:** `python Tools/validate_repository_integrity.py` via PR #13 Source integrity CI. Previously passed on the organization implementation and on the failed-whitespace run.
-2. **Pending on current head:** `python Tools/validate_source.py --syntax`, Level 1 contracts, Python compilation, merge-marker and human-authored whitespace checks via PR #13 Source integrity CI. All stages except the old repository-wide whitespace rule passed on the preceding run.
+1. **Validated 2026-09-12 on `156f622`:** `python Tools/validate_repository_integrity.py` via PR #13 Source integrity CI; 1,766 Unity metadata files had unique GUIDs and valid asset pairing.
+2. **Validated 2026-09-12 on `156f622`:** `python Tools/validate_source.py --syntax`, Level 1 contracts, Python compilation, merge-marker scan, and human-authored whitespace validation via Source validation run #59.
 3. **Pending:** open the project in Unity 2022.3.55f1 and allow a full import/compile; confirm there are no missing scripts, missing materials, broken animation/controller references, or pink materials caused by lost references.
 4. **Pending:** open the enabled scenes and inspect representative moved models/materials/textures/audio/animations.
 5. **Pending:** run the existing reliability/editor validation menu items.
 6. **Pending:** play from Bootstrap through Hub and Level 1/Level 2 entry paths.
 7. **Pending:** run the two-client Photon PUN smoke test and headset smoke test already required by the repository validation plan.
 
-Until those current-head CI and Unity/runtime checks are recorded, this branch is **implemented but pending current-head source validation and Unity/runtime validation** and is not merge-ready.
+Until those Unity/runtime checks are recorded, this branch is **implemented and source-validated, but still pending Unity/runtime validation** and is not merge-ready.
