@@ -113,6 +113,22 @@ def main():
         errors.append(f"{rel(follower_path)}: experimental per-bone/hand deformation must remain disabled until a rig-safe solution is headset-validated.")
     positive_defaults(errors, follower_path, follower, ["floorClearance"])
 
+    heading_path = ROOT / "Assets/Scripts/MonsterScripts/CrawlerVisualHeadingStabilizer.cs"
+    heading = require(errors, heading_path, [
+        'LevelOneSceneName = "Level1_Containment"',
+        "visualController.VisualRoot",
+        "headingLookbackDistance = 0.9f",
+        "maximumTurnDegreesPerSecond = 150f",
+        "discontinuityDistance = 1.25f",
+        "Quaternion.LookRotation(forward.normalized, Vector3.up)",
+        "Quaternion.RotateTowards(",
+        "ResetHeadingHistory(current, snapToGameplayRotation: true)",
+        "No Zombie bone position/rotation is ever modified here.",
+    ])
+    positive_defaults(errors, heading_path, heading, [
+        "headingLookbackDistance", "maximumTurnDegreesPerSecond", "sampleSpacing", "historyDistance", "discontinuityDistance"
+    ])
+
     legacy_cleaner_path = ROOT / "Assets/Scripts/MonsterScripts/CrawlerLegacyVisualCleaner.cs"
     legacy_cleaner = require(errors, legacy_cleaner_path, [
         "RemoveLegacyVisuals(GameObject gameplayRoot, Transform keepVisual, bool immediate)",
@@ -272,7 +288,7 @@ def main():
         print(f"FAILED: {len(errors)} Level 1/runtime contract issue(s).")
         return 1
 
-    print("PASS: Level 1/runtime hand visual contact, Animator-owned Crawler skeleton, legacy visual-rig cleanup, keycard recovery, loading coverage, headlamp, safe-zone, capture, and floor-recovery source contracts.")
+    print("PASS: Level 1/runtime hand visual contact, Animator-owned Crawler skeleton, legacy visual-rig cleanup, Crawler forward/turn continuity, keycard recovery, loading coverage, headlamp, safe-zone, capture, and floor-recovery source contracts.")
     print("PASS: Runtime/Photon/XR/Quest validation remains separate.")
     return 0
 
