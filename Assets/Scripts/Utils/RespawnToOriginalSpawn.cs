@@ -6,6 +6,7 @@ public class RespawnToOriginalSpawn : MonoBehaviour
 {
     [Header("Out of bounds")]
     public float killY = -30f;
+    [Min(0f)] public float maxFallBelowSpawn = 3f;
     public float maxDistanceFromSpawn = 0f;
     public float respawnUpOffset = 0.05f;
     public bool useKillYOnly = true;
@@ -33,12 +34,24 @@ public class RespawnToOriginalSpawn : MonoBehaviour
         {
             Debug.Log($"[Respawn] Awake on {name}");
             Debug.Log($"[Respawn] Spawn Position Recorded: {spawnPos}");
-            Debug.Log($"[Respawn] KillY set to: {killY}");
+            Debug.Log($"[Respawn] KillY set to: {killY}; relative fall recovery: {maxFallBelowSpawn} m");
         }
     }
 
     void Update()
     {
+        // The original absolute KillY is a useful last-resort guard, but it is not enough
+        // for additive levels whose authored world height can vary. Recover as soon as an
+        // item has fallen meaningfully below its own recorded spawn height so a keycard that
+        // tunnels through a floor cannot disappear indefinitely beneath the map.
+        if (maxFallBelowSpawn > 0f && transform.position.y < spawnPos.y - maxFallBelowSpawn)
+        {
+            if (verboseLogging)
+                Debug.Log($"[Respawn] {name} fell more than {maxFallBelowSpawn:0.##} m below its spawn. Triggering respawn.");
+
+            RespawnNow();
+            return;
+        }
 
         if (transform.position.y < killY)
         {
@@ -74,20 +87,31 @@ public class RespawnToOriginalSpawn : MonoBehaviour
         bool reenableGrab = grab != null && grab.enabled && grab.isSelected;
         if (reenableGrab)
         {
-            Debug.Log($"[Respawn] {name} was selected. Forcing release.");
+            if (verboseLogging)
+                Debug.Log($"[Respawn] {name} was selected. Forcing release.");
             grab.enabled = false;
         }
 
-        if (rb && !rb.isKinematic)
+        Vector3 targetPosition = spawnPos + Vector3.up * Mathf.Max(0.02f, respawnUpOffset);
+
+        if (rb != null)
         {
-            rb.velocity = Vector3.zero;
-            rb.angularVelocity = Vector3.zero;
+            if (!rb.isKinematic)
+            {
+                rb.velocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
+            }
+
+            // Move through the Rigidbody as well as the Transform so interpolation cannot
+            // render or restore the old below-floor pose for another physics frame.
+            rb.position = targetPosition;
+            rb.rotation = spawnRot;
             rb.Sleep();
         }
 
-        transform.position = spawnPos + Vector3.up * respawnUpOffset;
-        transform.rotation = spawnRot;
+        transform.SetPositionAndRotation(targetPosition, spawnRot);
         transform.localScale = spawnScale;
+        Physics.SyncTransforms();
 
         if (reenableGrab && isActiveAndEnabled)
             StartCoroutine(ReenableGrabNextFrame());
@@ -97,7 +121,8 @@ public class RespawnToOriginalSpawn : MonoBehaviour
     {
         yield return null;
 
-        grab.enabled = true;
+        if (grab != null)
+            grab.enabled = true;
 
         if (verboseLogging)
             Debug.Log($"[Respawn] {name} interactable re-enabled.");
