@@ -149,6 +149,7 @@ def main():
         "leftHandBlockedAfterTeleport",
         "rightHandBlockedAfterTeleport",
         "CollisionsSphereCast(",
+        "minimumRaycastDistance + 0.005f",
         "if (!suppressLeftHand && IterativeCollisionSphereCast",
         "if (!suppressRightHand && IterativeCollisionSphereCast",
     ])
