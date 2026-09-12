@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Focused source contracts for the active Level 1 runtime fixes.
+"""Focused source contracts for the active Level 1/runtime fixes.
 
 These checks catch accidental source/scene regressions. They do not prove Unity runtime,
 Photon, XR/headset, animation deformation, lighting quality, or Quest performance.
@@ -102,11 +102,16 @@ def main():
         "Physics.RaycastNonAlloc(",
         "SamplePosition(binding.distanceBehind)",
         "SampleForward(binding.distanceBehind)",
+        "RigidlyAlignFrontAnchor();",
+        "binding.bone.rotation = Quaternion.Slerp",
     ])
     if re.search(r"^using\s+Photon\.", follower, re.M):
         errors.append(f"{rel(follower_path)}: local visual body reconstruction must not depend on Photon.")
+    if re.search(r"binding\.bone\.position\s*=", follower):
+        errors.append(f"{rel(follower_path)}: path correction must not rewrite core torso bone positions and squash/stretch the skeleton.")
     body = positive_defaults(errors, follower_path, follower, [
-        "trailSampleSpacing", "retainedTrailLength", "teleportResetDistance", "bodyFollowWeight", "tangentSampleDistance"
+        "trailSampleSpacing", "retainedTrailLength", "teleportResetDistance", "bodyFollowWeight", "tangentSampleDistance",
+        "maximumRigidAlignmentPerFrame"
     ])
     if body.get("bodyFollowWeight", 0) > 1:
         errors.append(f"{rel(follower_path)}: bodyFollowWeight must remain <= 1.")
@@ -129,6 +134,28 @@ def main():
         "DropAllKeyCards(capturePosition)",
         "player.transform.position",
     ])
+
+    keycard_respawn_path = ROOT / "Assets/Scripts/Utils/RespawnToOriginalSpawn.cs"
+    keycard_respawn = require(errors, keycard_respawn_path, [
+        "maxFallBelowSpawn = 3f",
+        "spawnPos.y - maxFallBelowSpawn",
+        "rb.position = targetPosition",
+        "Physics.SyncTransforms();",
+    ])
+    positive_defaults(errors, keycard_respawn_path, keycard_respawn, ["maxFallBelowSpawn", "respawnUpOffset"])
+
+    loading_path = ROOT / "Assets/Scripts/Travel/LoadingCanvasOverscan.cs"
+    loading = require(errors, loading_path, [
+        'LoadingSceneName = "Loading"',
+        'BackdropName = "XR_Loading_Backdrop"',
+        "Overscan = 0.12f",
+        "rect.anchorMin = new Vector2(-Overscan, -Overscan)",
+        "rect.anchorMax = new Vector2(1f + Overscan, 1f + Overscan)",
+        "rect.SetAsFirstSibling();",
+        "image.color = Color.black;",
+    ])
+    if "UnityEngine.UI" not in loading:
+        errors.append(f"{rel(loading_path)}: XR loading backdrop must use a screen-space UI Image.")
 
     spawn_path = ROOT / "Assets/Scripts/Bootstrap/RigSpawnSnapper.cs"
     spawn = require(errors, spawn_path, [
@@ -178,10 +205,10 @@ def main():
     for error in errors:
         print("ERROR:", error)
     if errors:
-        print(f"FAILED: {len(errors)} Level 1 contract issue(s).")
+        print(f"FAILED: {len(errors)} Level 1/runtime contract issue(s).")
         return 1
 
-    print("PASS: Level 1 headlamp, Crawler visual/path, safe-zone, capture, and floor-recovery source contracts.")
+    print("PASS: Level 1/runtime headlamp, Crawler proportions/path, keycard recovery, loading coverage, safe-zone, capture, and floor-recovery source contracts.")
     print("PASS: Runtime/Photon/XR/Quest validation remains separate.")
     return 0
 
