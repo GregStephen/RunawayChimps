@@ -26,6 +26,7 @@ namespace GorillaLocomotion
         public int velocityHistorySize;
         public float maxArmLength = 1.5f;
         public float unStickDistance = 1f;
+        public float teleportHandPenetrationTolerance = 0.015f;
 
         public float velocityLimit;
         public float maxJumpSpeed;
@@ -40,6 +41,8 @@ namespace GorillaLocomotion
         private Vector3 denormalizedVelocityAverage;
         private bool jumpHandIsLeft;
         private Vector3 lastPosition;
+        private bool leftHandBlockedAfterTeleport;
+        private bool rightHandBlockedAfterTeleport;
 
         public Vector3 rightHandOffset;
         public Vector3 leftHandOffset;
@@ -76,12 +79,22 @@ namespace GorillaLocomotion
             velocityIndex = 0;
             lastPosition = transform.position;
         }
+
         public void ResetAfterTeleport()
         {
             bodyCollider.transform.eulerAngles = new Vector3(0, headCollider.transform.eulerAngles.y, 0);
-            // Followers can be siblings of the moving body; realign them explicitly.
-            leftHandFollower.position = CurrentLeftHandPosition();
-            rightHandFollower.position = CurrentRightHandPosition();
+
+            // Never seed Gorilla locomotion from a tracked controller pose that is already
+            // inside the floor/wall after spawn, travel, recentering, or a recovery lift.
+            // Sweep from the arm root to the tracked pose and start the virtual hand at the
+            // first safe contact point instead. A meaningfully displaced hand is temporarily
+            // excluded from locomotion until tracking returns it to reachable free space, so
+            // a low controller cannot immediately pin or launch the player on the first frame.
+            Vector3 leftDesired = CurrentLeftHandPosition();
+            Vector3 rightDesired = CurrentRightHandPosition();
+            leftHandFollower.position = ResolveHandPositionAfterTeleport(leftDesired, out leftHandBlockedAfterTeleport);
+            rightHandFollower.position = ResolveHandPositionAfterTeleport(rightDesired, out rightHandBlockedAfterTeleport);
+
             InitializeValues();
             currentVelocity = Vector3.zero;
             denormalizedVelocityAverage = Vector3.zero;
@@ -126,6 +139,54 @@ namespace GorillaLocomotion
             }
         }
 
+        private Vector3 ResolveHandPositionAfterTeleport(Vector3 desiredPosition, out bool blocked)
+        {
+            blocked = false;
+            Vector3 armRoot = ArmRootPosition();
+            Vector3 movement = desiredPosition - armRoot;
+            if (movement.sqrMagnitude <= 0.000001f)
+                return desiredPosition;
+
+            if (!CollisionsSphereCast(
+                    armRoot,
+                    minimumRaycastDistance,
+                    movement,
+                    defaultPrecision,
+                    out Vector3 safePosition,
+                    out _))
+            {
+                return desiredPosition;
+            }
+
+            // A legitimate surface-touching hand can be displaced by roughly one hand
+            // sphere radius by the collision solver. Do not classify that normal contact as
+            // a bad spawn pose; only suppress the hand when it is meaningfully deeper than
+            // the normal contact envelope.
+            float tolerance = Mathf.Max(
+                teleportHandPenetrationTolerance,
+                minimumRaycastDistance + 0.005f);
+            blocked = (safePosition - desiredPosition).sqrMagnitude > tolerance * tolerance;
+            return safePosition;
+        }
+
+        private bool RefreshBlockedHandAfterTeleport(
+            ref bool blocked,
+            ref Vector3 cachedPosition,
+            Transform follower,
+            Vector3 desiredPosition)
+        {
+            if (!blocked)
+                return false;
+
+            // Suppress this hand for the whole current frame even if it becomes clear now.
+            // That gives the cache one clean frame at the tracked pose before normal Gorilla
+            // locomotion is allowed to use the hand as a push/contact source again.
+            cachedPosition = ResolveHandPositionAfterTeleport(desiredPosition, out bool stillBlocked);
+            follower.position = cachedPosition;
+            blocked = stillBlocked;
+            return true;
+        }
+
         private Vector3 PositionWithOffset(Transform transformToModify, Vector3 offsetVector)
         {
             return transformToModify.position + transformToModify.rotation * offsetVector;
@@ -143,11 +204,27 @@ namespace GorillaLocomotion
 
             bodyCollider.transform.eulerAngles = new Vector3(0, headCollider.transform.eulerAngles.y, 0);
 
+            bool suppressLeftHand = RefreshBlockedHandAfterTeleport(
+                ref leftHandBlockedAfterTeleport,
+                ref lastLeftHandPosition,
+                leftHandFollower,
+                CurrentLeftHandPosition());
+            bool suppressRightHand = RefreshBlockedHandAfterTeleport(
+                ref rightHandBlockedAfterTeleport,
+                ref lastRightHandPosition,
+                rightHandFollower,
+                CurrentRightHandPosition());
+
+            if (suppressLeftHand)
+                wasLeftHandTouching = false;
+            if (suppressRightHand)
+                wasRightHandTouching = false;
+
             //left hand
 
             Vector3 distanceTraveled = CurrentLeftHandPosition() - lastLeftHandPosition + Vector3.down * 2f * 9.8f * Time.deltaTime * Time.deltaTime;
 
-            if (IterativeCollisionSphereCast(lastLeftHandPosition, minimumRaycastDistance, distanceTraveled, defaultPrecision, out finalPosition, true))
+            if (!suppressLeftHand && IterativeCollisionSphereCast(lastLeftHandPosition, minimumRaycastDistance, distanceTraveled, defaultPrecision, out finalPosition, true))
             {
                 //this lets you stick to the position you touch, as long as you keep touching the surface this will be the zero point for that hand
                 if (wasLeftHandTouching)
@@ -167,7 +244,7 @@ namespace GorillaLocomotion
 
             distanceTraveled = CurrentRightHandPosition() - lastRightHandPosition + Vector3.down * 2f * 9.8f * Time.deltaTime * Time.deltaTime;
 
-            if (IterativeCollisionSphereCast(lastRightHandPosition, minimumRaycastDistance, distanceTraveled, defaultPrecision, out finalPosition, true))
+            if (!suppressRightHand && IterativeCollisionSphereCast(lastRightHandPosition, minimumRaycastDistance, distanceTraveled, defaultPrecision, out finalPosition, true))
             {
                 if (wasRightHandTouching)
                 {
@@ -216,30 +293,50 @@ namespace GorillaLocomotion
 
             //do final left hand position
 
-            distanceTraveled = CurrentLeftHandPosition() - lastLeftHandPosition;
-
-            if (IterativeCollisionSphereCast(lastLeftHandPosition, minimumRaycastDistance, distanceTraveled, defaultPrecision, out finalPosition, !((leftHandColliding || wasLeftHandTouching) && (rightHandColliding || wasRightHandTouching))))
+            if (suppressLeftHand)
             {
-                lastLeftHandPosition = finalPosition;
-                leftHandColliding = true;
+                lastLeftHandPosition = ResolveHandPositionAfterTeleport(
+                    CurrentLeftHandPosition(),
+                    out leftHandBlockedAfterTeleport);
+                leftHandColliding = false;
             }
             else
             {
-                lastLeftHandPosition = CurrentLeftHandPosition();
+                distanceTraveled = CurrentLeftHandPosition() - lastLeftHandPosition;
+
+                if (IterativeCollisionSphereCast(lastLeftHandPosition, minimumRaycastDistance, distanceTraveled, defaultPrecision, out finalPosition, !((leftHandColliding || wasLeftHandTouching) && (rightHandColliding || wasRightHandTouching))))
+                {
+                    lastLeftHandPosition = finalPosition;
+                    leftHandColliding = true;
+                }
+                else
+                {
+                    lastLeftHandPosition = CurrentLeftHandPosition();
+                }
             }
 
             //do final right hand position
 
-            distanceTraveled = CurrentRightHandPosition() - lastRightHandPosition;
-
-            if (IterativeCollisionSphereCast(lastRightHandPosition, minimumRaycastDistance, distanceTraveled, defaultPrecision, out finalPosition, !((leftHandColliding || wasLeftHandTouching) && (rightHandColliding || wasRightHandTouching))))
+            if (suppressRightHand)
             {
-                lastRightHandPosition = finalPosition;
-                rightHandColliding = true;
+                lastRightHandPosition = ResolveHandPositionAfterTeleport(
+                    CurrentRightHandPosition(),
+                    out rightHandBlockedAfterTeleport);
+                rightHandColliding = false;
             }
             else
             {
-                lastRightHandPosition = CurrentRightHandPosition();
+                distanceTraveled = CurrentRightHandPosition() - lastRightHandPosition;
+
+                if (IterativeCollisionSphereCast(lastRightHandPosition, minimumRaycastDistance, distanceTraveled, defaultPrecision, out finalPosition, !((leftHandColliding || wasLeftHandTouching) && (rightHandColliding || wasRightHandTouching))))
+                {
+                    lastRightHandPosition = finalPosition;
+                    rightHandColliding = true;
+                }
+                else
+                {
+                    lastRightHandPosition = CurrentRightHandPosition();
+                }
             }
 
             StoreVelocities();
@@ -321,7 +418,8 @@ namespace GorillaLocomotion
             {
                 endPosition = startPosition;
                 return true;
-            } else
+            }
+            else
             {
                 endPosition = Vector3.zero;
                 return false;
@@ -346,7 +444,7 @@ namespace GorillaLocomotion
                     finalPosition = startPosition + (finalPosition - startPosition).normalized * Mathf.Max(0, hitInfo.distance - sphereRadius * (1f - precision * precision));
                     hitInfo = innerHit;
                 }
-                //bonus raycast check to make sure that something odd didn't happen with the spherecast. helps prevent clipping through geometry
+                //bonus raycast check to make sure that something odd didn't happen. helps prevent clipping through geometry
                 else if (Physics.Raycast(startPosition, finalPosition - startPosition, out innerHit, (finalPosition - startPosition).magnitude + sphereRadius * precision * precision * 0.999f, locomotionEnabledLayers.value))
                 {
                     finalPosition = startPosition;
