@@ -158,7 +158,13 @@ namespace GorillaLocomotion
                 return desiredPosition;
             }
 
-            float tolerance = Mathf.Max(0.0025f, teleportHandPenetrationTolerance);
+            // A legitimate surface-touching hand can be displaced by roughly one hand
+            // sphere radius by the collision solver. Do not classify that normal contact as
+            // a bad spawn pose; only suppress the hand when it is meaningfully deeper than
+            // the normal contact envelope.
+            float tolerance = Mathf.Max(
+                teleportHandPenetrationTolerance,
+                minimumRaycastDistance + 0.005f);
             blocked = (safePosition - desiredPosition).sqrMagnitude > tolerance * tolerance;
             return safePosition;
         }
@@ -438,7 +444,7 @@ namespace GorillaLocomotion
                     finalPosition = startPosition + (finalPosition - startPosition).normalized * Mathf.Max(0, hitInfo.distance - sphereRadius * (1f - precision * precision));
                     hitInfo = innerHit;
                 }
-                //bonus raycast check to make sure that something odd didn't happen with the spherecast. helps prevent clipping through geometry
+                //bonus raycast check to make sure that something odd didn't happen. helps prevent clipping through geometry
                 else if (Physics.Raycast(startPosition, finalPosition - startPosition, out innerHit, (finalPosition - startPosition).magnitude + sphereRadius * precision * precision * 0.999f, locomotionEnabledLayers.value))
                 {
                     finalPosition = startPosition;
