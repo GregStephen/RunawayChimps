@@ -39,6 +39,7 @@ def main():
         "MaintainAnimatedRootInPlace();",
         "visualRoot.position += correction",
         "complete Zombie visual is being counter-translated",
+        "correction never writes a bone position or rotation",
     ):
         require(errors, follower, token, follower_path)
     for forbidden in (
