@@ -1,93 +1,129 @@
+using System.Collections.Generic;
 using Photon.Pun;
+using RunawayChimps.Monsters;
 using RunawayChimps.Travel;
 using RunawayChimps.Zones;
 using UnityEngine;
 
 namespace RunawayChimps.ThreatFeedback
 {
-    public interface IMonsterPursuitProvider
-    {
-        bool IsPursuing { get; }
-        int TargetActorNumber { get; }
-        SectorId ThreatSector { get; }
-    }
-
+    /// <summary>
+    /// Adapts one monster's pursuit identity and cached local-player distance into a
+    /// local presentation value. It never owns AI decisions or networks presentation.
+    /// </summary>
     [DisallowMultipleComponent]
     public sealed class MonsterThreatSource : MonoBehaviour
     {
+        private const float ResolveRetrySeconds = 0.5f;
+
         [SerializeField] private ProximityReactor proximity;
         [SerializeField] private ThreatProfile profile = new ThreatProfile();
         [SerializeField] private ZoneId requiredLocalZone = ZoneId.None;
+
+        private readonly List<MonoBehaviour> providerBuffer = new List<MonoBehaviour>();
         private IMonsterPursuitProvider pursuit;
+        private ThreatFeedbackController controller;
+        private float nextResolveTime;
 
         private void Awake()
         {
-            if (proximity == null) proximity = GetComponent<ProximityReactor>();
+            if (proximity == null)
+                proximity = GetComponent<ProximityReactor>();
             ResolveProvider();
         }
 
         private void OnEnable()
         {
-            ResolveProvider();
-            ThreatFeedbackController.EnsureInstalled()?.Register(this);
+            nextResolveTime = 0f;
+            TryAttach();
         }
 
         private void Update()
         {
-            if (ThreatFeedbackController.Instance == null) ThreatFeedbackController.EnsureInstalled()?.Register(this);
-            if (pursuit == null) ResolveProvider();
+            if (pursuit != null && controller != null)
+                return;
+            if (Time.unscaledTime < nextResolveTime)
+                return;
+
+            nextResolveTime = Time.unscaledTime + ResolveRetrySeconds;
+            TryAttach();
         }
 
-        private void OnDisable() => ThreatFeedbackController.Instance?.Unregister(this);
+        private void OnDisable()
+        {
+            controller?.Unregister(this);
+            controller = null;
+        }
+
+        private void OnDestroy()
+        {
+            controller?.Unregister(this);
+        }
+
+        private void TryAttach()
+        {
+            if (pursuit == null)
+                ResolveProvider();
+
+            ThreatFeedbackController installed = ThreatFeedbackController.EnsureInstalled();
+            if (installed == null)
+                return;
+
+            if (controller != installed)
+            {
+                controller?.Unregister(this);
+                controller = installed;
+            }
+            controller.Register(this);
+        }
 
         private void ResolveProvider()
         {
-            var behaviours = GetComponents<MonoBehaviour>();
-            for (int i = 0; i < behaviours.Length; i++)
-                if (behaviours[i] is IMonsterPursuitProvider provider) { pursuit = provider; return; }
+            providerBuffer.Clear();
+            GetComponents(providerBuffer);
+            for (int i = 0; i < providerBuffer.Count; i++)
+            {
+                if (providerBuffer[i] is IMonsterPursuitProvider provider)
+                {
+                    pursuit = provider;
+                    providerBuffer.Clear();
+                    return;
+                }
+            }
+            providerBuffer.Clear();
             pursuit = null;
         }
 
         public float EvaluateLocalThreat()
         {
-            if (pursuit == null || !pursuit.IsPursuing || pursuit.TargetActorNumber <= 0 ||
-                !PhotonNetwork.InRoom || PhotonNetwork.LocalPlayer == null ||
-                pursuit.TargetActorNumber != PhotonNetwork.LocalPlayer.ActorNumber) return 0f;
+            if (pursuit == null || !PhotonNetwork.InRoom || PhotonNetwork.LocalPlayer == null)
+                return 0f;
 
-            var travel = SectorTravelService.I;
-            var zones = ZoneStateService.Instance;
+            MonsterPursuitState state = pursuit.PursuitState;
+            if (!state.IsPursuing || state.TargetActorNumber != PhotonNetwork.LocalPlayer.ActorNumber)
+                return 0f;
+
+            SectorTravelService travel = SectorTravelService.I;
+            ZoneStateService zones = ZoneStateService.Instance;
             if (travel == null || travel.IsBusy || travel.CurrentSector == SectorId.None ||
-                pursuit.ThreatSector != travel.CurrentSector || zones == null || zones.LocalZone == ZoneId.None) return 0f;
-            if (requiredLocalZone != ZoneId.None && zones.LocalZone != requiredLocalZone) return 0f;
-            if (proximity == null || !proximity.HasValidSample) return 0f;
+                pursuit.ThreatSector != travel.CurrentSector || zones == null || zones.LocalZone == ZoneId.None)
+                return 0f;
+            if (requiredLocalZone != ZoneId.None && zones.LocalZone != requiredLocalZone)
+                return 0f;
+            if (proximity == null || !proximity.HasValidSample)
+                return 0f;
 
-            return profile.Evaluate(proximity.LastDistance);
+            return profile != null ? profile.Evaluate(proximity.LastDistance) : 0f;
         }
 
-        public void Configure(ProximityReactor reactor, ZoneId requiredZone)
+        public void Configure(ProximityReactor reactor, ZoneId requiredZone, ThreatProfile threatProfile = null)
         {
             proximity = reactor;
             requiredLocalZone = requiredZone;
+            if (threatProfile != null)
+                profile = threatProfile;
             ResolveProvider();
-        }
-    }
-
-    [System.Serializable]
-    public sealed class ThreatProfile
-    {
-        [Min(0.1f)] public float beginDistance = 10f;
-        [Min(0f)] public float maximumDistance = 1.25f;
-        [Range(0f, 1f)] public float pursuitBaseline = 0.12f;
-        [Range(0f, 1f)] public float maximumThreat = 1f;
-        public AnimationCurve response = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
-
-        public float Evaluate(float distance)
-        {
-            if (distance > beginDistance) return pursuitBaseline * maximumThreat;
-            float span = Mathf.Max(0.01f, beginDistance - maximumDistance);
-            float closeness = Mathf.Clamp01((beginDistance - distance) / span);
-            float curved = response != null ? Mathf.Clamp01(response.Evaluate(closeness)) : closeness;
-            return Mathf.Clamp01(Mathf.Lerp(pursuitBaseline, 1f, curved) * maximumThreat);
+            TryAttach();
         }
     }
 }
