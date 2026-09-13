@@ -47,6 +47,8 @@ profile = require("Assets/Scripts/ThreatFeedback/ThreatProfile.cs", [
 ])
 installer = require("Assets/Scripts/ThreatFeedback/CrawlerThreatSourceInstaller.cs", [
     'LevelOneScene = "Level1_Containment"',
+    "CrawlerMonsterId = 1",
+    "sync.monsterId != CrawlerMonsterId",
     "GetComponentsInChildren<MonsterNavigation>(true)",
     "navigation.gameObject.AddComponent<MonsterThreatSource>()",
     "ZoneId.Level1_Vents",
@@ -117,4 +119,5 @@ if errors:
 
 print("PASS: target-aware local threat feedback source contracts.")
 print("PASS: ordered per-authority monster revisions protect same-frame pursuit transitions.")
+print("PASS: Level 1 runtime adapter is scoped to the authored Crawler monster ID.")
 print("PASS: Unity 2022.3.55f1, headset, Quest, and two-client Photon validation remain pending.")
