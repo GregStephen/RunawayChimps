@@ -7,11 +7,12 @@ namespace RunawayChimps.ThreatFeedback
 {
     /// <summary>
     /// Crawler-specific composition root. The threat system itself remains monster-agnostic;
-    /// this adapter only maps the existing Level 1 Crawler root into the generic source contract.
+    /// this adapter only maps the authored Level 1 Crawler root into the generic source contract.
     /// </summary>
     internal static class CrawlerThreatSourceInstaller
     {
         private const string LevelOneScene = "Level1_Containment";
+        private const int CrawlerMonsterId = 1;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void Install()
@@ -34,7 +35,8 @@ namespace RunawayChimps.ThreatFeedback
                 {
                     SectorMonsterSync sync = navigation.GetComponent<SectorMonsterSync>();
                     ProximityReactor proximity = navigation.GetComponent<ProximityReactor>();
-                    if (sync == null || sync.sector != SectorId.Containment || proximity == null)
+                    if (sync == null || sync.sector != SectorId.Containment ||
+                        sync.monsterId != CrawlerMonsterId || proximity == null)
                         continue;
 
                     MonsterThreatSource source = navigation.GetComponent<MonsterThreatSource>();
