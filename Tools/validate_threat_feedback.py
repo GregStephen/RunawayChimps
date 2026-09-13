@@ -60,11 +60,16 @@ nav = require("Assets/Scripts/MonsterScripts/MonsterNavigation.cs", [
     "ApplyRemotePursuit(bool chasing, int targetActorNumber)",
 ])
 sync = require("Assets/Scripts/Travel/SectorMonsterSync.cs", [
-    "ProtocolVersion = 2",
+    "ProtocolVersion = 3",
     "IMonsterPursuitSyncTarget",
     "pursuit.PursuitChanged += HandlePursuitChanged",
     "pursuitStateTimeout",
-    "data.Length != 8",
+    "outgoingStateRevision",
+    "lastReceivedStateRevision = -1",
+    "int revision = ++outgoingStateRevision",
+    "data.Length != 9",
+    "revision <= lastReceivedStateRevision",
+    "Revisions are scoped to one elected controller epoch",
     "pursuit.ApplyRemotePursuit",
     "A newly elected controller must make a fresh local target decision",
 ])
@@ -111,4 +116,5 @@ if errors:
     sys.exit(1)
 
 print("PASS: target-aware local threat feedback source contracts.")
+print("PASS: ordered per-authority monster revisions protect same-frame pursuit transitions.")
 print("PASS: Unity 2022.3.55f1, headset, Quest, and two-client Photon validation remain pending.")
