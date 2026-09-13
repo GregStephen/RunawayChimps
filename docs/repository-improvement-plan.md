@@ -4,6 +4,14 @@ Last updated: 2026-09-13. Maintained repository edition, migrated from `Runaway_
 
 Read the [design and lore](design-and-lore.md) for intended behavior and [AGENTS.md](../AGENTS.md) for update rules. A confirmed finding describes source evidence; it does not mean its fix is implemented or tested.
 
+## September 13 local multiplayer development testing workflow
+
+**Confirmed development workflow:** standardize one-PC multiplayer testing on **Unity Editor Client A + Windows Development Build Client B**, both running the same commit and explicitly joining the same private Photon room code. The current Hub computer and `RoomSwitchService.JoinPrivateRoom(...)` already provide the same-room path. This workflow is intended to make routine two-actor regression testing possible without requiring two headsets for every code pass.
+
+**Planned tooling, not implemented:** add a development-only local multiplayer harness that builds/launches Client B, assigns separate throwaway development identities, can auto-join a named private test room, provides keyboard/mouse movement and repeatable test setup for the non-headset client, and exposes a read-only debug HUD for room/ActorNumber/sector/zone/monster-controller/target/threat state. Keep the helper behind Editor/Development Build guards and never fake the production Photon/gameplay state being tested.
+
+**Validation boundary:** one-PC Editor + Development Build evidence may be recorded as local two-client validation for the exact behavior exercised. It does not validate headset tracking/input, Quest performance, platform authentication, or two-headset comfort/interaction. The detailed maintained procedure and the threat-feedback A/B matrix live in [Multiplayer development testing](multiplayer-development-testing.md).
+
 ## September 13 global player-specific threat feedback implementation
 
 **Confirmed architecture:** Greg approved the audited design for one reusable persistent local threat-feedback layer. Personal feedback is keyed by the monster's explicit Photon target ActorNumber; generic shared `IsChasing` remains available for shared monster behavior/audio but is insufficient for a personal warning. `ProximityManager` stays generic and the threat layer consumes fresh cached distance samples. Multiple sources use bounded maximum aggregation. The first visible consumer is a smooth red peripheral vignette with a readable center and no aggressive flashing. Future heartbeat/breathing, haptics, and audio filtering remain architectural extension points only.
