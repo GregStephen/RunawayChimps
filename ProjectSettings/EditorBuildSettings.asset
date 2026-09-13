@@ -21,10 +21,10 @@ EditorBuildSettings:
     path: Assets/RunawayChimps/Level2Blockout/Scenes/Level2_BehavioralConditioning_Blockout.unity
     guid: 20c8ae1dacc6ef59879b2d62938d719d
   - enabled: 0
-    path: Assets/Scenes/Hub_Base_1.unity
+    path: Assets/Scenes/older/Hub_Base_1.unity
     guid: c6749cc85f3ac104598d8ab2634c9671
   - enabled: 0
-    path: Assets/Scenes/Level1.unity
+    path: Assets/Scenes/older/Level1.unity
     guid: 16eb0c7d63d7518459b9f697f221916a
   m_configObjects:
     Unity.XR.Oculus.Settings: {fileID: 11400000, guid: a641539351f3b7b40a34e9590c439388, type: 2}

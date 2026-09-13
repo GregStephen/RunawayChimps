@@ -10,6 +10,15 @@ This focused design note records the Hub security-room decisions while the room 
 - **Confirmed:** The Level 1 hallway approach should use worn industrial floor lettering such as `SECTOR 01 — PRIMATE CONTAINMENT` with a directional arrow so the route reads diegetically.
 - **Confirmed:** Include playful physical workplace props where they fit the environment. A rolling office chair and/or rolling utility cart are desired because chimps can shove, ride, spin, or otherwise play with them while the props still make sense in a security area.
 
+## Employee code-of-conduct wall poster
+
+- **Confirmed:** Present the game's player code of conduct diegetically as an oversized laboratory employee-compliance poster rather than as a visually separate modern rules board.
+- **Confirmed:** VR readability takes priority over dense workplace-poster realism. The sign should occupy a large portion of a wall, use very large high-contrast headings and short rule statements, and avoid paragraph-sized copy that requires the player to stand immediately in front of it.
+- **Confirmed:** Keep the ordinary conduct rules sincere and functional, then use facility-specific containment language to tie the poster into the horror setting. The current prototype includes a prominent warning not to feed, taunt, release, or befriend containment subjects plus containment-failure instructions.
+- **Confirmed art correction, 2026-09-12:** the first wall-prop prototype's simple thick picture-frame construction read as too generic/AI-made. Supersede that presentation with deliberately modeled institutional sign hardware: a thin enamel backplate, narrow dull-metal retaining rails, visible fasteners with small nonuniform details, and a slightly imperfect laminated print surface. Avoid a glossy showroom-picture-frame look or unnecessary sci-fi ornamentation.
+- **Confirmed implementation contract:** Keep the printed poster face as its own mesh/material target (`Poster_Print_Surface`) so readability/localization revisions can replace the texture without rebuilding the mounting hardware.
+- **Prototype scale:** approximately 5.4 m wide × 3.04 m tall with overall mounting hardware approximately 5.56 m × 3.20 m. This is a review scale, not final until checked in the authored Hub and in-headset.
+
 ## Security surveillance monitors
 
 - **Confirmed:** Start with about four physical security monitors in the Hub security area, consistent with the existing surveillance-wall direction.
@@ -31,6 +40,10 @@ The level label should be data-driven from the screen's current assignment rathe
 
 ## Implementation status
 
-- **Asset prototype created outside the repository, 2026-09-12:** a reusable single-monitor model, a four-monitor 2×2 convenience layout, a Blender generator script, a grain overlay, a neutral static placeholder and a screen-layout guide were generated for review/import. The monitor uses a separate named screen surface.
-- **Not yet integrated:** no monitor asset, Unity prefab, display controller, level-assignment scheduler, surveillance image sequence or Hub scene placement has been committed to the repository from this design pass.
-- **Pending validation:** Blender appearance/scale review; Unity 2022.3.55f1 import/material setup; Hub wall placement; VR readability of the dynamic label; screen rotation behavior; Quest performance; and confirmation that all monitor playback remains silent.
+- **Employee poster v1 superseded, 2026-09-12:** the original outside-repository prototype used a simple shallow framed board. Greg's review found the Blender prop itself looked too AI/generic, so it is no longer the preferred art direction even though its separate-poster-surface contract remains useful.
+- **Employee poster v2 asset prototype created outside the repository, 2026-09-12:** generated a revised Unity/Blender-ready model (`RunawayChimps_EmployeeCodePoster_v2.obj` + MTL), exact 4096 × 2304 typeset poster texture, preview image, and Blender generator script. V2 replaces the picture-frame silhouette with a thin enamel backplate, narrow retaining rails, twelve modeled fasteners with varied slot angles, and a subdivided print face with approximately 1 mm surface irregularity. The Blender generator also packs the poster texture and, when run in Blender, saves a `.blend` and exports an FBX automatically.
+- **Employee poster not yet integrated:** no poster model, texture, Unity material/prefab, or Hub scene placement has been committed to the repository from this pass.
+- **Employee poster pending validation:** Blender v2 appearance review; Unity 2022.3.55f1 import/material assignment; authored Hub wall fit; headset readability from normal approach distances; texture Max Size/Quest memory tradeoff; lighting/glare; and final scale. Do not treat the 5.4 m prototype size or 4K texture setting as final until those checks pass.
+- **Security-monitor asset prototype created outside the repository, 2026-09-12:** a reusable single-monitor model, a four-monitor 2×2 convenience layout, a Blender generator script, a grain overlay, a neutral static placeholder and a screen-layout guide were generated for review/import. The monitor uses a separate named screen surface.
+- **Security monitors not yet integrated:** no monitor asset, Unity prefab, display controller, level-assignment scheduler, surveillance image sequence or Hub scene placement has been committed to the repository from this design pass.
+- **Security monitors pending validation:** Blender appearance/scale review; Unity 2022.3.55f1 import/material setup; Hub wall placement; VR readability of the dynamic label; screen rotation behavior; Quest performance; and confirmation that all monitor playback remains silent.

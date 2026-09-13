@@ -64,6 +64,9 @@ jobs:
       - name: Validate Level 1 source contracts
         run: python Tools/validate_level1_contracts.py
 
+      - name: Validate PR15 review hardening
+        run: python Tools/validate_pr15_review_hardening.py
+
       - name: Compile Python validation tools
         run: python -m compileall -q Tools
 
