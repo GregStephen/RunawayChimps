@@ -36,19 +36,21 @@ def main():
         'MotionCompensationName = "CrawlerMotionCompensation"',
         'FindFirst(bones, "mixamorighips", "hips")',
         "motionCompensationRoot.InverseTransformPoint(animatedRootAnchor.position)",
-        "Vector3 localTravelDrift = new Vector3(totalLocalDrift.x, 0f, totalLocalDrift.z)",
-        "motionCompensationRoot.localPosition = calibratedMotionLocalPosition - localTravelDrift",
+        "float downwardRootSink = Mathf.Min(0f, totalLocalDrift.y)",
+        "Vector3 compensatedLocalDrift = new Vector3(",
+        "motionCompensationRoot.localPosition = calibratedMotionLocalPosition - compensatedLocalDrift",
+        "animatedRootFloorSinkWarning = 0.12f",
+        "preserving upward crawl motion",
         "motionCompensationRoot.position += horizontalDelta",
         "motionCompensationRoot.localRotation = Quaternion.identity",
         "MaintainAnimatedRootInPlace();",
-        "crawl animation attempted",
         "total horizontal internal root travel",
-        "Vertical animation motion remains authored",
         "never writes a bone position or rotation",
-        "Animator-owned visualRoot is never repositioned",
     ):
         require(errors, follower, token, follower_path)
 
+    # Ownership is enforced semantically by forbidding every direct position/rotation write to
+    # the Animator-owned Zombie root and core anchors. Do not rely on a comment string for this.
     for forbidden in (
         "animatedRootAnchor.position =",
         "frontAnchor.position =",
@@ -63,7 +65,7 @@ def main():
     ):
         if forbidden in follower:
             errors.append(
-                f"{follower_path}: motion compensation must own rigid horizontal translation outside the Animator hierarchy; found {forbidden!r}"
+                f"{follower_path}: motion compensation must own rigid translation outside the Animator hierarchy; found {forbidden!r}"
             )
 
     heading_path = "Assets/Scripts/MonsterScripts/CrawlerVisualHeadingStabilizer.cs"
@@ -129,8 +131,8 @@ def main():
 
     print(
         "PASS: PR #15 hardening protects marker-only legacy cleanup, serialization-proof Zombie forward setup, "
-        "explicit scene migration, stable-anchor heading, non-animated horizontal Crawler motion compensation, "
-        "authored vertical crawl motion, gameplay-owned travel, discontinuity-safe hand contact, and solved-position IK caching."
+        "explicit scene migration, stable-anchor heading, non-animated Crawler motion compensation, horizontal travel "
+        "cancellation with one-sided floor-height clamping, discontinuity-safe hand contact, and solved-position IK caching."
     )
     return 0
 

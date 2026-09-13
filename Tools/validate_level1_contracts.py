@@ -105,9 +105,11 @@ def main():
         'MotionCompensationName = "CrawlerMotionCompensation"',
         "AlignVisualToLeader();",
         "motionCompensationRoot.InverseTransformPoint(animatedRootAnchor.position)",
-        "Vector3 localTravelDrift = new Vector3(totalLocalDrift.x, 0f, totalLocalDrift.z)",
-        "motionCompensationRoot.localPosition = calibratedMotionLocalPosition - localTravelDrift",
-        "Vertical animation motion remains authored",
+        "float downwardRootSink = Mathf.Min(0f, totalLocalDrift.y)",
+        "Vector3 compensatedLocalDrift = new Vector3(",
+        "motionCompensationRoot.localPosition = calibratedMotionLocalPosition - compensatedLocalDrift",
+        "animatedRootFloorSinkWarning = 0.12f",
+        "preserving upward crawl motion",
         "mixamorigspine2",
         "mixamorighips",
     ])
@@ -126,7 +128,9 @@ def main():
             errors.append(f"{rel(follower_path)}: rigid correction must stay outside the Animator-owned visual root; found {forbidden!r}.")
     if "ApplyBodyPath();" in follower or "ConstrainHand(" in follower:
         errors.append(f"{rel(follower_path)}: experimental torso/leaf deformation must remain disabled; limb contact belongs in the dedicated IK component.")
-    positive_defaults(errors, follower_path, follower, ["floorClearance", "animatedRootDriftWarning"])
+    positive_defaults(errors, follower_path, follower, [
+        "floorClearance", "animatedRootDriftWarning", "animatedRootFloorSinkWarning"
+    ])
 
     heading_path = ROOT / "Assets/Scripts/MonsterScripts/CrawlerVisualHeadingStabilizer.cs"
     heading = require(errors, heading_path, [
@@ -338,7 +342,7 @@ def main():
         print(f"FAILED: {len(errors)} Level 1/runtime contract issue(s).")
         return 1
 
-    print("PASS: Level 1/runtime hand visual contact, Animator-owned Crawler torso, stable Crawler motion-wrapper ownership, Crawler hand surface-contact IK, legacy visual-rig cleanup, Crawler forward/turn continuity, keycard recovery, loading coverage, headlamp, safe-zone, capture, and floor-recovery source contracts.")
+    print("PASS: Level 1/runtime hand visual contact, Animator-owned Crawler torso, stable Crawler motion-wrapper/floor-clamp ownership, Crawler hand surface-contact IK, legacy visual-rig cleanup, Crawler forward/turn continuity, keycard recovery, loading coverage, headlamp, safe-zone, capture, and floor-recovery source contracts.")
     print("PASS: Runtime/Photon/XR/Quest validation remains separate.")
     return 0
 

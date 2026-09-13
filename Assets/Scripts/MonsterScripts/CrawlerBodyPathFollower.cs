@@ -12,8 +12,9 @@ using UnityEngine;
 /// a non-animated CrawlerMotionCompensation parent between CrawlerVisualAnchor and Zombie Crawl.
 /// All automatic pivot alignment and in-place travel correction move only that wrapper. The
 /// correction never writes a bone position or rotation and never writes the Animator-owned
-/// Zombie root. Vertical animation motion remains authored; only horizontal travel drift is
-/// cancelled.
+/// Zombie root. Horizontal animation travel is cancelled. Upward vertical crawl motion remains
+/// authored, while downward root translation is clamped at the calibrated vent-floor height so
+/// the complete monster cannot sink beneath the floor.
 /// </summary>
 [DefaultExecutionOrder(300)]
 [DisallowMultipleComponent]
@@ -26,6 +27,8 @@ public sealed class CrawlerBodyPathFollower : MonoBehaviour
     [SerializeField, Min(0f)] private float floorClearance = 0.015f;
     [Tooltip("Log once if the crawl clip's total horizontal root travel exceeds this many world meters.")]
     [SerializeField, Min(0.01f)] private float animatedRootDriftWarning = 0.25f;
+    [Tooltip("Log once if the crawl clip tries to move its animated root this far below the calibrated crawl-floor height.")]
+    [SerializeField, Min(0.01f)] private float animatedRootFloorSinkWarning = 0.12f;
 
     private Transform visualRoot;
     private Transform visualAnchor;
@@ -36,6 +39,7 @@ public sealed class CrawlerBodyPathFollower : MonoBehaviour
     private Vector3 calibratedMotionLocalPosition;
     private bool hasAnimatedRootReference;
     private bool warnedAnimatedRootDrift;
+    private bool warnedAnimatedRootFloorSink;
     private bool configured;
 
     public Transform FrontAnchor => frontAnchor;
@@ -52,6 +56,7 @@ public sealed class CrawlerBodyPathFollower : MonoBehaviour
         visualRoot = zombieVisualRoot;
         hasAnimatedRootReference = false;
         warnedAnimatedRootDrift = false;
+        warnedAnimatedRootFloorSink = false;
         configured = false;
 
         if (visualRoot == null || !EnsureMotionCompensationRoot())
@@ -90,7 +95,8 @@ public sealed class CrawlerBodyPathFollower : MonoBehaviour
         {
             Debug.Log(
                 $"{name}: Zombie Crawl Animator owns the imported visual hierarchy while gameplay owns travel. " +
-                "CrawlerMotionCompensation cancels horizontal animation-root drift without writing the Animator root or torso bones.",
+                "CrawlerMotionCompensation cancels horizontal animation-root travel and prevents downward root sink " +
+                "without writing the Animator root or torso bones.",
                 this);
         }
 
@@ -214,9 +220,16 @@ public sealed class CrawlerBodyPathFollower : MonoBehaviour
             motionCompensationRoot.InverseTransformPoint(animatedRootAnchor.position);
         Vector3 totalLocalDrift = currentAnimatedRootInMotionSpace - animatedRootReferenceInMotionSpace;
 
-        // Gameplay owns travel across the vent plane, but the crawl is still allowed to raise
-        // and lower the body naturally. Cancelling Y would flatten authored crawl bob and could
-        // create unnecessary hand/floor corrections, so only horizontal X/Z drift is removed.
+        // Gameplay owns X/Z travel. Upward Y motion remains authored so the crawl can bob/lift
+        // naturally, but negative Y root travel is not allowed to pull the entire skinned body
+        // below the calibrated vent-floor pose. This is intentionally based on Hips/root drift,
+        // not complete renderer bounds, so a low animated hand cannot lift the whole monster.
+        float downwardRootSink = Mathf.Min(0f, totalLocalDrift.y);
+        Vector3 compensatedLocalDrift = new Vector3(
+            totalLocalDrift.x,
+            downwardRootSink,
+            totalLocalDrift.z);
+
         Vector3 localTravelDrift = new Vector3(totalLocalDrift.x, 0f, totalLocalDrift.z);
         float worldTravelDrift = motionCompensationRoot.TransformVector(localTravelDrift).magnitude;
 
@@ -229,10 +242,22 @@ public sealed class CrawlerBodyPathFollower : MonoBehaviour
                 this);
         }
 
-        // Absolute assignment is intentional. It prevents accumulated error and, crucially,
-        // restores the calibrated wrapper position when a looping clip's horizontal drift
-        // returns to zero. The Animator-owned visualRoot is never repositioned by this component.
-        motionCompensationRoot.localPosition = calibratedMotionLocalPosition - localTravelDrift;
+        float worldFloorSink = motionCompensationRoot
+            .TransformVector(new Vector3(0f, downwardRootSink, 0f))
+            .magnitude;
+        if (!warnedAnimatedRootFloorSink && worldFloorSink >= animatedRootFloorSinkWarning)
+        {
+            warnedAnimatedRootFloorSink = true;
+            Debug.LogWarning(
+                $"{name}: crawl animation attempted to move its root {worldFloorSink:0.00} m below the calibrated vent-floor pose; " +
+                "CrawlerMotionCompensation is clamping only that downward travel while preserving upward crawl motion.",
+                this);
+        }
+
+        // Absolute assignment is intentional. It prevents accumulated error and restores the
+        // calibrated wrapper when a looping clip returns to its reference pose. X/Z travel and
+        // only negative Y root sink are removed. Positive vertical motion remains Animator-owned.
+        motionCompensationRoot.localPosition = calibratedMotionLocalPosition - compensatedLocalDrift;
     }
 
     private void AlignVisualToLeader()
@@ -261,7 +286,7 @@ public sealed class CrawlerBodyPathFollower : MonoBehaviour
         motionCompensationRoot.position += horizontalDelta;
 
         // Ground the complete rendered hierarchy once by moving the same wrapper. Subsequent
-        // in-place compensation is absolute around this calibrated wrapper position.
+        // in-place compensation uses this pose as the minimum vertical root height.
         if (TryGetVisualBounds(out Bounds alignedBounds))
         {
             float desiredBottom = transform.position.y + floorClearance;
