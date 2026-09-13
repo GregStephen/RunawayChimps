@@ -13,7 +13,7 @@ namespace RunawayChimps.Travel
     {
         public const byte StateEvent = 180;
         public const byte RequestEvent = 181;
-        private const int ProtocolVersion = 2;
+        private const int ProtocolVersion = 3;
 
         public SectorId sector = SectorId.Containment;
         public int monsterId = 1;
@@ -28,6 +28,8 @@ namespace RunawayChimps.Travel
         private Vector3 targetPosition;
         private Quaternion targetRotation;
         private double lastStateTime = double.MinValue;
+        private int outgoingStateRevision;
+        private int lastReceivedStateRevision = -1;
         private float lastReceiveUnscaled = float.NegativeInfinity;
         private float nextSend;
         private float nextRequest;
@@ -90,6 +92,8 @@ namespace RunawayChimps.Travel
             controller = 0;
             hasState = HasAuthority = false;
             lastStateTime = double.MinValue;
+            outgoingStateRevision = 0;
+            lastReceivedStateRevision = -1;
             lastReceiveUnscaled = float.NegativeInfinity;
             nextRequest = nextSend = 0f;
             pursuit?.ApplyRemotePursuit(false, 0);
@@ -111,6 +115,11 @@ namespace RunawayChimps.Travel
                 bool wasAuthority = HasAuthority;
                 HasAuthority = elected != 0 && PhotonNetwork.LocalPlayer != null &&
                     elected == PhotonNetwork.LocalPlayer.ActorNumber;
+
+                // Revisions are scoped to one elected controller epoch. Every client resets its
+                // receive ordering when the elected actor changes, including an A -> B -> A cycle.
+                outgoingStateRevision = 0;
+                lastReceivedStateRevision = -1;
 
                 if (HasAuthority && !wasAuthority)
                 {
@@ -191,6 +200,7 @@ namespace RunawayChimps.Travel
                 return;
 
             MonsterPursuitState state = pursuit.PursuitState;
+            int revision = ++outgoingStateRevision;
             PhotonNetwork.RaiseEvent(
                 StateEvent,
                 new object[]
@@ -198,6 +208,7 @@ namespace RunawayChimps.Travel
                     (int)sector,
                     monsterId,
                     ProtocolVersion,
+                    revision,
                     PhotonNetwork.Time,
                     transform.position,
                     transform.rotation,
@@ -231,11 +242,12 @@ namespace RunawayChimps.Travel
                 return;
             }
 
-            if (owner == 0 || photonEvent.Sender != owner || data.Length != 8 ||
+            if (owner == 0 || photonEvent.Sender != owner || data.Length != 9 ||
                 !(data[2] is int version) || version != ProtocolVersion ||
-                !(data[3] is double time) || !(data[4] is Vector3 position) ||
-                !(data[5] is Quaternion rotation) || !(data[6] is bool pursuing) ||
-                !(data[7] is int targetActorNumber))
+                !(data[3] is int revision) || revision <= 0 ||
+                !(data[4] is double time) || !(data[5] is Vector3 position) ||
+                !(data[6] is Quaternion rotation) || !(data[7] is bool pursuing) ||
+                !(data[8] is int targetActorNumber))
                 return;
             if (targetActorNumber < 0 || (pursuing && targetActorNumber == 0) ||
                 double.IsNaN(time) || double.IsInfinity(time) ||
@@ -243,9 +255,10 @@ namespace RunawayChimps.Travel
                 !Finite(rotation.x) || !Finite(rotation.y) || !Finite(rotation.z) || !Finite(rotation.w) ||
                 Quaternion.Dot(rotation, rotation) < 0.0001f)
                 return;
-            if (controller == owner && time <= lastStateTime)
+            if (controller == owner && revision <= lastReceivedStateRevision)
                 return;
 
+            lastReceivedStateRevision = revision;
             lastStateTime = time;
             lastReceiveUnscaled = Time.unscaledTime;
             targetPosition = position;
