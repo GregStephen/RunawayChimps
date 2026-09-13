@@ -97,7 +97,8 @@ public sealed class CrawlerLegacyVisualRuntimeCleanup : MonoBehaviour
         else if (scheduledRemovalCount > 0)
         {
             Debug.Log(
-                $"{name}: removed {scheduledRemovalCount} obsolete MiniGamesKid visual object/component(s). Runtime hierarchy is now the Crawler gameplay root plus Zombie Crawl visual rig.",
+                $"{name}: cleaned {scheduledRemovalCount} obsolete MiniGamesKid visual object/component(s). " +
+                "Legacy root-only rig support is disabled for this Play Mode session; Zombie Crawl owns live presentation.",
                 this);
         }
 

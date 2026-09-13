@@ -137,6 +137,11 @@ public sealed class CrawlerVisualController : MonoBehaviour
         Vector3 desiredWorldScale = preserveAuthoredScale ? zombieVisual.lossyScale : fallbackLocalScale;
         desiredWorldScale *= visualScaleMultiplier;
 
+        // The serialized gameplay root still carries MiniGamesKid-era orientation data. Clear
+        // the old model-only yaw before navigation gets a chance to use it for this replacement.
+        if (navigation != null)
+            navigation.modelForwardOffset = Vector3.zero;
+
         GameObject anchorObject = new GameObject("CrawlerVisualAnchor");
         visualAnchor = anchorObject.transform;
         visualAnchor.SetParent(transform, false);
@@ -146,6 +151,15 @@ public sealed class CrawlerVisualController : MonoBehaviour
         // silently restore the superseded 180-degree MiniGamesKid-era correction.
         visualAnchor.localRotation = Quaternion.identity;
         visualAnchor.localScale = Vector3.one;
+
+        // Local identity is not sufficient while the legacy gameplay root itself still has an
+        // authored roll/tilt. Body/floor calibration happens before the heading stabilizer's
+        // first LateUpdate, so make the presentation frame upright in WORLD space now.
+        Vector3 initialForward = transform.forward;
+        initialForward.y = 0f;
+        if (initialForward.sqrMagnitude < 0.0001f)
+            initialForward = Vector3.forward;
+        visualAnchor.rotation = Quaternion.LookRotation(initialForward.normalized, Vector3.up);
 
         zombieVisual.SetParent(visualAnchor, false);
         zombieVisual.localPosition = Vector3.zero;
@@ -177,9 +191,6 @@ public sealed class CrawlerVisualController : MonoBehaviour
             Debug.LogWarning($"{name}: Zombie Crawl visual attached, but automatic rigid pivot alignment could not find a usable body anchor.", this);
 
         DisableLegacyVisuals();
-
-        if (navigation != null)
-            navigation.modelForwardOffset = Vector3.zero;
 
         var gate = GetComponent<MonsterActivationGate>();
         if (gate != null)

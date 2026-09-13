@@ -21,6 +21,9 @@ def main():
     visual_path = "Assets/Scripts/MonsterScripts/CrawlerVisualController.cs"
     visual = text(visual_path)
     require(errors, visual, "visualAnchor.localRotation = Quaternion.identity", visual_path)
+    require(errors, visual, "navigation.modelForwardOffset = Vector3.zero", visual_path)
+    require(errors, visual, "initialForward.y = 0f", visual_path)
+    require(errors, visual, "visualAnchor.rotation = Quaternion.LookRotation(initialForward.normalized, Vector3.up)", visual_path)
     require(errors, visual, "CrawlerLegacyVisualCleaner.DisableLegacyVisuals(gameObject, zombieVisual)", visual_path)
     if "visualLocalEuler" in visual or "new Vector3(0f, 180f, 0f)" in visual:
         errors.append(f"{visual_path}: Zombie forward orientation must not be controlled by a stale serialized yaw")
@@ -89,12 +92,19 @@ def main():
         "ContainsLegacyBoneMarker",
         "DisableLegacyVisuals(GameObject gameplayRoot, Transform keepVisual)",
         "Never infer legacy ownership from \"not Zombie\" alone.",
+        "LegacyRootSupportTypeNames",
+        '"RigBuilder"',
+        '"BoneRenderer"',
+        "DisableLegacyRootSupportComponents",
+        "RemoveLegacyRootSupportComponentsImmediately",
+        "DestroyObject(rootAnimator, true)",
     ):
         require(errors, cleaner, token, cleaner_path)
     for forbidden in (
         "gameplayRoot.GetComponentsInChildren<Renderer>",
         "gameplayRoot.GetComponentsInChildren<Animator>",
         "gameplayRoot.GetComponentsInChildren<SkinnedMeshRenderer>",
+        "DestroyObject(rootAnimator, immediate)",
     ):
         if forbidden in cleaner:
             errors.append(f"{cleaner_path}: broad non-Zombie cleanup returned via {forbidden!r}")

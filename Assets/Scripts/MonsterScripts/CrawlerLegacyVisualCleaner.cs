@@ -14,6 +14,15 @@ public static class CrawlerLegacyVisualCleaner
         "wristl", "wristr", "weaponl", "weaponr",
     };
 
+    // These components live on the old gameplay/model root rather than inside the marker-bone
+    // branch. They are only treated as legacy after a MiniGamesKid marker branch is positively
+    // identified. RigBuilder depends on Animator, so runtime cleanup disables both instead of
+    // asking Unity to destroy Animator while that dependency is still alive.
+    private static readonly HashSet<string> LegacyRootSupportTypeNames = new HashSet<string>(StringComparer.Ordinal)
+    {
+        "RigBuilder", "BoneRenderer",
+    };
+
     /// <summary>
     /// Disables only branches positively identified by MiniGamesKid bone markers. This is the
     /// zero-frame visual handoff used before deferred runtime deletion; unrelated renderers and
@@ -49,16 +58,7 @@ public static class CrawlerLegacyVisualCleaner
             }
         }
 
-        // MiniGamesKid historically placed its Animator on the gameplay root itself. Only
-        // disable that root Animator when an explicit legacy marker branch is still present.
-        Animator rootAnimator = gameplayRoot.GetComponent<Animator>();
-        Animator keptAnimator = GetAnimatorUnder(keepVisual);
-        if (rootAnimator != null && rootAnimator != keptAnimator && rootAnimator.enabled)
-        {
-            rootAnimator.enabled = false;
-            changed++;
-        }
-
+        changed += DisableLegacyRootSupportComponents(gameplayRoot, keepVisual);
         return changed;
     }
 
@@ -122,15 +122,13 @@ public static class CrawlerLegacyVisualCleaner
             }
         }
 
-        // Remove the historic root Animator only because explicit MiniGamesKid marker roots
-        // were found above. Never infer legacy ownership from "not Zombie" alone.
-        Animator rootAnimator = gameplayRoot.GetComponent<Animator>();
-        Animator keptAnimator = GetAnimatorUnder(keepVisual);
-        if (rootAnimator != null && rootAnimator != keptAnimator)
-        {
-            DestroyObject(rootAnimator, immediate);
-            removed++;
-        }
+        // Runtime Destroy is deferred and Unity refuses to destroy Animator while the old
+        // RigBuilder still depends on it. Keep Play Mode deterministic by disabling those root
+        // support components. The explicit Editor migration can remove dependencies immediately
+        // in the correct order and then remove the obsolete root Animator.
+        removed += immediate
+            ? RemoveLegacyRootSupportComponentsImmediately(gameplayRoot, keepVisual)
+            : DisableLegacyRootSupportComponents(gameplayRoot, keepVisual);
 
         return removed;
     }
@@ -156,6 +154,71 @@ public static class CrawlerLegacyVisualCleaner
         }
 
         return results;
+    }
+
+    private static int DisableLegacyRootSupportComponents(GameObject gameplayRoot, Transform keepVisual)
+    {
+        if (gameplayRoot == null)
+            return 0;
+
+        int changed = 0;
+        Animator keptAnimator = GetAnimatorUnder(keepVisual);
+        Component[] components = gameplayRoot.GetComponents<Component>();
+        for (int i = 0; i < components.Length; i++)
+        {
+            Component component = components[i];
+            if (component == null)
+                continue;
+
+            if (component is Animator animator)
+            {
+                if (animator != keptAnimator && animator.enabled)
+                {
+                    animator.enabled = false;
+                    changed++;
+                }
+                continue;
+            }
+
+            if (!LegacyRootSupportTypeNames.Contains(component.GetType().Name))
+                continue;
+
+            if (component is Behaviour behaviour && behaviour.enabled)
+            {
+                behaviour.enabled = false;
+                changed++;
+            }
+        }
+        return changed;
+    }
+
+    private static int RemoveLegacyRootSupportComponentsImmediately(GameObject gameplayRoot, Transform keepVisual)
+    {
+        if (gameplayRoot == null)
+            return 0;
+
+        int removed = 0;
+        Component[] components = gameplayRoot.GetComponents<Component>();
+
+        // Remove every legacy component that may RequireComponent(Animator) first.
+        for (int i = 0; i < components.Length; i++)
+        {
+            Component component = components[i];
+            if (component == null || !LegacyRootSupportTypeNames.Contains(component.GetType().Name))
+                continue;
+            DestroyObject(component, true);
+            removed++;
+        }
+
+        Animator rootAnimator = gameplayRoot.GetComponent<Animator>();
+        Animator keptAnimator = GetAnimatorUnder(keepVisual);
+        if (rootAnimator != null && rootAnimator != keptAnimator)
+        {
+            DestroyObject(rootAnimator, true);
+            removed++;
+        }
+
+        return removed;
     }
 
     private static Animator GetAnimatorUnder(Transform keepVisual)

@@ -85,6 +85,8 @@ def main():
     visual = require(errors, visual_path, [
         "preserveAuthoredScale = true",
         'new GameObject("CrawlerVisualAnchor")',
+        "navigation.modelForwardOffset = Vector3.zero",
+        "visualAnchor.rotation = Quaternion.LookRotation(initialForward.normalized, Vector3.up)",
         "gameObject.AddComponent<CrawlerBodyPathFollower>();",
         "zombieAnimator.applyRootMotion = false;",
         "AnimatorCullingMode.AlwaysAnimate",
