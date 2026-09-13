@@ -43,6 +43,7 @@ def main():
         DESIGN_SECTION,
         "## September 12 PR #15 merge-review hardening",
     )
+    design = design.replace("SectorMonsterSync protocol v2", "SectorMonsterSync protocol v3")
     record_header = "| Recorded | Decision or correction | Status |\n| --- | --- | --- |\n"
     record_row = (
         "| 2026-09-13 | Standardize local multiplayer development checks on one Unity Editor client plus one Windows Development Build client using the same explicit private Photon room. Plan a dev-only second-client launcher/identity/desktop-control/HUD layer so routine two-player testing does not require two headsets. | Confirmed development workflow; detailed reference in `docs/multiplayer-development-testing.md`. Convenience harness remains planned/not implemented; final two-headset/Quest validation still required. |\n"
@@ -60,6 +61,7 @@ def main():
         PLAN_SECTION,
         "## September 13 global player-specific threat feedback implementation",
     )
+    plan = plan.replace("SectorMonsterSync protocol v2", "SectorMonsterSync protocol v3")
     PLAN.write_text(plan, encoding="utf-8")
 
 
