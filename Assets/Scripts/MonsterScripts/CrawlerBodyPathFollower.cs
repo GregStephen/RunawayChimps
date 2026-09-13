@@ -6,34 +6,40 @@ using UnityEngine;
 /// independently rotated hierarchical torso bones to follow the vent path; headset testing
 /// showed that both approaches can visibly collapse/fold the Zombie rig.
 ///
-/// The Animator still owns every bone rotation/pose. However, the standalone Generic Mixamo
-/// crawl clip can contain translation curves on mixamorig:Hips. applyRootMotion=false does not
-/// make those bone curves in-place, so allowing them through can make the skinned Zombie walk
-/// away from its Crawler parent and snap back when the clip loops. This component therefore
-/// counter-translates the COMPLETE Zombie visual after animation so the animated Hips stays at
-/// its calibrated parent-relative position. This automatic pivot alignment and in-place
-/// correction never writes a bone position or rotation.
+/// The Animator still owns the imported Zombie hierarchy and every bone pose. The standalone
+/// Generic Mixamo crawl clip can contain translation curves on its root/Hips, so
+/// applyRootMotion=false alone is not a sufficient ownership boundary. This component inserts
+/// a non-animated CrawlerMotionCompensation parent between CrawlerVisualAnchor and Zombie Crawl.
+/// All automatic pivot alignment and in-place travel correction move only that wrapper. The
+/// correction never writes a bone position or rotation and never writes the Animator-owned
+/// Zombie root. Vertical animation motion remains authored; only horizontal travel drift is
+/// cancelled.
 /// </summary>
 [DefaultExecutionOrder(300)]
 [DisallowMultipleComponent]
 public sealed class CrawlerBodyPathFollower : MonoBehaviour
 {
+    private const string MotionCompensationName = "CrawlerMotionCompensation";
+
     [Header("Visual alignment")]
     [Tooltip("Small clearance between the rendered Crawler bounds and the NavMesh floor.")]
     [SerializeField, Min(0f)] private float floorClearance = 0.015f;
-    [Tooltip("Log once if the crawl clip tries to translate its animated root farther than this in one evaluated pose.")]
+    [Tooltip("Log once if the crawl clip's total horizontal root travel exceeds this many world meters.")]
     [SerializeField, Min(0.01f)] private float animatedRootDriftWarning = 0.25f;
 
     private Transform visualRoot;
-    private Transform alignmentFrame;
+    private Transform visualAnchor;
+    private Transform motionCompensationRoot;
     private Transform frontAnchor;
     private Transform animatedRootAnchor;
-    private Vector3 animatedRootReferenceInParentSpace;
+    private Vector3 animatedRootReferenceInMotionSpace;
+    private Vector3 calibratedMotionLocalPosition;
     private bool hasAnimatedRootReference;
     private bool warnedAnimatedRootDrift;
     private bool configured;
 
     public Transform FrontAnchor => frontAnchor;
+    public Transform VisualAnchor => visualAnchor;
 
     // Retained for CrawlerVisualController's diagnostic message. Core-bone path bending
     // is intentionally disabled after runtime deformation failures.
@@ -44,23 +50,23 @@ public sealed class CrawlerBodyPathFollower : MonoBehaviour
     public bool Configure(Transform zombieVisualRoot, Animator zombieAnimator)
     {
         visualRoot = zombieVisualRoot;
-        alignmentFrame = visualRoot != null ? visualRoot.parent : null;
         hasAnimatedRootReference = false;
         warnedAnimatedRootDrift = false;
+        configured = false;
 
-        if (visualRoot == null || alignmentFrame == null)
+        if (visualRoot == null || !EnsureMotionCompensationRoot())
         {
             Debug.LogError(
-                $"{name}: Crawler visual alignment requires Zombie Crawl below its visual anchor.",
+                $"{name}: Crawler visual alignment requires Zombie Crawl below CrawlerVisualAnchor.",
                 this);
-            configured = false;
             return false;
         }
 
         ResolveAnchors();
 
         // Evaluate the authored starting pose before measuring pivot/bounds and before taking
-        // the in-place motion reference. From this point on this component never writes a bone.
+        // the in-place motion reference. From this point on this component never writes the
+        // Animator-owned visual root or any skeleton transform.
         if (zombieAnimator != null && zombieAnimator.enabled)
             zombieAnimator.Update(0f);
 
@@ -68,7 +74,11 @@ public sealed class CrawlerBodyPathFollower : MonoBehaviour
         ResolveAnchors();
         CaptureAnimatedRootReference();
 
-        configured = frontAnchor != null && animatedRootAnchor != null && hasAnimatedRootReference;
+        configured = frontAnchor != null &&
+                     animatedRootAnchor != null &&
+                     motionCompensationRoot != null &&
+                     hasAnimatedRootReference;
+
         if (!configured)
         {
             Debug.LogError(
@@ -79,8 +89,8 @@ public sealed class CrawlerBodyPathFollower : MonoBehaviour
         else
         {
             Debug.Log(
-                $"{name}: Zombie Crawl uses its authored Animator skeleton while gameplay owns translation. " +
-                "Animated Hips translation is rigidly cancelled after animation; corner-body bending remains disabled.",
+                $"{name}: Zombie Crawl Animator owns the imported visual hierarchy while gameplay owns travel. " +
+                "CrawlerMotionCompensation cancels horizontal animation-root drift without writing the Animator root or torso bones.",
                 this);
         }
 
@@ -89,7 +99,7 @@ public sealed class CrawlerBodyPathFollower : MonoBehaviour
 
     /// <summary>
     /// Sector travel/controller handoff can move the gameplay root discontinuously. The
-    /// calibrated reference lives in the visual-anchor's local space, so it follows that root
+    /// calibration is local to the stable visual wrapper hierarchy, so it follows that root
     /// automatically and does not need a world-space trail reset.
     /// </summary>
     public void ResetTrail()
@@ -108,6 +118,52 @@ public sealed class CrawlerBodyPathFollower : MonoBehaviour
         MaintainAnimatedRootInPlace();
     }
 
+    private bool EnsureMotionCompensationRoot()
+    {
+        Transform currentParent = visualRoot != null ? visualRoot.parent : null;
+        if (currentParent == null)
+            return false;
+
+        if (currentParent.name == MotionCompensationName)
+        {
+            motionCompensationRoot = currentParent;
+            visualAnchor = motionCompensationRoot.parent;
+        }
+        else
+        {
+            visualAnchor = currentParent;
+            Transform existing = visualAnchor.Find(MotionCompensationName);
+            if (existing != null)
+            {
+                motionCompensationRoot = existing;
+            }
+            else
+            {
+                GameObject compensationObject = new GameObject(MotionCompensationName);
+                motionCompensationRoot = compensationObject.transform;
+                motionCompensationRoot.SetParent(visualAnchor, false);
+            }
+
+            // Keep the Animator-owned Zombie hierarchy untouched. The new parent starts as an
+            // identity transform, so preserving world pose here preserves the current authored
+            // pose while moving future rigid correction responsibility outside the Animator.
+            motionCompensationRoot.localPosition = Vector3.zero;
+            motionCompensationRoot.localRotation = Quaternion.identity;
+            motionCompensationRoot.localScale = Vector3.one;
+            visualRoot.SetParent(motionCompensationRoot, true);
+        }
+
+        if (visualAnchor == null || motionCompensationRoot == null)
+            return false;
+
+        // Configure is allowed to retry. Always return the non-animated wrapper to a known
+        // identity basis before recalibrating; only its localPosition is allowed to vary later.
+        motionCompensationRoot.localPosition = Vector3.zero;
+        motionCompensationRoot.localRotation = Quaternion.identity;
+        motionCompensationRoot.localScale = Vector3.one;
+        return true;
+    }
+
     private void ResolveAnchors()
     {
         if (visualRoot == null)
@@ -124,59 +180,64 @@ public sealed class CrawlerBodyPathFollower : MonoBehaviour
             "mixamorigspine1", "spine1", "mixamorigspine", "spine",
             "mixamorighips", "hips");
 
-        // Mixamo commonly stores clip translation on Hips for Generic rigs. This is the only
-        // animation transform used to measure translational drift; it is never modified.
+        // Mixamo commonly stores Generic clip translation on Hips. Measuring Hips relative to
+        // the wrapper also catches translation on an Animator-owned transform above Hips.
         animatedRootAnchor = FindFirst(bones, "mixamorighips", "hips");
     }
 
     private void CaptureAnimatedRootReference()
     {
-        if (alignmentFrame == null || animatedRootAnchor == null)
+        if (motionCompensationRoot == null || animatedRootAnchor == null)
         {
             hasAnimatedRootReference = false;
             return;
         }
 
-        animatedRootReferenceInParentSpace =
-            alignmentFrame.InverseTransformPoint(animatedRootAnchor.position);
+        calibratedMotionLocalPosition = motionCompensationRoot.localPosition;
+        animatedRootReferenceInMotionSpace =
+            motionCompensationRoot.InverseTransformPoint(animatedRootAnchor.position);
         hasAnimatedRootReference = true;
     }
 
     private void MaintainAnimatedRootInPlace()
     {
-        if (!hasAnimatedRootReference || alignmentFrame == null ||
+        if (!hasAnimatedRootReference || motionCompensationRoot == null ||
             animatedRootAnchor == null || visualRoot == null)
         {
             return;
         }
 
-        // The expected Hips point is attached to CrawlerVisualAnchor/gameplay travel, not to
-        // visualRoot itself. Translating visualRoot therefore CAN cancel the descendant Hips
-        // position curve while preserving every bone's authored local pose and segment length.
-        Vector3 expectedWorldPosition =
-            alignmentFrame.TransformPoint(animatedRootReferenceInParentSpace);
-        Vector3 correction = expectedWorldPosition - animatedRootAnchor.position;
+        // This local-space measurement is independent of the wrapper's own translation. It is
+        // therefore the animation's TOTAL drift from the calibrated pose, not merely the delta
+        // left over from last frame's correction.
+        Vector3 currentAnimatedRootInMotionSpace =
+            motionCompensationRoot.InverseTransformPoint(animatedRootAnchor.position);
+        Vector3 totalLocalDrift = currentAnimatedRootInMotionSpace - animatedRootReferenceInMotionSpace;
 
-        if (correction.sqrMagnitude <= 0.00000001f)
-            return;
+        // Gameplay owns travel across the vent plane, but the crawl is still allowed to raise
+        // and lower the body naturally. Cancelling Y would flatten authored crawl bob and could
+        // create unnecessary hand/floor corrections, so only horizontal X/Z drift is removed.
+        Vector3 localTravelDrift = new Vector3(totalLocalDrift.x, 0f, totalLocalDrift.z);
+        float worldTravelDrift = motionCompensationRoot.TransformVector(localTravelDrift).magnitude;
 
-        if (!warnedAnimatedRootDrift && correction.magnitude >= animatedRootDriftWarning)
+        if (!warnedAnimatedRootDrift && worldTravelDrift >= animatedRootDriftWarning)
         {
             warnedAnimatedRootDrift = true;
             Debug.LogWarning(
-                $"{name}: crawl animation attempted {correction.magnitude:0.00} m of internal root translation; " +
-                "the complete Zombie visual is being counter-translated so it stays on the Crawler gameplay root.",
+                $"{name}: crawl animation attempted {worldTravelDrift:0.00} m of total horizontal internal root travel; " +
+                "CrawlerMotionCompensation is cancelling it so Zombie Crawl stays on the gameplay root.",
                 this);
         }
 
-        // Move the complete visual hierarchy as one rigid object. Do NOT set Hips/chest/spine
-        // positions: those hierarchical bone writes caused the earlier crushed/folded monster.
-        visualRoot.position += correction;
+        // Absolute assignment is intentional. It prevents accumulated error and, crucially,
+        // restores the calibrated wrapper position when a looping clip's horizontal drift
+        // returns to zero. The Animator-owned visualRoot is never repositioned by this component.
+        motionCompensationRoot.localPosition = calibratedMotionLocalPosition - localTravelDrift;
     }
 
     private void AlignVisualToLeader()
     {
-        if (visualRoot == null)
+        if (visualRoot == null || motionCompensationRoot == null)
             return;
 
         Vector3 anchorPosition;
@@ -193,19 +254,18 @@ public sealed class CrawlerBodyPathFollower : MonoBehaviour
             return;
         }
 
-        // Correct the FBX/skeleton pivot by translating the complete visual hierarchy.
-        // No skeleton transforms are modified independently.
+        // Correct the FBX/skeleton pivot by translating only the non-animated wrapper.
+        // No Animator-owned root, skeleton transform, or segment length is changed.
         Vector3 horizontalDelta = transform.position - anchorPosition;
         horizontalDelta.y = 0f;
-        visualRoot.position += horizontalDelta;
+        motionCompensationRoot.position += horizontalDelta;
 
-        // Ground the complete rendered hierarchy once. Subsequent in-place compensation keeps
-        // the animated root at this calibrated height instead of allowing clip translation to
-        // carry the body above/below the vent floor.
+        // Ground the complete rendered hierarchy once by moving the same wrapper. Subsequent
+        // in-place compensation is absolute around this calibrated wrapper position.
         if (TryGetVisualBounds(out Bounds alignedBounds))
         {
             float desiredBottom = transform.position.y + floorClearance;
-            visualRoot.position += Vector3.up * (desiredBottom - alignedBounds.min.y);
+            motionCompensationRoot.position += Vector3.up * (desiredBottom - alignedBounds.min.y);
         }
 
         float correction = horizontalDelta.magnitude;

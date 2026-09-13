@@ -33,23 +33,52 @@ def main():
     for token in (
         "DefaultExecutionOrder(300)",
         "MaintainsAnimatedRootInPlace => true",
+        'MotionCompensationName = "CrawlerMotionCompensation"',
         'FindFirst(bones, "mixamorighips", "hips")',
-        "alignmentFrame.InverseTransformPoint(animatedRootAnchor.position)",
-        "alignmentFrame.TransformPoint(animatedRootReferenceInParentSpace)",
+        "motionCompensationRoot.InverseTransformPoint(animatedRootAnchor.position)",
+        "Vector3 localTravelDrift = new Vector3(totalLocalDrift.x, 0f, totalLocalDrift.z)",
+        "motionCompensationRoot.localPosition = calibratedMotionLocalPosition - localTravelDrift",
+        "motionCompensationRoot.position += horizontalDelta",
+        "motionCompensationRoot.localRotation = Quaternion.identity",
         "MaintainAnimatedRootInPlace();",
-        "visualRoot.position += correction",
-        "complete Zombie visual is being counter-translated",
-        "correction never writes a bone position or rotation",
+        "crawl animation attempted",
+        "total horizontal internal root travel",
+        "Vertical animation motion remains authored",
+        "never writes a bone position or rotation",
+        "Animator-owned visualRoot is never repositioned",
     ):
         require(errors, follower, token, follower_path)
+
     for forbidden in (
         "animatedRootAnchor.position =",
         "frontAnchor.position =",
         "animatedRootAnchor.rotation =",
         "frontAnchor.rotation =",
+        "visualRoot.position +=",
+        "visualRoot.position =",
+        "visualRoot.localPosition =",
+        "visualRoot.rotation =",
+        "visualRoot.localRotation =",
+        "motionCompensationRoot.rotation =",
     ):
         if forbidden in follower:
-            errors.append(f"{follower_path}: in-place correction must move the complete visual, not write skeleton transforms")
+            errors.append(
+                f"{follower_path}: motion compensation must own rigid horizontal translation outside the Animator hierarchy; found {forbidden!r}"
+            )
+
+    heading_path = "Assets/Scripts/MonsterScripts/CrawlerVisualHeadingStabilizer.cs"
+    heading = text(heading_path)
+    for token in (
+        "bodyPathFollower.VisualAnchor",
+        "CrawlerMotionCompensation",
+        "Quaternion.RotateTowards(",
+        "No Zombie bone position/rotation is ever modified here.",
+    ):
+        require(errors, heading, token, heading_path)
+    if "visualAnchor = visualRoot.parent" in heading:
+        errors.append(
+            f"{heading_path}: heading must use the explicit stable VisualAnchor, not whichever parent VisualRoot currently has"
+        )
 
     cleaner_path = "Assets/Scripts/MonsterScripts/CrawlerLegacyVisualCleaner.cs"
     cleaner = text(cleaner_path)
@@ -100,8 +129,8 @@ def main():
 
     print(
         "PASS: PR #15 hardening protects marker-only legacy cleanup, serialization-proof Zombie forward setup, "
-        "explicit scene migration, gameplay-owned/in-place Crawler translation, discontinuity-safe hand contact, "
-        "and solved-position IK caching."
+        "explicit scene migration, stable-anchor heading, non-animated horizontal Crawler motion compensation, "
+        "authored vertical crawl motion, gameplay-owned travel, discontinuity-safe hand contact, and solved-position IK caching."
     )
     return 0
 

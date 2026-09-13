@@ -8,8 +8,9 @@ using UnityEngine.SceneManagement;
 /// runtime testing showed was backwards. The cleaned baseline also rotates a long rigid
 /// Zombie as one object, so hard NavMesh turns can otherwise whip the body across the vent.
 ///
-/// This component corrects only the complete visual anchor: it derives a stable heading
-/// from a short history of gameplay-root movement and turns toward it at a bounded rate.
+/// This component corrects only CrawlerVisualAnchor: it derives a stable heading from a short
+/// history of gameplay-root movement and turns toward it at a bounded rate. The separate
+/// CrawlerMotionCompensation child owns translation-only animation-drift cancellation.
 /// No Zombie bone position/rotation is ever modified here.
 /// </summary>
 [DefaultExecutionOrder(250)]
@@ -29,6 +30,7 @@ public sealed class CrawlerVisualHeadingStabilizer : MonoBehaviour
     private readonly List<Vector3> pathHistory = new List<Vector3>(64);
 
     private CrawlerVisualController visualController;
+    private CrawlerBodyPathFollower bodyPathFollower;
     private Transform visualAnchor;
     private Vector3 previousGameplayPosition;
     private int waitFrames;
@@ -66,6 +68,7 @@ public sealed class CrawlerVisualHeadingStabilizer : MonoBehaviour
     private void Awake()
     {
         visualController = GetComponent<CrawlerVisualController>();
+        bodyPathFollower = GetComponent<CrawlerBodyPathFollower>();
         previousGameplayPosition = transform.position;
     }
 
@@ -122,9 +125,15 @@ public sealed class CrawlerVisualHeadingStabilizer : MonoBehaviour
     {
         if (visualController == null)
             visualController = GetComponent<CrawlerVisualController>();
+        if (bodyPathFollower == null)
+            bodyPathFollower = GetComponent<CrawlerBodyPathFollower>();
 
-        Transform visualRoot = visualController != null ? visualController.VisualRoot : null;
-        if (visualRoot == null || visualRoot.parent == null)
+        // Do not infer the heading node from VisualRoot.parent. CrawlerBodyPathFollower now
+        // inserts CrawlerMotionCompensation there, and rotating that translation wrapper would
+        // make two presentation systems own the same transform. The follower exposes the
+        // stable CrawlerVisualAnchor explicitly instead.
+        visualAnchor = bodyPathFollower != null ? bodyPathFollower.VisualAnchor : null;
+        if (visualController == null || visualController.VisualRoot == null || visualAnchor == null)
         {
             waitFrames++;
             if (waitFrames == MaximumWaitFrames)
@@ -136,7 +145,6 @@ public sealed class CrawlerVisualHeadingStabilizer : MonoBehaviour
             return false;
         }
 
-        visualAnchor = visualRoot.parent;
         Vector3 current = Flatten(transform.position);
 
         // Runtime feedback confirms the old 180-degree anchor correction made Zombie Crawl

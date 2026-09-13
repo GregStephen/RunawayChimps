@@ -99,9 +99,15 @@ def main():
     follower = require(errors, follower_path, [
         "public void ResetTrail()",
         "PreservesAnimatorSkeleton => true",
+        "MaintainsAnimatedRootInPlace => true",
         "automatic pivot alignment",
         "never writes a bone position or rotation",
+        'MotionCompensationName = "CrawlerMotionCompensation"',
         "AlignVisualToLeader();",
+        "motionCompensationRoot.InverseTransformPoint(animatedRootAnchor.position)",
+        "Vector3 localTravelDrift = new Vector3(totalLocalDrift.x, 0f, totalLocalDrift.z)",
+        "motionCompensationRoot.localPosition = calibratedMotionLocalPosition - localTravelDrift",
+        "Vertical animation motion remains authored",
         "mixamorigspine2",
         "mixamorighips",
     ])
@@ -109,14 +115,25 @@ def main():
         errors.append(f"{rel(follower_path)}: local visual alignment must not depend on Photon.")
     if re.search(r"\b(?:binding\.)?bone\.(?:position|rotation)\s*=", follower):
         errors.append(f"{rel(follower_path)}: failed runtime tests forbid post-Animator core-bone position/rotation writes.")
+    for forbidden in (
+        "visualRoot.position +=",
+        "visualRoot.position =",
+        "visualRoot.localPosition =",
+        "visualRoot.rotation =",
+        "visualRoot.localRotation =",
+    ):
+        if forbidden in follower:
+            errors.append(f"{rel(follower_path)}: rigid correction must stay outside the Animator-owned visual root; found {forbidden!r}.")
     if "ApplyBodyPath();" in follower or "ConstrainHand(" in follower:
         errors.append(f"{rel(follower_path)}: experimental torso/leaf deformation must remain disabled; limb contact belongs in the dedicated IK component.")
-    positive_defaults(errors, follower_path, follower, ["floorClearance"])
+    positive_defaults(errors, follower_path, follower, ["floorClearance", "animatedRootDriftWarning"])
 
     heading_path = ROOT / "Assets/Scripts/MonsterScripts/CrawlerVisualHeadingStabilizer.cs"
     heading = require(errors, heading_path, [
         'LevelOneSceneName = "Level1_Containment"',
         "visualController.VisualRoot",
+        "bodyPathFollower.VisualAnchor",
+        "CrawlerMotionCompensation",
         "headingLookbackDistance = 0.9f",
         "maximumTurnDegreesPerSecond = 150f",
         "discontinuityDistance = 1.25f",
@@ -125,6 +142,8 @@ def main():
         "ResetHeadingHistory(current, snapToGameplayRotation: true)",
         "No Zombie bone position/rotation is ever modified here.",
     ])
+    if "visualAnchor = visualRoot.parent" in heading:
+        errors.append(f"{rel(heading_path)}: heading must target the explicit CrawlerVisualAnchor, not VisualRoot.parent.")
     positive_defaults(errors, heading_path, heading, [
         "headingLookbackDistance", "maximumTurnDegreesPerSecond", "sampleSpacing", "historyDistance", "discontinuityDistance"
     ])
@@ -319,7 +338,7 @@ def main():
         print(f"FAILED: {len(errors)} Level 1/runtime contract issue(s).")
         return 1
 
-    print("PASS: Level 1/runtime hand visual contact, Animator-owned Crawler torso, Crawler hand surface-contact IK, legacy visual-rig cleanup, Crawler forward/turn continuity, keycard recovery, loading coverage, headlamp, safe-zone, capture, and floor-recovery source contracts.")
+    print("PASS: Level 1/runtime hand visual contact, Animator-owned Crawler torso, stable Crawler motion-wrapper ownership, Crawler hand surface-contact IK, legacy visual-rig cleanup, Crawler forward/turn continuity, keycard recovery, loading coverage, headlamp, safe-zone, capture, and floor-recovery source contracts.")
     print("PASS: Runtime/Photon/XR/Quest validation remains separate.")
     return 0
 
