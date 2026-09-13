@@ -12,7 +12,6 @@ public sealed class CrawlerVisualController : MonoBehaviour
     [Header("Visual replacement")]
     [SerializeField] private string zombieObjectName = "Zombie Crawl";
     [SerializeField] private Vector3 visualLocalPosition = Vector3.zero;
-    [SerializeField] private Vector3 visualLocalEuler = Vector3.zero;
     [SerializeField] private bool preserveAuthoredScale = true;
     [Tooltip("Used as the desired world scale when authored scale preservation is disabled.")]
     [SerializeField] private Vector3 fallbackLocalScale = new Vector3(0.1705642f, 0.1705642f, 0.1705642f);
@@ -142,10 +141,10 @@ public sealed class CrawlerVisualController : MonoBehaviour
         visualAnchor = anchorObject.transform;
         visualAnchor.SetParent(transform, false);
         visualAnchor.localPosition = visualLocalPosition;
-        // The current Zombie import's forward axis has been runtime-verified. Do not seed the
-        // obsolete MiniGamesKid-era 180-degree correction and then rely on another component
-        // to undo it a frame later.
-        visualAnchor.localRotation = Quaternion.Euler(visualLocalEuler);
+        // Runtime testing established the current Zombie import's forward axis. Keep this
+        // identity in code rather than a serialized yaw field so an old scene override cannot
+        // silently restore the superseded 180-degree MiniGamesKid-era correction.
+        visualAnchor.localRotation = Quaternion.identity;
         visualAnchor.localScale = Vector3.one;
 
         zombieVisual.SetParent(visualAnchor, false);
@@ -242,7 +241,7 @@ public sealed class CrawlerVisualController : MonoBehaviour
         Transform leftHand = FindTransform(all, "mixamoriglefthand", "lefthand", "handl");
         Transform rightHand = FindTransform(all, "mixamorigrighthand", "righthand", "handr");
         Transform leftForeArm = FindTransform(all, "mixamorigleftforearm", "leftforearm", "leftlowerarm", "lowerarml");
-        Transform rightForeArm = FindTransform(all, "mixamorigrightforearm", "rightforearm", "rightlowerarm", "lowerarmr");
+        Transform rightForeArm = FindTransform(all, "mixamorigrighthand", "righthand", "handr");
         Transform head = FindTransform(all, "mixamorighead", "head");
 
         Transform[] candidates = { leftHand, rightHand, leftForeArm, rightForeArm, head };
@@ -377,7 +376,7 @@ public sealed class CrawlerVisualController : MonoBehaviour
         {
             string candidate = Normalize(candidateNames[c]);
             for (int i = 0; i < transforms.Length; i++)
-            {
+        {
                 Transform transform = transforms[i];
                 if (transform != null && Normalize(transform.name) == candidate)
                     return transform;
