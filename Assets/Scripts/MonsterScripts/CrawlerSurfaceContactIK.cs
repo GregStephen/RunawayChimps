@@ -227,7 +227,10 @@ public sealed class CrawlerSurfaceContactIK : MonoBehaviour
         {
             Vector3 effectiveTarget = Vector3.Lerp(animatedHandPosition, arm.contactTarget, arm.contactWeight);
             ApplyTwoBoneIK(arm, effectiveTarget, animatedHandRotation);
-            arm.lastSafePosition = effectiveTarget;
+            // IK clamps unreachable targets to the real arm length. Cache the solved hand
+            // position, not the requested wall target, so next frame's collision sweep always
+            // starts where the hand actually rendered.
+            arm.lastSafePosition = arm.hand.position;
         }
         else
         {
