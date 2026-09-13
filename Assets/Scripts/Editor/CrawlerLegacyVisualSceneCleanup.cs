@@ -5,22 +5,14 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 
 /// <summary>
-/// One-time scene migration for the Level 1 Crawler. The gameplay object historically
-/// came from MiniGamesKidFirstRig, so replacing only its renderer left the old armature
-/// serialized beneath Crawler. This migration unpacks that old model instance when needed
-/// and removes only its visual rig while preserving the gameplay root/components.
+/// Explicit one-time scene migration for the Level 1 Crawler. It never runs automatically:
+/// scene mutation/saving must be requested from the Tools menu so opening Unity cannot silently
+/// rewrite Level1_Containment or fold unrelated unsaved work into a migration commit.
 /// </summary>
-[InitializeOnLoad]
 public static class CrawlerLegacyVisualSceneCleanup
 {
     private const string LevelOneScenePath = "Assets/Scenes/Level1_Containment.unity";
     private const string LegacyModelPathFragment = "MiniGamesKidFirstRig.fbx";
-    private const string SessionKey = "RunawayChimps.CrawlerLegacyVisualSceneCleanup.V1";
-
-    static CrawlerLegacyVisualSceneCleanup()
-    {
-        EditorApplication.delayCall += TryAutomaticCleanup;
-    }
 
     [MenuItem("Tools/Runaway Chimps/Clean Legacy Level 1 Crawler Rig")]
     public static void CleanFromMenu()
@@ -31,34 +23,13 @@ public static class CrawlerLegacyVisualSceneCleanup
             return;
         }
 
-        CleanLevelOneScene(forceLoadedDirtyScene: true, logWhenClean: true);
-    }
-
-    private static void TryAutomaticCleanup()
-    {
-        if (SessionState.GetBool(SessionKey, false))
-            return;
-
-        if (EditorApplication.isPlayingOrWillChangePlaymode || EditorApplication.isCompiling || EditorApplication.isUpdating)
-        {
-            EditorApplication.delayCall += TryAutomaticCleanup;
-            return;
-        }
-
-        SessionState.SetBool(SessionKey, true);
-        CleanLevelOneScene(forceLoadedDirtyScene: false, logWhenClean: false);
-    }
-
-    private static void CleanLevelOneScene(bool forceLoadedDirtyScene, bool logWhenClean)
-    {
         Scene loadedScene = SceneManager.GetSceneByPath(LevelOneScenePath);
         bool openedTemporarily = !loadedScene.IsValid() || !loadedScene.isLoaded;
 
-        if (!openedTemporarily && loadedScene.isDirty && !forceLoadedDirtyScene)
+        if (!openedTemporarily && loadedScene.isDirty)
         {
             Debug.LogWarning(
-                "[CrawlerLegacyVisualSceneCleanup] Level1_Containment has unsaved edits, so automatic legacy-rig cleanup was skipped. " +
-                "Save/reopen the scene or run Tools > Runaway Chimps > Clean Legacy Level 1 Crawler Rig when ready.");
+                "[CrawlerLegacyVisualSceneCleanup] Level1_Containment has unsaved edits. Save or revert them first; the cleanup will not mutate/save a dirty scene automatically.");
             return;
         }
 
@@ -69,18 +40,17 @@ public static class CrawlerLegacyVisualSceneCleanup
         try
         {
             int removed = CleanScene(scene);
-            if (removed > 0)
+            if (removed <= 0)
             {
-                EditorSceneManager.MarkSceneDirty(scene);
-                if (!EditorSceneManager.SaveScene(scene))
-                    Debug.LogError("[CrawlerLegacyVisualSceneCleanup] Legacy rig was removed in memory but Level1_Containment could not be saved.");
-                else
-                    Debug.Log($"[CrawlerLegacyVisualSceneCleanup] Removed {removed} obsolete MiniGamesKid visual object/component(s) from Level1_Containment while preserving the Crawler gameplay root.");
+                Debug.Log("[CrawlerLegacyVisualSceneCleanup] No explicit MiniGamesKid marker rig remains in Level1_Containment.");
+                return;
             }
-            else if (logWhenClean)
-            {
-                Debug.Log("[CrawlerLegacyVisualSceneCleanup] Level1_Containment contains no removable legacy Crawler visual rig.");
-            }
+
+            EditorSceneManager.MarkSceneDirty(scene);
+            if (!EditorSceneManager.SaveScene(scene))
+                Debug.LogError("[CrawlerLegacyVisualSceneCleanup] Legacy rig was removed in memory but Level1_Containment could not be saved.");
+            else
+                Debug.Log($"[CrawlerLegacyVisualSceneCleanup] Removed {removed} verified MiniGamesKid visual object/component(s) while preserving the Crawler gameplay root and unrelated visuals.");
         }
         finally
         {
@@ -103,8 +73,6 @@ public static class CrawlerLegacyVisualSceneCleanup
                 if (monster == null || monster.gameObject.scene != scene)
                     continue;
 
-                // Level 1 currently has one Crawler navigation root. Avoid touching any
-                // future monster that does not contain the known legacy MiniGamesKid rig.
                 if (!CrawlerLegacyVisualCleaner.ContainsLegacyVisualRig(monster.gameObject))
                     continue;
 
@@ -131,9 +99,7 @@ public static class CrawlerLegacyVisualSceneCleanup
         string assetPath = PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(gameplayRoot);
         if (string.IsNullOrEmpty(assetPath) ||
             assetPath.IndexOf(LegacyModelPathFragment, StringComparison.OrdinalIgnoreCase) < 0)
-        {
             return;
-        }
 
         PrefabUtility.UnpackPrefabInstance(
             nearestRoot,
@@ -141,7 +107,7 @@ public static class CrawlerLegacyVisualSceneCleanup
             InteractionMode.AutomatedAction);
 
         Debug.Log(
-            $"[CrawlerLegacyVisualSceneCleanup] Unpacked obsolete model instance '{assetPath}' so its armature can be removed without deleting the Crawler gameplay root.",
+            $"[CrawlerLegacyVisualSceneCleanup] Unpacked verified legacy model instance '{assetPath}' so its armature can be removed without deleting the gameplay root.",
             gameplayRoot);
     }
 }
