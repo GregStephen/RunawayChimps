@@ -7,14 +7,11 @@ using UnityEngine;
 
 namespace RunawayChimps.ThreatFeedback
 {
-    /// <summary>
-    /// Adapts one monster's pursuit identity and cached local-player distance into a
-    /// local presentation value. It never owns AI decisions or networks presentation.
-    /// </summary>
     [DisallowMultipleComponent]
     public sealed class MonsterThreatSource : MonoBehaviour
     {
         private const float ResolveRetrySeconds = 0.5f;
+        private const float MaximumSampleAgeSeconds = 0.5f;
 
         [SerializeField] private ProximityReactor proximity;
         [SerializeField] private ThreatProfile profile = new ThreatProfile();
@@ -44,7 +41,6 @@ namespace RunawayChimps.ThreatFeedback
                 return;
             if (Time.unscaledTime < nextResolveTime)
                 return;
-
             nextResolveTime = Time.unscaledTime + ResolveRetrySeconds;
             TryAttach();
         }
@@ -110,7 +106,7 @@ namespace RunawayChimps.ThreatFeedback
                 return 0f;
             if (requiredLocalZone != ZoneId.None && zones.LocalZone != requiredLocalZone)
                 return 0f;
-            if (proximity == null || !proximity.HasValidSample)
+            if (proximity == null || !proximity.IsSampleFresh(MaximumSampleAgeSeconds))
                 return 0f;
 
             return profile != null ? profile.Evaluate(proximity.LastDistance) : 0f;
