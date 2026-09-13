@@ -22,7 +22,7 @@ namespace RunawayChimps.Monsters
             IsPursuing == other.IsPursuing && TargetActorNumber == other.TargetActorNumber;
 
         public override bool Equals(object obj) => obj is MonsterPursuitState other && Equals(other);
-        public override int GetHashCode() => (IsPursuing, TargetActorNumber).GetHashCode();
+        public override int GetHashCode() => ((IsPursuing ? 1 : 0) * 397) ^ TargetActorNumber;
         public static bool operator ==(MonsterPursuitState left, MonsterPursuitState right) => left.Equals(right);
         public static bool operator !=(MonsterPursuitState left, MonsterPursuitState right) => !left.Equals(right);
     }
