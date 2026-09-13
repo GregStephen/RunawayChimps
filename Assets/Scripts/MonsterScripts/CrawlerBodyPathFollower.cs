@@ -10,11 +10,9 @@ using UnityEngine;
 /// Generic Mixamo crawl clip can contain translation curves on its root/Hips, so
 /// applyRootMotion=false alone is not a sufficient ownership boundary. This component inserts
 /// a non-animated CrawlerMotionCompensation parent between CrawlerVisualAnchor and Zombie Crawl.
-/// All automatic pivot alignment and in-place travel correction move only that wrapper. The
-/// correction never writes a bone position or rotation and never writes the Animator-owned
-/// Zombie root. Horizontal animation travel is cancelled. Upward vertical crawl motion remains
-/// authored, while downward root translation is clamped at the calibrated vent-floor height so
-/// the complete monster cannot sink beneath the floor.
+/// All automatic pivot alignment, in-place travel correction, floor correction, and rigid vent
+/// containment translation move only that wrapper. The correction never writes a bone position
+/// or rotation and never writes the Animator-owned Zombie root.
 /// </summary>
 [DefaultExecutionOrder(300)]
 [DisallowMultipleComponent]
@@ -37,6 +35,7 @@ public sealed class CrawlerBodyPathFollower : MonoBehaviour
     private Transform animatedRootAnchor;
     private Vector3 animatedRootReferenceInMotionSpace;
     private Vector3 calibratedMotionLocalPosition;
+    private Vector3 ventContainmentOffsetWorld;
     private bool hasAnimatedRootReference;
     private bool warnedAnimatedRootDrift;
     private bool warnedAnimatedRootFloorSink;
@@ -44,6 +43,8 @@ public sealed class CrawlerBodyPathFollower : MonoBehaviour
 
     public Transform FrontAnchor => frontAnchor;
     public Transform VisualAnchor => visualAnchor;
+    public Vector3 VentContainmentOffsetWorld => ventContainmentOffsetWorld;
+    public bool IsConfigured => configured;
 
     // Retained for CrawlerVisualController's diagnostic message. Core-bone path bending
     // is intentionally disabled after runtime deformation failures.
@@ -54,6 +55,7 @@ public sealed class CrawlerBodyPathFollower : MonoBehaviour
     public bool Configure(Transform zombieVisualRoot, Animator zombieAnimator)
     {
         visualRoot = zombieVisualRoot;
+        ventContainmentOffsetWorld = Vector3.zero;
         hasAnimatedRootReference = false;
         warnedAnimatedRootDrift = false;
         warnedAnimatedRootFloorSink = false;
@@ -104,6 +106,19 @@ public sealed class CrawlerBodyPathFollower : MonoBehaviour
     }
 
     /// <summary>
+    /// Supplies the rigid world-space correction requested by CrawlerVentContainment. The
+    /// offset is converted into the current visual-anchor frame only when the single motion
+    /// compensation owner writes its localPosition, so turn smoothing and containment do not
+    /// compete for transform ownership.
+    /// </summary>
+    public void SetVentContainmentOffsetWorld(Vector3 worldOffset, bool applyImmediately = false)
+    {
+        ventContainmentOffsetWorld = worldOffset;
+        if (applyImmediately && configured)
+            MaintainAnimatedRootInPlace();
+    }
+
+    /// <summary>
     /// Sector travel/controller handoff can move the gameplay root discontinuously. The
     /// calibration is local to the stable visual wrapper hierarchy, so it follows that root
     /// automatically and does not need a world-space trail reset.
@@ -118,9 +133,9 @@ public sealed class CrawlerBodyPathFollower : MonoBehaviour
         if (!configured)
             return;
 
-        // Execution order is intentionally after CrawlerVisualHeadingStabilizer (250) and
-        // before CrawlerSurfaceContactIK (350): heading first, rigid in-place correction next,
-        // then arm-only environmental contact.
+        // Execution order is intentionally after CrawlerVisualHeadingStabilizer (250). The
+        // rigid animation/floor correction runs here at 300, CrawlerVentContainment may request
+        // and immediately re-apply an additional wrapper offset at 325, then limb IK runs at 350.
         MaintainAnimatedRootInPlace();
     }
 
@@ -254,10 +269,15 @@ public sealed class CrawlerBodyPathFollower : MonoBehaviour
                 this);
         }
 
+        Vector3 localContainmentOffset = visualAnchor != null
+            ? visualAnchor.InverseTransformVector(ventContainmentOffsetWorld)
+            : Vector3.zero;
+
         // Absolute assignment is intentional. It prevents accumulated error and restores the
         // calibrated wrapper when a looping clip returns to its reference pose. X/Z travel and
-        // only negative Y root sink are removed. Positive vertical motion remains Animator-owned.
-        motionCompensationRoot.localPosition = calibratedMotionLocalPosition - compensatedLocalDrift;
+        // negative Y root sink are removed; the separate rigid containment offset is then added.
+        motionCompensationRoot.localPosition =
+            calibratedMotionLocalPosition - compensatedLocalDrift + localContainmentOffset;
     }
 
     private void AlignVisualToLeader()

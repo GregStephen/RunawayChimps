@@ -21,6 +21,7 @@ def main():
     visual_path = "Assets/Scripts/MonsterScripts/CrawlerVisualController.cs"
     visual = text(visual_path)
     require(errors, visual, "visualAnchor.localRotation = Quaternion.identity", visual_path)
+    require(errors, visual, "ZombieVisualScaleMultiplier = 0.6f", visual_path)
     require(errors, visual, "navigation.modelForwardOffset = Vector3.zero", visual_path)
     require(errors, visual, "initialForward.y = 0f", visual_path)
     require(errors, visual, "visualAnchor.rotation = Quaternion.LookRotation(initialForward.normalized, Vector3.up)", visual_path)
@@ -41,14 +42,16 @@ def main():
         "motionCompensationRoot.InverseTransformPoint(animatedRootAnchor.position)",
         "float downwardRootSink = Mathf.Min(0f, totalLocalDrift.y)",
         "Vector3 compensatedLocalDrift = new Vector3(",
-        "motionCompensationRoot.localPosition = calibratedMotionLocalPosition - compensatedLocalDrift",
+        "VentContainmentOffsetWorld => ventContainmentOffsetWorld",
+        "SetVentContainmentOffsetWorld(Vector3 worldOffset, bool applyImmediately = false)",
+        "visualAnchor.InverseTransformVector(ventContainmentOffsetWorld)",
+        "calibratedMotionLocalPosition - compensatedLocalDrift + localContainmentOffset",
         "animatedRootFloorSinkWarning = 0.12f",
         "preserving upward crawl motion",
         "motionCompensationRoot.position += horizontalDelta",
         "motionCompensationRoot.localRotation = Quaternion.identity",
         "MaintainAnimatedRootInPlace();",
         "total horizontal internal root travel",
-        "never writes a bone position or rotation",
     ):
         require(errors, follower, token, follower_path)
 
@@ -121,16 +124,49 @@ def main():
     for token in (
         "discontinuityDistance = 1.25f",
         "GameplayRootDiscontinued()",
-        "ResetArmState(leftArm);",
-        "ResetArmState(rightArm);",
-        "TryFindLastClearPoint(arm.lower.position",
-        "TryFindLastClearPoint(arm.upper.position",
+        "ResetAllLimbState();",
+        "SolveArm(leftLeg);",
+        "SolveArm(rightLeg);",
+        "TryFindLastClearPoint(arm, arm.lower.position",
+        "TryFindLastClearPoint(arm, arm.upper.position",
         "private readonly RaycastHit[] castHits = new RaycastHit[32]",
         "private readonly Collider[] overlapHits = new Collider[32]",
+        '"mixamorigleftfoot"',
+        '"mixamorigrightfoot"',
         "arm.upper.position",
         "arm.lastSafePosition = arm.hand.position",
     ):
         require(errors, ik, token, ik_path)
+
+    containment_path = "Assets/Scripts/MonsterScripts/CrawlerVentContainment.cs"
+    containment = text(containment_path)
+    for token in (
+        "DefaultExecutionOrder(325)",
+        "Physics.ComputePenetration(",
+        "Physics.SphereCastNonAlloc(",
+        "maximumContainmentOffset = 0.32f",
+        "head == null || chest == null || hips == null",
+        "UpdateProbeHistory(preservePreviousSafePoints: offsetLimitedThisFrame)",
+        "OverlapsStaticEnvironment(current, probe.radius)",
+        "bodyFollower.SetVentContainmentOffsetWorld(desiredOffset, applyImmediately: true)",
+        'AddProbe("head"',
+        'AddProbe("chest"',
+        'AddProbe("hips"',
+        'AddProbe("left elbow"',
+        'AddProbe("right elbow"',
+        'AddProbe("left knee"',
+        'AddProbe("right knee"',
+        "collider.attachedRigidbody != null",
+    ):
+        require(errors, containment, token, containment_path)
+    for forbidden in (
+        "bone.position =",
+        "bone.rotation =",
+        "transform.position =",
+        "transform.rotation =",
+    ):
+        if forbidden in containment:
+            errors.append(f"{containment_path}: body containment must stay rigid/outside authored bones; found {forbidden!r}")
 
     if errors:
         for error in errors:
@@ -141,8 +177,8 @@ def main():
     print(
         "PASS: PR #15 hardening protects marker-only legacy cleanup, serialization-proof Zombie forward setup, "
         "explicit scene migration, stable-anchor heading, non-animated Crawler motion compensation, horizontal travel "
-        "cancellation with one-sided floor-height clamping, dependency-safe legacy-root cleanup, discontinuity-safe "
-        "hand contact, and solved-position IK caching."
+        "cancellation with one-sided floor-height clamping, dependency-safe legacy-root cleanup, rigid head/core/joint "
+        "vent containment, discontinuity-safe hand/foot contact, and solved-position IK caching."
     )
     return 0
 

@@ -4,18 +4,20 @@ using UnityEngine;
 /// Keeps the proven Crawler gameplay root (navigation, capture, Photon sync, audio) while
 /// attaching the authored Zombie Crawl visual/Animator. Navigation owns world movement; the
 /// Animator owns the skeleton, CrawlerBodyPathFollower performs only rigid pivot/floor
-/// alignment, and dedicated later-stage components handle whole-visual heading and arm contact.
+/// alignment, and dedicated later-stage components handle whole-visual heading and limb/body
+/// contact against the vent shell.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class CrawlerVisualController : MonoBehaviour
 {
+    private const float ZombieVisualScaleMultiplier = 0.6f;
+
     [Header("Visual replacement")]
     [SerializeField] private string zombieObjectName = "Zombie Crawl";
     [SerializeField] private Vector3 visualLocalPosition = Vector3.zero;
     [SerializeField] private bool preserveAuthoredScale = true;
     [Tooltip("Used as the desired world scale when authored scale preservation is disabled.")]
     [SerializeField] private Vector3 fallbackLocalScale = new Vector3(0.1705642f, 0.1705642f, 0.1705642f);
-    [SerializeField, Min(0.1f)] private float visualScaleMultiplier = 1f;
 
     [Header("Crawler gameplay tuning")]
     [SerializeField, Min(1f)] private float detectionRange = 12f;
@@ -135,7 +137,7 @@ public sealed class CrawlerVisualController : MonoBehaviour
 
         zombieVisual = zombieObject.transform;
         Vector3 desiredWorldScale = preserveAuthoredScale ? zombieVisual.lossyScale : fallbackLocalScale;
-        desiredWorldScale *= visualScaleMultiplier;
+        desiredWorldScale *= ZombieVisualScaleMultiplier;
 
         // The serialized gameplay root still carries MiniGamesKid-era orientation data. Clear
         // the old model-only yaw before navigation gets a chance to use it for this replacement.
@@ -146,9 +148,6 @@ public sealed class CrawlerVisualController : MonoBehaviour
         visualAnchor = anchorObject.transform;
         visualAnchor.SetParent(transform, false);
         visualAnchor.localPosition = visualLocalPosition;
-        // Runtime testing established the current Zombie import's forward axis. Keep this
-        // identity in code rather than a serialized yaw field so an old scene override cannot
-        // silently restore the superseded 180-degree MiniGamesKid-era correction.
         visualAnchor.localRotation = Quaternion.identity;
         visualAnchor.localScale = Vector3.one;
 
@@ -201,7 +200,7 @@ public sealed class CrawlerVisualController : MonoBehaviour
 
         Debug.Log(
             $"{name}: Zombie Crawl is attached to the Crawler gameplay root at world scale {zombieVisual.lossyScale}; " +
-            "Animator-owned rigid torso baseline is active.",
+            $"runtime-tested visual scale multiplier {ZombieVisualScaleMultiplier:0.00} and Animator-owned rigid torso baseline are active.",
             this);
         return true;
     }

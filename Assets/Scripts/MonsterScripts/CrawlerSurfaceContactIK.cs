@@ -2,10 +2,10 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 
 /// <summary>
-/// Keeps Zombie Crawl's animated hands from visually passing through static vent geometry.
-/// The authored Animator owns the base pose. This component runs afterward and may rotate only
-/// upper-arm/forearm joints to stop a hand at a static surface; it never edits torso/core bones
-/// or authoritative gameplay/NavMesh/Photon transforms.
+/// Keeps Zombie Crawl's animated hands and feet from visually passing through static vent
+/// geometry. The authored Animator owns the base pose. This component runs after rigid body
+/// containment and may rotate only two-bone arm/leg chains; it never edits torso/core bones or
+/// authoritative gameplay/NavMesh/Photon transforms.
 /// </summary>
 [DefaultExecutionOrder(350)]
 [DisallowMultipleComponent]
@@ -15,8 +15,9 @@ public sealed class CrawlerSurfaceContactIK : MonoBehaviour
     private const int MaximumWaitFrames = 180;
     private const int BoundarySearchIterations = 8;
 
-    [Header("Hand surface contact")]
+    [Header("Limb surface contact")]
     [SerializeField, Min(0.01f)] private float handRadius = 0.055f;
+    [SerializeField, Min(0.01f)] private float footRadius = 0.05f;
     [SerializeField, Min(0f)] private float surfaceClearance = 0.008f;
     [SerializeField, Min(0.1f)] private float contactReleaseSpeed = 10f;
     [SerializeField, Range(0.25f, 1f)] private float emergencyProbeRadiusScale = 0.8f;
@@ -31,14 +32,20 @@ public sealed class CrawlerSurfaceContactIK : MonoBehaviour
     private Transform zombieVisual;
     private ArmContact leftArm;
     private ArmContact rightArm;
+    private ArmContact leftLeg;
+    private ArmContact rightLeg;
     private int waitFrames;
     private bool configured;
     private Vector3 previousGameplayPosition;
     private bool gameplayPositionInitialized;
 
+    // The original hand-contact implementation used this two-bone structure for arms. Legs use
+    // the same math: upper=thigh, lower=calf, hand=foot. Keep one solver so both contact systems
+    // share identical discontinuity/recovery behavior.
     private sealed class ArmContact
     {
         public readonly string label;
+        public readonly float endRadius;
         public Transform upper;
         public Transform lower;
         public Transform hand;
@@ -47,7 +54,12 @@ public sealed class CrawlerSurfaceContactIK : MonoBehaviour
         public float contactWeight;
         public bool initialized;
 
-        public ArmContact(string label) { this.label = label; }
+        public ArmContact(string label, float endRadius)
+        {
+            this.label = label;
+            this.endRadius = endRadius;
+        }
+
         public bool IsUsable => upper != null && lower != null && hand != null;
     }
 
@@ -87,6 +99,8 @@ public sealed class CrawlerSurfaceContactIK : MonoBehaviour
         gameplayPositionInitialized = false;
         ResetArmState(leftArm);
         ResetArmState(rightArm);
+        ResetArmState(leftLeg);
+        ResetArmState(rightLeg);
     }
 
     private void LateUpdate()
@@ -99,22 +113,22 @@ public sealed class CrawlerSurfaceContactIK : MonoBehaviour
 
         if (zombieAnimator == null || !zombieAnimator.enabled)
         {
-            ResetArmState(leftArm);
-            ResetArmState(rightArm);
+            ResetAllLimbState();
             SeedGameplayPosition();
             return;
         }
 
         if (GameplayRootDiscontinued())
         {
-            // Never sphere-cast from a stale world-space hand point after NavMesh warp,
+            // Never sphere-cast from stale world-space limb points after NavMesh warp,
             // controller handoff, scene recovery, or a Photon correction.
-            ResetArmState(leftArm);
-            ResetArmState(rightArm);
+            ResetAllLimbState();
         }
 
         SolveArm(leftArm);
         SolveArm(rightArm);
+        SolveArm(leftLeg);
+        SolveArm(rightLeg);
     }
 
     private bool TryConfigure()
@@ -128,39 +142,58 @@ public sealed class CrawlerSurfaceContactIK : MonoBehaviour
         {
             waitFrames++;
             if (waitFrames == MaximumWaitFrames)
-                Debug.LogError($"{name}: Zombie Crawl visual/Animator was unavailable after {MaximumWaitFrames} frames; hand surface-contact IK could not initialize.", this);
+                Debug.LogError($"{name}: Zombie Crawl visual/Animator was unavailable after {MaximumWaitFrames} frames; limb surface-contact IK could not initialize.", this);
             return false;
         }
 
         Transform[] bones = zombieVisual.GetComponentsInChildren<Transform>(true);
-        leftArm = ResolveArm("left", bones,
+        leftArm = ResolveArm("left hand", handRadius, bones,
             new[] { "mixamorigleftarm", "leftarm", "leftupperarm", "upperarml" },
             new[] { "mixamorigleftforearm", "leftforearm", "leftlowerarm", "lowerarml" },
             new[] { "mixamoriglefthand", "lefthand", "handl" });
-        rightArm = ResolveArm("right", bones,
+        rightArm = ResolveArm("right hand", handRadius, bones,
             new[] { "mixamorigrightarm", "rightarm", "rightupperarm", "upperarmr" },
             new[] { "mixamorigrightforearm", "rightforearm", "rightlowerarm", "lowerarmr" },
             new[] { "mixamorigrighthand", "righthand", "handr" });
+        leftLeg = ResolveArm("left foot", footRadius, bones,
+            new[] { "mixamorigleftupleg", "leftupleg", "leftthigh", "thighl" },
+            new[] { "mixamorigleftleg", "leftleg", "leftcalf", "calfl" },
+            new[] { "mixamorigleftfoot", "leftfoot", "footl" });
+        rightLeg = ResolveArm("right foot", footRadius, bones,
+            new[] { "mixamorigrightupleg", "rightupleg", "rightthigh", "thighr" },
+            new[] { "mixamorigrightleg", "rightleg", "rightcalf", "calfr" },
+            new[] { "mixamorigrightfoot", "rightfoot", "footr" });
 
-        if (!leftArm.IsUsable && !rightArm.IsUsable)
+        if (!leftArm.IsUsable && !rightArm.IsUsable && !leftLeg.IsUsable && !rightLeg.IsUsable)
         {
-            Debug.LogError($"{name}: surface-contact IK could not resolve either Mixamo arm chain; authored animation remains untouched.", this);
+            Debug.LogError($"{name}: surface-contact IK could not resolve any Mixamo arm/leg chain; authored animation remains untouched.", this);
             return false;
         }
 
-        if (!leftArm.IsUsable) Debug.LogWarning($"{name}: left arm chain not found; only right-hand contact will run.", this);
-        if (!rightArm.IsUsable) Debug.LogWarning($"{name}: right arm chain not found; only left-hand contact will run.", this);
+        WarnMissing(leftArm);
+        WarnMissing(rightArm);
+        WarnMissing(leftLeg);
+        WarnMissing(rightLeg);
 
         configured = true;
         previousGameplayPosition = transform.position;
         gameplayPositionInitialized = true;
-        Debug.Log($"{name}: Crawler hand surface-contact IK active (radius {handRadius:0.000} m). Only upper-arm/forearm joints are corrected; the Zombie torso remains Animator-owned.", this);
+        Debug.Log(
+            $"{name}: Crawler hand/foot surface-contact IK active (hand radius {handRadius:0.000} m, foot radius {footRadius:0.000} m). " +
+            "Only two-bone limb joints are corrected; the Zombie torso remains Animator-owned.",
+            this);
         return true;
     }
 
-    private ArmContact ResolveArm(string label, Transform[] bones, string[] upperNames, string[] lowerNames, string[] handNames)
+    private ArmContact ResolveArm(
+        string label,
+        float endRadius,
+        Transform[] bones,
+        string[] upperNames,
+        string[] lowerNames,
+        string[] handNames)
     {
-        var arm = new ArmContact(label)
+        var arm = new ArmContact(label, endRadius)
         {
             upper = FindFirst(bones, upperNames),
             lower = FindFirst(bones, lowerNames),
@@ -169,10 +202,16 @@ public sealed class CrawlerSurfaceContactIK : MonoBehaviour
 
         if (arm.IsUsable && (!arm.lower.IsChildOf(arm.upper) || !arm.hand.IsChildOf(arm.lower)))
         {
-            Debug.LogWarning($"{name}: {label} arm names do not form upper->forearm->hand hierarchy; contact IK disabled for that arm.", this);
+            Debug.LogWarning($"{name}: {label} names do not form a two-bone root->mid->end hierarchy; contact IK is disabled for that limb.", this);
             arm.upper = arm.lower = arm.hand = null;
         }
         return arm;
+    }
+
+    private void WarnMissing(ArmContact arm)
+    {
+        if (arm != null && !arm.IsUsable)
+            Debug.LogWarning($"{name}: {arm.label} chain not found; that limb will remain authored-animation only.", this);
     }
 
     private bool GameplayRootDiscontinued()
@@ -201,18 +240,18 @@ public sealed class CrawlerSurfaceContactIK : MonoBehaviour
         if (arm == null || !arm.IsUsable)
             return;
 
-        Vector3 animatedHandPosition = arm.hand.position;
-        Quaternion animatedHandRotation = arm.hand.rotation;
+        Vector3 animatedEndPosition = arm.hand.position;
+        Quaternion animatedEndRotation = arm.hand.rotation;
 
         if (!arm.initialized)
         {
-            arm.lastSafePosition = animatedHandPosition;
-            arm.contactTarget = animatedHandPosition;
+            arm.lastSafePosition = animatedEndPosition;
+            arm.contactTarget = animatedEndPosition;
             arm.contactWeight = 0f;
             arm.initialized = true;
         }
 
-        bool blocked = TryClampHandToEnvironment(arm, animatedHandPosition, out Vector3 clampedTarget);
+        bool blocked = TryClampHandToEnvironment(arm, animatedEndPosition, out Vector3 clampedTarget);
         if (blocked)
         {
             arm.contactTarget = clampedTarget;
@@ -225,62 +264,62 @@ public sealed class CrawlerSurfaceContactIK : MonoBehaviour
 
         if (arm.contactWeight > 0.0001f)
         {
-            Vector3 effectiveTarget = Vector3.Lerp(animatedHandPosition, arm.contactTarget, arm.contactWeight);
-            ApplyTwoBoneIK(arm, effectiveTarget, animatedHandRotation);
-            // IK clamps unreachable targets to the real arm length. Cache the solved hand
-            // position, not the requested wall target, so next frame's collision sweep always
-            // starts where the hand actually rendered.
+            Vector3 effectiveTarget = Vector3.Lerp(animatedEndPosition, arm.contactTarget, arm.contactWeight);
+            ApplyTwoBoneIK(arm, effectiveTarget, animatedEndRotation);
+            // IK clamps unreachable targets to the real limb length. Cache the solved end
+            // position, not the requested surface target, so the next sweep begins where the
+            // hand/foot actually rendered.
             arm.lastSafePosition = arm.hand.position;
         }
         else
         {
-            arm.lastSafePosition = animatedHandPosition;
-            arm.contactTarget = animatedHandPosition;
+            arm.lastSafePosition = animatedEndPosition;
+            arm.contactTarget = animatedEndPosition;
         }
     }
 
-    private bool TryClampHandToEnvironment(ArmContact arm, Vector3 desiredHandPosition, out Vector3 clampedTarget)
+    private bool TryClampHandToEnvironment(ArmContact arm, Vector3 desiredEndPosition, out Vector3 clampedTarget)
     {
-        clampedTarget = desiredHandPosition;
-        Vector3 primaryDelta = desiredHandPosition - arm.lastSafePosition;
-        if (TrySphereCastToStaticSurface(arm.lastSafePosition, primaryDelta, handRadius, out RaycastHit primaryHit))
+        clampedTarget = desiredEndPosition;
+        Vector3 primaryDelta = desiredEndPosition - arm.lastSafePosition;
+        if (TrySphereCastToStaticSurface(arm.lastSafePosition, primaryDelta, arm.endRadius, out RaycastHit primaryHit))
         {
-            clampedTarget = SurfaceCenter(primaryHit);
+            clampedTarget = SurfaceCenter(primaryHit, arm.endRadius);
             return true;
         }
 
-        if (!OverlapsStaticEnvironment(desiredHandPosition, handRadius))
+        if (!OverlapsStaticEnvironment(desiredEndPosition, arm.endRadius))
             return false;
 
-        // Recover an already-overlapping first pose from both forearm and upper-arm origins.
-        // If the cast API cannot return an entry normal (for example because an origin also
-        // overlaps), a bounded binary search finds the last clear hand center along the arm.
-        if (TryEmergencyProbe(arm.lower.position, desiredHandPosition, out clampedTarget) ||
-            TryEmergencyProbe(arm.upper.position, desiredHandPosition, out clampedTarget) ||
-            TryFindLastClearPoint(arm.lower.position, desiredHandPosition, out clampedTarget) ||
-            TryFindLastClearPoint(arm.upper.position, desiredHandPosition, out clampedTarget))
+        // Recover an already-overlapping first pose from both middle- and upper-limb origins.
+        // If the cast API cannot return an entry normal, a bounded binary search finds the last
+        // clear center along the authored limb.
+        if (TryEmergencyProbe(arm, arm.lower.position, desiredEndPosition, out clampedTarget) ||
+            TryEmergencyProbe(arm, arm.upper.position, desiredEndPosition, out clampedTarget) ||
+            TryFindLastClearPoint(arm, arm.lower.position, desiredEndPosition, out clampedTarget) ||
+            TryFindLastClearPoint(arm, arm.upper.position, desiredEndPosition, out clampedTarget))
             return true;
 
         return false;
     }
 
-    private bool TryEmergencyProbe(Vector3 origin, Vector3 desired, out Vector3 target)
+    private bool TryEmergencyProbe(ArmContact arm, Vector3 origin, Vector3 desired, out Vector3 target)
     {
         Vector3 delta = desired - origin;
-        if (TrySphereCastToStaticSurface(origin, delta, handRadius * emergencyProbeRadiusScale, out RaycastHit hit))
+        if (TrySphereCastToStaticSurface(origin, delta, arm.endRadius * emergencyProbeRadiusScale, out RaycastHit hit))
         {
-            target = SurfaceCenter(hit);
+            target = SurfaceCenter(hit, arm.endRadius);
             return true;
         }
         target = desired;
         return false;
     }
 
-    private bool TryFindLastClearPoint(Vector3 origin, Vector3 desired, out Vector3 target)
+    private bool TryFindLastClearPoint(ArmContact arm, Vector3 origin, Vector3 desired, out Vector3 target)
     {
         target = desired;
-        float probeRadius = handRadius * emergencyProbeRadiusScale;
-        if (OverlapsStaticEnvironment(origin, probeRadius) || !OverlapsStaticEnvironment(desired, handRadius))
+        float probeRadius = arm.endRadius * emergencyProbeRadiusScale;
+        if (OverlapsStaticEnvironment(origin, probeRadius) || !OverlapsStaticEnvironment(desired, arm.endRadius))
             return false;
 
         float clearT = 0f;
@@ -289,14 +328,14 @@ public sealed class CrawlerSurfaceContactIK : MonoBehaviour
         {
             float mid = (clearT + blockedT) * 0.5f;
             Vector3 sample = Vector3.Lerp(origin, desired, mid);
-            if (OverlapsStaticEnvironment(sample, handRadius)) blockedT = mid;
+            if (OverlapsStaticEnvironment(sample, arm.endRadius)) blockedT = mid;
             else clearT = mid;
         }
 
         target = Vector3.Lerp(origin, desired, clearT);
-        Vector3 backTowardArm = origin - desired;
-        if (backTowardArm.sqrMagnitude > 0.000001f)
-            target += backTowardArm.normalized * surfaceClearance;
+        Vector3 backTowardLimb = origin - desired;
+        if (backTowardLimb.sqrMagnitude > 0.000001f)
+            target += backTowardLimb.normalized * surfaceClearance;
         return true;
     }
 
@@ -347,9 +386,10 @@ public sealed class CrawlerSurfaceContactIK : MonoBehaviour
         return true;
     }
 
-    private Vector3 SurfaceCenter(RaycastHit hit) => hit.point + hit.normal * (handRadius + surfaceClearance);
+    private Vector3 SurfaceCenter(RaycastHit hit, float radius) =>
+        hit.point + hit.normal * (radius + surfaceClearance);
 
-    private static void ApplyTwoBoneIK(ArmContact arm, Vector3 target, Quaternion authoredHandRotation)
+    private static void ApplyTwoBoneIK(ArmContact arm, Vector3 target, Quaternion authoredEndRotation)
     {
         Vector3 root = arm.upper.position;
         Vector3 mid = arm.lower.position;
@@ -391,7 +431,15 @@ public sealed class CrawlerSurfaceContactIK : MonoBehaviour
         if (currentLowerDirection.sqrMagnitude > 0.000001f && desiredLowerDirection.sqrMagnitude > 0.000001f)
             arm.lower.rotation = Quaternion.FromToRotation(currentLowerDirection, desiredLowerDirection) * arm.lower.rotation;
 
-        arm.hand.rotation = authoredHandRotation;
+        arm.hand.rotation = authoredEndRotation;
+    }
+
+    private void ResetAllLimbState()
+    {
+        ResetArmState(leftArm);
+        ResetArmState(rightArm);
+        ResetArmState(leftLeg);
+        ResetArmState(rightLeg);
     }
 
     private static Transform FindFirst(Transform[] transforms, string[] names)

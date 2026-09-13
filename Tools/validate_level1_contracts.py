@@ -84,6 +84,7 @@ def main():
     visual_path = ROOT / "Assets/Scripts/MonsterScripts/CrawlerVisualController.cs"
     visual = require(errors, visual_path, [
         "preserveAuthoredScale = true",
+        "ZombieVisualScaleMultiplier = 0.6f",
         'new GameObject("CrawlerVisualAnchor")',
         "navigation.modelForwardOffset = Vector3.zero",
         "visualAnchor.rotation = Quaternion.LookRotation(initialForward.normalized, Vector3.up)",
@@ -103,13 +104,15 @@ def main():
         "PreservesAnimatorSkeleton => true",
         "MaintainsAnimatedRootInPlace => true",
         "automatic pivot alignment",
-        "never writes a bone position or rotation",
         'MotionCompensationName = "CrawlerMotionCompensation"',
         "AlignVisualToLeader();",
         "motionCompensationRoot.InverseTransformPoint(animatedRootAnchor.position)",
         "float downwardRootSink = Mathf.Min(0f, totalLocalDrift.y)",
         "Vector3 compensatedLocalDrift = new Vector3(",
-        "motionCompensationRoot.localPosition = calibratedMotionLocalPosition - compensatedLocalDrift",
+        "VentContainmentOffsetWorld => ventContainmentOffsetWorld",
+        "SetVentContainmentOffsetWorld(Vector3 worldOffset, bool applyImmediately = false)",
+        "visualAnchor.InverseTransformVector(ventContainmentOffsetWorld)",
+        "calibratedMotionLocalPosition - compensatedLocalDrift + localContainmentOffset",
         "animatedRootFloorSinkWarning = 0.12f",
         "preserving upward crawl motion",
         "mixamorigspine2",
@@ -163,7 +166,7 @@ def main():
         "Physics.SphereCastNonAlloc(",
         "Physics.OverlapSphereNonAlloc(",
         "QueryTriggerInteraction.Ignore",
-        "hit.point + hit.normal * (handRadius + surfaceClearance)",
+        "hit.point + hit.normal * (radius + surfaceClearance)",
         "Quaternion.FromToRotation(",
         '"mixamorigleftarm"',
         '"mixamorigleftforearm"',
@@ -171,19 +174,58 @@ def main():
         '"mixamorigrightarm"',
         '"mixamorigrightforearm"',
         '"mixamorigrighthand"',
+        '"mixamorigleftupleg"',
+        '"mixamorigleftleg"',
+        '"mixamorigleftfoot"',
+        '"mixamorigrightupleg"',
+        '"mixamorigrightleg"',
+        '"mixamorigrightfoot"',
+        "SolveArm(leftLeg);",
+        "SolveArm(rightLeg);",
         "collider.transform.IsChildOf(transform)",
         "collider.attachedRigidbody != null",
-        "Only upper-arm/forearm joints are corrected",
+        "hand/foot surface-contact IK active",
     ])
     surface_defaults = positive_defaults(errors, surface_ik_path, surface_ik, [
-        "handRadius", "surfaceClearance", "contactReleaseSpeed", "emergencyProbeRadiusScale"
+        "handRadius", "footRadius", "surfaceClearance", "contactReleaseSpeed", "emergencyProbeRadiusScale"
     ])
-    if surface_defaults.get("handRadius", 0) > 0.12:
-        errors.append(f"{rel(surface_ik_path)}: handRadius is unexpectedly large for vent contact IK.")
+    if surface_defaults.get("handRadius", 0) > 0.12 or surface_defaults.get("footRadius", 0) > 0.12:
+        errors.append(f"{rel(surface_ik_path)}: hand/foot contact radius is unexpectedly large for vent contact IK.")
     if re.search(r"(?:spine|hips).*\.(?:position|rotation)\s*=", surface_ik, re.I):
         errors.append(f"{rel(surface_ik_path)}: surface-contact IK must never manipulate torso/core bones.")
     if re.search(r"\btransform\.position\s*=", surface_ik):
         errors.append(f"{rel(surface_ik_path)}: limb contact must not move the authoritative Crawler gameplay root.")
+
+
+    containment_path = ROOT / "Assets/Scripts/MonsterScripts/CrawlerVentContainment.cs"
+    containment = require(errors, containment_path, [
+        'LevelOneSceneName = "Level1_Containment"',
+        "DefaultExecutionOrder(325)",
+        "bodyFollower.SetVentContainmentOffsetWorld(desiredOffset, applyImmediately: true)",
+        "Physics.ComputePenetration(",
+        "Physics.SphereCastNonAlloc(",
+        "maximumContainmentOffset = 0.32f",
+        "head == null || chest == null || hips == null",
+        "UpdateProbeHistory(preservePreviousSafePoints: offsetLimitedThisFrame)",
+        "OverlapsStaticEnvironment(current, probe.radius)",
+        'AddProbe("head"',
+        'AddProbe("chest"',
+        'AddProbe("hips"',
+        'AddProbe("left elbow"',
+        'AddProbe("right elbow"',
+        'AddProbe("left knee"',
+        'AddProbe("right knee"',
+        "collider.attachedRigidbody != null",
+        "hands/feet remain limb-IK controlled",
+    ])
+    positive_defaults(errors, containment_path, containment, [
+        "headRadius", "chestRadius", "hipsRadius", "jointRadius",
+        "maximumContainmentOffset", "releaseSpeed", "discontinuityDistance"
+    ])
+    if re.search(r"(?:head|chest|hips|spine|elbow|knee).*\.(?:position|rotation)\s*=", containment, re.I):
+        errors.append(f"{rel(containment_path)}: rigid vent containment must not directly write Zombie body/joint transforms.")
+    if re.search(r"\btransform\.position\s*=", containment):
+        errors.append(f"{rel(containment_path)}: containment must not move the authoritative gameplay root.")
 
     legacy_cleaner_path = ROOT / "Assets/Scripts/MonsterScripts/CrawlerLegacyVisualCleaner.cs"
     legacy_cleaner = require(errors, legacy_cleaner_path, [
@@ -344,7 +386,7 @@ def main():
         print(f"FAILED: {len(errors)} Level 1/runtime contract issue(s).")
         return 1
 
-    print("PASS: Level 1/runtime hand visual contact, Animator-owned Crawler torso, stable Crawler motion-wrapper/floor-clamp ownership, Crawler hand surface-contact IK, legacy visual-rig cleanup, Crawler forward/turn continuity, keycard recovery, loading coverage, headlamp, safe-zone, capture, and floor-recovery source contracts.")
+    print("PASS: Level 1/runtime hand visual contact, Animator-owned Crawler torso, stable Crawler motion-wrapper/floor-clamp ownership, rigid Crawler vent-body containment, Crawler hand/foot surface-contact IK, legacy visual-rig cleanup, Crawler forward/turn continuity, keycard recovery, loading coverage, headlamp, safe-zone, capture, and floor-recovery source contracts.")
     print("PASS: Runtime/Photon/XR/Quest validation remains separate.")
     return 0
 
