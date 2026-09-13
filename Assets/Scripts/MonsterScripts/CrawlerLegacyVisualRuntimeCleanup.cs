@@ -4,7 +4,8 @@ using UnityEngine.SceneManagement;
 /// <summary>
 /// Runtime safety net for projects/scenes that have not yet had the editor migration saved.
 /// It waits until CrawlerVisualController has attached Zombie Crawl, then removes the old
-/// MiniGamesKid renderer/Animator/armature while preserving gameplay components.
+/// MiniGamesKid visual branches and disables marker-confirmed root-only rig support while
+/// preserving gameplay components.
 /// </summary>
 [DefaultExecutionOrder(300)]
 [DisallowMultipleComponent]
@@ -98,7 +99,8 @@ public sealed class CrawlerLegacyVisualRuntimeCleanup : MonoBehaviour
         {
             Debug.Log(
                 $"{name}: cleaned {scheduledRemovalCount} obsolete MiniGamesKid visual object/component(s). " +
-                "Legacy root-only rig support is disabled for this Play Mode session; Zombie Crawl owns live presentation.",
+                "Runtime live presentation is now the Crawler gameplay root plus Zombie Crawl visual rig; " +
+                "legacy root-only rig support is disabled for this Play Mode session.",
                 this);
         }
 
