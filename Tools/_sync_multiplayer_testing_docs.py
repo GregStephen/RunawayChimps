@@ -44,6 +44,10 @@ def sync_protocol(text):
     ):
         replacement = "`SectorMonsterSync` protocol v4" if old.startswith("`") else "SectorMonsterSync protocol v4"
         text = text.replace(old, replacement)
+    text = text.replace(
+        "protocol-v2 target synchronization and handoff invalidation",
+        "protocol-v4 authority-epoch/revision target synchronization and handoff invalidation",
+    )
     return text
 
 
