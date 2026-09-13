@@ -11,7 +11,8 @@ using UnityEngine;
 /// make those bone curves in-place, so allowing them through can make the skinned Zombie walk
 /// away from its Crawler parent and snap back when the clip loops. This component therefore
 /// counter-translates the COMPLETE Zombie visual after animation so the animated Hips stays at
-/// its calibrated parent-relative position. No bone position or rotation is written here.
+/// its calibrated parent-relative position. This automatic pivot alignment and in-place
+/// correction never writes a bone position or rotation.
 /// </summary>
 [DefaultExecutionOrder(300)]
 [DisallowMultipleComponent]
