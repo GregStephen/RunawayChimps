@@ -35,6 +35,12 @@ def insert_before(text, marker, section, anchor):
     return text.replace(anchor, section + anchor, 1)
 
 
+def sync_protocol(text):
+    text = text.replace("SectorMonsterSync protocol v2", "SectorMonsterSync protocol v4")
+    text = text.replace("SectorMonsterSync protocol v3", "SectorMonsterSync protocol v4")
+    return text
+
+
 def main():
     design = DESIGN.read_text(encoding="utf-8-sig")
     design = insert_before(
@@ -43,7 +49,7 @@ def main():
         DESIGN_SECTION,
         "## September 12 PR #15 merge-review hardening",
     )
-    design = design.replace("SectorMonsterSync protocol v2", "SectorMonsterSync protocol v3")
+    design = sync_protocol(design)
     record_header = "| Recorded | Decision or correction | Status |\n| --- | --- | --- |\n"
     record_row = (
         "| 2026-09-13 | Standardize local multiplayer development checks on one Unity Editor client plus one Windows Development Build client using the same explicit private Photon room. Plan a dev-only second-client launcher/identity/desktop-control/HUD layer so routine two-player testing does not require two headsets. | Confirmed development workflow; detailed reference in `docs/multiplayer-development-testing.md`. Convenience harness remains planned/not implemented; final two-headset/Quest validation still required. |\n"
@@ -61,7 +67,7 @@ def main():
         PLAN_SECTION,
         "## September 13 global player-specific threat feedback implementation",
     )
-    plan = plan.replace("SectorMonsterSync protocol v2", "SectorMonsterSync protocol v3")
+    plan = sync_protocol(plan)
     PLAN.write_text(plan, encoding="utf-8")
 
 
