@@ -91,6 +91,17 @@ namespace RunawayChimps.ThreatFeedback
                 EnsureView(origin != null ? origin.Camera : null);
             }
 
+            // Travel owns the complete XR view. Hide personal threat immediately so the
+            // black fade/loading presentation can never have red UI composited over it.
+            if (SectorTravelService.I != null && SectorTravelService.I.IsBusy)
+            {
+                if (displayedThreat > 0f || desiredThreat > 0f)
+                    ResetPresentation();
+                else if (vignette != null)
+                    vignette.SetThreat(0f);
+                return;
+            }
+
             desiredThreat = EvaluateDesiredThreat();
             float previous = displayedThreat;
             float transitionSeconds = desiredThreat > displayedThreat ? 0.18f : 0.35f;
