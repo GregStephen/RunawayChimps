@@ -1,0 +1,35 @@
+name: PR15 one-time docs sync
+
+on:
+  push:
+    branches:
+      - fix/runtime-keycard-crawler-loading
+    paths:
+      - Tools/sync_pr15_review_docs.py
+      - .github/workflows/pr15-doc-sync.yml
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Apply maintained documentation corrections
+        run: python Tools/sync_pr15_review_docs.py
+      - name: Commit maintained docs if changed
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- docs/design-and-lore.md docs/repository-improvement-plan.md; then
+            echo 'Docs already synchronized.'
+            exit 0
+          fi
+          git config user.name 'Greg Stephen'
+          git config user.email '35859167+GregStephen@users.noreply.github.com'
+          git add docs/design-and-lore.md docs/repository-improvement-plan.md
+          git commit -m 'Record PR15 merge-review hardening'
+          git push origin HEAD:fix/runtime-keycard-crawler-loading
