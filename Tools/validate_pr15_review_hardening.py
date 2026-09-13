@@ -91,7 +91,6 @@ def main():
         "FindLegacyTopLevelRoots",
         "ContainsLegacyBoneMarker",
         "DisableLegacyVisuals(GameObject gameplayRoot, Transform keepVisual)",
-        "Never infer legacy ownership from \"not Zombie\" alone.",
         "LegacyRootSupportTypeNames",
         '"RigBuilder"',
         '"BoneRenderer"',
@@ -107,7 +106,7 @@ def main():
         "DestroyObject(rootAnimator, immediate)",
     ):
         if forbidden in cleaner:
-            errors.append(f"{cleaner_path}: broad non-Zombie cleanup returned via {forbidden!r}")
+            errors.append(f"{cleaner_path}: broad/non-ordered legacy cleanup returned via {forbidden!r}")
 
     editor_path = "Assets/Scripts/Editor/CrawlerLegacyVisualSceneCleanup.cs"
     editor = text(editor_path)
@@ -142,7 +141,8 @@ def main():
     print(
         "PASS: PR #15 hardening protects marker-only legacy cleanup, serialization-proof Zombie forward setup, "
         "explicit scene migration, stable-anchor heading, non-animated Crawler motion compensation, horizontal travel "
-        "cancellation with one-sided floor-height clamping, discontinuity-safe hand contact, and solved-position IK caching."
+        "cancellation with one-sided floor-height clamping, dependency-safe legacy-root cleanup, discontinuity-safe "
+        "hand contact, and solved-position IK caching."
     )
     return 0
 
