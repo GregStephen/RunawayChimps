@@ -67,6 +67,9 @@ jobs:
       - name: Validate PR15 review hardening
         run: python Tools/validate_pr15_review_hardening.py
 
+      - name: Validate local threat feedback contracts
+        run: python Tools/validate_threat_feedback.py
+
       - name: Compile Python validation tools
         run: python -m compileall -q Tools
 
