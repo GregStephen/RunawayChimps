@@ -28,6 +28,8 @@ contract = require("Assets/Scripts/MonsterScripts/MonsterPursuitState.cs", [
 controller = require("Assets/Scripts/ThreatFeedback/ThreatFeedbackController.cs", [
     "strongest = Mathf.Max(strongest, source.EvaluateLocalThreat())",
     "SectorTravelService.I.IsBusy",
+    "Travel owns the complete XR view",
+    "vignette.SetThreat(0f)",
     "Time.unscaledDeltaTime",
     "public event Action<float> ThreatChanged",
     "ResetPresentation()",
@@ -62,16 +64,20 @@ nav = require("Assets/Scripts/MonsterScripts/MonsterNavigation.cs", [
     "ApplyRemotePursuit(bool chasing, int targetActorNumber)",
 ])
 sync = require("Assets/Scripts/Travel/SectorMonsterSync.cs", [
-    "ProtocolVersion = 3",
+    "ProtocolVersion = 4",
     "IMonsterPursuitSyncTarget",
     "pursuit.PursuitChanged += HandlePursuitChanged",
     "pursuitStateTimeout",
+    "retiredAuthorityEpochFloor",
+    "acceptedAuthorityEpoch",
     "outgoingStateRevision",
     "lastReceivedStateRevision = -1",
     "int revision = ++outgoingStateRevision",
-    "data.Length != 9",
+    "data.Length != 10",
+    "incomingAuthorityEpoch <= retiredFloor",
     "revision <= lastReceivedStateRevision",
-    "Revisions are scoped to one elected controller epoch",
+    "A -> B -> A handoff",
+    "ApplyControllerElection(owner)",
     "pursuit.ApplyRemotePursuit",
     "A newly elected controller must make a fresh local target decision",
 ])
@@ -118,6 +124,7 @@ if errors:
     sys.exit(1)
 
 print("PASS: target-aware local threat feedback source contracts.")
-print("PASS: ordered per-authority monster revisions protect same-frame pursuit transitions.")
+print("PASS: authority epochs plus revisions reject same-frame and repeated-controller stale pursuit state.")
 print("PASS: Level 1 runtime adapter is scoped to the authored Crawler monster ID.")
+print("PASS: travel immediately suppresses personal threat presentation beneath the black fade.")
 print("PASS: Unity 2022.3.55f1, headset, Quest, and two-client Photon validation remain pending.")
