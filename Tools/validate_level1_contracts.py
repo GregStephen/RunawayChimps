@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Focused source contracts for the active Level 1 runtime fixes.
+"""Focused source contracts for the active Level 1/runtime fixes.
 
 These checks catch accidental source/scene regressions. They do not prove Unity runtime,
 Photon, XR/headset, animation deformation, lighting quality, or Quest performance.
@@ -98,18 +98,126 @@ def main():
     follower_path = ROOT / "Assets/Scripts/MonsterScripts/CrawlerBodyPathFollower.cs"
     follower = require(errors, follower_path, [
         "public void ResetTrail()",
-        "trail.Clear();",
-        "Physics.RaycastNonAlloc(",
-        "SamplePosition(binding.distanceBehind)",
-        "SampleForward(binding.distanceBehind)",
+        "PreservesAnimatorSkeleton => true",
+        "MaintainsAnimatedRootInPlace => true",
+        "automatic pivot alignment",
+        "never writes a bone position or rotation",
+        'MotionCompensationName = "CrawlerMotionCompensation"',
+        "AlignVisualToLeader();",
+        "motionCompensationRoot.InverseTransformPoint(animatedRootAnchor.position)",
+        "float downwardRootSink = Mathf.Min(0f, totalLocalDrift.y)",
+        "Vector3 compensatedLocalDrift = new Vector3(",
+        "motionCompensationRoot.localPosition = calibratedMotionLocalPosition - compensatedLocalDrift",
+        "animatedRootFloorSinkWarning = 0.12f",
+        "preserving upward crawl motion",
+        "mixamorigspine2",
+        "mixamorighips",
     ])
     if re.search(r"^using\s+Photon\.", follower, re.M):
-        errors.append(f"{rel(follower_path)}: local visual body reconstruction must not depend on Photon.")
-    body = positive_defaults(errors, follower_path, follower, [
-        "trailSampleSpacing", "retainedTrailLength", "teleportResetDistance", "bodyFollowWeight", "tangentSampleDistance"
+        errors.append(f"{rel(follower_path)}: local visual alignment must not depend on Photon.")
+    if re.search(r"\b(?:binding\.)?bone\.(?:position|rotation)\s*=", follower):
+        errors.append(f"{rel(follower_path)}: failed runtime tests forbid post-Animator core-bone position/rotation writes.")
+    for forbidden in (
+        "visualRoot.position +=",
+        "visualRoot.position =",
+        "visualRoot.localPosition =",
+        "visualRoot.rotation =",
+        "visualRoot.localRotation =",
+    ):
+        if forbidden in follower:
+            errors.append(f"{rel(follower_path)}: rigid correction must stay outside the Animator-owned visual root; found {forbidden!r}.")
+    if "ApplyBodyPath();" in follower or "ConstrainHand(" in follower:
+        errors.append(f"{rel(follower_path)}: experimental torso/leaf deformation must remain disabled; limb contact belongs in the dedicated IK component.")
+    positive_defaults(errors, follower_path, follower, [
+        "floorClearance", "animatedRootDriftWarning", "animatedRootFloorSinkWarning"
     ])
-    if body.get("bodyFollowWeight", 0) > 1:
-        errors.append(f"{rel(follower_path)}: bodyFollowWeight must remain <= 1.")
+
+    heading_path = ROOT / "Assets/Scripts/MonsterScripts/CrawlerVisualHeadingStabilizer.cs"
+    heading = require(errors, heading_path, [
+        'LevelOneSceneName = "Level1_Containment"',
+        "visualController.VisualRoot",
+        "bodyPathFollower.VisualAnchor",
+        "CrawlerMotionCompensation",
+        "headingLookbackDistance = 0.9f",
+        "maximumTurnDegreesPerSecond = 150f",
+        "discontinuityDistance = 1.25f",
+        "Quaternion.LookRotation(forward.normalized, Vector3.up)",
+        "Quaternion.RotateTowards(",
+        "ResetHeadingHistory(current, snapToGameplayRotation: true)",
+        "No Zombie bone position/rotation is ever modified here.",
+    ])
+    if "visualAnchor = visualRoot.parent" in heading:
+        errors.append(f"{rel(heading_path)}: heading must target the explicit CrawlerVisualAnchor, not VisualRoot.parent.")
+    positive_defaults(errors, heading_path, heading, [
+        "headingLookbackDistance", "maximumTurnDegreesPerSecond", "sampleSpacing", "historyDistance", "discontinuityDistance"
+    ])
+
+    surface_ik_path = ROOT / "Assets/Scripts/MonsterScripts/CrawlerSurfaceContactIK.cs"
+    surface_ik = require(errors, surface_ik_path, [
+        'LevelOneSceneName = "Level1_Containment"',
+        "DefaultExecutionOrder(350)",
+        "visualController.VisualRoot",
+        "visualController.VisualAnimator",
+        "Physics.SphereCastNonAlloc(",
+        "Physics.OverlapSphereNonAlloc(",
+        "QueryTriggerInteraction.Ignore",
+        "hit.point + hit.normal * (handRadius + surfaceClearance)",
+        "Quaternion.FromToRotation(",
+        '"mixamorigleftarm"',
+        '"mixamorigleftforearm"',
+        '"mixamoriglefthand"',
+        '"mixamorigrightarm"',
+        '"mixamorigrightforearm"',
+        '"mixamorigrighthand"',
+        "collider.transform.IsChildOf(transform)",
+        "collider.attachedRigidbody != null",
+        "Only upper-arm/forearm joints are corrected",
+    ])
+    surface_defaults = positive_defaults(errors, surface_ik_path, surface_ik, [
+        "handRadius", "surfaceClearance", "contactReleaseSpeed", "emergencyProbeRadiusScale"
+    ])
+    if surface_defaults.get("handRadius", 0) > 0.12:
+        errors.append(f"{rel(surface_ik_path)}: handRadius is unexpectedly large for vent contact IK.")
+    if re.search(r"(?:spine|hips).*\.(?:position|rotation)\s*=", surface_ik, re.I):
+        errors.append(f"{rel(surface_ik_path)}: surface-contact IK must never manipulate torso/core bones.")
+    if re.search(r"\btransform\.position\s*=", surface_ik):
+        errors.append(f"{rel(surface_ik_path)}: limb contact must not move the authoritative Crawler gameplay root.")
+
+    legacy_cleaner_path = ROOT / "Assets/Scripts/MonsterScripts/CrawlerLegacyVisualCleaner.cs"
+    legacy_cleaner = require(errors, legacy_cleaner_path, [
+        "RemoveLegacyVisuals(GameObject gameplayRoot, Transform keepVisual, bool immediate)",
+        '"shoulderl"',
+        '"shoulderr"',
+        "ContainsLegacyVisualRig",
+        "IsVisualOnlySubtree",
+        "Anything else is gameplay/physics/audio/state until proven otherwise.",
+        "component is Renderer",
+        "component is Animator",
+    ])
+    if "DestroyObject(gameplayRoot" in legacy_cleaner or "DestroyObject(root.gameObject" in legacy_cleaner:
+        errors.append(f"{rel(legacy_cleaner_path)}: legacy cleanup must never destroy the Crawler gameplay root.")
+
+    runtime_cleanup_path = ROOT / "Assets/Scripts/MonsterScripts/CrawlerLegacyVisualRuntimeCleanup.cs"
+    require(errors, runtime_cleanup_path, [
+        "RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)",
+        "SceneManager.sceneLoaded += HandleSceneLoaded",
+        "monster.gameObject.AddComponent<CrawlerLegacyVisualRuntimeCleanup>()",
+        "visualController.VisualRoot",
+        "CrawlerLegacyVisualCleaner.RemoveLegacyVisuals(",
+        "Crawler gameplay root plus Zombie Crawl visual rig",
+    ])
+
+    editor_cleanup_path = ROOT / "Assets/Scripts/Editor/CrawlerLegacyVisualSceneCleanup.cs"
+    editor_cleanup = require(errors, editor_cleanup_path, [
+        'LevelOneScenePath = "Assets/Scenes/Level1_Containment.unity"',
+        'LegacyModelPathFragment = "MiniGamesKidFirstRig.fbx"',
+        "Clean Legacy Level 1 Crawler Rig",
+        "PrefabUtility.UnpackPrefabInstance(",
+        "CrawlerLegacyVisualCleaner.RemoveLegacyVisuals(",
+        "EditorSceneManager.SaveScene(scene)",
+    ])
+    if "DestroyImmediate(monster.gameObject" in editor_cleanup:
+        errors.append(f"{rel(editor_cleanup_path)}: editor migration must preserve the Crawler gameplay root.")
 
     zone_path = ROOT / "Assets/Scripts/Zones/ZoneTrigger.cs"
     require(errors, zone_path, [
@@ -129,6 +237,28 @@ def main():
         "DropAllKeyCards(capturePosition)",
         "player.transform.position",
     ])
+
+    keycard_respawn_path = ROOT / "Assets/Scripts/Utils/RespawnToOriginalSpawn.cs"
+    keycard_respawn = require(errors, keycard_respawn_path, [
+        "maxFallBelowSpawn = 3f",
+        "spawnPos.y - maxFallBelowSpawn",
+        "rb.position = targetPosition",
+        "Physics.SyncTransforms();",
+    ])
+    positive_defaults(errors, keycard_respawn_path, keycard_respawn, ["maxFallBelowSpawn", "respawnUpOffset"])
+
+    loading_path = ROOT / "Assets/Scripts/Travel/LoadingCanvasOverscan.cs"
+    loading = require(errors, loading_path, [
+        'LoadingSceneName = "Loading"',
+        'BackdropName = "XR_Loading_Backdrop"',
+        "Overscan = 0.12f",
+        "rect.anchorMin = new Vector2(-Overscan, -Overscan)",
+        "rect.anchorMax = new Vector2(1f + Overscan, 1f + Overscan)",
+        "rect.SetAsFirstSibling();",
+        "image.color = Color.black;",
+    ])
+    if "UnityEngine.UI" not in loading:
+        errors.append(f"{rel(loading_path)}: XR loading backdrop must use a screen-space UI Image.")
 
     spawn_path = ROOT / "Assets/Scripts/Bootstrap/RigSpawnSnapper.cs"
     spawn = require(errors, spawn_path, [
@@ -150,10 +280,28 @@ def main():
         "rightHandBlockedAfterTeleport",
         "CollisionsSphereCast(",
         "minimumRaycastDistance + 0.005f",
+        "MinimumVisualHandContactRadius = 0.05f",
+        "minimumRaycastDistance = Mathf.Max(minimumRaycastDistance, MinimumVisualHandContactRadius)",
         "if (!suppressLeftHand && IterativeCollisionSphereCast",
         "if (!suppressRightHand && IterativeCollisionSphereCast",
     ])
-    positive_defaults(errors, player_path, player, ["teleportHandPenetrationTolerance"])
+    hand = positive_defaults(errors, player_path, player, [
+        "teleportHandPenetrationTolerance", "MinimumVisualHandContactRadius"
+    ])
+    if hand.get("MinimumVisualHandContactRadius", 0) < 0.05:
+        errors.append(f"{rel(player_path)}: visual hand contact radius must remain at least 0.05 m.")
+
+    avatar_path = ROOT / "Assets/Resources/PhotonVR/Scripts/Player/PhotonVRPlayer.cs"
+    avatar = require(errors, avatar_path, [
+        "DefaultExecutionOrder(100)",
+        "CopyTrackedHandPose(",
+        "locomotion.rightHandFollower",
+        "locomotion.leftHandFollower",
+        "collisionSafePositionSource.position",
+        "trackedRotationSource.rotation",
+    ])
+    if "CopyTrackedPose(RightHand, manager.RightHand)" in avatar or "CopyTrackedPose(LeftHand, manager.LeftHand)" in avatar:
+        errors.append(f"{rel(avatar_path)}: local visible hands must not bypass Gorilla collision-safe follower positions.")
 
     guard_path = ROOT / "Assets/Scripts/Bootstrap/RigFloorPenetrationGuard.cs"
     guard = require(errors, guard_path, [
@@ -191,10 +339,10 @@ def main():
     for error in errors:
         print("ERROR:", error)
     if errors:
-        print(f"FAILED: {len(errors)} Level 1 contract issue(s).")
+        print(f"FAILED: {len(errors)} Level 1/runtime contract issue(s).")
         return 1
 
-    print("PASS: Level 1 headlamp, Crawler visual/path, safe-zone, capture, floor-recovery, and spawn-safe hand source contracts.")
+    print("PASS: Level 1/runtime hand visual contact, Animator-owned Crawler torso, stable Crawler motion-wrapper/floor-clamp ownership, Crawler hand surface-contact IK, legacy visual-rig cleanup, Crawler forward/turn continuity, keycard recovery, loading coverage, headlamp, safe-zone, capture, and floor-recovery source contracts.")
     print("PASS: Runtime/Photon/XR/Quest validation remains separate.")
     return 0
 
