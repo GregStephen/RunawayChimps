@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Regression guards for issues found during the PR #15 merge review."""
+"""Regression guards for issues found during the PR #15 merge/runtime reviews."""
 from pathlib import Path
 import sys
 
@@ -27,6 +27,28 @@ def main():
     if "foreach (var renderer in GetComponentsInChildren<Renderer>" in visual:
         errors.append(f"{visual_path}: visual handoff must not disable every non-Zombie renderer")
     require(errors, visual, '"mixamorigrightforearm"', visual_path)
+
+    follower_path = "Assets/Scripts/MonsterScripts/CrawlerBodyPathFollower.cs"
+    follower = text(follower_path)
+    for token in (
+        "DefaultExecutionOrder(300)",
+        "MaintainsAnimatedRootInPlace => true",
+        'FindFirst(bones, "mixamorighips", "hips")',
+        "alignmentFrame.InverseTransformPoint(animatedRootAnchor.position)",
+        "alignmentFrame.TransformPoint(animatedRootReferenceInParentSpace)",
+        "MaintainAnimatedRootInPlace();",
+        "visualRoot.position += correction",
+        "complete Zombie visual is being counter-translated",
+    ):
+        require(errors, follower, token, follower_path)
+    for forbidden in (
+        "animatedRootAnchor.position =",
+        "frontAnchor.position =",
+        "animatedRootAnchor.rotation =",
+        "frontAnchor.rotation =",
+    ):
+        if forbidden in follower:
+            errors.append(f"{follower_path}: in-place correction must move the complete visual, not write skeleton transforms")
 
     cleaner_path = "Assets/Scripts/MonsterScripts/CrawlerLegacyVisualCleaner.cs"
     cleaner = text(cleaner_path)
@@ -75,7 +97,11 @@ def main():
         print(f"FAILED: {len(errors)} PR #15 review-hardening contract issue(s).")
         return 1
 
-    print("PASS: PR #15 review hardening protects marker-only legacy cleanup, serialization-proof Zombie forward setup, explicit scene migration, discontinuity-safe hand contact, and solved-position IK caching.")
+    print(
+        "PASS: PR #15 hardening protects marker-only legacy cleanup, serialization-proof Zombie forward setup, "
+        "explicit scene migration, gameplay-owned/in-place Crawler translation, discontinuity-safe hand contact, "
+        "and solved-position IK caching."
+    )
     return 0
 
 
