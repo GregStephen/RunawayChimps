@@ -241,12 +241,13 @@ public sealed class CrawlerVisualController : MonoBehaviour
         Transform leftHand = FindTransform(all, "mixamoriglefthand", "lefthand", "handl");
         Transform rightHand = FindTransform(all, "mixamorigrighthand", "righthand", "handr");
         Transform leftForeArm = FindTransform(all, "mixamorigleftforearm", "leftforearm", "leftlowerarm", "lowerarml");
-        Transform rightForeArm = FindTransform(all, "mixamorigrighthand", "righthand", "handr");
+        Transform rightForeArm = FindTransform(all, "mixamorigrightforearm", "rightforearm", "rightlowerarm", "lowerarmr");
         Transform head = FindTransform(all, "mixamorighead", "head");
 
         Transform[] candidates = { leftHand, rightHand, leftForeArm, rightForeArm, head };
         int count = 0;
-        for (int i = 0; i < candidates.Length; i++) if (candidates[i] != null) count++;
+        for (int i = 0; i < candidates.Length; i++)
+            if (candidates[i] != null) count++;
 
         animationProbeBones = new Transform[count];
         previousProbeRotations = new Quaternion[count];
@@ -376,7 +377,7 @@ public sealed class CrawlerVisualController : MonoBehaviour
         {
             string candidate = Normalize(candidateNames[c]);
             for (int i = 0; i < transforms.Length; i++)
-        {
+            {
                 Transform transform = transforms[i];
                 if (transform != null && Normalize(transform.name) == candidate)
                     return transform;
