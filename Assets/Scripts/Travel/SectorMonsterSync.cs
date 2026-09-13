@@ -13,7 +13,7 @@ namespace RunawayChimps.Travel
     {
         public const byte StateEvent = 180;
         public const byte RequestEvent = 181;
-        private const int ProtocolVersion = 3;
+        private const int ProtocolVersion = 4;
 
         public SectorId sector = SectorId.Containment;
         public int monsterId = 1;
@@ -22,12 +22,15 @@ namespace RunawayChimps.Travel
         public bool HasAuthority { get; private set; }
 
         private readonly List<MonoBehaviour> providerBuffer = new List<MonoBehaviour>();
+        private readonly Dictionary<int, double> retiredAuthorityEpochFloor = new Dictionary<int, double>();
         private IMonsterPursuitSyncTarget pursuit;
         private int controller;
         private bool hasState;
         private Vector3 targetPosition;
         private Quaternion targetRotation;
-        private double lastStateTime = double.MinValue;
+        private double authorityEpoch = double.MinValue;
+        private double lastGeneratedAuthorityEpoch = double.MinValue;
+        private double acceptedAuthorityEpoch = double.MinValue;
         private int outgoingStateRevision;
         private int lastReceivedStateRevision = -1;
         private float lastReceiveUnscaled = float.NegativeInfinity;
@@ -91,9 +94,12 @@ namespace RunawayChimps.Travel
             observedRoom = room;
             controller = 0;
             hasState = HasAuthority = false;
-            lastStateTime = double.MinValue;
+            authorityEpoch = double.MinValue;
+            lastGeneratedAuthorityEpoch = double.MinValue;
+            acceptedAuthorityEpoch = double.MinValue;
             outgoingStateRevision = 0;
             lastReceivedStateRevision = -1;
+            retiredAuthorityEpochFloor.Clear();
             lastReceiveUnscaled = float.NegativeInfinity;
             nextRequest = nextSend = 0f;
             pursuit?.ApplyRemotePursuit(false, 0);
@@ -108,42 +114,7 @@ namespace RunawayChimps.Travel
             int elected = PhotonNetwork.InRoom
                 ? SectorPresence.ElectController(PhotonNetwork.PlayerList, sector)
                 : 0;
-
-            if (elected != controller)
-            {
-                controller = elected;
-                bool wasAuthority = HasAuthority;
-                HasAuthority = elected != 0 && PhotonNetwork.LocalPlayer != null &&
-                    elected == PhotonNetwork.LocalPlayer.ActorNumber;
-
-                // Revisions are scoped to one elected controller epoch. Every client resets its
-                // receive ordering when the elected actor changes, including an A -> B -> A cycle.
-                outgoingStateRevision = 0;
-                lastReceivedStateRevision = -1;
-
-                if (HasAuthority && !wasAuthority)
-                {
-                    if (hasState)
-                        transform.SetPositionAndRotation(targetPosition, targetRotation);
-
-                    // A newly elected controller must make a fresh local target decision.
-                    // Never rebroadcast the previous controller's player identity as its own.
-                    pursuit.ApplyRemotePursuit(false, 0);
-                }
-                else if (!HasAuthority)
-                {
-                    pursuit.ApplyRemotePursuit(false, 0);
-                }
-
-                lastStateTime = double.MinValue;
-                lastReceiveUnscaled = float.NegativeInfinity;
-                nextRequest = nextSend = 0f;
-            }
-            else
-            {
-                HasAuthority = elected != 0 && PhotonNetwork.LocalPlayer != null &&
-                    elected == PhotonNetwork.LocalPlayer.ActorNumber;
-            }
+            ApplyControllerElection(elected);
 
             if (HasAuthority)
             {
@@ -182,6 +153,66 @@ namespace RunawayChimps.Travel
             }
         }
 
+        private void ApplyControllerElection(int elected)
+        {
+            if (elected == controller)
+            {
+                HasAuthority = elected != 0 && PhotonNetwork.LocalPlayer != null &&
+                    elected == PhotonNetwork.LocalPlayer.ActorNumber;
+                return;
+            }
+
+            int previousController = controller;
+            bool wasAuthority = HasAuthority;
+            if (previousController != 0 && acceptedAuthorityEpoch != double.MinValue)
+                RetireAuthorityEpoch(previousController, acceptedAuthorityEpoch);
+
+            controller = elected;
+            HasAuthority = elected != 0 && PhotonNetwork.LocalPlayer != null &&
+                elected == PhotonNetwork.LocalPlayer.ActorNumber;
+
+            // Each elected-controller term gets a new epoch and its own revision sequence.
+            // Retired epoch floors prevent a delayed packet from Actor A's old term being
+            // accepted after an A -> B -> A handoff.
+            acceptedAuthorityEpoch = double.MinValue;
+            outgoingStateRevision = 0;
+            lastReceivedStateRevision = -1;
+
+            if (HasAuthority && !wasAuthority)
+            {
+                if (hasState)
+                    transform.SetPositionAndRotation(targetPosition, targetRotation);
+
+                double candidate = PhotonNetwork.Time;
+                if (candidate <= lastGeneratedAuthorityEpoch)
+                    candidate = lastGeneratedAuthorityEpoch + 0.000001d;
+                authorityEpoch = candidate;
+                lastGeneratedAuthorityEpoch = candidate;
+
+                // A newly elected controller must make a fresh local target decision.
+                // Never rebroadcast the previous controller's player identity as its own.
+                pursuit.ApplyRemotePursuit(false, 0);
+            }
+            else
+            {
+                authorityEpoch = double.MinValue;
+                if (!HasAuthority)
+                    pursuit.ApplyRemotePursuit(false, 0);
+            }
+
+            lastReceiveUnscaled = float.NegativeInfinity;
+            nextRequest = nextSend = 0f;
+        }
+
+        private void RetireAuthorityEpoch(int actorNumber, double epoch)
+        {
+            if (actorNumber <= 0 || double.IsNaN(epoch) || double.IsInfinity(epoch))
+                return;
+
+            if (!retiredAuthorityEpochFloor.TryGetValue(actorNumber, out double existing) || epoch > existing)
+                retiredAuthorityEpochFloor[actorNumber] = epoch;
+        }
+
         private void HandlePursuitChanged(MonsterPursuitState state)
         {
             if (HasAuthority)
@@ -196,7 +227,7 @@ namespace RunawayChimps.Travel
 
         private void SendState(int[] recipients, bool reliable)
         {
-            if (!PhotonNetwork.InRoom || pursuit == null)
+            if (!PhotonNetwork.InRoom || pursuit == null || !HasAuthority || authorityEpoch == double.MinValue)
                 return;
 
             MonsterPursuitState state = pursuit.PursuitState;
@@ -208,6 +239,7 @@ namespace RunawayChimps.Travel
                     (int)sector,
                     monsterId,
                     ProtocolVersion,
+                    authorityEpoch,
                     revision,
                     PhotonNetwork.Time,
                     transform.position,
@@ -233,6 +265,8 @@ namespace RunawayChimps.Travel
                 return;
 
             int owner = SectorPresence.ElectController(PhotonNetwork.PlayerList, sector);
+            ApplyControllerElection(owner);
+
             if (photonEvent.Code == RequestEvent)
             {
                 Player sender = PhotonNetwork.CurrentRoom.GetPlayer(photonEvent.Sender);
@@ -242,24 +276,40 @@ namespace RunawayChimps.Travel
                 return;
             }
 
-            if (owner == 0 || photonEvent.Sender != owner || data.Length != 9 ||
+            if (owner == 0 || photonEvent.Sender != owner || data.Length != 10 ||
                 !(data[2] is int version) || version != ProtocolVersion ||
-                !(data[3] is int revision) || revision <= 0 ||
-                !(data[4] is double time) || !(data[5] is Vector3 position) ||
-                !(data[6] is Quaternion rotation) || !(data[7] is bool pursuing) ||
-                !(data[8] is int targetActorNumber))
+                !(data[3] is double incomingAuthorityEpoch) ||
+                !(data[4] is int revision) || revision <= 0 ||
+                !(data[5] is double time) || !(data[6] is Vector3 position) ||
+                !(data[7] is Quaternion rotation) || !(data[8] is bool pursuing) ||
+                !(data[9] is int targetActorNumber))
                 return;
-            if (targetActorNumber < 0 || (pursuing && targetActorNumber == 0) ||
+            if (double.IsNaN(incomingAuthorityEpoch) || double.IsInfinity(incomingAuthorityEpoch) ||
+                targetActorNumber < 0 || (pursuing && targetActorNumber == 0) ||
                 double.IsNaN(time) || double.IsInfinity(time) ||
                 !Finite(position.x) || !Finite(position.y) || !Finite(position.z) ||
                 !Finite(rotation.x) || !Finite(rotation.y) || !Finite(rotation.z) || !Finite(rotation.w) ||
                 Quaternion.Dot(rotation, rotation) < 0.0001f)
                 return;
-            if (controller == owner && revision <= lastReceivedStateRevision)
+
+            if (retiredAuthorityEpochFloor.TryGetValue(owner, out double retiredFloor) &&
+                incomingAuthorityEpoch <= retiredFloor)
+                return;
+
+            if (acceptedAuthorityEpoch == double.MinValue || incomingAuthorityEpoch > acceptedAuthorityEpoch)
+            {
+                acceptedAuthorityEpoch = incomingAuthorityEpoch;
+                lastReceivedStateRevision = -1;
+            }
+            else if (incomingAuthorityEpoch < acceptedAuthorityEpoch)
+            {
+                return;
+            }
+
+            if (revision <= lastReceivedStateRevision)
                 return;
 
             lastReceivedStateRevision = revision;
-            lastStateTime = time;
             lastReceiveUnscaled = Time.unscaledTime;
             targetPosition = position;
             targetRotation = rotation;
