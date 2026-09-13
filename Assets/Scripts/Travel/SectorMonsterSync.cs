@@ -111,14 +111,24 @@ namespace RunawayChimps.Travel
                 bool wasAuthority = HasAuthority;
                 HasAuthority = elected != 0 && PhotonNetwork.LocalPlayer != null &&
                     elected == PhotonNetwork.LocalPlayer.ActorNumber;
-                if (HasAuthority && !wasAuthority && hasState)
-                    transform.SetPositionAndRotation(targetPosition, targetRotation);
+
+                if (HasAuthority && !wasAuthority)
+                {
+                    if (hasState)
+                        transform.SetPositionAndRotation(targetPosition, targetRotation);
+
+                    // A newly elected controller must make a fresh local target decision.
+                    // Never rebroadcast the previous controller's player identity as its own.
+                    pursuit.ApplyRemotePursuit(false, 0);
+                }
+                else if (!HasAuthority)
+                {
+                    pursuit.ApplyRemotePursuit(false, 0);
+                }
 
                 lastStateTime = double.MinValue;
                 lastReceiveUnscaled = float.NegativeInfinity;
                 nextRequest = nextSend = 0f;
-                if (!HasAuthority)
-                    pursuit.ApplyRemotePursuit(false, 0);
             }
             else
             {
