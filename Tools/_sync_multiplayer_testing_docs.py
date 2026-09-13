@@ -36,8 +36,14 @@ def insert_before(text, marker, section, anchor):
 
 
 def sync_protocol(text):
-    text = text.replace("SectorMonsterSync protocol v2", "SectorMonsterSync protocol v4")
-    text = text.replace("SectorMonsterSync protocol v3", "SectorMonsterSync protocol v4")
+    for old in (
+        "SectorMonsterSync protocol v2",
+        "SectorMonsterSync protocol v3",
+        "`SectorMonsterSync` protocol v2",
+        "`SectorMonsterSync` protocol v3",
+    ):
+        replacement = "`SectorMonsterSync` protocol v4" if old.startswith("`") else "SectorMonsterSync protocol v4"
+        text = text.replace(old, replacement)
     return text
 
 
