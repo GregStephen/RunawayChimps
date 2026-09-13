@@ -93,7 +93,7 @@ def main():
         "GetComponentsInChildren<Collider>(true)",
         "collider.enabled = false;",
         "ShadowCastingMode.Off",
-        'Shader.Find("Universal Render Pipeline/Lit")',
+        "material.shader.isSupported",
         "LightType.Point",
         "LightShadows.None",
         "bounceIntensity = 0f",
@@ -105,7 +105,16 @@ def main():
         errors.append(f"{rel(blower_path)}: decorative vent blower must not depend on Photon.")
     if "GameObject.CreatePrimitive(" in blower:
         errors.append(f"{rel(blower_path)}: approved Blender visual must not regress to generated primitive geometry.")
+    if 'Shader.Find("Universal Render Pipeline/Lit")' in blower:
+        errors.append(f"{rel(blower_path)}: blower must not dynamically assign URP/Lit while the project uses the built-in render pipeline.")
+    if "CreateRuntimeMaterial(" in blower:
+        errors.append(f"{rel(blower_path)}: blower materials must stay serialized/import-mapped rather than dynamically created.")
     positive_defaults(errors, blower_path, blower, ["FanDegreesPerSecond", "BaseRedLightIntensity"])
+
+    graphics_path = ROOT / "ProjectSettings/GraphicsSettings.asset"
+    require(errors, graphics_path, ["m_CustomRenderPipeline: {fileID: 0}"])
+    quality_path = ROOT / "ProjectSettings/QualitySettings.asset"
+    require(errors, quality_path, ["customRenderPipeline: {fileID: 0}"])
 
     blower_asset = ROOT / "Assets/Resources/RunawayChimps_VentBlower.fbx"
     blower_meta = ROOT / "Assets/Resources/RunawayChimps_VentBlower.fbx.meta"
@@ -113,15 +122,49 @@ def main():
         errors.append(f"{rel(blower_asset)}: approved Blender FBX resource is missing.")
     elif blower_asset.stat().st_size < 10000:
         errors.append(f"{rel(blower_asset)}: approved Blender FBX resource is unexpectedly small.")
-    meta = require(errors, blower_meta, [
-        "ModelImporter:",
-        "addColliders: 0",
-        "importCameras: 0",
-        "importLights: 0",
-        "preserveHierarchy: 1",
-    ])
+    meta = require(errors, blower_meta, ["ModelImporter:", "addColliders: 0", "importCameras: 0", "importLights: 0", "preserveHierarchy: 1"])
     if meta:
         guid(blower_meta, errors)
+
+    blower_mat = ROOT / "Assets/RunawayChimps/Shared/Models/Materials/VentBlower_DarkPaintedMetal.mat"
+    blower_mat_meta = ROOT / "Assets/RunawayChimps/Shared/Models/Materials/VentBlower_DarkPaintedMetal.mat.meta"
+    require(errors, blower_mat, ["m_Shader: {fileID: 46, guid: 0000000000000000f000000000000000, type: 0}"])
+    blower_mat_guid = guid(blower_mat_meta, errors)
+    if blower_mat_guid and meta:
+        if "name: M_DarkPaintedMetal" not in meta or blower_mat_guid not in meta:
+            errors.append(f"{rel(blower_meta)}: M_DarkPaintedMetal is not mapped to VentBlower_DarkPaintedMetal.mat.")
+
+    blower_mat = ROOT / "Assets/RunawayChimps/Shared/Models/Materials/VentBlower_DullSteel.mat"
+    blower_mat_meta = ROOT / "Assets/RunawayChimps/Shared/Models/Materials/VentBlower_DullSteel.mat.meta"
+    require(errors, blower_mat, ["m_Shader: {fileID: 46, guid: 0000000000000000f000000000000000, type: 0}"])
+    blower_mat_guid = guid(blower_mat_meta, errors)
+    if blower_mat_guid and meta:
+        if "name: M_DullSteel" not in meta or blower_mat_guid not in meta:
+            errors.append(f"{rel(blower_meta)}: M_DullSteel is not mapped to VentBlower_DullSteel.mat.")
+
+    blower_mat = ROOT / "Assets/RunawayChimps/Shared/Models/Materials/VentBlower_FanBlade.mat"
+    blower_mat_meta = ROOT / "Assets/RunawayChimps/Shared/Models/Materials/VentBlower_FanBlade.mat.meta"
+    require(errors, blower_mat, ["m_Shader: {fileID: 46, guid: 0000000000000000f000000000000000, type: 0}"])
+    blower_mat_guid = guid(blower_mat_meta, errors)
+    if blower_mat_guid and meta:
+        if "name: M_FanBlade" not in meta or blower_mat_guid not in meta:
+            errors.append(f"{rel(blower_meta)}: M_FanBlade is not mapped to VentBlower_FanBlade.mat.")
+
+    blower_mat = ROOT / "Assets/RunawayChimps/Shared/Models/Materials/VentBlower_Conduit.mat"
+    blower_mat_meta = ROOT / "Assets/RunawayChimps/Shared/Models/Materials/VentBlower_Conduit.mat.meta"
+    require(errors, blower_mat, ["m_Shader: {fileID: 46, guid: 0000000000000000f000000000000000, type: 0}"])
+    blower_mat_guid = guid(blower_mat_meta, errors)
+    if blower_mat_guid and meta:
+        if "name: M_Conduit" not in meta or blower_mat_guid not in meta:
+            errors.append(f"{rel(blower_meta)}: M_Conduit is not mapped to VentBlower_Conduit.mat.")
+
+    blower_mat = ROOT / "Assets/RunawayChimps/Shared/Models/Materials/VentBlower_RedMaintenanceLens.mat"
+    blower_mat_meta = ROOT / "Assets/RunawayChimps/Shared/Models/Materials/VentBlower_RedMaintenanceLens.mat.meta"
+    require(errors, blower_mat, ["m_Shader: {fileID: 46, guid: 0000000000000000f000000000000000, type: 0}"])
+    blower_mat_guid = guid(blower_mat_meta, errors)
+    if blower_mat_guid and meta:
+        if "name: M_RedMaintenanceLens" not in meta or blower_mat_guid not in meta:
+            errors.append(f"{rel(blower_meta)}: M_RedMaintenanceLens is not mapped to VentBlower_RedMaintenanceLens.mat.")
 
     nav_path = ROOT / "Assets/Scripts/MonsterScripts/MonsterNavigation.cs"
     require(errors, nav_path, ["gameObject.AddComponent<CrawlerVisualController>();", "agent.updateRotation = false;"])

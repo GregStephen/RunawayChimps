@@ -3,7 +3,32 @@ guid: 5dfad4c98a0a4c4681e8f6c72f4a1013
 ModelImporter:
   serializedVersion: 22200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: M_DarkPaintedMetal
+    second: {fileID: 2100000, guid: 8cf5047b731f41878bbc98a1b560e857, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: M_DullSteel
+    second: {fileID: 2100000, guid: 64ff90c7d4224576b71d20d07c72f147, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: M_FanBlade
+    second: {fileID: 2100000, guid: a6c3ee28ed524942b5f6703bd4faf6dc, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: M_Conduit
+    second: {fileID: 2100000, guid: ebfeb091156a4fba93392bce6efac492, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: M_RedMaintenanceLens
+    second: {fileID: 2100000, guid: 777e48d39cf141f98321517a14ca7519, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0
@@ -104,6 +129,6 @@ ModelImporter:
   importBlendShapeDeformPercent: 1
   remapMaterialsIfMaterialImportModeIsNone: 0
   additionalBone: 0
-  userData: approved-simple-chunky-vent-blower-visual
+  userData: approved-simple-chunky-vent-blower-visual; built-in-standard-material-mapping
   assetBundleName: 
   assetBundleVariant: 

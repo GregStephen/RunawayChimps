@@ -50,6 +50,16 @@ Greg's Console capture also exposed a separate cleanup defect: Unity reported `C
 
 **Risk boundary / acceptance:** this is representative-body containment, not full skinned-mesh collision or active ragdoll physics. The 0.32 m rigid correction cap is intentional; hitting it means the visual/animation cannot fit the duct and must be fixed by scale/animation/route changes rather than unlimited root separation or skeleton deformation. Validate straight vents first, then walls/floor/ceiling, then repeated 90-degree turns. Success requires no head/core/knee/elbow escape, stable hand/foot contact without limb inversion/jitter, smooth release toward zero containment offset, visual/gameplay-root colocation, no return of the RigBuilder cleanup error, and unchanged capture/Photon/controller ownership.
 
+## September 13 VentRoom blower material runtime correction
+
+**Failed runtime validation:** Greg reports the authored Level 1 blower is pink in Unity. This supersedes the prior claim that assigning a runtime `Universal Render Pipeline/Lit` material made the asset pipeline-safe.
+
+**Root cause:** `ProjectSettings/GraphicsSettings.asset` has `m_CustomRenderPipeline: {fileID: 0}`, and every tier in `QualitySettings.asset` has `customRenderPipeline: {fileID: 0}`. The active game renderer is therefore Unity's built-in pipeline. URP is installed as a package, so `Shader.Find("Universal Render Pipeline/Lit")` can still return that shader; assigning it under the built-in renderer produces magenta. Known working project materials use the built-in Standard shader (`fileID: 46`).
+
+**Implemented correction on PR #17:** five real serialized Standard `.mat` assets now represent the approved blower material roles and are mapped directly to the FBX material names through `RunawayChimps_VentBlower.fbx.meta`. `VentBlowerSetPiece` no longer creates/replaces materials at runtime and no longer references URP/Lit; it retains collider suppression, shadow/probe-cost settings, rotor animation, red point light, and motor audio. Source contracts protect the built-in render-pipeline setting, each Standard material, importer GUID mapping, and the absence of dynamic URP/material creation.
+
+**Pending validation:** reimport/refresh the FBX in Unity 2022.3.55f1 if needed, then confirm the model is non-pink in the Project/Scene view and in Play Mode; verify the five material roles look like the approved preview, the red lens remains readable, and fan/light/audio behavior is unchanged. The defect remains open until that runtime retest passes.
+
 ## September 12 automated source validation
 
 **Implemented on `codex/fix-level1-crawler-lighting`:** `.github/workflows/source-validation.yml` adds the read-only **Source integrity** GitHub Actions gate for every pull request, pushes to `main`, `codex/**` and `design/**`, and manual dispatches. It pins Python/tree-sitter dependencies, verifies `ProjectVersion.txt` still declares Unity 2022.3.55f1, runs `python Tools/validate_source.py --syntax`, scans the complete Unity `Assets` tree for missing/orphaned metadata and duplicate GUIDs, checks case-insensitive path collisions and package/asmdef/tool JSON, runs focused Level 1 source/scene contracts, compiles tracked Python tools, rejects unresolved merge markers, and applies `git diff --check` to the complete PR or pushed range.

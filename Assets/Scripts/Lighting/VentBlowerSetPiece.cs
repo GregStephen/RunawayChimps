@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.SceneManagement;
@@ -22,7 +21,6 @@ public sealed class VentBlowerSetPiece : MonoBehaviour
 
     private static AudioClip blowerLoop;
 
-    private readonly List<Material> ownedMaterials = new List<Material>(5);
     private Transform rotor;
     private Light maintenanceLight;
     private AudioSource humSource;
@@ -111,15 +109,6 @@ public sealed class VentBlowerSetPiece : MonoBehaviour
         }
     }
 
-    private void OnDestroy()
-    {
-        foreach (Material material in ownedMaterials)
-        {
-            if (material != null)
-                Destroy(material);
-        }
-        ownedMaterials.Clear();
-    }
 
     private void BuildBlower()
     {
@@ -181,13 +170,8 @@ public sealed class VentBlowerSetPiece : MonoBehaviour
             Destroy(collider);
         }
 
-        Material dark = CreateRuntimeMaterial("VentBlower_DarkPaintedMetal", new Color(0.075f, 0.082f, 0.085f), 0.25f, 0.18f);
-        Material steel = CreateRuntimeMaterial("VentBlower_DullSteel", new Color(0.17f, 0.18f, 0.18f), 0.55f, 0.26f);
-        Material blade = CreateRuntimeMaterial("VentBlower_FanBlade", new Color(0.12f, 0.125f, 0.12f), 0.45f, 0.21f);
-        Material conduit = CreateRuntimeMaterial("VentBlower_Conduit", new Color(0.035f, 0.038f, 0.04f), 0.10f, 0.10f);
-        Material red = CreateRuntimeMaterial("VentBlower_RedMaintenanceLens", new Color(0.35f, 0.01f, 0.008f), 0f, 0.40f,
-            new Color(2.6f, 0.035f, 0.02f));
-
+        // Materials are serialized Unity Standard materials mapped directly by the FBX importer.
+        // Runaway Chimps currently uses the built-in render pipeline; URP is installed but inactive.
         Renderer[] renderers = visualRoot.GetComponentsInChildren<Renderer>(true);
         foreach (Renderer renderer in renderers)
         {
@@ -196,69 +180,13 @@ public sealed class VentBlowerSetPiece : MonoBehaviour
             renderer.lightProbeUsage = LightProbeUsage.Off;
             renderer.reflectionProbeUsage = ReflectionProbeUsage.Off;
 
-            Material replacement = ResolveMaterial(renderer.gameObject.name, dark, steel, blade, conduit, red);
-            Material[] replacements = new Material[renderer.sharedMaterials.Length];
-            for (int i = 0; i < replacements.Length; i++)
-                replacements[i] = replacement;
-            renderer.sharedMaterials = replacements;
+            foreach (Material material in renderer.sharedMaterials)
+            {
+                if (material == null || material.shader == null || !material.shader.isSupported)
+                    Debug.LogError($"[VentBlowerSetPiece] Imported blower material on '{renderer.name}' is missing or uses an unsupported shader.");
+            }
         }
     }
-
-    private static Material ResolveMaterial(string objectName, Material dark, Material steel, Material blade,
-        Material conduit, Material red)
-    {
-        if (objectName == RedLensName)
-            return red;
-        if (objectName.StartsWith("Blade_"))
-            return blade;
-        if (objectName.Contains("Conduit"))
-            return conduit;
-        if (objectName.StartsWith("Guard") || objectName.StartsWith("LampGuard") ||
-            objectName.StartsWith("MountBolt") || objectName == "FanOuterRing" ||
-            objectName == "FanHub" || objectName == "Housing_LeftLip" ||
-            objectName == "Housing_RightLip" || objectName == "MotorCap")
-            return steel;
-
-        return dark;
-    }
-
-    private Material CreateRuntimeMaterial(string materialName, Color baseColor, float metallic, float smoothness,
-        Color? emission = null)
-    {
-        Shader shader = Shader.Find("Universal Render Pipeline/Lit");
-        if (shader == null)
-            shader = Shader.Find("Standard");
-        if (shader == null)
-            shader = Shader.Find("Legacy Shaders/Diffuse");
-
-        if (shader == null)
-        {
-            Debug.LogError("[VentBlowerSetPiece] No compatible lit shader found for the imported blower.");
-            return null;
-        }
-
-        var material = new Material(shader) { name = materialName, enableInstancing = true };
-        if (material.HasProperty("_BaseColor"))
-            material.SetColor("_BaseColor", baseColor);
-        if (material.HasProperty("_Color"))
-            material.SetColor("_Color", baseColor);
-        if (material.HasProperty("_Metallic"))
-            material.SetFloat("_Metallic", metallic);
-        if (material.HasProperty("_Smoothness"))
-            material.SetFloat("_Smoothness", smoothness);
-        if (material.HasProperty("_Glossiness"))
-            material.SetFloat("_Glossiness", smoothness);
-
-        if (emission.HasValue && material.HasProperty("_EmissionColor"))
-        {
-            material.EnableKeyword("_EMISSION");
-            material.SetColor("_EmissionColor", emission.Value);
-        }
-
-        ownedMaterials.Add(material);
-        return material;
-    }
-
     private void CreateMaintenanceLight(Transform anchor)
     {
         GameObject lightObject = new GameObject("Maintenance_RedLight");
