@@ -5,6 +5,7 @@ namespace GorillaLocomotion
     public class Player : MonoBehaviour
     {
         private static Player _instance;
+        private const float MinimumVisualHandContactRadius = 0.05f;
 
         public static Player Instance { get { return _instance; } }
 
@@ -65,6 +66,14 @@ namespace GorillaLocomotion
             {
                 _instance = this;
             }
+
+            // Bootstrap currently serializes an older 0.02 m override even though the
+            // authored Gorilla Rig hand proxy and Player default are 0.05 m. A 2 cm cast
+            // lets the much larger rendered hand/fingers pass visibly through a floor before
+            // locomotion considers the hand blocked. Never allow the runtime contact sphere
+            // to shrink below the authored 5 cm proxy radius.
+            minimumRaycastDistance = Mathf.Max(minimumRaycastDistance, MinimumVisualHandContactRadius);
+
             InitializeValues();
         }
 

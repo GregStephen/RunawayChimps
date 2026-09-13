@@ -8,6 +8,10 @@ using TMPro;
 
 namespace Photon.VR.Player
 {
+    // Gorilla locomotion updates its collision-safe hand followers during the normal Update
+    // phase. Run the local visual/network pose copy afterwards so the rendered hand position
+    // reflects the contact-resolved hand instead of the raw controller pose inside geometry.
+    [DefaultExecutionOrder(100)]
     public class PhotonVRPlayer : MonoBehaviourPunCallbacks
     {
         [Header("Objects")]
@@ -66,12 +70,24 @@ namespace Photon.VR.Player
                 return;
             }
 
-            // Keep each tracked point independent. A temporarily missing controller must not
-            // freeze the head and the other hand at their prefab/T-pose locations.
+            // The raw XR controller transforms can physically be below a floor while Gorilla
+            // locomotion correctly clamps its separate hand followers to a collision-safe
+            // contact. The local Photon avatar is visible in first person in this project, so
+            // copying raw controller *positions* makes its fingertips visibly pass through the
+            // floor even though locomotion itself is no longer buried. Use the safe follower
+            // for position and preserve the real tracked controller rotation for wrist/hand aim.
+            GorillaLocomotion.Player locomotion = GorillaLocomotion.Player.Instance;
+
             bool copiedAny = false;
             copiedAny |= CopyTrackedPose(Head, manager.Head);
-            copiedAny |= CopyTrackedPose(RightHand, manager.RightHand);
-            copiedAny |= CopyTrackedPose(LeftHand, manager.LeftHand);
+            copiedAny |= CopyTrackedHandPose(
+                RightHand,
+                manager.RightHand,
+                locomotion != null ? locomotion.rightHandFollower : null);
+            copiedAny |= CopyTrackedHandPose(
+                LeftHand,
+                manager.LeftHand,
+                locomotion != null ? locomotion.leftHandFollower : null);
 
             if (copiedAny)
             {
@@ -87,6 +103,22 @@ namespace Photon.VR.Player
         {
             if (target == null || source == null) return false;
             target.SetPositionAndRotation(source.position, source.rotation);
+            return true;
+        }
+
+        private static bool CopyTrackedHandPose(
+            Transform target,
+            Transform trackedRotationSource,
+            Transform collisionSafePositionSource)
+        {
+            if (target == null || trackedRotationSource == null)
+                return false;
+
+            Vector3 position = collisionSafePositionSource != null
+                ? collisionSafePositionSource.position
+                : trackedRotationSource.position;
+
+            target.SetPositionAndRotation(position, trackedRotationSource.rotation);
             return true;
         }
 
