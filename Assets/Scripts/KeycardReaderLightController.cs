@@ -10,18 +10,9 @@ using UnityEngine;
 [DisallowMultipleComponent]
 public sealed class KeycardReaderLightController : MonoBehaviour
 {
-    public enum CredentialType
-    {
-        Auto = 0,
-        AmberTriangle = 1,
-        CyanThreeBars = 2,
-        RedCircle = 3,
-        VioletDiamond = 4,
-    }
-
     [Header("Reader identity")]
     [Tooltip("Prefer an explicit credential on reader variants. Auto remains a fallback for legacy/name-authored readers.")]
-    [SerializeField] private CredentialType expectedCredential = CredentialType.Auto;
+    [SerializeField] private KeycardCredential expectedCredential = KeycardCredential.Auto;
     [SerializeField] private Transform readerRoot;
 
     [Header("Status LED")]
@@ -38,7 +29,12 @@ public sealed class KeycardReaderLightController : MonoBehaviour
     [SerializeField] private KeyBox keyBox;
 
     private readonly HashSet<Collider> acceptedColliders = new HashSet<Collider>();
-    private CredentialType resolvedCredential;
+    private readonly Dictionary<Collider, KeyCard> matchingGameplayColliders = new Dictionary<Collider, KeyCard>();
+    private readonly HashSet<KeyCard> pendingGameplayCards = new HashSet<KeyCard>();
+    private readonly List<Collider> staleColliderScratch = new List<Collider>();
+    private readonly List<KeyCard> pendingCardScratch = new List<KeyCard>();
+
+    private KeycardCredential resolvedCredential;
     private bool showingAccepted;
     private bool warnedAboutConfiguration;
     private bool warnedMissingGameplayCard;
@@ -51,14 +47,14 @@ public sealed class KeycardReaderLightController : MonoBehaviour
         ResolveReferences();
         ResolveAuthoredKeyBox();
 
-        resolvedCredential = expectedCredential == CredentialType.Auto
+        resolvedCredential = expectedCredential == KeycardCredential.Auto
             ? ParseCredential(readerRoot != null ? readerRoot.name : string.Empty)
             : expectedCredential;
 
         if (standbyMaterial == null && statusLedRenderer != null)
             standbyMaterial = statusLedRenderer.sharedMaterial;
 
-        if (resolvedCredential == CredentialType.Auto || statusLedRenderer == null ||
+        if (resolvedCredential == KeycardCredential.Auto || statusLedRenderer == null ||
             standbyMaterial == null || acceptedMaterial == null)
         {
             WarnAboutConfiguration();
@@ -73,6 +69,8 @@ public sealed class KeycardReaderLightController : MonoBehaviour
             return;
 
         acceptedColliders.Add(other);
+        if (gameplayCard != null)
+            matchingGameplayColliders[other] = gameplayCard;
         SetAcceptedVisual(true);
 
         if (!submitMatchingCardsToKeyBox)
@@ -84,45 +82,37 @@ public sealed class KeycardReaderLightController : MonoBehaviour
             return;
         }
 
-        if (keyBox == null)
-            ResolveAuthoredKeyBox();
-
-        if (keyBox == null)
-        {
-            WarnMissingProgressSource();
-            return;
-        }
-
-        if (gameplayCard.TryInsertInto(keyBox))
-        {
-            // The accepted card is destroyed by its normal lifecycle, so hold the
-            // reader green briefly even after its collider disappears.
-            acceptedVisualUntil = Mathf.Max(
-                acceptedVisualUntil,
-                Time.unscaledTime + Mathf.Max(0f, acceptedFlashSeconds));
-            SetAcceptedVisual(true);
-        }
+        pendingGameplayCards.Add(gameplayCard);
+        TrySubmitPendingCard(gameplayCard);
     }
 
     private void OnTriggerExit(Collider other)
     {
-        if (!acceptedColliders.Remove(other))
-            return;
+        acceptedColliders.Remove(other);
+
+        if (matchingGameplayColliders.TryGetValue(other, out KeyCard gameplayCard))
+        {
+            matchingGameplayColliders.Remove(other);
+            if (!HasMatchingOverlap(gameplayCard))
+                pendingGameplayCards.Remove(gameplayCard);
+        }
 
         RefreshAcceptedVisual();
     }
 
     private void LateUpdate()
     {
-        if (!showingAccepted)
-            return;
+        RetryPendingSubmissions();
 
-        RefreshAcceptedVisual();
+        if (showingAccepted)
+            RefreshAcceptedVisual();
     }
 
     private void OnDisable()
     {
         acceptedColliders.Clear();
+        matchingGameplayColliders.Clear();
+        pendingGameplayCards.Clear();
         acceptedVisualUntil = -1f;
         SetAcceptedVisual(false);
     }
@@ -173,67 +163,132 @@ public sealed class KeycardReaderLightController : MonoBehaviour
     private bool TryResolveMatchingCard(Collider other, out KeyCard gameplayCard)
     {
         gameplayCard = null;
-        if (other == null || resolvedCredential == CredentialType.Auto)
+        if (other == null || resolvedCredential == KeycardCredential.Auto)
             return false;
 
         gameplayCard = other.GetComponentInParent<KeyCard>();
-        CredentialType presented = CredentialType.Auto;
 
-        // Prefer the collider/ancestor names. This works when the imported colored
-        // card itself owns the collider or when the gameplay wrapper carries the identity.
-        Transform candidate = other.transform;
-        while (candidate != null)
+        // Explicit gameplay-card identity is authoritative. It prevents scene/object
+        // renames or unrelated child visuals from silently changing a card's credential.
+        KeycardCredential presented = gameplayCard != null
+            ? gameplayCard.Credential
+            : KeycardCredential.Auto;
+
+        if (presented == KeycardCredential.Auto)
         {
-            presented = ParseCredential(candidate.name);
-            if (presented != CredentialType.Auto)
-                break;
+            // Legacy/name-authored compatibility: prefer the collider/ancestor names.
+            Transform candidate = other.transform;
+            while (candidate != null)
+            {
+                presented = ParseCredential(candidate.name);
+                if (presented != KeycardCredential.Auto)
+                    break;
 
-            if (gameplayCard != null && candidate == gameplayCard.transform)
-                break;
+                if (gameplayCard != null && candidate == gameplayCard.transform)
+                    break;
 
-            candidate = candidate.parent;
+                candidate = candidate.parent;
+            }
         }
 
-        // A reusable gameplay KeyCard wrapper may instead contain the colored FBX as
-        // a child, so fall back to its visual hierarchy for the credential identity.
-        if (presented == CredentialType.Auto && gameplayCard != null)
+        // A legacy reusable gameplay wrapper may contain the colored FBX as a child.
+        // This path is intentionally fallback-only; explicit KeyCard.Credential wins.
+        if (presented == KeycardCredential.Auto && gameplayCard != null)
             presented = FindCredentialInHierarchy(gameplayCard.transform);
 
-        return presented != CredentialType.Auto && presented == resolvedCredential;
+        return presented != KeycardCredential.Auto && presented == resolvedCredential;
     }
 
-    private static CredentialType FindCredentialInHierarchy(Transform root)
+    private void RetryPendingSubmissions()
+    {
+        if (!submitMatchingCardsToKeyBox || pendingGameplayCards.Count == 0)
+            return;
+
+        pendingCardScratch.Clear();
+        foreach (KeyCard card in pendingGameplayCards)
+            pendingCardScratch.Add(card);
+
+        foreach (KeyCard card in pendingCardScratch)
+            TrySubmitPendingCard(card);
+    }
+
+    private void TrySubmitPendingCard(KeyCard gameplayCard)
+    {
+        if (gameplayCard == null || gameplayCard.IsInserted || !HasMatchingOverlap(gameplayCard))
+        {
+            pendingGameplayCards.Remove(gameplayCard);
+            return;
+        }
+
+        if (keyBox == null)
+            ResolveAuthoredKeyBox();
+
+        if (keyBox == null)
+        {
+            WarnMissingProgressSource();
+            return;
+        }
+
+        if (!gameplayCard.TryInsertInto(keyBox))
+            return;
+
+        pendingGameplayCards.Remove(gameplayCard);
+
+        // The accepted card is destroyed by its normal lifecycle, so hold the
+        // reader green briefly even after its collider disappears.
+        acceptedVisualUntil = Mathf.Max(
+            acceptedVisualUntil,
+            Time.unscaledTime + Mathf.Max(0f, acceptedFlashSeconds));
+        SetAcceptedVisual(true);
+    }
+
+    private bool HasMatchingOverlap(KeyCard gameplayCard)
+    {
+        if (gameplayCard == null)
+            return false;
+
+        foreach (KeyValuePair<Collider, KeyCard> pair in matchingGameplayColliders)
+        {
+            Collider collider = pair.Key;
+            if (collider != null && collider.enabled && collider.gameObject.activeInHierarchy && pair.Value == gameplayCard)
+                return true;
+        }
+
+        return false;
+    }
+
+    private static KeycardCredential FindCredentialInHierarchy(Transform root)
     {
         if (root == null)
-            return CredentialType.Auto;
+            return KeycardCredential.Auto;
 
         Transform[] transforms = root.GetComponentsInChildren<Transform>(true);
         foreach (Transform candidate in transforms)
         {
-            CredentialType credential = ParseCredential(candidate.name);
-            if (credential != CredentialType.Auto)
+            KeycardCredential credential = ParseCredential(candidate.name);
+            if (credential != KeycardCredential.Auto)
                 return credential;
         }
 
-        return CredentialType.Auto;
+        return KeycardCredential.Auto;
     }
 
-    private static CredentialType ParseCredential(string objectName)
+    private static KeycardCredential ParseCredential(string objectName)
     {
         if (string.IsNullOrWhiteSpace(objectName))
-            return CredentialType.Auto;
+            return KeycardCredential.Auto;
 
         string normalized = Normalize(objectName);
         if (normalized.Contains("ambertriangle"))
-            return CredentialType.AmberTriangle;
+            return KeycardCredential.AmberTriangle;
         if (normalized.Contains("cyanthreebars") || normalized.Contains("cyan3bars"))
-            return CredentialType.CyanThreeBars;
+            return KeycardCredential.CyanThreeBars;
         if (normalized.Contains("redcircle"))
-            return CredentialType.RedCircle;
+            return KeycardCredential.RedCircle;
         if (normalized.Contains("violetdiamond"))
-            return CredentialType.VioletDiamond;
+            return KeycardCredential.VioletDiamond;
 
-        return CredentialType.Auto;
+        return KeycardCredential.Auto;
     }
 
     private static string Normalize(string value)
@@ -256,8 +311,32 @@ public sealed class KeycardReaderLightController : MonoBehaviour
 
     private void RemoveInvalidAcceptedColliders()
     {
-        acceptedColliders.RemoveWhere(collider =>
-            collider == null || !collider.enabled || !collider.gameObject.activeInHierarchy);
+        staleColliderScratch.Clear();
+        foreach (Collider collider in acceptedColliders)
+        {
+            if (collider == null || !collider.enabled || !collider.gameObject.activeInHierarchy)
+                staleColliderScratch.Add(collider);
+        }
+
+        foreach (Collider collider in staleColliderScratch)
+        {
+            acceptedColliders.Remove(collider);
+            matchingGameplayColliders.Remove(collider);
+        }
+
+        staleColliderScratch.Clear();
+        foreach (KeyValuePair<Collider, KeyCard> pair in matchingGameplayColliders)
+        {
+            Collider collider = pair.Key;
+            if (collider == null || pair.Value == null || !acceptedColliders.Contains(collider))
+                staleColliderScratch.Add(collider);
+        }
+
+        foreach (Collider collider in staleColliderScratch)
+            matchingGameplayColliders.Remove(collider);
+
+        pendingGameplayCards.RemoveWhere(card =>
+            card == null || card.IsInserted || !HasMatchingOverlap(card));
     }
 
     private void SetAcceptedVisual(bool accepted)
