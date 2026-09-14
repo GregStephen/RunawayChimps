@@ -141,6 +141,11 @@ def main() -> int:
         marker_names = re.findall(r"m_Name: HubSpawnSlot_\d{2}", slot_prefab)
         if len(marker_names) != 10 or len(set(marker_names)) != 10:
             errors.append("HubSpawnSlots.prefab must contain exactly ten uniquely named authored markers.")
+        document_ids = re.findall(r"^--- !u!\d+ &(-?\d+)\s*$", slot_prefab, re.MULTILINE)
+        if "100100000" in document_ids:
+            errors.append("HubSpawnSlots.prefab must not serialize a GameObject/component with Unity's reserved prefab fileID 100100000.")
+        if len(document_ids) != len(set(document_ids)):
+            errors.append("HubSpawnSlots.prefab contains duplicate serialized YAML object fileIDs.")
     rig_snapper = read("Assets/Scripts/Bootstrap/RigSpawnSnapper.cs")
     for token in ["HubSpawnSlotAllocator", "TryGetLocalSpawnPose", "SpawnSlotWaitSeconds"]:
         if token not in rig_snapper:
