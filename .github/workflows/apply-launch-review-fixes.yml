@@ -1,0 +1,42 @@
+name: Apply launch review fixes
+
+on:
+  push:
+    branches:
+      - feature/launch-presentation-polish
+    paths:
+      - 'Tools/_apply_launch_review_fixes.py'
+      - '.github/workflows/apply-launch-review-fixes.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/launch-presentation-polish
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Apply guarded source fixes
+        run: python Tools/_apply_launch_review_fixes.py
+      - name: Commit fixes
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          if git diff --cached --quiet; then
+            echo 'No changes to commit.'
+            exit 0
+          fi
+          git commit -m 'fix: address launch presentation code review findings'
+          git push origin HEAD:feature/launch-presentation-polish
