@@ -53,6 +53,8 @@ def main() -> int:
     boot = read("Assets/Scripts/Loading/SecurityBootPresentation.cs")
     for token in [
         "Security Boot Terminal",
+        "SecurityWorkstationVignette.Create",
+        "MonitorCanvasRoot",
         "BuildCrtTreatment",
         "StaticRefreshInterval = 0.10f",
         "RefreshStaticTexture",
@@ -61,12 +63,39 @@ def main() -> int:
         "CRT interference sweep",
         "NextNoise01",
         "staticBurstUntil",
+        "SetBackdropOpacity(1f - alpha)",
     ]:
         if token not in boot:
-            errors.append(f"Security boot CRT treatment missing {token!r}.")
-    for forbidden in ["UnityEngine.Random.Range", "Random.Range(", "new RenderTexture"]:
-        if forbidden in boot:
-            errors.append(f"Security boot CRT treatment must stay local, allocation-light and deterministic: {forbidden!r} found.")
+            errors.append(f"Security boot workstation/CRT treatment missing {token!r}.")
+
+    workstation = read("Assets/Scripts/Loading/SecurityWorkstationVignette.cs")
+    workstation_tokens = [
+        "Security Workstation Vignette",
+        "Security Monitor World Canvas",
+        "RenderMode.WorldSpace",
+        "MonitorCanvasScale = 0.00094f",
+        "camera.transform.position + forward * 1.95f",
+        "GameObject.CreatePrimitive",
+        "collider.enabled = false",
+        "Destroy(collider)",
+        "Shader.Find(\"Unlit/Color\")",
+        "Shader.Find(\"Standard\")",
+        "CAM 04\\nSTILL DEAD",
+        "VENT B\\nAGAIN?",
+        "IF THEY GET OUT\\nI QUIT.",
+    ]
+    for token in workstation_tokens:
+        if token not in workstation:
+            errors.append(f"Security workstation vignette missing {token!r}.")
+
+    for text, name in ((boot, "SecurityBootPresentation"), (workstation, "SecurityWorkstationVignette")):
+        for forbidden in ["UnityEngine.Random.Range", "Random.Range(", "new RenderTexture",
+                          "PhotonNetwork.Join", "PhotonNetwork.Instantiate", "MarkRigSnapped(", "TryMarkReady("]:
+            if forbidden in text:
+                errors.append(f"{name} must stay local, presentation-only and allocation-light: {forbidden!r} found.")
+        if re.search(r"(?:camera|startupCamera|boundCamera)\.transform\.(?:position|rotation|localPosition|localRotation)\s*=", text):
+            errors.append(f"{name} must not write the tracked camera transform.")
+
     if "0.065f" not in boot or "0.045f" not in boot:
         errors.append("Security boot CRT treatment no longer exposes the reviewed low-alpha interference/static caps.")
 
@@ -92,13 +121,25 @@ def main() -> int:
         if token not in launch_doc:
             errors.append(f"Launch presentation documentation missing {token!r}.")
 
+    workstation_doc = read("docs/launch-workstation-vignette.md")
+    for token in [
+        "Confirmed direction",
+        "Exact branch implementation",
+        "world-space monitor canvas",
+        "CAM 04 / STILL DEAD",
+        "black-only",
+        "Pending validation",
+    ]:
+        if token not in workstation_doc:
+            errors.append(f"Workstation vignette documentation missing {token!r}.")
+
     if errors:
         print("FAIL: launch presentation source contracts")
         for error in errors:
             print(" -", error)
         return 1
 
-    print("PASS: launch presentation source contracts (OpenXR path, Meta system splash, build guard, CRT boot treatment, black-background ownership).")
+    print("PASS: launch presentation source contracts (OpenXR path, Meta system splash, physical workstation monitor, bounded CRT treatment, black-background ownership).")
     print("Unity import/compile, Play Mode appearance, APK build, compositor splash, headset handoff, Photon and Quest performance remain separate checks.")
     return 0
 
