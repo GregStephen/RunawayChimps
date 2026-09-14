@@ -12,6 +12,7 @@ The September 14 review findings for PR #21 are addressed in source:
 - The workstation uses the referenced built-in Standard material at `Resources/LaunchPresentation/WorkstationBase` instead of runtime `Shader.Find` material discovery.
 - Launch validation protects architectural bounds rather than exact sticky-note positions or one exact monitor scale.
 - Cold-start Hub placement uses ten Photon room-owned slots. Clients claim a free slot with room-property compare-and-swap; the Master Client releases/reconciles stale claims; `RigSpawnSnapper` waits for Photon room membership and a slot before grounding; and the network avatar waits for `RigSnapped` before instantiation in the Hub. Route-specific return/level arrival markers are unchanged.
+- The existing Level 1/runtime source contract now validates grounding against the **allocated `spawnPosition`** and requires `TryGetLocalSpawnPose(...)`, rather than incorrectly requiring the superseded single `HubSpawn` grounding call.
 
 The ten slot poses are currently compact code-owned offsets around the existing authored `HubSpawn`. Their final spacing and floor/geometry clearance are **pending Unity/headset validation**, not visually approved level design.
 
