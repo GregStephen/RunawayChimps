@@ -604,3 +604,9 @@ The recommendations preserve the agreed direction: open level access, individual
 **Implemented binding/validation hardening:** the progress indicator no longer searches the scene for a unique `KeyBox`; it uses explicit/runtime binding or an authored parent only. The prefab is intentionally a four-slot maximum asset and previews two slots for Level 1. `SectorTravelValidator` now validates active keycard credential, XR-grab, Collider/Rigidbody and reader-trigger setup. `Tools/validate_keycard_reader_contracts.py` additionally protects explicit Level 1 card serialization, in-zone retry source wiring, progress-panel materials/lamps, reader identities, and both reader/panel no-global-binding rules.
 
 **Pending validation:** PR #23 Source Integrity must pass again on the hardened head. Unity 2022.3.55f1 import/compile and Play Mode still need to prove held-before-entry and held-after-entry scans, wrong-card rejection, single consumption, persistent 0/2 -> 1/2 -> 2/2 progress, Level 1 travel, explicit panel binding/placement, two-client personal independence, and Quest/headset presentation.
+
+### Source validation update
+
+**Validated source check, 2026-09-14:** the hardened PR #23 head passed Source Integrity at `2e24f42`. The expanded contract now proves explicit reader/card credentials, Level 1 card Rigidbody/collider/XR-grab serialization, in-zone retry source wiring, deterministic reader/panel objective binding, progress-panel lamp/material wiring, and the existing repository-wide source contracts.
+
+**Runtime validation remains pending:** Unity 2022.3.55f1 import/compile and Play Mode still need to prove held-before-entry and held-after-entry scans, wrong-card rejection, exactly-once consumption, 0/2 -> 1/2 -> 2/2 persistence, Level 1 travel, explicit panel binding/placement, two-client personal independence, and Quest/headset presentation.
