@@ -574,3 +574,11 @@ The recommendations preserve the agreed direction: open level access, individual
 **Validated source only:** Source Integrity run `34798289632` passed on `feature/launch-presentation-polish` commit `75104bd7051a772385636cab61f75e4e0b4e86ac`, including the launch-presentation validator alongside the existing security-boot, threat-feedback, Level 1 and PR #15 contract checks. Repository integrity, C# syntax/reference checks, Python compilation, merge-marker checks and human-authored whitespace also passed.
 
 **Validation boundary:** this does not establish Unity compilation, Android build success, Meta compositor splash behavior, first-frame handoff, headset comfort, Photon runtime behavior or Quest performance. Those remain pending and must be recorded from actual Unity/device tests.
+
+## September 13 launch-terminal CRT/static production polish
+
+**Confirmed UX correction:** PR #21 must improve the Unity-rendered green security terminal itself, not only add native Quest splash plumbing. The terminal treatment is intended to be directly reviewable from `Bootstrap.unity` in Play Mode. The Meta system splash remains a separate pre-first-frame Quest compositor layer and therefore cannot be validated from Editor Play Mode.
+
+**Implemented source on `feature/launch-presentation-polish`:** `SecurityBootPresentation` now owns one reusable 64 × 48 `Texture2D`/`Color32[]` noise buffer refreshed at a low rate, faint static scanlines, and one bounded horizontal interference sweep. Real readiness changes can briefly increase the panel-only static alpha. The implementation is local UI only, avoids RenderTexture allocation and `UnityEngine.Random`, does not change Photon/readiness authority, does not move the XR camera, and preserves black-only normal sector travel. `Tools/validate_launch_presentation.py` now protects the CRT treatment and rejects reintroduction of prototype-only runtime labels.
+
+**Pending validation:** Unity 2022.3.55f1 import/compile and Play Mode visual review; text readability and flicker comfort; headset stereo/peripheral review; Quest frame/memory cost; native system-splash handoff; Photon startup/retry and normal black-travel regression. Keep these runtime/device items open even when Source Integrity is green.
