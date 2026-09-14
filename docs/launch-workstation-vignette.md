@@ -31,7 +31,7 @@ This is a production-presentation refinement, not a new room, gameplay space or 
 
 ## Source validation
 
-**Validated source only:** workstation implementation head `2b2bf1a41c637e0108c8b5b4ff8054070543f43f` passed Source Integrity run `34803476268` after reconciliation with current `main`. The full repository suite passed the Level 1, PR #15, security-boot, threat-feedback and launch/workstation contracts together. This is source/tooling evidence only; it does not prove Unity import/compile or visual comfort.
+**Validated source only:** workstation implementation head `2b2bf1a41c637e0108c8b5b4ff8054070543f43f` passed Source Integrity run `34803476268` after reconciliation with current `main`. The full repository suite passed the Level 1, PR #15, security-boot, threat-feedback and launch/workstation contracts together. Subsequent changes on the branch are documentation-only cleanup/recording unless otherwise noted; the PR's latest Source Integrity run remains the final source gate before merge. This is source/tooling evidence only; it does not prove Unity import/compile or visual comfort.
 
 ## Art / lore boundary
 
