@@ -55,6 +55,11 @@ def main() -> int:
         "Security Boot Terminal",
         "SecurityWorkstationVignette.Create",
         "MonitorCanvasRoot",
+        "PresentationLayerName = \"LoadingPresentation\"",
+        "LayerMask.NameToLayer(PresentationLayerName)",
+        "SetLayerRecursively(hostCanvas.gameObject, presentationLayer)",
+        "boundCamera.cullingMask = 1 << presentationLayer",
+        "boundCamera.cullingMask = savedCullingMask | (1 << presentationLayer)",
         "BuildCrtTreatment",
         "StaticRefreshInterval = 0.10f",
         "RefreshStaticTexture",
@@ -90,6 +95,10 @@ def main() -> int:
         if token not in workstation:
             errors.append(f"Security workstation vignette missing {token!r}.")
 
+    tag_manager = read("ProjectSettings/TagManager.asset")
+    if "- LoadingPresentation" not in tag_manager:
+        errors.append("LoadingPresentation layer is not reserved in TagManager.asset.")
+
     for text, name in ((boot, "SecurityBootPresentation"), (workstation, "SecurityWorkstationVignette")):
         for forbidden in ["UnityEngine.Random.Range", "Random.Range(", "new RenderTexture",
                           "PhotonNetwork.Join", "PhotonNetwork.Instantiate", "MarkRigSnapped(", "TryMarkReady("]:
@@ -102,6 +111,9 @@ def main() -> int:
         errors.append("Security boot CRT treatment no longer exposes the reviewed low-alpha interference/static caps.")
 
     flow = read("Assets/Scripts/Bootstrap/LoadingFlow.cs")
+    for token in ["PrepareCameraForHubReveal()", "SetBackdropOpacity(0f)", "RestoreCameraForReveal()"]:
+        if token not in flow:
+            errors.append(f"LoadingFlow safe workstation-to-Hub reveal missing {token!r}.")
     if "Security boot prototype" in flow or "Security Boot Prototype" in boot:
         errors.append("Production launch presentation still contains prototype-only runtime/Inspector naming.")
 
@@ -141,7 +153,7 @@ def main() -> int:
             print(" -", error)
         return 1
 
-    print("PASS: launch presentation source contracts (OpenXR path, Meta system splash, physical workstation monitor, bounded CRT treatment, black-background ownership).")
+    print("PASS: launch presentation source contracts (OpenXR path, Meta system splash, isolated physical workstation monitor, bounded CRT treatment, safe Hub reveal).")
     print("Unity import/compile, Play Mode appearance, APK build, compositor splash, headset handoff, Photon and Quest performance remain separate checks.")
     return 0
 
