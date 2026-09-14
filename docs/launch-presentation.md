@@ -38,7 +38,7 @@ Unity 2022's built-in splash remains a **pending license/build detail**. The bra
 
 ## Source validation record
 
-The pre-workstation launch/CRT implementation passed Source Integrity before this refinement. The workstation implementation has its own source contracts covering startup-only construction, dedicated render-layer isolation, world-space monitor UI, collider removal, no tracked-camera writes, no Photon/readiness writes, fitted monitor composition and unchanged black-only travel. Record the latest clean-head run here only after it completes successfully; source validation remains separate from Unity visual/runtime validation.
+**Validated source only, 2026-09-13:** workstation implementation commit `2b2bf1a41c637e0108c8b5b4ff8054070543f43f` passed Source Integrity run `34803476268` after reconciliation with current `main`. That run passed Unity metadata/GUID integrity, C# syntax/references, Level 1 contracts, PR #15 hardening, merged security-boot contracts, PR #19 threat-feedback contracts, and the workstation/launch-presentation guards for startup-only construction, dedicated render-layer isolation, fitted world-space monitor UI, collider removal, no tracked-camera writes, no Photon/readiness writes and unchanged black-only travel. Source validation remains separate from Unity visual/runtime validation.
 
 ## Not implemented / still open
 
