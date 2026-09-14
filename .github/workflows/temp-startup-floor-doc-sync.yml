@@ -1,0 +1,66 @@
+name: Temporary startup floor documentation sync
+
+on:
+  push:
+    branches:
+      - fix/startup-floor-regression
+    paths:
+      - .github/workflows/temp-startup-floor-doc-sync.yml
+
+permissions:
+  contents: write
+
+jobs:
+  sync-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/startup-floor-regression
+          fetch-depth: 0
+
+      - name: Record floor regression and implemented correction
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if ! grep -Fq '## September 14 cold-start floor regression follow-up' docs/design-and-lore.md; then
+            cat >> docs/design-and-lore.md <<'EOF'
+
+          ## September 14 cold-start floor regression follow-up
+
+          **Confirmed runtime correction:** Greg reported that cold startup can again place the local Gorilla player in the floor. The earlier Hub grounding, hand-reset, and `RigFloorPenetrationGuard` work therefore remains an incomplete runtime fix rather than a resolved defect. This observation is not attributed to the keycard-reader feature branch: PR #23 does not modify the Bootstrap spawn/grounding source, and the same startup path is inherited from current `main`.
+
+          **Source finding:** `RigSpawnSnapper` performed its final grounding proof only while the compound rig was frozen. It then restored colliders, Rigidbody physics, and Gorilla locomotion and immediately marked `RigSnapped`. The persistent `RigFloorPenetrationGuard` was simultaneously gated off until full `AppState.IsReady` and skipped whenever `Loading` was the active scene. Cold startup intentionally keeps `Loading` active while the Hub is already loaded and Photon/avatar/presentation readiness continues, so a late XR floor-offset, hand/body locomotion correction, or first live physics response could invalidate the frozen placement during a window in which the advertised post-release guard did nothing. This supersedes any earlier wording implying the guard covered that entire startup interval.
+
+          **Implemented on `fix/startup-floor-regression`:** `RigSpawnSnapper` now releases the real rig and then requires three consecutive live-physics fixed steps with a verified Hub support floor before it may mark `RigSnapped`; a measured shallow recovery resets that stability count, and the proof is bounded to twelve attempts. `RigFloorPenetrationGuard` exposes an explicit-scene verification/recovery path so the snapper can check the loaded Hub while `Loading` is still active. After `RigSnapped`, the persistent guard now waits only for placement ownership to end rather than full application readiness, and it resolves the configured Hub as its recovery scene during the remaining cold-start Loading presentation. Existing travel ownership still suppresses the guard, recovery remains upward-only and bounded, and Gorilla teleport caches are reset after a lift.
+
+          **Pending validation:** Source Integrity must pass on the fix branch/PR, then Unity 2022.3.55f1 must reproduce and retest repeated Bootstrap -> Hub cold starts with standing, crouching, recentering, low hands/controllers, and ordinary idle poses. Required result: no body-floor penetration or stuck locomotion when the Hub is revealed. A post-release recovery warning is diagnostic evidence that the former race occurred and was caught; repeated recoveries, stabilization failure, or deep-penetration errors remain failed validation. Recheck Hub/level travel, capture respawn, two-client Photon, and headset/Quest behavior separately before calling the floor defect resolved.
+          EOF
+          fi
+
+          if ! grep -Fq '## September 14 startup floor post-release hardening' docs/repository-improvement-plan.md; then
+            cat >> docs/repository-improvement-plan.md <<'EOF'
+
+          ## September 14 startup floor post-release hardening
+
+          **Confirmed regression:** cold Bootstrap -> Hub startup can again reveal the local player intersecting the floor. Prior grounding fixes remain implemented but are not runtime-validated as sufficient. The keycard-reader branch is not the source of this regression because its diff does not alter `RigSpawnSnapper`, `RigFloorPenetrationGuard`, Gorilla locomotion startup, or Bootstrap authoring.
+
+          **Root cause found in source:** frozen placement and floor correction ended before the first live Rigidbody/locomotion physics steps. `RigSpawnSnapper` restored physics and immediately set `RigSnapped`, while `RigFloorPenetrationGuard` refused to run until the entire app was ready and refused to run while `Loading` was active. The security boot/startup flow legitimately keeps `Loading` active after the Hub is loaded, so the intended last-line guard left a real post-release gap.
+
+          **Implemented on `fix/startup-floor-regression`:** add a bounded post-release stabilization phase before `MarkRigSnapped`: three consecutive live fixed steps must verify the actual Gorilla body against the Hub support floor; any shallow lift restarts the count, with twelve attempts maximum. The floor guard can now verify a supplied world scene, uses the loaded Hub during cold-start Loading after snap ownership ends, and gates on `RigSnapped` instead of full `IsReady`. It still never pulls downward, does not fight `SectorTravelService` while travel owns the rig, preserves the bounded recovery depth, and resets Gorilla locomotion state after recovery. New `Tools/validate_spawn_floor_contracts.py` is wired into Source Integrity to protect the post-release-before-`RigSnapped` ordering and Loading-window guard behavior.
+
+          **Pending tests:** PR Source Integrity, Unity 2022.3.55f1 import/compile, repeated cold starts with varied physical headset/controller poses and recenter timing, then all existing travel/capture floor checks. Treat repeated `[RigFloorPenetrationGuard]` recoveries or any post-release stabilization failure as evidence the underlying XR/physics ownership is still unstable rather than increasing recovery limits blindly.
+          EOF
+          fi
+
+      - name: Commit docs and remove temporary helper
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rm .github/workflows/temp-startup-floor-doc-sync.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add docs/design-and-lore.md docs/repository-improvement-plan.md
+          git commit -m 'Document startup floor regression hardening'
+          git push origin HEAD:fix/startup-floor-regression
