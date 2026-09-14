@@ -161,7 +161,7 @@ public class LoadingFlow : MonoBehaviour
             yield break;
         }
         RunawayChimps.Travel.SectorTravelService.I?.NotifySceneReady(hub);
-        presentation?.RestoreCameraForReveal();
+        presentation?.PrepareCameraForHubReveal();
         for (float elapsed = 0f; elapsed < FadeDuration; elapsed += Time.unscaledDeltaTime)
         {
             if (!CanEnterHub()) { AbortEntry(); yield break; }
@@ -169,6 +169,7 @@ public class LoadingFlow : MonoBehaviour
             yield return null;
         }
         presentation?.SetBackdropOpacity(0f);
+        presentation?.RestoreCameraForReveal();
         yield return SceneManager.UnloadSceneAsync(gameObject.scene);
     }
 
