@@ -60,3 +60,11 @@ Unity 2022's built-in splash remains a **pending license/build detail**. The bra
 - **Pending validation:** Photon startup/retry/two-client behavior remains unchanged.
 
 See [Launch workstation vignette](launch-workstation-vignette.md) for the exact implementation and focused acceptance checklist. Source validation is not runtime proof.
+
+## September 14 correction — startup vignette vs. Hub spawn
+
+**Confirmed correction:** the security workstation is a **private, temporary loading presentation only**. It must never become the physical place where the player arrives in `Hub_Base`, and it must not remain visible in the Hub after startup. The intended transition is workstation/boot -> full black -> workstation/Loading presentation destroyed or unloaded -> local rig already placed at its real Hub spawn -> black fades up into the Hub. This supersedes the earlier absolute-world-stationary wording.
+
+During hidden startup relocation, the presentation should stay perceptually stable for the local user by following **XR-origin/root relocation** while remaining independent of head look/room-scale head motion. That lets `RigSpawnSnapper` move/rotate the persistent XR origin behind the loading presentation without leaving the desk behind. The workstation still disappears completely before Hub reveal.
+
+**Confirmed multiplayer requirement:** the shared Hub must not rely on one physical `HubSpawn` for all players. The current source still uses one Hub spawn marker, so unique multiplayer Hub placement is **pending implementation**. The intended design is a small set of authored Hub spawn slots (up to the current 10-player room cap) assigned after Photon room join and before the Hub is revealed. Players' startup workstations remain local-only and are never synchronized or mutually visible. Level-return routes continue using their route-specific arrival markers rather than the cold-start slot pool.

@@ -56,3 +56,11 @@ The note text is **flavor/Easter-egg copy**, not confirmed progression lore. Tre
 ### Headset / Quest later
 
 - Both-eye/peripheral black coverage, head turning/recenter comfort, physical monitor distance, note legibility, no world-stuck discomfort, no compositor/world flash, native system-splash handoff, and Quest frame/memory cost remain pending until device setup is available.
+
+## September 14 correction — presentation-space anchoring and disappearance
+
+**Confirmed correction:** the workstation is not shared Hub geometry and must not survive into gameplay. It is a client-local loading set. Before `Hub_Base` becomes visible, the workstation must be completely covered by black and destroyed/unloaded; the user then fades up at the normal Hub spawn assigned to that client.
+
+The prior wording that the workstation remains absolute-world-stationary is superseded. It should remain stationary relative to local head turning/room-scale motion, but it must track hidden **XROrigin root relocation** during startup so a later `RigSpawnSnapper` translation/rotation cannot move the user away from the desk while it is still being viewed.
+
+**Pending implementation from code review:** current `SecurityWorkstationVignette` captures a fixed world pose before `RigSpawnSnapper` necessarily finishes, and current startup uses one shared `HubSpawn`. Fix the vignette anchor and add unique multiplayer Hub spawn slots before treating the launch flow as merge-ready.
