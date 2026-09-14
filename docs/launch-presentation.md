@@ -38,7 +38,7 @@ Meta documents the system splash as compositor-driven and removed on the first a
 
 ## Source validation record
 
-**Validated source only, 2026-09-13:** Source Integrity run `34798289632` passed on commit `75104bd7051a772385636cab61f75e4e0b4e86ac`. The run passed first-party C# syntax/reference checks, Unity metadata/GUID integrity, Level 1 contracts, PR #15 hardening, the merged security-boot contracts, PR #19 local threat-feedback contracts, the launch-presentation contracts, Python compilation, merge-marker checks, and human-authored whitespace. This predates the CRT/static visual-polish commit; the final branch head must pass Source Integrity again before the new treatment is considered source-validated. This is source/tooling evidence only, not Unity compilation, a Quest build, compositor behavior, Photon runtime, or headset validation.
+**Validated source only, 2026-09-13:** final clean CRT-polish head `9f3e827c6004af395735cba98cf86d030323bc6a` passed Source Integrity run `34799347329`. The run passed first-party C# syntax/reference checks, Unity metadata/GUID integrity, Level 1 contracts, PR #15 hardening, the merged security-boot contracts, PR #19 local threat-feedback contracts, the updated launch-presentation and CRT/static contracts, Python compilation, merge-marker checks, and human-authored whitespace. This is source/tooling evidence only, not Unity compilation, Play Mode visual approval, a Quest build, compositor behavior, Photon runtime, or headset validation.
 
 ## Not implemented / still open
 
