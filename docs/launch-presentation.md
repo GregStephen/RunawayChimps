@@ -1,0 +1,48 @@
+# Launch presentation
+
+Last updated: 2026-09-13. Branch: `feature/launch-presentation-polish`, based on post-PR-#20 `main` (`24a0d4e5feb89a663f8c0ed874800efd28c9af2d`). Runaway Chimps uses Unity **2022.3.55f1**, Photon PUN, Meta XR SDK 83.0.1 and OpenXR 1.13.2.
+
+## Confirmed direction
+
+**Confirmed:** the game launch presentation uses the approved **facility security-system boot**. The earlier floating/void startup idea is not an active alternative. Normal Hub/level travel remains **black-only** with no boot terminal, logo, tips or loading text unless measured transition times later justify revisiting that rule. Real travel failures still surface recovery feedback.
+
+**Confirmed VR boundary:** the player/head camera is never artificially moved for launch presentation. Stereo/peripheral coverage must remain opaque and comfortable. No aggressive strobe, screen shake or forced camera flight is part of the launch design.
+
+## Implemented on this branch
+
+**Implemented, pending runtime validation:** a new `Assets/Branding/RunawayChimps_SystemSplash.png` provides a simple branded facility-security panel that visually leads into the existing in-app security boot. `Assets/Oculus/OculusProjectConfig.asset` now references that image with a black system-loading background.
+
+Because Android currently uses the OpenXR loader, `LaunchPresentationSettings` also assigns the same texture to the serialized **MetaXRFeature Android** `systemSplashScreen` property before Android builds and exposes Editor menu items to apply/validate the setting explicitly. This preserves the current OpenXR provider rather than switching XR loaders.
+
+**Implemented guardrail:** Android builds fail early if the Quest system splash cannot be found or assigned to the Meta OpenXR/Oculus project config. The setup logs a warning when Unity's built-in splash is still enabled because Meta's current guidance prefers system splash + custom startup scene. The branch does not blindly disable Unity's splash: Unity 2022 Personal licensing can enforce Unity branding, so that remains a license/build-specific validation step.
+
+**Implemented source validation:** `Tools/validate_launch_presentation.py` checks the splash asset/GUID, active OpenXR loader contract, Meta/Oculus splash references, black system background, build preprocessor and absence of a Unity VR splash image. It deliberately does not claim that a Quest compositor displayed the image.
+
+## Expected launch stack
+
+For Quest builds after this branch is applied, the intended sequence is:
+
+1. Horizon OS launches Runaway Chimps and shows the Meta **system splash** against black while the app initializes.
+2. The compositor removes the system splash on the first rendered app frame.
+3. The existing custom security boot appears on black, observes real startup milestones, and keeps `ACCESS GRANTED` visible briefly before entry.
+4. The boot fades into the Hub.
+5. Later Hub/level travel stays black-only.
+
+Meta documents the system splash as compositor-driven and removed on the first app frame; this branch therefore keeps the first application presentation stationary and black-backed so the handoff does not expose partially initialized world geometry.
+
+## Not implemented / still open
+
+- **Not implemented:** floating startup environment, surveillance-video reveal, CRT warping, final logo artwork, forced camera movement or a fake progress percentage.
+- **Open polish:** whether the small native splash panel should later be replaced with final approved logo artwork while keeping the same system-splash role.
+- **Open license/build detail:** whether the active Unity 2022 license permits disabling the built-in Unity splash. Do not claim that layer is gone until an actual Quest build confirms it.
+
+## Pending validation
+
+- **Pending validation:** Unity 2022.3.55f1 import and compile of `LaunchPresentationSettings` plus all existing startup scripts.
+- **Pending validation:** run **Tools > Runaway Chimps > Launch Presentation > Apply Quest System Splash**, then validate the serialized OpenXR Android feature in the Inspector.
+- **Pending validation:** build/install a Quest APK and confirm the native Meta splash appears before the first app frame, stays centered/readable under head movement, and hands off cleanly to the security boot without an unintended gray/Unity splash step.
+- **Pending validation:** Quest 2/3/3S as available, both-eye/peripheral coverage, recenter, pause/resume, cold launch, repeated launch, and audio comfort.
+- **Pending validation:** existing Photon startup/retry paths, two-client room behavior, Hub entry and black-only Hub/level travel remain unchanged.
+- **Pending validation:** Quest frame timing and memory impact of the splash asset are negligible.
+
+Source validation is not runtime proof. Record the device, build/commit, observed launch layers and timing before marking any compositor/headset item validated.
