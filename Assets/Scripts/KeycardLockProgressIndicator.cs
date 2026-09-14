@@ -10,9 +10,8 @@ public sealed class KeycardLockProgressIndicator : MonoBehaviour
 {
     [Header("Progress source")]
     [SerializeField] private KeyBox keyBox;
-    [Tooltip("Used for prefab/scene preview until a KeyBox is bound.")]
+    [Tooltip("Used for prefab/scene preview until a KeyBox is explicitly bound.")]
     [SerializeField, Min(1)] private int previewRequiredKeys = 2;
-    [SerializeField] private bool autoBindUniqueKeyBoxInScene = true;
 
     [Header("Indicator lamps")]
     [SerializeField] private Renderer[] progressLights;
@@ -26,17 +25,17 @@ public sealed class KeycardLockProgressIndicator : MonoBehaviour
 
     private void OnEnable()
     {
-        ResolveKeyBox();
+        ResolveParentKeyBox();
         Subscribe();
         Refresh();
     }
 
     private void Start()
     {
-        // Retry once after every scene object has completed Awake/OnEnable.
+        // Retry once after authored parent relationships have completed Awake/OnEnable.
         if (keyBox == null)
         {
-            ResolveKeyBox();
+            ResolveParentKeyBox();
             Subscribe();
             Refresh();
         }
@@ -45,8 +44,8 @@ public sealed class KeycardLockProgressIndicator : MonoBehaviour
         {
             warnedMissingSource = true;
             Debug.LogWarning(
-                $"[KeycardLockProgress] '{name}' could not find a unique KeyBox in its scene. " +
-                "Assign the intended KeyBox in the Inspector so the lock panel can display live progress.",
+                $"[KeycardLockProgress] '{name}' has no authored KeyBox source. " +
+                "Assign the intended KeyBox in the Inspector, bind it from scene setup code, or parent the panel beneath that KeyBox.",
                 this);
         }
     }
@@ -136,38 +135,14 @@ public sealed class KeycardLockProgressIndicator : MonoBehaviour
         }
     }
 
-    private void ResolveKeyBox()
+    private void ResolveParentKeyBox()
     {
         if (keyBox != null)
             return;
 
-        KeyBox parentBox = GetComponentInParent<KeyBox>();
-        if (parentBox != null)
-        {
-            keyBox = parentBox;
-            return;
-        }
-
-        if (!autoBindUniqueKeyBoxInScene || !gameObject.scene.IsValid())
-            return;
-
-        KeyBox[] boxes = FindObjectsOfType<KeyBox>(true);
-        KeyBox candidate = null;
-        int matches = 0;
-
-        foreach (KeyBox box in boxes)
-        {
-            if (box == null || box.gameObject.scene != gameObject.scene)
-                continue;
-
-            candidate = box;
-            matches++;
-            if (matches > 1)
-                break;
-        }
-
-        if (matches == 1)
-            keyBox = candidate;
+        // Parent-only lookup is deterministic authoring, unlike the previous scene-wide
+        // unique-KeyBox search whose result could change when another lock was added.
+        keyBox = GetComponentInParent<KeyBox>();
     }
 
     private void Subscribe()
