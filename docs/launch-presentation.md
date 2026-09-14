@@ -1,6 +1,6 @@
 # Launch presentation
 
-Last updated: 2026-09-13. Branch: `feature/launch-presentation-polish`, based on post-PR-#20 `main` (`24a0d4e5feb89a663f8c0ed874800efd28c9af2d`). Runaway Chimps uses Unity **2022.3.55f1**, Photon PUN, Meta XR SDK 83.0.1 and OpenXR 1.13.2.
+Last updated: 2026-09-13. Branch: `feature/launch-presentation-polish`, rebased onto current `main` after PR #19 (`68eaeab375d94c787b69ce8726d22df161008772`). Runaway Chimps uses Unity **2022.3.55f1**, Photon PUN, Meta XR SDK 83.0.1 and OpenXR 1.13.2.
 
 ## Confirmed direction
 
@@ -29,6 +29,10 @@ For Quest builds after this branch is applied, the intended sequence is:
 5. Later Hub/level travel stays black-only.
 
 Meta documents the system splash as compositor-driven and removed on the first app frame; this branch therefore keeps the first application presentation stationary and black-backed so the handoff does not expose partially initialized world geometry.
+
+## Source validation record
+
+**Validated source only, 2026-09-13:** Source Integrity run `34798289632` passed on commit `75104bd7051a772385636cab61f75e4e0b4e86ac`. The run passed first-party C# syntax/reference checks, Unity metadata/GUID integrity, Level 1 contracts, PR #15 hardening, the merged security-boot contracts, PR #19 local threat-feedback contracts, the new launch-presentation contracts, Python compilation, merge-marker checks, and human-authored whitespace. This is source/tooling evidence only, not Unity compilation, a Quest build, compositor behavior, Photon runtime, or headset validation.
 
 ## Not implemented / still open
 
