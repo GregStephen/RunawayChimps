@@ -30,11 +30,13 @@ public class LoadingFlow : MonoBehaviour
     {
         startup = !(RunawayChimps.Travel.SectorTravelService.I != null &&
             RunawayChimps.Travel.SectorTravelService.I.IsBusy);
-        presentation = SecurityBootPresentation.Install(gameObject.scene, statusText, startup, playBootSounds);
     }
 
     private void Start()
     {
+        // Scene-root discovery waits until Start, after all scene Awake/OnEnable calls.
+        // Both paths suppress legacy text before rendering; only cold startup builds the terminal.
+        presentation = SecurityBootPresentation.Install(gameObject.scene, statusText, startup, playBootSounds);
         // A sector transfer must not start another authentication/Hub load or replay the boot.
         if (!startup) return;
         startedAt = Time.realtimeSinceStartup;
