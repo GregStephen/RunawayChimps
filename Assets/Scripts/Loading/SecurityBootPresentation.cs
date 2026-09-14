@@ -449,17 +449,14 @@ namespace RunawayChimps.Loading
             fading = true;
             alpha = Mathf.Clamp01(alpha);
             if (terminalGroup != null) terminalGroup.alpha = alpha;
+            if (alpha <= 0.001f) workstationRetiredForReveal = true;
 
             if (workstation != null)
             {
                 // Let the authored black full-FOV backdrop cover the entire 3D vignette before it is hidden.
                 SetBackdropOpacity(1f - alpha);
-                if (alpha <= 0.001f)
-                {
-                    workstationRetiredForReveal = true;
-                    DestroyWorkstationForReveal();
-                }
-                else if (workstation != null && !workstation.gameObject.activeSelf) workstation.gameObject.SetActive(true);
+                if (workstationRetiredForReveal) DestroyWorkstationForReveal();
+                else if (!workstation.gameObject.activeSelf) workstation.gameObject.SetActive(true);
             }
         }
 
