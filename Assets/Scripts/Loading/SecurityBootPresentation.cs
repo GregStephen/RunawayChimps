@@ -55,6 +55,7 @@ namespace RunawayChimps.Loading
         private Color savedBackground;
         private bool startupMode;
         private bool fading;
+        private bool workstationRetiredForReveal;
         private bool readyLogged;
         private float appearedAt;
         private float nextSoundAt;
@@ -131,7 +132,7 @@ namespace RunawayChimps.Loading
 
         private void EnsureWorkstation()
         {
-            if (!startupMode || workstation != null || boundCamera == null || presentationLayer < 0) return;
+            if (!startupMode || workstationRetiredForReveal || workstation != null || boundCamera == null || presentationLayer < 0) return;
 
             workstation = SecurityWorkstationVignette.Create(boundCamera, font, presentationLayer);
             if (workstation == null || workstation.MonitorCanvasRoot == null)
@@ -453,7 +454,11 @@ namespace RunawayChimps.Loading
             {
                 // Let the authored black full-FOV backdrop cover the entire 3D vignette before it is hidden.
                 SetBackdropOpacity(1f - alpha);
-                if (alpha <= 0.001f) DestroyWorkstationForReveal();
+                if (alpha <= 0.001f)
+                {
+                    workstationRetiredForReveal = true;
+                    DestroyWorkstationForReveal();
+                }
                 else if (workstation != null && !workstation.gameObject.activeSelf) workstation.gameObject.SetActive(true);
             }
         }
@@ -466,6 +471,7 @@ namespace RunawayChimps.Loading
         public void RestoreAfterInterruptedEntry()
         {
             fading = false;
+            workstationRetiredForReveal = false;
             if (workstation == null) EnsureWorkstation();
             if (workstation != null)
             {

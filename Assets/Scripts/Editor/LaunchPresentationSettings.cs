@@ -10,7 +10,10 @@ namespace RunawayChimps.EditorTools
         internal const string SplashAssetPath = "Assets/Branding/RunawayChimps_SystemSplash.png";
         private const string OpenXRSettingsPath = "Assets/XR/Settings/OpenXR Package Settings.asset";
         private const string OculusProjectConfigPath = "Assets/Oculus/OculusProjectConfig.asset";
+        private const string XRGeneralSettingsPath = "Assets/XR/XRGeneralSettingsPerBuildTarget.asset";
+        private const string OpenXRLoaderPath = "Assets/XR/Loaders/OpenXRLoader.asset";
         private const string MetaAndroidFeatureName = "MetaXRFeature Android";
+        private const string AndroidProvidersName = "Android Providers";
 
         [MenuItem("Tools/Runaway Chimps/Launch Presentation/Apply Quest System Splash")]
         private static void ApplyFromMenu()
@@ -24,7 +27,7 @@ namespace RunawayChimps.EditorTools
         {
             bool valid = Validate(logSuccess: true);
             if (!valid)
-                EditorUtility.DisplayDialog("Runaway Chimps", "Quest system splash is not fully configured. Check the Console for details.", "OK");
+                EditorUtility.DisplayDialog("Runaway Chimps", "Quest launch presentation is not fully configured. Check the Console for details.", "OK");
         }
 
         internal static bool Apply(bool saveAssets, bool logSuccess)
@@ -66,10 +69,13 @@ namespace RunawayChimps.EditorTools
             }
 
             bool openXrOk = IsAssigned(OpenXRSettingsPath, MetaAndroidFeatureName, "systemSplashScreen", splash);
+            bool metaFeatureEnabled = IsBoolValue(OpenXRSettingsPath, MetaAndroidFeatureName, "m_enabled", true);
             bool projectConfigOk = IsAssigned(OculusProjectConfigPath, "OculusProjectConfig", "systemSplashScreen", splash);
-            bool valid = openXrOk && projectConfigOk;
+            bool blackBackgroundOk = IsIntValue(OculusProjectConfigPath, "OculusProjectConfig", "_systemLoadingScreenBackground", 0);
+            bool androidOpenXrOk = IsAndroidOpenXRLoaderConfigured();
+            bool valid = openXrOk && metaFeatureEnabled && projectConfigOk && blackBackgroundOk && androidOpenXrOk;
             if (valid && logSuccess)
-                Debug.Log("[LaunchPresentation] Quest system splash configuration is valid for the active Meta OpenXR Android path.");
+                Debug.Log("[LaunchPresentation] Quest launch configuration is valid: Android OpenXR + enabled Meta XR Feature + system splash + black compositor background.");
             return valid;
         }
 
@@ -122,7 +128,6 @@ namespace RunawayChimps.EditorTools
 
             if (splashProperty.objectReferenceValue != splash)
                 splashProperty.objectReferenceValue = splash;
-            // Black is the intended background for this full-VR horror title.
             if (backgroundProperty != null)
                 backgroundProperty.intValue = 0;
             serialized.ApplyModifiedPropertiesWithoutUndo();
@@ -132,21 +137,67 @@ namespace RunawayChimps.EditorTools
 
         private static bool IsAssigned(string path, string objectName, string propertyName, Object expected)
         {
-            foreach (Object asset in AssetDatabase.LoadAllAssetsAtPath(path))
+            Object asset = FindNamedAsset(path, objectName);
+            if (asset == null)
             {
-                if (asset == null || asset.name != objectName)
-                    continue;
-
-                SerializedProperty property = new SerializedObject(asset).FindProperty(propertyName);
-                if (property != null && property.objectReferenceValue == expected)
-                    return true;
-
-                Debug.LogError($"[LaunchPresentation] {objectName}.{propertyName} is not assigned to {SplashAssetPath}.");
+                Debug.LogError($"[LaunchPresentation] Could not find {objectName} in {path}.");
                 return false;
             }
 
-            Debug.LogError($"[LaunchPresentation] Could not find {objectName} in {path}.");
+            SerializedProperty property = new SerializedObject(asset).FindProperty(propertyName);
+            if (property != null && property.objectReferenceValue == expected)
+                return true;
+
+            Debug.LogError($"[LaunchPresentation] {objectName}.{propertyName} is not assigned to {SplashAssetPath}.");
             return false;
+        }
+
+        private static bool IsBoolValue(string path, string objectName, string propertyName, bool expected)
+        {
+            Object asset = FindNamedAsset(path, objectName);
+            SerializedProperty property = asset != null ? new SerializedObject(asset).FindProperty(propertyName) : null;
+            if (property != null && property.boolValue == expected) return true;
+            Debug.LogError($"[LaunchPresentation] {objectName}.{propertyName} must be {expected}.");
+            return false;
+        }
+
+        private static bool IsIntValue(string path, string objectName, string propertyName, int expected)
+        {
+            Object asset = FindNamedAsset(path, objectName);
+            SerializedProperty property = asset != null ? new SerializedObject(asset).FindProperty(propertyName) : null;
+            if (property != null && property.intValue == expected) return true;
+            Debug.LogError($"[LaunchPresentation] {objectName}.{propertyName} must be {expected}.");
+            return false;
+        }
+
+        private static bool IsAndroidOpenXRLoaderConfigured()
+        {
+            Object expectedLoader = AssetDatabase.LoadAssetAtPath<Object>(OpenXRLoaderPath);
+            Object providers = FindNamedAsset(XRGeneralSettingsPath, AndroidProvidersName);
+            if (expectedLoader == null || providers == null)
+            {
+                Debug.LogError("[LaunchPresentation] Android XR settings or OpenXRLoader.asset is missing.");
+                return false;
+            }
+
+            SerializedProperty loaders = new SerializedObject(providers).FindProperty("m_Loaders");
+            if (loaders != null && loaders.isArray)
+            {
+                for (int i = 0; i < loaders.arraySize; i++)
+                    if (loaders.GetArrayElementAtIndex(i).objectReferenceValue == expectedLoader)
+                        return true;
+            }
+
+            Debug.LogError("[LaunchPresentation] Android XR Plug-in Management must include the project's OpenXRLoader.");
+            return false;
+        }
+
+        private static Object FindNamedAsset(string path, string objectName)
+        {
+            foreach (Object asset in AssetDatabase.LoadAllAssetsAtPath(path))
+                if (asset != null && asset.name == objectName)
+                    return asset;
+            return null;
         }
     }
 
@@ -160,9 +211,7 @@ namespace RunawayChimps.EditorTools
                 return;
 
             if (!LaunchPresentationSettings.Validate(logSuccess: false))
-            {
                 throw new BuildFailedException("Runaway Chimps Quest launch presentation is not configured correctly.");
-            }
         }
     }
 }

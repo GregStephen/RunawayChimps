@@ -61,6 +61,12 @@ public class AppState : MonoBehaviour
         IsReady = PhotonPlayerSpawned = PlayerVisualsReady = false;
     }
 
+    public void ResetHubPlacementReady()
+    {
+        IsReady = false;
+        RigSnapped = false;
+    }
+
     // Stage markers
     public void MarkHubActive() => HubActive = true;
     public void MarkRigSnapped() => RigSnapped = true;

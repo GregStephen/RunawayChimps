@@ -1,7 +1,9 @@
 using ExitGames.Client.Photon;
 using Photon.Pun;
 using Photon.Realtime;
+using RunawayChimps.Travel;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace RunawayChimps.Multiplayer
 {
@@ -10,27 +12,16 @@ namespace RunawayChimps.Multiplayer
         public const int SlotCount = 10;
         public const string PlayerSlotProperty = "rcHubSpawnSlot";
         private const string RoomSlotPrefix = "rcHubSlot";
+        private const string LayoutResourcePath = "HubSpawn/HubSpawnSlots";
         private const float ClaimRetrySeconds = 0.35f;
         private const float PendingClaimTimeoutSeconds = 0.8f;
-
-        private static readonly Vector3[] SlotOffsets =
-        {
-            new Vector3(0f, 0f, 0f),
-            new Vector3(-1.10f, 0f, 0.55f),
-            new Vector3(1.10f, 0f, 0.55f),
-            new Vector3(-0.55f, 0f, 1.55f),
-            new Vector3(0.55f, 0f, 1.55f),
-            new Vector3(-1.65f, 0f, 1.55f),
-            new Vector3(1.65f, 0f, 1.55f),
-            new Vector3(-1.10f, 0f, 2.55f),
-            new Vector3(0f, 0f, 2.55f),
-            new Vector3(1.10f, 0f, 2.55f),
-        };
 
         private int localSlot = -1;
         private int pendingSlot = -1;
         private float pendingSince;
         private float nextClaimAt;
+        private GameObject slotLayoutPrefab;
+        private bool layoutErrorLogged;
 
         public int LocalSlot => localSlot;
         public bool HasLocalSlot => localSlot >= 0 && localSlot < SlotCount;
@@ -49,9 +40,12 @@ namespace RunawayChimps.Multiplayer
         {
             position = default;
             rotation = Quaternion.identity;
-            if (hubSpawn == null || !TryGetLocalSlot(out int slot)) return false;
-            position = hubSpawn.TransformPoint(SlotOffsets[slot]);
-            rotation = Quaternion.Euler(0f, hubSpawn.eulerAngles.y, 0f);
+            if (hubSpawn == null || !TryGetLocalSlot(out int slot) || !TryGetAuthoredMarker(slot, out Transform marker))
+                return false;
+
+            position = hubSpawn.TransformPoint(marker.localPosition);
+            Quaternion authoredRotation = hubSpawn.rotation * marker.localRotation;
+            rotation = Quaternion.Euler(0f, authoredRotation.eulerAngles.y, 0f);
             return true;
         }
 
@@ -61,8 +55,24 @@ namespace RunawayChimps.Multiplayer
             if (!PhotonNetwork.InRoom || PhotonNetwork.CurrentRoom == null || PhotonNetwork.LocalPlayer == null)
                 return false;
 
-            if (HasLocalSlot && ReadOwner(localSlot) == PhotonNetwork.LocalPlayer.ActorNumber)
+            int actorNumber = PhotonNetwork.LocalPlayer.ActorNumber;
+            if (HasLocalSlot)
             {
+                if (ReadOwner(localSlot) == actorNumber)
+                {
+                    slot = localSlot;
+                    return true;
+                }
+
+                // The room changed or ownership was reconciled underneath us. Do not leave a
+                // stale +Infinity retry gate behind; recover or claim again on demand.
+                localSlot = -1;
+                nextClaimAt = 0f;
+            }
+
+            if (TryFindOwnedSlot(actorNumber, out int recoveredSlot))
+            {
+                FinalizeLocalClaim(recoveredSlot);
                 slot = localSlot;
                 return true;
             }
@@ -70,7 +80,7 @@ namespace RunawayChimps.Multiplayer
             if (pendingSlot >= 0)
             {
                 int owner = ReadOwner(pendingSlot);
-                if (owner == PhotonNetwork.LocalPlayer.ActorNumber)
+                if (owner == actorNumber)
                 {
                     FinalizeLocalClaim(pendingSlot);
                     slot = localSlot;
@@ -88,18 +98,14 @@ namespace RunawayChimps.Multiplayer
             return false;
         }
 
-        private void Update()
-        {
-            if (PhotonNetwork.InRoom && !HasLocalSlot && Time.unscaledTime >= nextClaimAt)
-                TryGetLocalSlot(out _);
-        }
-
         public override void OnJoinedRoom()
         {
             base.OnJoinedRoom();
             ResetLocalClaim();
             EnsureRoomSlotsInitialized();
+            ClearPersistedPlayerSlot();
             nextClaimAt = 0f;
+            RefreshHubPlacementForNewRoom();
         }
 
         public override void OnRoomPropertiesUpdate(Hashtable propertiesThatChanged)
@@ -144,6 +150,53 @@ namespace RunawayChimps.Multiplayer
             ResetLocalClaim();
         }
 
+        private bool TryGetAuthoredMarker(int slot, out Transform marker)
+        {
+            marker = null;
+            if (slot < 0 || slot >= SlotCount) return false;
+            if (slotLayoutPrefab == null)
+                slotLayoutPrefab = Resources.Load<GameObject>(LayoutResourcePath);
+            if (slotLayoutPrefab == null || slotLayoutPrefab.transform.childCount != SlotCount)
+            {
+                LogLayoutError("Hub spawn slot layout must contain exactly 10 authored markers.");
+                return false;
+            }
+
+            marker = slotLayoutPrefab.transform.GetChild(slot);
+            string expectedName = $"HubSpawnSlot_{slot + 1:00}";
+            if (marker == null || marker.name != expectedName)
+            {
+                LogLayoutError($"Hub spawn marker {slot} must be named '{expectedName}'.");
+                marker = null;
+                return false;
+            }
+            return true;
+        }
+
+        private void LogLayoutError(string message)
+        {
+            if (layoutErrorLogged) return;
+            layoutErrorLogged = true;
+            Debug.LogError("[HubSpawnSlotAllocator] " + message, this);
+        }
+
+        private void RefreshHubPlacementForNewRoom()
+        {
+            var snapper = GetComponent<RigSpawnSnapper>();
+            if (snapper == null) return;
+            Scene hub = SceneManager.GetSceneByName(snapper.HubSceneName);
+            if (!hub.isLoaded || (SectorTravelService.I != null && SectorTravelService.I.IsBusy)) return;
+
+            AppState.I?.ResetHubPlacementReady();
+            snapper.RetrySnap();
+        }
+
+        private void ClearPersistedPlayerSlot()
+        {
+            if (PhotonNetwork.LocalPlayer == null) return;
+            PhotonNetwork.LocalPlayer.SetCustomProperties(new Hashtable { [PlayerSlotProperty] = -1 });
+        }
+
         private void EnsureRoomSlotsInitialized()
         {
             if (!PhotonNetwork.InRoom || PhotonNetwork.CurrentRoom == null || !PhotonNetwork.IsMasterClient) return;
@@ -154,6 +207,19 @@ namespace RunawayChimps.Multiplayer
                 if (!PhotonNetwork.CurrentRoom.CustomProperties.ContainsKey(key)) missing[key] = 0;
             }
             if (missing.Count > 0) PhotonNetwork.CurrentRoom.SetCustomProperties(missing);
+        }
+
+        private bool TryFindOwnedSlot(int actorNumber, out int slot)
+        {
+            slot = -1;
+            if (actorNumber <= 0) return false;
+            for (int i = 0; i < SlotCount; i++)
+            {
+                if (ReadOwner(i) != actorNumber) continue;
+                slot = i;
+                return true;
+            }
+            return false;
         }
 
         private void TryClaimFirstFreeSlot()

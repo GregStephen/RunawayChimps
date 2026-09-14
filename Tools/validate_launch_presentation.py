@@ -7,6 +7,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SPLASH = ROOT / "Assets/Branding/RunawayChimps_SystemSplash.png"
 SPLASH_META = SPLASH.with_suffix(".png.meta")
 SPLASH_GUID = "73af3b98a31d49a6a0b674b50ed8d20c"
+SLOT_PREFAB = ROOT / "Assets/Resources/HubSpawn/HubSpawnSlots.prefab"
 
 
 def read(path: str) -> str:
@@ -53,6 +54,11 @@ def main() -> int:
         "RunawayChimps_SystemSplash.png",
         "PlayerSettings.SplashScreen.show",
         "_systemLoadingScreenBackground",
+        "IsBoolValue",
+        "IsIntValue",
+        "IsAndroidOpenXRLoaderConfigured",
+        "Android Providers",
+        "OpenXRLoader.asset",
     ]:
         if token not in setup:
             errors.append(f"LaunchPresentationSettings missing {token!r}.")
@@ -76,6 +82,9 @@ def main() -> int:
         "NextNoise01",
         "staticBurstUntil",
         "SetBackdropOpacity(1f - alpha)",
+        "workstationRetiredForReveal",
+        "workstationRetiredForReveal = true",
+        "workstationRetiredForReveal = false",
     ]:
         if token not in boot:
             errors.append(f"Security boot workstation/CRT treatment missing {token!r}.")
@@ -119,9 +128,19 @@ def main() -> int:
 
     allocator = read("Assets/Scripts/Bootstrap/HubSpawnSlotAllocator.cs")
     for token in ["SlotCount = 10", "SetCustomProperties(desired, expected)", "OnPlayerLeftRoom",
-                  "OnMasterClientSwitched", "TryGetLocalSpawnPose"]:
+                  "OnMasterClientSwitched", "TryGetLocalSpawnPose", "LayoutResourcePath",
+                  "Resources.Load<GameObject>", "TryFindOwnedSlot", "ResetHubPlacementReady"]:
         if token not in allocator:
             errors.append(f"Hub spawn allocator missing {token!r}.")
+    if "private void Update()" in allocator or "SlotOffsets" in allocator:
+        errors.append("Hub spawn claims/layout must stay demand-driven and authored outside C#.")
+    if not SLOT_PREFAB.exists():
+        errors.append("Authored Hub spawn-slot prefab is missing.")
+    else:
+        slot_prefab = SLOT_PREFAB.read_text(encoding="utf-8-sig")
+        marker_names = re.findall(r"m_Name: HubSpawnSlot_\d{2}", slot_prefab)
+        if len(marker_names) != 10 or len(set(marker_names)) != 10:
+            errors.append("HubSpawnSlots.prefab must contain exactly ten uniquely named authored markers.")
     rig_snapper = read("Assets/Scripts/Bootstrap/RigSpawnSnapper.cs")
     for token in ["HubSpawnSlotAllocator", "TryGetLocalSpawnPose", "SpawnSlotWaitSeconds"]:
         if token not in rig_snapper:
@@ -132,6 +151,12 @@ def main() -> int:
     player_spawner = read("Assets/Resources/PhotonVR/Scripts/Player/PlayerSpawner.cs")
     if "!AppState.I.RigSnapped" not in player_spawner:
         errors.append("Photon avatar spawning must wait for the local Hub rig slot snap.")
+    app_state = read("Assets/Scripts/Bootstrap/AppState.cs")
+    if "ResetHubPlacementReady" not in app_state or "RigSnapped = false" not in app_state:
+        errors.append("AppState must support invalidating Hub placement on a new Photon-room session.")
+    visuals = read("Assets/Scripts/PlayerScripts/PlayerVisualReadyReporter.cs")
+    if "GetSharedMaterials(materialScratch)" not in visuals or ".sharedMaterials" in visuals:
+        errors.append("Player visual readiness must reuse a shared-material list instead of allocating arrays each frame.")
 
     flow = read("Assets/Scripts/Bootstrap/LoadingFlow.cs")
     for token in ["PrepareCameraForHubReveal()", "SetBackdropOpacity(0f)", "RestoreCameraForReveal()"]:

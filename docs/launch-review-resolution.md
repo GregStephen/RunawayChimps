@@ -19,3 +19,13 @@ The ten slot poses are currently compact code-owned offsets around the existing 
 ## Pending validation
 
 A fresh Source Integrity run must validate the current post-review branch head. Unity import/compile, Play Mode startup/retry/reveal, simultaneous two-client Photon slot claims, slot reuse and Master Client handoff, Hub spawn spacing, headset comfort, and Quest system-splash/material behavior remain pending until actually tested.
+
+## September 14 post-review hardening
+
+**Implemented:** the workstation enters a one-way `retired for reveal` state when the final terminal fade reaches black, so the presentation's normal camera-binding loop cannot recreate it during the Hub fade. An interrupted entry explicitly clears that state before rebuilding the local workstation.
+
+Hub-room placement is now session-aware: each new Photon room invalidates the old Hub snap only when the Hub is loaded, then waits for a fresh room-owned slot before spawning the local network avatar. Slot claims are demand-driven, recover an existing local ownership first, and no longer run from an allocator `Update` loop in Level 1/Level 2.
+
+The ten layout poses are authored as `Resources/HubSpawn/HubSpawnSlots.prefab` marker transforms rather than C# coordinates. Android build validation now verifies Meta Android feature enablement, black compositor background, and Android OpenXR loader in addition to the splash references. Player visual-settle hashing reuses a material list to avoid per-frame `sharedMaterials` array allocations.
+
+**Pending validation:** Unity/Play Mode reveal and retry, Hub room switch/reconnect, simultaneous two-client claims, slot reuse/Master handoff, marker clearance, and Quest build/headset behavior.
