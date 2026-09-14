@@ -1,8 +1,0 @@
-from pathlib import Path
-p = Path('Assets/Scripts/Loading/SecurityBootPresentation.cs')
-text = p.read_text(encoding='utf-8-sig')
-old = '''            alpha = Mathf.Clamp01(alpha);\n            if (terminalGroup != null) terminalGroup.alpha = alpha;\n\n            if (workstation != null)\n            {\n                // Let the authored black full-FOV backdrop cover the entire 3D vignette before it is hidden.\n                SetBackdropOpacity(1f - alpha);\n                if (alpha <= 0.001f)\n                {\n                    workstationRetiredForReveal = true;\n                    DestroyWorkstationForReveal();\n                }\n                else if (workstation != null && !workstation.gameObject.activeSelf) workstation.gameObject.SetActive(true);\n            }\n'''
-new = '''            alpha = Mathf.Clamp01(alpha);\n            if (terminalGroup != null) terminalGroup.alpha = alpha;\n            if (alpha <= 0.001f) workstationRetiredForReveal = true;\n\n            if (workstation != null)\n            {\n                // Let the authored black full-FOV backdrop cover the entire 3D vignette before it is hidden.\n                SetBackdropOpacity(1f - alpha);\n                if (workstationRetiredForReveal) DestroyWorkstationForReveal();\n                else if (!workstation.gameObject.activeSelf) workstation.gameObject.SetActive(true);\n            }\n'''
-if text.count(old) != 1:
-    raise SystemExit('SecurityBootPresentation final reveal block no longer matches reviewed shape.')
-p.write_text(text.replace(old, new, 1), encoding='utf-8', newline='\n')
