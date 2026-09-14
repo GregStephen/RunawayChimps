@@ -36,7 +36,7 @@ def main() -> int:
     if flow.find("PrepareCameraForHubReveal()") > flow.find("SetBackdropOpacity(0f)"):
         errors.append("Hub reveal must combine the Hub mask with the black presentation layer before fading black away.")
 
-    require(ui, ["if (!startupMode) return;", "SecurityWorkstationVignette.Create", "MonitorCanvasRoot",
+    require(ui, ["SecurityWorkstationVignette.Create", "MonitorCanvasRoot",
                  "PresentationLayerName = \"LoadingPresentation\"", "LayerMask.NameToLayer(PresentationLayerName)",
                  "SetLayerRecursively(hostCanvas.gameObject, presentationLayer)",
                  "boundCamera.cullingMask = 1 << presentationLayer",
@@ -53,9 +53,10 @@ def main() -> int:
         errors.append("ProjectSettings/TagManager.asset must reserve the LoadingPresentation layer.")
 
     configure = ui.split("private void Configure", 1)[-1].split("private void EnsureWorkstation", 1)[0]
-    travel_return = configure.find("if (!startupMode) return;")
+    travel_guard = configure.find("if (!startupMode)")
+    travel_return = configure.find("return;", travel_guard) if travel_guard >= 0 else -1
     startup_bind = configure.find("BindStartupCamera();")
-    if travel_return < 0 or startup_bind < 0 or travel_return > startup_bind:
+    if travel_guard < 0 or travel_return < 0 or startup_bind < 0 or not (travel_guard < travel_return < startup_bind):
         errors.append("Travel must return before startup camera/workstation/audio construction.")
 
     require(workstation, ["Security Workstation Vignette", "GetComponentInParent<XROrigin>", "DontDestroyOnLoad(root)", "RenderMode.WorldSpace",
