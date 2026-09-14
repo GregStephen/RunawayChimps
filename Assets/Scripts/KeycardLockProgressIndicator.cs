@@ -18,6 +18,7 @@ public sealed class KeycardLockProgressIndicator : MonoBehaviour
     [SerializeField] private Renderer[] progressLights;
     [SerializeField] private Material standbyMaterial;
     [SerializeField] private Material acceptedMaterial;
+    [SerializeField, Min(0.01f)] private float lampSpacing = 0.048f;
 
     private bool subscribed;
     private bool warnedMissingSource;
@@ -59,7 +60,7 @@ public sealed class KeycardLockProgressIndicator : MonoBehaviour
     private void OnValidate()
     {
         previewRequiredKeys = Mathf.Max(1, previewRequiredKeys);
-        Refresh();
+        lampSpacing = Mathf.Max(0.01f, lampSpacing);
     }
 #endif
 
@@ -98,6 +99,7 @@ public sealed class KeycardLockProgressIndicator : MonoBehaviour
 
         required = Mathf.Max(1, required);
         accepted = Mathf.Clamp(accepted, 0, required);
+        int visibleCount = Mathf.Min(required, progressLights.Length);
 
         if (required > progressLights.Length && !warnedCapacity)
         {
@@ -108,18 +110,25 @@ public sealed class KeycardLockProgressIndicator : MonoBehaviour
                 this);
         }
 
+        float firstLampX = -0.5f * (visibleCount - 1) * lampSpacing;
+
         for (int index = 0; index < progressLights.Length; index++)
         {
             Renderer lamp = progressLights[index];
             if (lamp == null)
                 continue;
 
-            bool used = index < required;
+            bool used = index < visibleCount;
             if (lamp.gameObject.activeSelf != used)
                 lamp.gameObject.SetActive(used);
 
             if (!used)
                 continue;
+
+            Transform lampTransform = lamp.transform;
+            Vector3 localPosition = lampTransform.localPosition;
+            localPosition.x = firstLampX + index * lampSpacing;
+            lampTransform.localPosition = localPosition;
 
             Material target = index < accepted ? acceptedMaterial : standbyMaterial;
             if (target != null && lamp.sharedMaterial != target)
