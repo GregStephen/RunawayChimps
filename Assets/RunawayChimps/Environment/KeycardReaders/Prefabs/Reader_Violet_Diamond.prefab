@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1001 &3992710716003866053
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 100000, guid: a498e13c10f95ce9a185ae620a75318f, type: 3}
+      propertyPath: m_Name
+      value: Reader_Violet_Diamond
+      objectReference: {fileID: 0}
+    - target: {fileID: 330300, guid: a498e13c10f95ce9a185ae620a75318f, type: 3}
+      propertyPath: m_Mesh
+      value: 
+      objectReference: {fileID: 4300000, guid: 5c360f93bdf35d1ca495275f1a6ccb47, type: 2}
+    - target: {fileID: 230300, guid: a498e13c10f95ce9a185ae620a75318f, type: 3}
+      propertyPath: m_Materials.Array.size
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 230300, guid: a498e13c10f95ce9a185ae620a75318f, type: 3}
+      propertyPath: m_Materials.Array.data[0]
+      value: 
+      objectReference: {fileID: 2100000, guid: be5930eda72150679a257923c7d3be1d, type: 2}
+    - target: {fileID: 230300, guid: a498e13c10f95ce9a185ae620a75318f, type: 3}
+      propertyPath: m_Materials.Array.data[1]
+      value: 
+      objectReference: {fileID: 2100000, guid: dc8546eb877e5d5b83f399489bf7b3c1, type: 2}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: a498e13c10f95ce9a185ae620a75318f, type: 3}
