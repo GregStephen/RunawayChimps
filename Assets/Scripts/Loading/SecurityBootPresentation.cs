@@ -18,6 +18,7 @@ namespace RunawayChimps.Loading
             "FACILITY LINK", "SECURITY SECTOR", "ARRIVAL ALIGNMENT", "AVATAR LINK", "VISUAL SYSTEMS"
         };
 
+        private const string PresentationLayerName = "LoadingPresentation";
         private const float DesignWidth = 1080f;
         private const float DesignHeight = 820f;
         private const int StaticWidth = 64;
@@ -47,6 +48,7 @@ namespace RunawayChimps.Loading
         private AudioClip tick;
         private Camera boundCamera;
         private bool cameraMasked;
+        private int presentationLayer = -1;
         private int savedCullingMask;
         private CameraClearFlags savedClearFlags;
         private Color savedBackground;
@@ -127,17 +129,17 @@ namespace RunawayChimps.Loading
 
         private void EnsureWorkstation()
         {
-            if (!startupMode || workstation != null || boundCamera == null) return;
+            if (!startupMode || workstation != null || boundCamera == null || presentationLayer < 0) return;
 
             workstation = SecurityWorkstationVignette.Create(
                 gameObject.scene,
                 boundCamera,
                 font,
-                hostCanvas.gameObject.layer);
+                presentationLayer);
             if (workstation == null || workstation.MonitorCanvasRoot == null) return;
 
             BuildTerminal(workstation.MonitorCanvasRoot);
-            // Camera clear is black and only the Loading/UI layer is visible, so the desk floats in safe darkness.
+            // Camera clear is black and only the dedicated presentation layer is visible, so the desk floats in safe darkness.
             SetBackdropOpacity(0f);
         }
 
@@ -364,7 +366,16 @@ namespace RunawayChimps.Loading
             if (origin == null || origin.Camera == null || !origin.Camera.isActiveAndEnabled) return;
 
             RestoreCameraForReveal();
+            int layer = LayerMask.NameToLayer(PresentationLayerName);
+            if (layer < 0)
+            {
+                Debug.LogError($"Security boot requires the '{PresentationLayerName}' layer.", this);
+                return;
+            }
+
             boundCamera = origin.Camera;
+            presentationLayer = layer;
+            SetLayerRecursively(hostCanvas.gameObject, presentationLayer);
             hostCanvas.renderMode = RenderMode.ScreenSpaceCamera;
             hostCanvas.worldCamera = boundCamera;
             hostCanvas.planeDistance = Mathf.Max(1.5f, boundCamera.nearClipPlane + 0.1f);
@@ -381,14 +392,28 @@ namespace RunawayChimps.Loading
 
         private void MaskStartupCamera()
         {
-            if (boundCamera == null || cameraMasked) return;
-            savedCullingMask = boundCamera.cullingMask;
-            savedClearFlags = boundCamera.clearFlags;
-            savedBackground = boundCamera.backgroundColor;
-            cameraMasked = true;
-            boundCamera.cullingMask = 1 << hostCanvas.gameObject.layer;
+            if (boundCamera == null || presentationLayer < 0) return;
+            if (!cameraMasked)
+            {
+                savedCullingMask = boundCamera.cullingMask;
+                savedClearFlags = boundCamera.clearFlags;
+                savedBackground = boundCamera.backgroundColor;
+                cameraMasked = true;
+            }
+
+            // Always reapply this mask. An interrupted Hub reveal can call this while the saved-state flag is still true.
+            boundCamera.cullingMask = 1 << presentationLayer;
             boundCamera.clearFlags = CameraClearFlags.SolidColor;
             boundCamera.backgroundColor = Color.black;
+        }
+
+        public void PrepareCameraForHubReveal()
+        {
+            if (!cameraMasked || boundCamera == null || presentationLayer < 0) return;
+            // Render the Hub and the black LoadingPresentation overlay together during the reveal fade.
+            boundCamera.cullingMask = savedCullingMask | (1 << presentationLayer);
+            boundCamera.clearFlags = savedClearFlags;
+            boundCamera.backgroundColor = savedBackground;
         }
 
         public void RestoreCameraForReveal()
@@ -491,6 +516,13 @@ namespace RunawayChimps.Loading
             if (tick != null) Destroy(tick);
             if (staticTexture != null) Destroy(staticTexture);
             if (workstation != null) Destroy(workstation.gameObject);
+        }
+
+        private static void SetLayerRecursively(GameObject root, int layer)
+        {
+            root.layer = layer;
+            foreach (Transform child in root.transform)
+                SetLayerRecursively(child.gameObject, layer);
         }
 
         private static RectTransform Rect(string name, Transform parent, float x, float y, float w, float h)
