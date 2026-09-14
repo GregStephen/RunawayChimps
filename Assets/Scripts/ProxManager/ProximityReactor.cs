@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.Events;
 using RunawayChimps.Zones;
 
@@ -21,21 +21,27 @@ public class ProximityReactor : MonoBehaviour
     [Header("Events")]
     public UnityEvent OnEnterRange;
     public UnityEvent OnExitRange;
-    public UnityEvent<float> OnProximityValue; // 0–1 normalized proximity
+    public UnityEvent<float> OnProximityValue; // 0-1 normalized proximity
 
     private bool inRange;
     private bool registered;
+
+    // Generic cached sample access lets other local systems consume the same distance
+    // measurement without adding another scene search or distance loop.
+    public bool HasValidSample { get; private set; }
+    public float LastDistance { get; private set; } = float.PositiveInfinity;
+    public float LastSampleUnscaledTime { get; private set; } = float.NegativeInfinity;
 
     private void OnEnable()
     {
         TryRegister();
     }
+
     private void Update()
     {
         if (!registered)
             TryRegister();
     }
-
 
     private void OnDisable()
     {
@@ -54,10 +60,7 @@ public class ProximityReactor : MonoBehaviour
 
         var mgr = ProximityManager.Instance;
         if (mgr == null)
-        {
-            // No spam logs; it will register next enable / when manager exists.
             return;
-        }
 
         mgr.Register(this);
         registered = true;
@@ -79,9 +82,16 @@ public class ProximityReactor : MonoBehaviour
     /// </summary>
     public void UpdateProximity(float distance, Transform playerTransform)
     {
+        HasValidSample = !float.IsNaN(distance) && !float.IsInfinity(distance) && distance >= 0f;
+        LastDistance = HasValidSample ? distance : float.PositiveInfinity;
+        LastSampleUnscaledTime = HasValidSample ? Time.unscaledTime : float.NegativeInfinity;
+        if (!HasValidSample)
+        {
+            ClearProximity();
+            return;
+        }
 
         bool nowInRange = distance <= triggerDistance;
-
         if (nowInRange && !inRange)
         {
             inRange = true;
@@ -104,6 +114,12 @@ public class ProximityReactor : MonoBehaviour
         OnProximityValue?.Invoke(normalized);
     }
 
+    public bool IsSampleFresh(float maximumAgeSeconds)
+    {
+        return HasValidSample &&
+            Time.unscaledTime - LastSampleUnscaledTime <= Mathf.Max(0.01f, maximumAgeSeconds);
+    }
+
     /// <summary>
     /// Reset effects when zone filtering or unloading ends an interaction.
     /// Clear the state before callbacks so repeated resets cannot fire two exits.
@@ -112,6 +128,9 @@ public class ProximityReactor : MonoBehaviour
     {
         bool wasInRange = inRange;
         inRange = false;
+        HasValidSample = false;
+        LastDistance = float.PositiveInfinity;
+        LastSampleUnscaledTime = float.NegativeInfinity;
 
         if (wasInRange)
             OnExitRange?.Invoke();

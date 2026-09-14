@@ -1,14 +1,15 @@
-using System.Collections;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
 using Photon.Pun;
 using Photon.VR;
 using Photon.VR.Player;
+using RunawayChimps.Monsters;
 using RunawayChimps.Travel;
 using RunawayChimps.Zones;
 
-public class MonsterNavigation : MonoBehaviour
+public class MonsterNavigation : MonoBehaviour, IMonsterPursuitSyncTarget
 {
     [Header("Monster Settings")]
     [Tooltip("Detection range (vent path or straight-line, depending on useVentGraph).")]
@@ -33,11 +34,17 @@ public class MonsterNavigation : MonoBehaviour
     [HideInInspector]
     public NavMeshAgent agent;
 
-    // Exposed for other components (e.g. AudioScaler)
+    // Existing shared state remains available for patrol/hunt audio. Personal threat
+    // presentation uses PursuitState instead so another player's chase cannot leak locally.
     public bool IsChasing { get; private set; }
+    public MonsterPursuitState PursuitState { get; private set; }
+    public int TargetActorNumber => PursuitState.TargetActorNumber;
+    public SectorId ThreatSector => sectorSync != null ? sectorSync.sector : SectorId.None;
+    public event Action<MonsterPursuitState> PursuitChanged;
 
-    // Just for debugging, so you can see it in the Inspector
+    // Just for debugging, so you can see it in the Inspector.
     [SerializeField] private bool isChasingDebug;
+    [SerializeField] private int targetActorDebug;
 
     private float detectionTimer;
     private Transform currentTarget;
@@ -52,7 +59,7 @@ public class MonsterNavigation : MonoBehaviour
         hadAuthority = false;
         currentTarget = null;
         targetOwner = null;
-        IsChasing = isChasingDebug = false;
+        SetPursuit(false, 0);
         if (agent != null) agent.enabled = false;
     }
 
@@ -95,7 +102,9 @@ public class MonsterNavigation : MonoBehaviour
             }
             hadAuthority = true;
             currentTarget = null;
+            targetOwner = null;
             detectionTimer = 0;
+            SetPursuit(false, 0);
             agent.speed = MonsterSpeedWander;
             Wander();
         }
@@ -111,7 +120,6 @@ public class MonsterNavigation : MonoBehaviour
             detectionTimer = 0;
         }
 
-        // Always compute chasing state (or at least update IsChasing)
         detectionTimer -= Time.deltaTime;
         if (detectionTimer <= 0f)
         {
@@ -119,8 +127,7 @@ public class MonsterNavigation : MonoBehaviour
             currentTarget = FindClosestPlayer();
         }
 
-        IsChasing = (currentTarget != null);
-        isChasingDebug = IsChasing;
+        SetPursuit(currentTarget != null, targetOwner != null ? targetOwner.ActorNumber : 0);
 
         // Only the controller actually present in this sector drives movement.
         if (currentTarget != null)
@@ -138,11 +145,28 @@ public class MonsterNavigation : MonoBehaviour
         RotateTowardsMovement();
     }
 
-
-    public void ApplyRemoteChasing(bool chasing)
+    private void SetPursuit(bool chasing, int targetActorNumber)
     {
         IsChasing = chasing;
-        isChasingDebug = chasing;
+        MonsterPursuitState next = new MonsterPursuitState(chasing, targetActorNumber);
+        bool changed = next != PursuitState;
+        PursuitState = next;
+        isChasingDebug = IsChasing;
+        targetActorDebug = PursuitState.TargetActorNumber;
+        if (changed)
+            PursuitChanged?.Invoke(PursuitState);
+    }
+
+    public void ApplyRemotePursuit(bool chasing, int targetActorNumber)
+    {
+        SetPursuit(chasing, targetActorNumber);
+    }
+
+    // Compatibility for any older local caller. It intentionally carries no personal
+    // target identity, so threat presentation remains fail-closed.
+    public void ApplyRemoteChasing(bool chasing)
+    {
+        SetPursuit(chasing, 0);
     }
 
     private Transform FindClosestPlayer()
@@ -152,7 +176,6 @@ public class MonsterNavigation : MonoBehaviour
         targetOwner = null;
         if (sectorSync != null)
         {
-            var zones = ZoneStateService.Instance;
             foreach (var avatar in FindObjectsOfType<PhotonVRPlayer>())
             {
                 var owner = avatar.photonView.Owner;
@@ -162,11 +185,13 @@ public class MonsterNavigation : MonoBehaviour
             }
         }
         else
-            foreach (var target in GameObject.FindGameObjectsWithTag(tagString)) targets.Add(target.transform);
+        {
+            foreach (var target in GameObject.FindGameObjectsWithTag(tagString))
+                targets.Add(target.transform);
+        }
 
         Transform closest = null;
         float minDistance = float.MaxValue;
-
         bool hasVentGraph = useVentGraph && VentGraph.Instance != null;
 
         foreach (Transform player in targets)
@@ -174,14 +199,9 @@ public class MonsterNavigation : MonoBehaviour
             if (player == null) continue;
 
             float distance;
-
             if (hasVentGraph)
             {
-                distance = VentGraph.Instance.GetPathDistance(
-                    transform.position,
-                    player.position
-                );
-
+                distance = VentGraph.Instance.GetPathDistance(transform.position, player.position);
                 if (float.IsInfinity(distance))
                     continue;
             }
@@ -197,7 +217,8 @@ public class MonsterNavigation : MonoBehaviour
             }
         }
 
-        if (closest != null) owners.TryGetValue(closest, out targetOwner);
+        if (closest != null)
+            owners.TryGetValue(closest, out targetOwner);
         return closest;
     }
 
@@ -217,7 +238,7 @@ public class MonsterNavigation : MonoBehaviour
             return;
         }
 
-        int destPoint = Random.Range(0, points.Length);
+        int destPoint = UnityEngine.Random.Range(0, points.Length);
         for (int offset = 0; offset < points.Length; offset++)
         {
             var point = points[(destPoint + offset) % points.Length];
@@ -237,15 +258,13 @@ public class MonsterNavigation : MonoBehaviour
         if (velocity.sqrMagnitude > 0.05f)
         {
             Quaternion targetRotation = Quaternion.LookRotation(velocity.normalized);
-
             if (modelForwardOffset != Vector3.zero)
                 targetRotation *= Quaternion.Euler(modelForwardOffset);
 
             transform.rotation = Quaternion.Slerp(
                 transform.rotation,
                 targetRotation,
-                rotationSpeed * Time.deltaTime
-            );
+                rotationSpeed * Time.deltaTime);
         }
     }
 
