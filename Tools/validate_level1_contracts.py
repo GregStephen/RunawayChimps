@@ -78,6 +78,94 @@ def main():
     if lamp.get("innerSpotAngle", 0) >= lamp.get("outerSpotAngle", 999):
         errors.append(f"{rel(headlamp_path)}: innerSpotAngle must be smaller than outerSpotAngle.")
 
+    blower_path = ROOT / "Assets/Scripts/Lighting/VentBlowerSetPiece.cs"
+    blower = require(errors, blower_path, [
+        'LevelOneScene = "Level1_Containment"',
+        'VentRoomName = "VentRoom"',
+        'RuntimeRootName = "Level1_VentRoom_Blower"',
+        'BlowerResourcePath = "RunawayChimps_VentBlower"',
+        'RotorName = "FanRotor"',
+        'RedLensName = "RedLightLens"',
+        "BlowerLocalPosition = new Vector3(-0.25f, 0.72f, 22.46f)",
+        "Resources.Load<GameObject>(BlowerResourcePath)",
+        "Instantiate(blowerPrefab, transform, false)",
+        "OrientVisualIntoVentRoom(visualInstance.transform)",
+        "GetComponentsInChildren<Collider>(true)",
+        "collider.enabled = false;",
+        "ShadowCastingMode.Off",
+        "material.shader.isSupported",
+        "LightType.Point",
+        "LightShadows.None",
+        "bounceIntensity = 0f",
+        "spatialBlend = 1f",
+        "maxDistance = 6.5f",
+        'AudioClip.Create("Vent_Blower_ProceduralLoop"',
+    ])
+    if re.search(r"^using\s+Photon\.", blower, re.M):
+        errors.append(f"{rel(blower_path)}: decorative vent blower must not depend on Photon.")
+    if "GameObject.CreatePrimitive(" in blower:
+        errors.append(f"{rel(blower_path)}: approved Blender visual must not regress to generated primitive geometry.")
+    if 'Shader.Find("Universal Render Pipeline/Lit")' in blower:
+        errors.append(f"{rel(blower_path)}: blower must not dynamically assign URP/Lit while the project uses the built-in render pipeline.")
+    if "CreateRuntimeMaterial(" in blower:
+        errors.append(f"{rel(blower_path)}: blower materials must stay serialized/import-mapped rather than dynamically created.")
+    positive_defaults(errors, blower_path, blower, ["FanDegreesPerSecond", "BaseRedLightIntensity"])
+
+    graphics_path = ROOT / "ProjectSettings/GraphicsSettings.asset"
+    require(errors, graphics_path, ["m_CustomRenderPipeline: {fileID: 0}"])
+    quality_path = ROOT / "ProjectSettings/QualitySettings.asset"
+    require(errors, quality_path, ["customRenderPipeline: {fileID: 0}"])
+
+    blower_asset = ROOT / "Assets/Resources/RunawayChimps_VentBlower.fbx"
+    blower_meta = ROOT / "Assets/Resources/RunawayChimps_VentBlower.fbx.meta"
+    if not blower_asset.exists():
+        errors.append(f"{rel(blower_asset)}: approved Blender FBX resource is missing.")
+    elif blower_asset.stat().st_size < 10000:
+        errors.append(f"{rel(blower_asset)}: approved Blender FBX resource is unexpectedly small.")
+    meta = require(errors, blower_meta, ["ModelImporter:", "addColliders: 0", "importCameras: 0", "importLights: 0", "preserveHierarchy: 1"])
+    if meta:
+        guid(blower_meta, errors)
+
+    blower_mat = ROOT / "Assets/RunawayChimps/Shared/Models/Materials/VentBlower_DarkPaintedMetal.mat"
+    blower_mat_meta = ROOT / "Assets/RunawayChimps/Shared/Models/Materials/VentBlower_DarkPaintedMetal.mat.meta"
+    require(errors, blower_mat, ["m_Shader: {fileID: 46, guid: 0000000000000000f000000000000000, type: 0}"])
+    blower_mat_guid = guid(blower_mat_meta, errors)
+    if blower_mat_guid and meta:
+        if "name: M_DarkPaintedMetal" not in meta or blower_mat_guid not in meta:
+            errors.append(f"{rel(blower_meta)}: M_DarkPaintedMetal is not mapped to VentBlower_DarkPaintedMetal.mat.")
+
+    blower_mat = ROOT / "Assets/RunawayChimps/Shared/Models/Materials/VentBlower_DullSteel.mat"
+    blower_mat_meta = ROOT / "Assets/RunawayChimps/Shared/Models/Materials/VentBlower_DullSteel.mat.meta"
+    require(errors, blower_mat, ["m_Shader: {fileID: 46, guid: 0000000000000000f000000000000000, type: 0}"])
+    blower_mat_guid = guid(blower_mat_meta, errors)
+    if blower_mat_guid and meta:
+        if "name: M_DullSteel" not in meta or blower_mat_guid not in meta:
+            errors.append(f"{rel(blower_meta)}: M_DullSteel is not mapped to VentBlower_DullSteel.mat.")
+
+    blower_mat = ROOT / "Assets/RunawayChimps/Shared/Models/Materials/VentBlower_FanBlade.mat"
+    blower_mat_meta = ROOT / "Assets/RunawayChimps/Shared/Models/Materials/VentBlower_FanBlade.mat.meta"
+    require(errors, blower_mat, ["m_Shader: {fileID: 46, guid: 0000000000000000f000000000000000, type: 0}"])
+    blower_mat_guid = guid(blower_mat_meta, errors)
+    if blower_mat_guid and meta:
+        if "name: M_FanBlade" not in meta or blower_mat_guid not in meta:
+            errors.append(f"{rel(blower_meta)}: M_FanBlade is not mapped to VentBlower_FanBlade.mat.")
+
+    blower_mat = ROOT / "Assets/RunawayChimps/Shared/Models/Materials/VentBlower_Conduit.mat"
+    blower_mat_meta = ROOT / "Assets/RunawayChimps/Shared/Models/Materials/VentBlower_Conduit.mat.meta"
+    require(errors, blower_mat, ["m_Shader: {fileID: 46, guid: 0000000000000000f000000000000000, type: 0}"])
+    blower_mat_guid = guid(blower_mat_meta, errors)
+    if blower_mat_guid and meta:
+        if "name: M_Conduit" not in meta or blower_mat_guid not in meta:
+            errors.append(f"{rel(blower_meta)}: M_Conduit is not mapped to VentBlower_Conduit.mat.")
+
+    blower_mat = ROOT / "Assets/RunawayChimps/Shared/Models/Materials/VentBlower_RedMaintenanceLens.mat"
+    blower_mat_meta = ROOT / "Assets/RunawayChimps/Shared/Models/Materials/VentBlower_RedMaintenanceLens.mat.meta"
+    require(errors, blower_mat, ["m_Shader: {fileID: 46, guid: 0000000000000000f000000000000000, type: 0}"])
+    blower_mat_guid = guid(blower_mat_meta, errors)
+    if blower_mat_guid and meta:
+        if "name: M_RedMaintenanceLens" not in meta or blower_mat_guid not in meta:
+            errors.append(f"{rel(blower_meta)}: M_RedMaintenanceLens is not mapped to VentBlower_RedMaintenanceLens.mat.")
+
     nav_path = ROOT / "Assets/Scripts/MonsterScripts/MonsterNavigation.cs"
     require(errors, nav_path, ["gameObject.AddComponent<CrawlerVisualController>();", "agent.updateRotation = false;"])
 
@@ -195,7 +283,6 @@ def main():
         errors.append(f"{rel(surface_ik_path)}: surface-contact IK must never manipulate torso/core bones.")
     if re.search(r"\btransform\.position\s*=", surface_ik):
         errors.append(f"{rel(surface_ik_path)}: limb contact must not move the authoritative Crawler gameplay root.")
-
 
     containment_path = ROOT / "Assets/Scripts/MonsterScripts/CrawlerVentContainment.cs"
     containment = require(errors, containment_path, [
@@ -366,6 +453,8 @@ def main():
         errors.append(f"{rel(scene_path)}: Level 1 scene is missing.")
     else:
         scene = read(scene_path)
+        if "\n  m_Name: VentRoom\n" not in scene:
+            errors.append(f"{rel(scene_path)}: VentRoom anchor for the blower set piece is missing.")
         blocks = mono_blocks(scene)
         zone_guid = guid(ROOT / "Assets/Scripts/Zones/ZoneTrigger.cs.meta", errors)
         capture_guid = guid(ROOT / "Assets/Scripts/TeleportGorillaPlayerPhotonVR.cs.meta", errors)
@@ -386,7 +475,7 @@ def main():
         print(f"FAILED: {len(errors)} Level 1/runtime contract issue(s).")
         return 1
 
-    print("PASS: Level 1/runtime hand visual contact, Animator-owned Crawler torso, stable Crawler motion-wrapper/floor-clamp ownership, rigid Crawler vent-body containment, Crawler hand/foot surface-contact IK, legacy visual-rig cleanup, Crawler forward/turn continuity, keycard recovery, loading coverage, headlamp, safe-zone, capture, and floor-recovery source contracts.")
+    print("PASS: Level 1/runtime hand visual contact, Animator-owned Crawler torso, stable Crawler motion-wrapper/floor-clamp ownership, rigid Crawler vent-body containment, Crawler hand/foot surface-contact IK, legacy visual-rig cleanup, Crawler forward/turn continuity, keycard recovery, loading coverage, headlamp, vent blower, safe-zone, capture, and floor-recovery source contracts.")
     print("PASS: Runtime/Photon/XR/Quest validation remains separate.")
     return 0
 
