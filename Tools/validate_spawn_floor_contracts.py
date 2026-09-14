@@ -4,7 +4,7 @@
 These checks protect the specific startup timing gap found after runtime regression:
 the released rig must be proven floor-safe before RigSnapped, and the persistent guard
 must remain active during the cold-start Loading presentation once that proof succeeds.
-They do not replace Unity 2022.3.55f1, Play Mode, Photon, or headset validation.
+They do not replace Unity 2022.3.55f1, Play Mode, Photon, headset, or repeated cold-start validation.
 """
 
 from pathlib import Path
