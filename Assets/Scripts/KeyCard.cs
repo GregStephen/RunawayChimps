@@ -3,15 +3,22 @@ using UnityEngine.XR.Interaction.Toolkit;
 
 public class KeyCard : MonoBehaviour
 {
+    [Header("Credential")]
+    [Tooltip("Assign the card's color/symbol identity explicitly. Auto is retained only for legacy/name-authored compatibility.")]
+    [SerializeField] private KeycardCredential credential = KeycardCredential.Auto;
+
     private bool isInserted = false;
     private XRGrabInteractable grab;
+
     public bool IsInserted => isInserted;
     public bool WasHeldByLocalPlayer { get; private set; }
+    public KeycardCredential Credential => credential;
 
     private void OnEnable()
     {
         grab = GetComponent<XRGrabInteractable>();
-        if (grab != null) grab.selectEntered.AddListener(Selected);
+        if (grab != null)
+            grab.selectEntered.AddListener(Selected);
     }
 
     private void Selected(SelectEnterEventArgs args)
@@ -22,7 +29,8 @@ public class KeyCard : MonoBehaviour
 
     private void OnDisable()
     {
-        if (grab != null) grab.selectEntered.RemoveListener(Selected);
+        if (grab != null)
+            grab.selectEntered.RemoveListener(Selected);
     }
 
     /// <summary>
@@ -51,7 +59,7 @@ public class KeyCard : MonoBehaviour
         if (box == null)
             return;
 
-        // The Level 1 completion KeyBox is now reader-driven: a card must be
+        // The Level 1 completion KeyBox is reader-driven: a card must be
         // presented to its matching color/symbol reader rather than merely
         // touching the legacy KeyBox trigger. Keep direct insertion available
         // for older non-travel KeyBox uses.
