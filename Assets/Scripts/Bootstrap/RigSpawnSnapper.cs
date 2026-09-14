@@ -1,4 +1,5 @@
 using System.Collections;
+using Photon.Pun;
 using Unity.XR.CoreUtils;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -123,6 +124,17 @@ public class RigSpawnSnapper : MonoBehaviour
 
         Vector3 spawnPosition = default;
         Quaternion spawnRotation = Quaternion.identity;
+        // Hub can load before authentication/Photon. The global startup timeout owns that wait;
+        // the shorter slot timeout starts only after this client is actually in the room.
+        while (!PhotonNetwork.InRoom)
+        {
+            if (AppState.I != null && !string.IsNullOrEmpty(AppState.I.LastError))
+            {
+                _snapping = false;
+                yield break;
+            }
+            yield return null;
+        }
         float slotDeadline = Time.realtimeSinceStartup + Mathf.Max(1f, SpawnSlotWaitSeconds);
         while (_spawnSlots == null || !_spawnSlots.TryGetLocalSpawnPose(spawnGo.transform, out spawnPosition, out spawnRotation))
         {

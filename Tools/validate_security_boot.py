@@ -60,8 +60,9 @@ def main() -> int:
 
     require(workstation, ["Security Workstation Vignette", "GetComponentInParent<XROrigin>", "DontDestroyOnLoad(root)", "RenderMode.WorldSpace",
                           "Security Monitor World Canvas", "GameObject.CreatePrimitive", "collider.enabled = false",
-                          "Destroy(collider)", "Shader.Find(\"Unlit/Color\")", "Shader.Find(\"Standard\")",
-                          "CAM 04\\nSTILL DEAD", "VENT B\\nAGAIN?", "IF THEY GET OUT\\nI QUIT."],
+                          "Destroy(collider)", "BaseMaterialResourcePath = \"LaunchPresentation/WorkstationBase\"",
+                          "Resources.Load<Material>", "CAM 04\\nSTILL DEAD", "VENT B\\nAGAIN?",
+                          "IF THEY GET OUT\\nI QUIT."],
             "startup workstation")
 
     require(travel, ["origin.Camera.backgroundColor = Color.black", "debug.debugText.text = \"\"",

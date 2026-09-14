@@ -42,6 +42,9 @@ def main() -> int:
             errors.append(f"OculusProjectConfig missing {token!r}.")
 
     setup = read("Assets/Scripts/Editor/LaunchPresentationSettings.cs")
+    preprocess = setup.split("internal sealed class LaunchPresentationBuildPreprocessor", 1)[-1]
+    if "Apply(saveAssets:" in preprocess:
+        errors.append("Android build preprocessing must validate committed launch settings, not mutate/save project assets.")
     for token in [
         "MetaXRFeature Android",
         "systemSplashScreen",
