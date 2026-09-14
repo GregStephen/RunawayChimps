@@ -82,30 +82,30 @@ public sealed class KeycardLockProgressIndicator : MonoBehaviour
     [ContextMenu("Refresh lock progress")]
     public void Refresh()
     {
-        int required = keyBox != null ? keyBox.RequiredKeys : Mathf.Max(1, previewRequiredKeys);
-        int accepted = keyBox != null ? keyBox.CurrentKeys : 0;
-        ApplyProgress(accepted, required);
+        int requiredKeys = keyBox != null ? keyBox.RequiredKeys : Mathf.Max(1, previewRequiredKeys);
+        int acceptedKeys = keyBox != null ? keyBox.CurrentKeys : 0;
+        ApplyProgress(acceptedKeys, requiredKeys);
     }
 
-    private void HandleProgressChanged(int accepted, int required)
+    private void HandleProgressChanged(int acceptedKeys, int requiredKeys)
     {
-        ApplyProgress(accepted, required);
+        ApplyProgress(acceptedKeys, requiredKeys);
     }
 
-    private void ApplyProgress(int accepted, int required)
+    private void ApplyProgress(int acceptedKeys, int requiredKeys)
     {
         if (progressLights == null)
             return;
 
-        required = Mathf.Max(1, required);
-        accepted = Mathf.Clamp(accepted, 0, required);
-        int visibleCount = Mathf.Min(required, progressLights.Length);
+        requiredKeys = Mathf.Max(1, requiredKeys);
+        acceptedKeys = Mathf.Clamp(acceptedKeys, 0, requiredKeys);
+        int visibleCount = Mathf.Min(requiredKeys, progressLights.Length);
 
-        if (required > progressLights.Length && !warnedCapacity)
+        if (requiredKeys > progressLights.Length && !warnedCapacity)
         {
             warnedCapacity = true;
             Debug.LogWarning(
-                $"[KeycardLockProgress] '{name}' needs {required} lamps but only {progressLights.Length} are configured. " +
+                $"[KeycardLockProgress] '{name}' needs {requiredKeys} lamps but only {progressLights.Length} are configured. " +
                 "Add more lamp renderers to represent every required card.",
                 this);
         }
@@ -130,7 +130,7 @@ public sealed class KeycardLockProgressIndicator : MonoBehaviour
             localPosition.x = firstLampX + index * lampSpacing;
             lampTransform.localPosition = localPosition;
 
-            Material target = index < accepted ? acceptedMaterial : standbyMaterial;
+            Material target = index < acceptedKeys ? acceptedMaterial : standbyMaterial;
             if (target != null && lamp.sharedMaterial != target)
                 lamp.sharedMaterial = target;
         }
