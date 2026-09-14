@@ -15,6 +15,8 @@ public class LoadingFlow : MonoBehaviour
     [Header("Security boot prototype - cold startup only")]
     [Tooltip("Small presentation floor, not a simulated loading time. Set to zero for immediate entry when ready.")]
     [Range(0f, 3f)] [SerializeField] private float minimumIntroSeconds = 1.5f;
+    [Tooltip("Keeps ACCESS GRANTED visible briefly after real readiness is reached.")]
+    [Range(0f, 1f)] [SerializeField] private float minimumReadyHoldSeconds = 0.35f;
     [SerializeField] private bool playBootSounds = true;
     private const float FadeDuration = 0.2f;
     private AsyncOperation hubLoad;
@@ -24,6 +26,7 @@ public class LoadingFlow : MonoBehaviour
     private bool triggerWasPressed;
     private float deadline;
     private float startedAt;
+    private float readySince = -1f;
     private string loadError;
 
     private void Awake()
@@ -34,10 +37,7 @@ public class LoadingFlow : MonoBehaviour
 
     private void Start()
     {
-        // Scene-root discovery waits until Start, after all scene Awake/OnEnable calls.
-        // Both paths suppress legacy text before rendering; only cold startup builds the terminal.
         presentation = SecurityBootPresentation.Install(gameObject.scene, statusText, startup, playBootSounds);
-        // A sector transfer must not start another authentication/Hub load or replay the boot.
         if (!startup) return;
         startedAt = Time.realtimeSinceStartup;
         deadline = startedAt + Mathf.Max(10f, startupTimeout);
@@ -73,6 +73,14 @@ public class LoadingFlow : MonoBehaviour
             state.TryMarkReady();
         }
         bool ready = CanEnterHub();
+        if (ready)
+        {
+            if (readySince < 0f) readySince = Time.realtimeSinceStartup;
+        }
+        else
+        {
+            readySince = -1f;
+        }
         if (!ready && Time.realtimeSinceStartup >= deadline && state != null && string.IsNullOrEmpty(state.LastError))
             state.Fail("Startup timed out. Check your connection and retry.");
         string error = state != null ? state.LastError : "Bootstrap state is missing. Start from Bootstrap.";
@@ -84,7 +92,10 @@ public class LoadingFlow : MonoBehaviour
             statusText.text = string.IsNullOrEmpty(error) ? (hubReady ? state?.Status : "Loading hub...") :
                 error + "\nPress either trigger to retry. (Desktop: R)";
 
-        if (ready && !reviewHeld && Time.realtimeSinceStartup - startedAt >= Mathf.Clamp(minimumIntroSeconds, 0f, 3f))
+        bool introFloorMet = Time.realtimeSinceStartup - startedAt >= Mathf.Clamp(minimumIntroSeconds, 0f, 3f);
+        bool readyHoldMet = readySince >= 0f &&
+            Time.realtimeSinceStartup - readySince >= Mathf.Clamp(minimumReadyHoldSeconds, 0f, 1f);
+        if (ready && !reviewHeld && introFloorMet && readyHoldMet)
         {
             entering = true;
             StartCoroutine(EnterHub());
@@ -121,10 +132,11 @@ public class LoadingFlow : MonoBehaviour
     {
         if (!startup || entering) return;
         deadline = Time.realtimeSinceStartup + Mathf.Max(10f, startupTimeout);
+        readySince = -1f;
         loadError = null;
         AppState.I?.ClearFailure();
-        presentation?.RestoreAfterInterruptedEntry();
-        BeginHubLoad(); // Reuse an in-flight native scene load; never duplicate it.
+        presentation?.RestartAttempt();
+        BeginHubLoad();
         if (GameBootstrap.I != null) GameBootstrap.I.RetryStartup();
         else AppState.I?.Fail("Bootstrap service is missing. Start from Bootstrap.");
     }
@@ -132,7 +144,6 @@ public class LoadingFlow : MonoBehaviour
     private IEnumerator EnterHub()
     {
         yield return null;
-        // Fade only the terminal away; the complete black backdrop stays opaque.
         for (float elapsed = 0f; elapsed < FadeDuration; elapsed += Time.unscaledDeltaTime)
         {
             if (!CanEnterHub()) { AbortEntry(); yield break; }
@@ -163,9 +174,9 @@ public class LoadingFlow : MonoBehaviour
 
     private void AbortEntry()
     {
-        // Losing the session during either fade must return to a readable retry screen.
         if (gameObject.scene.IsValid() && gameObject.scene.isLoaded)
             SceneManager.SetActiveScene(gameObject.scene);
+        readySince = -1f;
         presentation?.RestoreAfterInterruptedEntry();
         entering = false;
         if (AppState.I != null && string.IsNullOrEmpty(AppState.I.LastError))

@@ -13,6 +13,10 @@ namespace RunawayChimps.Loading
         private static readonly Color Muted = new Color(0.30f, 0.45f, 0.39f);
         private static readonly Color Amber = new Color(0.88f, 0.65f, 0.31f);
         private static readonly Color Fault = new Color(0.94f, 0.53f, 0.38f);
+        private static readonly string[] StageNames =
+        {
+            "FACILITY LINK", "SECURITY SECTOR", "ARRIVAL ALIGNMENT", "AVATAR LINK", "VISUAL SYSTEMS"
+        };
         private const float DesignWidth = 1080f;
         private const float DesignHeight = 820f;
         private Canvas hostCanvas;
@@ -27,6 +31,7 @@ namespace RunawayChimps.Loading
         private readonly TMP_Text[] stageLabels = new TMP_Text[5];
         private readonly Image[] stageLights = new Image[5];
         private readonly bool[] stages = new bool[5];
+        private readonly float[] stageReachedAt = { -1f, -1f, -1f, -1f, -1f };
         private AudioSource bootAudio;
         private AudioClip tick;
         private Camera boundCamera;
@@ -36,6 +41,7 @@ namespace RunawayChimps.Loading
         private Color savedBackground;
         private bool startupMode;
         private bool fading;
+        private bool readyLogged;
         private float appearedAt;
         private float nextSoundAt;
         private int previousBits;
@@ -75,7 +81,8 @@ namespace RunawayChimps.Loading
             backdropGroup.alpha = 1f;
             backdropGroup.interactable = false;
             backdropGroup.blocksRaycasts = false;
-            // Disable renderers, not only strings: no stale daily tip/debug/status flash.
+            hostCanvas.overrideSorting = true;
+            hostCanvas.sortingOrder = 32000;
             foreach (GameObject root in scene.GetRootGameObjects())
             {
                 foreach (LoadingDebugText debug in root.GetComponentsInChildren<LoadingDebugText>(true))
@@ -83,7 +90,6 @@ namespace RunawayChimps.Loading
                 foreach (TMP_Text label in root.GetComponentsInChildren<TMP_Text>(true))
                     label.enabled = false;
             }
-            // Travel keeps the existing black background and XR overscan, with no terminal or audio.
             if (!startupMode) return;
             var scaler = canvas.GetComponent<CanvasScaler>();
             if (scaler != null)
@@ -115,11 +121,10 @@ namespace RunawayChimps.Loading
             Box("Header divider", terminal, 48, 220, 984, 2, Muted);
             Label("Stage heading", "STARTUP DIAGNOSTICS", 48, 244, 710, 28, 20, Muted);
             Label("State heading", "STATUS", 804, 244, 228, 28, 20, Muted, TextAlignmentOptions.TopRight);
-            string[] names = { "FACILITY LINK", "SECURITY SECTOR", "ARRIVAL ALIGNMENT", "AVATAR LINK", "VISUAL SYSTEMS" };
-            for (int i = 0; i < names.Length; i++)
+            for (int i = 0; i < StageNames.Length; i++)
             {
                 float y = 287 + i * 52;
-                Label("Stage " + i, names[i], 48, y, 680, 38, 28, Phosphor);
+                Label("Stage " + i, StageNames[i], 48, y, 680, 38, 28, Phosphor);
                 stageLabels[i] = Label("State " + i, "WAITING", 744, y, 288, 38, 28, Muted, TextAlignmentOptions.TopRight);
                 stageLights[i] = Box("Progress " + i, terminal, 48 + i * 200, 558, 184, 8, Muted);
             }
@@ -131,7 +136,6 @@ namespace RunawayChimps.Loading
             cursor = Box("Activity cursor", terminal, 1008, 787, 22, 7, Phosphor);
         }
 
-        /// <summary>Segments are real prerequisites, not an estimated load percentage.</summary>
         public void Present(AppState state, bool hubLoaded, bool inRoom, string error, bool reviewHeld)
         {
             if (!startupMode || terminal == null) return;
@@ -145,7 +149,11 @@ namespace RunawayChimps.Loading
             int bits = 0;
             for (int i = 0; i < stages.Length; i++)
             {
-                if (stages[i]) bits |= 1 << i;
+                if (stages[i])
+                {
+                    bits |= 1 << i;
+                    if (stageReachedAt[i] < 0f) stageReachedAt[i] = Time.unscaledTime - appearedAt;
+                }
                 SetLabel(stageLabels[i], stages[i] ? "ONLINE" : "WAITING", stages[i] ? Phosphor : Muted);
                 stageLights[i].color = stages[i] ? Phosphor : new Color(0.10f, 0.17f, 0.14f);
             }
@@ -156,6 +164,11 @@ namespace RunawayChimps.Loading
             }
             previousBits = bits;
             previousError = error;
+            if (ready && !readyLogged)
+            {
+                readyLogged = true;
+                LogReadyTiming();
+            }
             SetLabel(headline, failed ? "STARTUP INTERRUPTED" : ready ?
                 (reviewHeld ? "ACCESS READY / EDITOR REVIEW HOLD" : "ACCESS GRANTED") : "RESTORING FACILITY ACCESS",
                 failed ? Fault : ready ? Phosphor : Amber);
@@ -169,6 +182,19 @@ namespace RunawayChimps.Loading
                 failed ? Amber : Muted);
         }
 
+        [System.Diagnostics.Conditional("UNITY_EDITOR")]
+        [System.Diagnostics.Conditional("DEVELOPMENT_BUILD")]
+        private void LogReadyTiming()
+        {
+            Debug.Log(
+                $"[SecurityBoot] Ready in {Time.unscaledTime - appearedAt:0.00}s | " +
+                $"FacilityLink={FormatTiming(stageReachedAt[0])}, SecuritySector={FormatTiming(stageReachedAt[1])}, " +
+                $"ArrivalAlignment={FormatTiming(stageReachedAt[2])}, AvatarLink={FormatTiming(stageReachedAt[3])}, " +
+                $"VisualSystems={FormatTiming(stageReachedAt[4])}", this);
+        }
+
+        private static string FormatTiming(float seconds) => seconds < 0f ? "n/a" : seconds.ToString("0.00") + "s";
+
         private void LateUpdate()
         {
             if (!startupMode || terminal == null) return;
@@ -177,7 +203,6 @@ namespace RunawayChimps.Loading
             float scale = Mathf.Min(size.x * 0.72f / DesignWidth, size.y * 0.84f / DesignHeight);
             terminal.localScale = Vector3.one * Mathf.Max(0.01f, scale);
             if (!fading) terminalGroup.alpha = Mathf.Clamp01((Time.unscaledTime - appearedAt) / 0.3f);
-            // Slow, low-contrast activity cue; no scanline shader, strobe or camera motion.
             Color c = string.IsNullOrEmpty(previousError) ? Phosphor : Amber;
             c.a = 0.55f + 0.18f * Mathf.Sin(Time.unscaledTime * 2f);
             cursor.color = c;
@@ -195,7 +220,6 @@ namespace RunawayChimps.Loading
             hostCanvas.worldCamera = boundCamera;
             hostCanvas.planeDistance = Mathf.Max(1.5f, boundCamera.nearClipPlane + 0.1f);
             MaskStartupCamera();
-            // Use the persistent tracked camera for both eyes and desktop; no second rig.
             foreach (GameObject root in gameObject.scene.GetRootGameObjects())
                 foreach (LoadingFallbackCamera fallback in root.GetComponentsInChildren<LoadingFallbackCamera>(true))
                 {
@@ -247,6 +271,18 @@ namespace RunawayChimps.Loading
             if (terminalGroup != null) terminalGroup.alpha = 1f;
         }
 
+        public void RestartAttempt()
+        {
+            RestoreAfterInterruptedEntry();
+            appearedAt = Time.unscaledTime;
+            nextSoundAt = 0f;
+            previousBits = 0;
+            previousError = null;
+            readyLogged = false;
+            for (int i = 0; i < stageReachedAt.Length; i++) stageReachedAt[i] = -1f;
+            if (terminalGroup != null) terminalGroup.alpha = 0f;
+        }
+
         private void BuildAudio()
         {
             const int rate = 22050;
@@ -266,6 +302,11 @@ namespace RunawayChimps.Loading
             bootAudio.spatialBlend = 0f;
             bootAudio.volume = 0.045f;
             bootAudio.dopplerLevel = 0f;
+        }
+
+        private void OnDisable()
+        {
+            RestoreCameraForReveal();
         }
 
         private void OnDestroy()
