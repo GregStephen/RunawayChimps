@@ -1,0 +1,30 @@
+name: Temporary keycard reader review docs update
+
+on:
+  push:
+    branches:
+      - feature/keycard-reader-light-feedback
+    paths:
+      - .github/workflows/temp-keycard-reader-review-docs.yml
+
+permissions:
+  contents: write
+
+jobs:
+  update-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/keycard-reader-light-feedback
+          fetch-depth: 0
+      - name: Update maintained docs
+        run: python Tools/temp_update_keycard_reader_review_docs.py
+      - name: Commit docs and remove temporary updater
+        run: |
+          git rm .github/workflows/temp-keycard-reader-review-docs.yml Tools/temp_update_keycard_reader_review_docs.py
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/design-and-lore.md docs/repository-improvement-plan.md
+          git commit -m "Document keycard reader review hardening"
+          git push origin HEAD:feature/keycard-reader-light-feedback
