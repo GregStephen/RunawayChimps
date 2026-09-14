@@ -4,7 +4,7 @@ using UnityEngine;
 
 /// <summary>
 /// Matches physical color/symbol keycards to a reader, provides immediate LED feedback,
-/// and optionally submits a matching gameplay KeyCard to the same-scene objective KeyBox.
+/// and optionally submits a matching gameplay KeyCard to an explicitly authored objective.
 /// Persistent accepted-card progress is displayed separately by KeycardLockProgressIndicator.
 /// </summary>
 [DisallowMultipleComponent]
@@ -20,7 +20,7 @@ public sealed class KeycardReaderLightController : MonoBehaviour
     }
 
     [Header("Reader identity")]
-    [Tooltip("Auto infers the credential from the reader root name, e.g. Reader_Amber_Triangle.")]
+    [Tooltip("Prefer an explicit credential on reader variants. Auto remains a fallback for legacy/name-authored readers.")]
     [SerializeField] private CredentialType expectedCredential = CredentialType.Auto;
     [SerializeField] private Transform readerRoot;
 
@@ -32,11 +32,10 @@ public sealed class KeycardReaderLightController : MonoBehaviour
     [SerializeField, Min(0f)] private float acceptedFlashSeconds = 0.45f;
 
     [Header("Objective submission")]
-    [Tooltip("When enabled, a matching gameplay KeyCard is submitted through KeyBox.TryAddKey.")]
+    [Tooltip("When enabled, a matching gameplay KeyCard may be submitted to the authored KeyBox objective.")]
     [SerializeField] private bool submitMatchingCardsToKeyBox = true;
+    [Tooltip("Assign the intended objective explicitly. If left empty, exactly one KeyBox deliberately nested under this reader root may be used. Scene-wide KeyBox discovery is never performed.")]
     [SerializeField] private KeyBox keyBox;
-    [Tooltip("If no KeyBox is assigned, bind the unique Level 1 completion KeyBox in this scene, or the unique same-scene KeyBox as a fallback.")]
-    [SerializeField] private bool autoBindUniqueKeyBoxInScene = true;
 
     private readonly HashSet<Collider> acceptedColliders = new HashSet<Collider>();
     private CredentialType resolvedCredential;
@@ -44,12 +43,13 @@ public sealed class KeycardReaderLightController : MonoBehaviour
     private bool warnedAboutConfiguration;
     private bool warnedMissingGameplayCard;
     private bool warnedMissingProgressSource;
+    private bool warnedAmbiguousProgressSource;
     private float acceptedVisualUntil = -1f;
 
     private void Awake()
     {
         ResolveReferences();
-        ResolveKeyBox();
+        ResolveAuthoredKeyBox();
 
         resolvedCredential = expectedCredential == CredentialType.Auto
             ? ParseCredential(readerRoot != null ? readerRoot.name : string.Empty)
@@ -85,7 +85,7 @@ public sealed class KeycardReaderLightController : MonoBehaviour
         }
 
         if (keyBox == null)
-            ResolveKeyBox();
+            ResolveAuthoredKeyBox();
 
         if (keyBox == null)
         {
@@ -127,6 +127,17 @@ public sealed class KeycardReaderLightController : MonoBehaviour
         SetAcceptedVisual(false);
     }
 
+    /// <summary>
+    /// Allows scene/bootstrap code to bind a specific objective without enabling any
+    /// global discovery behavior. A serialized Inspector reference remains preferred.
+    /// </summary>
+    public void BindObjective(KeyBox source)
+    {
+        keyBox = source;
+        warnedMissingProgressSource = false;
+        warnedAmbiguousProgressSource = false;
+    }
+
     private void ResolveReferences()
     {
         if (readerRoot == null)
@@ -140,46 +151,23 @@ public sealed class KeycardReaderLightController : MonoBehaviour
             statusLedRenderer = led.GetComponent<Renderer>();
     }
 
-    private void ResolveKeyBox()
+    private void ResolveAuthoredKeyBox()
     {
-        if (keyBox != null)
+        if (keyBox != null || readerRoot == null)
             return;
 
-        KeyBox parentBox = GetComponentInParent<KeyBox>();
-        if (parentBox != null)
+        // The existing Level 1 objective was deliberately reparented beneath its
+        // reader when the authored reader replaced the old KeyBox housing. Treat that
+        // hierarchy as an explicit binding, but never search the rest of the scene.
+        KeyBox[] nestedBoxes = readerRoot.GetComponentsInChildren<KeyBox>(true);
+        if (nestedBoxes.Length == 1)
         {
-            keyBox = parentBox;
+            keyBox = nestedBoxes[0];
             return;
         }
 
-        if (!autoBindUniqueKeyBoxInScene || !gameObject.scene.IsValid())
-            return;
-
-        KeyBox[] boxes = FindObjectsOfType<KeyBox>(true);
-        KeyBox uniqueCompletionBox = null;
-        KeyBox uniqueSameSceneBox = null;
-        int completionMatches = 0;
-        int sameSceneMatches = 0;
-
-        foreach (KeyBox box in boxes)
-        {
-            if (box == null || box.gameObject.scene != gameObject.scene)
-                continue;
-
-            uniqueSameSceneBox = box;
-            sameSceneMatches++;
-
-            if (!box.travelToLevelTwoOnComplete)
-                continue;
-
-            uniqueCompletionBox = box;
-            completionMatches++;
-        }
-
-        if (completionMatches == 1)
-            keyBox = uniqueCompletionBox;
-        else if (completionMatches == 0 && sameSceneMatches == 1)
-            keyBox = uniqueSameSceneBox;
+        if (nestedBoxes.Length > 1)
+            WarnAmbiguousProgressSource();
     }
 
     private bool TryResolveMatchingCard(Collider other, out KeyCard gameplayCard)
@@ -314,8 +302,19 @@ public sealed class KeycardReaderLightController : MonoBehaviour
 
         warnedMissingProgressSource = true;
         Debug.LogWarning(
-            $"[KeycardReader] '{name}' recognized a matching gameplay card but could not resolve a KeyBox. " +
-            "Assign the intended KeyBox explicitly if this scene contains more than one completion lock.",
+            $"[KeycardReader] '{name}' recognized a matching gameplay card but has no authored KeyBox objective. " +
+            "Assign the intended KeyBox explicitly, or nest exactly one KeyBox beneath this reader root.",
+            this);
+    }
+
+    private void WarnAmbiguousProgressSource()
+    {
+        if (warnedAmbiguousProgressSource || !Application.isPlaying)
+            return;
+
+        warnedAmbiguousProgressSource = true;
+        Debug.LogWarning(
+            $"[KeycardReader] '{name}' contains more than one nested KeyBox, so objective submission is disabled until one is assigned explicitly.",
             this);
     }
 }
