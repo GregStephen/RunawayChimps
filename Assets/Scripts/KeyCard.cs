@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.XR.Interaction.Toolkit;
 
+[DisallowMultipleComponent]
 public class KeyCard : MonoBehaviour
 {
     [Header("Credential")]
