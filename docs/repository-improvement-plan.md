@@ -558,3 +558,16 @@ The recommendations preserve the agreed direction: open level access, individual
 **Multiplayer development workflow:** standardize one-PC checks on Unity Editor Client A plus Windows Development Build Client B in the same private Photon room. The convenience launcher/identity/desktop-control/HUD harness remains **planned, not implemented**; see `docs/multiplayer-development-testing.md`.
 
 **Pending validation:** source checks do not replace Unity 2022.3.55f1 import/compile, Editor validators, Play Mode, headset/Quest, or two-client Photon runtime tests.
+
+## September 14 startup floor post-release hardening
+
+**Confirmed regression:** cold Bootstrap -> Hub startup can again reveal the local player intersecting the floor. Prior grounding fixes remain implemented but are not runtime-validated as sufficient. The keycard-reader branch is not the source of this regression because its diff does not alter `RigSpawnSnapper`, `RigFloorPenetrationGuard`, Gorilla locomotion startup, or Bootstrap authoring.
+
+**Root cause found in source:** frozen placement and floor correction ended before the first live Rigidbody/locomotion physics steps. `RigSpawnSnapper` restored physics and immediately set `RigSnapped`, while `RigFloorPenetrationGuard` refused to run until the entire app was ready and refused to run while `Loading` was active. The security boot/startup flow legitimately keeps `Loading` active after the Hub is loaded, so the intended last-line guard left a real post-release gap.
+
+**Implemented on `fix/startup-floor-regression`:** add a bounded post-release stabilization phase before `MarkRigSnapped`: three consecutive live fixed steps must verify the actual Gorilla body against the Hub support floor; any shallow lift restarts the count, with twelve attempts maximum. The floor guard can now verify a supplied world scene, uses the loaded Hub during cold-start Loading after snap ownership ends, and gates on `RigSnapped` instead of full `IsReady`. It still never pulls downward, does not fight `SectorTravelService` while travel owns the rig, preserves the bounded recovery depth, and resets Gorilla locomotion state after recovery. New `Tools/validate_spawn_floor_contracts.py` is wired into Source Integrity to protect the post-release-before-`RigSnapped` ordering and Loading-window guard behavior.
+
+**Pending tests:** PR Source Integrity, Unity 2022.3.55f1 import/compile, repeated cold starts with varied physical headset/controller poses and recenter timing, then all existing travel/capture floor checks. Treat repeated `[RigFloorPenetrationGuard]` recoveries or any post-release stabilization failure as evidence the underlying XR/physics ownership is still unstable rather than increasing recovery limits blindly.
+
+
+**Validation update, 2026-09-14:** PR #24 Source Integrity is green with the new startup-floor safety validator plus the existing repository-wide source checks. Runtime acceptance remains pending: repeated cold Hub starts across varied headset/controller/recenter states, then travel/capture, two-client Photon, and Quest/headset checks.

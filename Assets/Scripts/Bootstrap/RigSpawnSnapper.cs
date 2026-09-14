@@ -12,6 +12,8 @@ public class RigSpawnSnapper : MonoBehaviour
     [Header("Timing")]
     public int FramesToWait = 2;
     [Min(1)] public int FixedSettleSteps = 3;
+    [Min(1)] public int PostReleaseStableFixedSteps = 3;
+    [Min(1)] public int PostReleaseMaxAttempts = 12;
 
     [Header("XR tracking-origin stability")]
     [Min(2)] public int TrackingOffsetStableFrames = 6;
@@ -30,6 +32,7 @@ public class RigSpawnSnapper : MonoBehaviour
     public CapsuleCollider gorillaBodyCapsule;
 
     private bool _snapping;
+    private RigFloorPenetrationGuard _floorGuard;
 
     private void Awake()
     {
@@ -39,8 +42,10 @@ public class RigSpawnSnapper : MonoBehaviour
         // The Bootstrap rig persists across sector travel. This guard is intentionally
         // created at runtime so it protects startup, travel, capture respawns and later
         // XR tracking-origin/recenter corrections without adding a scene-only reference.
-        if (GetComponent<RigFloorPenetrationGuard>() == null)
-            gameObject.AddComponent<RigFloorPenetrationGuard>();
+        _floorGuard = GetComponent<RigFloorPenetrationGuard>();
+        if (_floorGuard == null)
+            _floorGuard = gameObject.AddComponent<RigFloorPenetrationGuard>();
+        _floorGuard.ConfigureStartupRecoveryScene(HubSceneName);
 
         SceneManager.sceneLoaded += OnSceneLoaded;
     }
@@ -212,8 +217,9 @@ public class RigSpawnSnapper : MonoBehaviour
             HasSafeClearance(hubScene, headCollider, locomotionPlayer, out blocker);
 
         // Restore the entire compound collider set while the Rigidbody is still kinematic,
-        // then release physics. The post-release RigFloorPenetrationGuard catches any late
-        // XR/physics displacement without continuously changing normal locomotion height.
+        // then release physics. Do not declare the rig snapped yet: the first live physics
+        // steps are exactly where a late XR floor-offset or Gorilla contact correction can
+        // invalidate an otherwise-correct frozen placement.
         for (int i = 0; i < rigColliders.Length; i++)
         {
             if (rigColliders[i] != null)
@@ -250,12 +256,60 @@ public class RigSpawnSnapper : MonoBehaviour
             yield break;
         }
 
+        // Prove the *released* rig for consecutive live physics steps before advertising
+        // RigSnapped. If a late XR/physics adjustment buries the body, recover it and restart
+        // the stability count. This closes the old gap where the guard was disabled until
+        // overall startup readiness and while Loading remained the active scene.
+        int requiredPostReleaseSteps = Mathf.Max(1, PostReleaseStableFixedSteps);
+        int postReleaseAttemptLimit = Mathf.Max(requiredPostReleaseSteps, PostReleaseMaxAttempts);
+        int postReleaseStableSteps = 0;
+        int postReleaseAttempts = 0;
+
+        while (postReleaseStableSteps < requiredPostReleaseSteps &&
+               postReleaseAttempts < postReleaseAttemptLimit)
+        {
+            yield return new WaitForFixedUpdate();
+            Physics.SyncTransforms();
+            postReleaseAttempts++;
+
+            if (_floorGuard == null ||
+                !_floorGuard.EnsureAboveSupportFloor(hubScene, out bool recovered))
+            {
+                Debug.LogError(
+                    "[RigSpawnSnapper] Could not verify a safe Hub support floor after releasing rig physics.",
+                    this);
+                AppState.I?.Fail("The player could not settle safely above the Hub floor.");
+                _snapping = false;
+                yield break;
+            }
+
+            if (recovered)
+            {
+                postReleaseStableSteps = 0;
+                continue;
+            }
+
+            postReleaseStableSteps++;
+        }
+
+        if (postReleaseStableSteps < requiredPostReleaseSteps)
+        {
+            Debug.LogError(
+                $"[RigSpawnSnapper] Released rig did not remain floor-safe for {requiredPostReleaseSteps} consecutive fixed steps " +
+                $"within {postReleaseAttemptLimit} attempts.",
+                this);
+            AppState.I?.Fail("The player could not stabilize above the Hub floor.");
+            _snapping = false;
+            yield break;
+        }
+
         AppState.I?.MarkRigSnapped();
         AppState.I?.TryMarkReady();
 
         Debug.Log(
-            $"[RigSpawnSnapper] Snapped + ground-corrected after {settleAttempts} fixed attempt(s) / " +
-            $"{stableFixedSteps} stable step(s); XR floor offset was stabilized before release.");
+            $"[RigSpawnSnapper] Snapped + ground-corrected after {settleAttempts} frozen fixed attempt(s) / " +
+            $"{stableFixedSteps} stable frozen step(s), then {postReleaseStableSteps} stable live-physics step(s) " +
+            $"across {postReleaseAttempts} post-release attempt(s).");
         _snapping = false;
     }
 
