@@ -43166,6 +43166,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4e535a396467fea4587e1f53f2d211ec, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  credential: 1
 --- !u!114 &768804181
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -136864,6 +136865,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4e535a396467fea4587e1f53f2d211ec, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  credential: 1
 --- !u!114 &2117548411
 MonoBehaviour:
   m_ObjectHideFlags: 0

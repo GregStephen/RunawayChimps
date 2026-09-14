@@ -51,7 +51,6 @@ MonoBehaviour:
   m_EditorClassIdentifier:
   keyBox: {fileID: 0}
   previewRequiredKeys: 2
-  autoBindUniqueKeyBoxInScene: 1
   progressLights:
   - {fileID: 230100}
   - {fileID: 230200}
