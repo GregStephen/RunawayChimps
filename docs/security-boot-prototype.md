@@ -1,10 +1,14 @@
 # Security-system boot prototype - Option A
 
-Date: 2026-09-13. Branch: `codex/security-boot-prototype`, based on `main` commit `05ea14f4af038296eec23f69de12aa9b26985b13`. Draft PR **#20**. Unity **2022.3.55f1**, Photon PUN. This is a testable visual direction, not final art approval or a merged feature.
+Date: 2026-09-13. Branch: `codex/security-boot-prototype`, based on `main` commit `05ea14f4af038296eec23f69de12aa9b26985b13`. Draft PR **#20**. Unity **2022.3.55f1**, Photon PUN. The visual concept is now approved as the launch direction; implementation remains unmerged and technically unvalidated in Unity/headset.
+
+## Visual concept approval
+
+**Confirmed by Greg, 2026-09-13:** after reviewing the prototype, Greg approved the **facility security-system boot** as the launch presentation direction for Runaway Chimps. The floating startup idea is no longer the selected alternative. This is design/visual approval only; it does not mark Unity, Photon, headset, or Quest validation complete.
 
 ## Decision and correction record
 
-**Confirmed for prototyping:** Greg requested a test branch for Option A, the facility security-system boot. The floating idea is **Proposed, not selected or implemented**.
+**Confirmed direction:** use the facility security-system boot for the game launch presentation. The floating/abstract startup environment is no longer an active alternative for the current launch design.
 
 **Confirmed travel correction:** normal Hub/level travel should stay completely black, without terminal, logo, tips or loading text. Reconsider a minimal indicator only after measured transitions approach roughly **10 seconds**. Real error/recovery feedback remains visible.
 
@@ -44,9 +48,9 @@ During ordinary travel the installer builds no terminal or sound source and reta
 
 **Validated source only, 2026-09-13:** Source integrity previously passed for `74d42b7` and later docs-only head `46eae76`.
 
-**Current polish status:** `80bb561` implements the topmost cover, minimum ready dwell, timing diagnostics, retry timing reset and disable-time camera restoration. Source integrity and all Unity/runtime checks are pending on this head until the current workflow completes.
+**Current polish status:** `80bb561` implements the topmost cover, minimum ready dwell, timing diagnostics, retry timing reset and disable-time camera restoration. Source integrity passed on that code revision; subsequent documentation-only commits do not change runtime behavior.
 
-**Pending validation:** Unity 2022.3.55f1 import/compile, Play Mode, Photon and headset testing. No Unity runtime result is claimed by this document.
+**Pending validation:** Unity 2022.3.55f1 import/compile, Play Mode, Photon and headset testing. Greg's visual approval does not close these technical checks.
 
 ### Runtime acceptance
 
@@ -59,4 +63,4 @@ Record device, build/commit, observed duration and result with screenshots/logs.
 
 ## Maintained-overview synchronization
 
-`docs/security-boot-maintained-docs.patch` remains the prepared update for `docs/design-and-lore.md` and `docs/repository-improvement-plan.md`. It still needs reconciliation/application before merge. The current polish details above must be carried into that maintained-document update; do not treat the older visible-Loading-UI travel wording as active.
+`docs/security-boot-maintained-docs.patch` remains the prepared update for `docs/design-and-lore.md` and `docs/repository-improvement-plan.md`. It still needs reconciliation/application before merge. The current approval and polish details above must be carried into that maintained-document update; do not treat the older visible-Loading-UI travel wording as active.
