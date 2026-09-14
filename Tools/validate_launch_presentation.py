@@ -128,7 +128,7 @@ def main() -> int:
         "world-space monitor canvas",
         "CAM 04 / STILL DEAD",
         "black-only",
-        "Pending validation",
+        "Validation plan",
     ]:
         if token not in workstation_doc:
             errors.append(f"Workstation vignette documentation missing {token!r}.")
