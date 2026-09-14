@@ -13,6 +13,7 @@ def main() -> int:
     workstation = (ROOT / "Assets/Scripts/Loading/SecurityWorkstationVignette.cs").read_text(encoding="utf-8")
     travel = (ROOT / "Assets/Scripts/Travel/SectorTravelService.cs").read_text(encoding="utf-8")
     menu = (ROOT / "Assets/Scripts/Editor/SecurityBootReviewMenu.cs").read_text(encoding="utf-8")
+    tags = (ROOT / "ProjectSettings/TagManager.asset").read_text(encoding="utf-8-sig")
 
     def require(text: str, tokens: list[str], name: str) -> None:
         for token in tokens:
@@ -27,18 +28,28 @@ def main() -> int:
                    "hubLoad != null && !hubLoad.isDone", "LoadSceneMode.Additive", "GameBootstrap.I.RetryStartup()",
                    "Keyboard.current.rKey.wasPressedThisFrame", "XRNode.LeftHand", "XRNode.RightHand",
                    "if (!ready && Time.realtimeSinceStartup >= deadline", "if (!startup || entering) return;",
-                   "RestoreCameraForReveal()", "RestoreAfterInterruptedEntry()", "minimumIntroSeconds = 1.5f",
-                   "Mathf.Clamp(minimumIntroSeconds, 0f, 3f)", "#if UNITY_EDITOR", "#else\n        return false;"], "flow")
+                   "PrepareCameraForHubReveal()", "RestoreCameraForReveal()", "RestoreAfterInterruptedEntry()",
+                   "minimumIntroSeconds = 1.5f", "Mathf.Clamp(minimumIntroSeconds, 0f, 3f)",
+                   "#if UNITY_EDITOR", "#else\n        return false;"], "flow")
     if flow.count("if (!CanEnterHub()) { AbortEntry(); yield break; }") < 3:
         errors.append("Recheck readiness throughout both fades and before activation.")
+    if flow.find("PrepareCameraForHubReveal()") > flow.find("SetBackdropOpacity(0f)"):
+        errors.append("Hub reveal must combine the Hub mask with the black presentation layer before fading black away.")
 
     require(ui, ["if (!startupMode) return;", "SecurityWorkstationVignette.Create", "MonitorCanvasRoot",
+                 "PresentationLayerName = \"LoadingPresentation\"", "LayerMask.NameToLayer(PresentationLayerName)",
+                 "SetLayerRecursively(hostCanvas.gameObject, presentationLayer)",
+                 "boundCamera.cullingMask = 1 << presentationLayer",
+                 "boundCamera.cullingMask = savedCullingMask | (1 << presentationLayer)",
                  "stages[0] = inRoom", "stages[1] = hubLoaded", "state.RigSnapped",
                  "state.PhotonPlayerSpawned", "state.PlayerVisualsReady", "label.enabled = false", "debug.enabled = false",
                  "label.richText = false", "RETRY: EITHER TRIGGER", "DESKTOP: R", "Destroy(tick)",
                  "boundCamera.cullingMask = savedCullingMask", "boundCamera.clearFlags = savedClearFlags",
                  "boundCamera.backgroundColor = savedBackground", "MaskStartupCamera()",
                  "SetBackdropOpacity(1f - alpha)", "workstation.gameObject.SetActive(false)"], "presentation")
+
+    if "- LoadingPresentation" not in tags:
+        errors.append("ProjectSettings/TagManager.asset must reserve the LoadingPresentation layer.")
 
     configure = ui.split("private void Configure", 1)[-1].split("private void EnsureWorkstation", 1)[0]
     travel_return = configure.find("if (!startupMode) return;")
@@ -78,7 +89,7 @@ def main() -> int:
         for error in errors:
             print(" -", error)
         return 1
-    print("PASS: security boot source contracts (readiness, retry, workstation isolation, black travel, editor hold, camera restoration).")
+    print("PASS: security boot source contracts (readiness, retry, isolated workstation layer, black travel, editor hold, safe Hub reveal).")
     print("Unity compilation, runtime, Photon and headset validation remain separate.")
     return 0
 
