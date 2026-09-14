@@ -1,0 +1,50 @@
+name: Temporary keycard validation docs update
+
+on:
+  push:
+    branches:
+      - feature/keycard-reader-light-feedback
+    paths:
+      - .github/workflows/temp-keycard-validation-docs.yml
+
+permissions:
+  contents: write
+
+jobs:
+  update-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/keycard-reader-light-feedback
+          fetch-depth: 0
+      - name: Record successful Source Integrity validation
+        shell: python
+        run: |
+          from pathlib import Path
+
+          updates = {
+              'docs/design-and-lore.md': (
+                  '**Pending validation:** the new contract must pass the pull-request Source Integrity workflow, then Unity 2022.3.55f1 must still import/compile it and prove the real XR path: first Amber card -> 1/2, second distinct Amber card -> 2/2 and existing completion travel; wrong credentials and direct contact with the legacy completion KeyBox must not advance progress. Two-client Photon independence and Quest/headset visibility remain separate runtime checks.',
+                  '**Validated source check, 2026-09-14:** PR #23 Source Integrity passed with the focused keycard-reader contracts, repository integrity, Level 1 contracts, C# syntax, merge-marker, and whitespace checks green. **Pending runtime validation:** Unity 2022.3.55f1 must still import/compile the branch and prove the real XR path: first Amber card -> 1/2, second distinct Amber card -> 2/2 and existing completion travel; wrong credentials and direct contact with the legacy completion KeyBox must not advance progress. Two-client Photon independence and Quest/headset visibility remain separate runtime checks.'
+              ),
+              'docs/repository-improvement-plan.md': (
+                  '**Validation boundary:** these review fixes are implemented source/serialization behavior, not Unity runtime proof. The branch still needs pull-request Source Integrity, Unity 2022.3.55f1 import/compile, all matching/wrong-card scans, 0/2 -> 1/2 -> 2/2 persistence, direct legacy-box rejection, card consumption, Level 1 travel, two-client Photon checks, and headset/Quest presentation before the feature is considered validated.',
+                  '**Validated source check, 2026-09-14:** PR #23 Source Integrity passed, including the new keycard-reader contract validator plus the repository-wide source/integrity checks. **Runtime validation remains pending:** Unity 2022.3.55f1 import/compile, all matching/wrong-card scans, 0/2 -> 1/2 -> 2/2 persistence, direct legacy-box rejection, card consumption, Level 1 travel, two-client Photon checks, and headset/Quest presentation are still required before the feature is considered runtime-validated.'
+              ),
+          }
+
+          for filename, (old, new) in updates.items():
+              path = Path(filename)
+              text = path.read_text(encoding='utf-8')
+              if old not in text:
+                  raise SystemExit(f'Expected validation text not found in {filename}')
+              path.write_text(text.replace(old, new, 1).rstrip() + '\n', encoding='utf-8')
+      - name: Commit docs and remove temporary workflow
+        run: |
+          git rm .github/workflows/temp-keycard-validation-docs.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/design-and-lore.md docs/repository-improvement-plan.md
+          git commit -m "Record keycard reader source validation"
+          git push origin HEAD:feature/keycard-reader-light-feedback
