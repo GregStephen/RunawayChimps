@@ -233,17 +233,23 @@ def main() -> int:
         "Level 1 completion KeyBox must remain structurally nested beneath the Amber Triangle reader instance.",
     )
 
-    # The two currently active Level 1 cards are scene-authored Amber Triangle FBX instances.
-    # Their KeyCard components must serialize identity directly rather than relying on object names.
-    scene_card_blocks = [
-        block
-        for block in blocks
-        if f"m_Script: {{fileID: 11500000, guid: {keycard_guid}, type: 3}}" in block
-    ]
-    require(
-        len(scene_card_blocks) == 2,
-        "Level 1 must keep exactly two scene-authored gameplay KeyCard components for its two-card objective.",
-    )
+    # Level 1 still contains an older disabled card object for legacy/recovery work, so
+    # validate the two active Amber card components by their stable scene file IDs instead
+    # of counting every KeyCard block serialized anywhere in the scene.
+    active_card_component_ids = (768804180, 2117548410)
+    scene_card_blocks = []
+    for component_id in active_card_component_ids:
+        card_block = next(
+            (
+                block
+                for block in blocks
+                if block_file_id(block, 114) == component_id
+                and f"m_Script: {{fileID: 11500000, guid: {keycard_guid}, type: 3}}" in block
+            ),
+            None,
+        )
+        require(card_block is not None, f"Missing active Level 1 KeyCard component {component_id}.")
+        scene_card_blocks.append(card_block)
 
     xr_grab_guid = "0ad34abafad169848a38072baa96cdb2"
     for card_block in scene_card_blocks:
@@ -254,6 +260,10 @@ def main() -> int:
         card_go = block_game_object_id(card_block)
         require(card_go is not None, "Could not resolve a Level 1 gameplay card GameObject.")
         same_object_blocks = [block for block in blocks if block_game_object_id(block) == card_go]
+        require(
+            any(block_file_id(block, 1) is not None and "m_IsActive: 1" in block for block in same_object_blocks),
+            "Each Level 1 gameplay card must remain active in the authored scene.",
+        )
         require(
             any(block_file_id(block, 54) is not None for block in same_object_blocks),
             "Each Level 1 gameplay card must keep a Rigidbody for reader trigger delivery.",
