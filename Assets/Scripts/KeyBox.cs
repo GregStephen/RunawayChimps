@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using RunawayChimps.Travel;
 using UnityEngine;
@@ -17,7 +18,11 @@ public class KeyBox : MonoBehaviour
     private int currentKeys = 0;
     private readonly HashSet<int> acceptedCards = new HashSet<int>();
     private XRSimpleInteractable retryInteraction;
-    public bool IsComplete => currentKeys >= Mathf.Max(1, keysNeeded);
+
+    public int CurrentKeys => currentKeys;
+    public int RequiredKeys => Mathf.Max(1, keysNeeded);
+    public bool IsComplete => currentKeys >= RequiredKeys;
+    public event Action<int, int> ProgressChanged;
 
     private void Awake()
     {
@@ -51,6 +56,8 @@ public class KeyBox : MonoBehaviour
     private void AcceptKey()
     {
         currentKeys++;
+        ProgressChanged?.Invoke(CurrentKeys, RequiredKeys);
+
         if (IsComplete)
         {
             // Keep the exit solid if loading fails; completion travels through a fade.
