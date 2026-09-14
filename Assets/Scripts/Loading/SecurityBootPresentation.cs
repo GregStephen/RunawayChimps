@@ -38,6 +38,7 @@ namespace RunawayChimps.Loading
         private Image interferenceLine;
         private Texture2D staticTexture;
         private Color32[] staticPixels;
+        private SecurityWorkstationVignette workstation;
         private readonly TMP_Text[] stageLabels = new TMP_Text[5];
         private readonly Image[] stageLights = new Image[5];
         private readonly bool[] stages = new bool[5];
@@ -108,7 +109,9 @@ namespace RunawayChimps.Loading
                     label.enabled = false;
             }
 
+            // Normal sector travel intentionally stops here: black authored backdrop only, no workstation/boot/audio.
             if (!startupMode) return;
+
             var scaler = canvas.GetComponent<CanvasScaler>();
             if (scaler != null)
             {
@@ -118,20 +121,36 @@ namespace RunawayChimps.Loading
                 scaler.matchWidthOrHeight = 0.5f;
             }
 
-            BuildTerminal();
             BindStartupCamera();
             if (sounds) BuildAudio();
         }
 
-        private void BuildTerminal()
+        private void EnsureWorkstation()
         {
-            terminal = Rect("Security Boot Terminal", hostCanvas.transform, 0, 0, DesignWidth, DesignHeight);
+            if (!startupMode || workstation != null || boundCamera == null) return;
+
+            workstation = SecurityWorkstationVignette.Create(
+                gameObject.scene,
+                boundCamera,
+                font,
+                hostCanvas.gameObject.layer);
+            if (workstation == null || workstation.MonitorCanvasRoot == null) return;
+
+            BuildTerminal(workstation.MonitorCanvasRoot);
+            // Camera clear is black and only the Loading/UI layer is visible, so the desk floats in safe darkness.
+            SetBackdropOpacity(0f);
+        }
+
+        private void BuildTerminal(Transform parent)
+        {
+            terminal = Rect("Security Boot Terminal", parent, 0, 0, DesignWidth, DesignHeight);
             terminal.anchorMin = terminal.anchorMax = terminal.pivot = new Vector2(0.5f, 0.5f);
             terminal.anchoredPosition = Vector2.zero;
+            terminal.localScale = Vector3.one;
             terminalGroup = terminal.gameObject.AddComponent<CanvasGroup>();
             terminalGroup.alpha = 0f;
 
-            Box("Bezel", terminal, 0, 0, 1080, 820, new Color(0.10f, 0.16f, 0.14f));
+            Box("CRT face", terminal, 0, 0, 1080, 820, new Color(0.10f, 0.16f, 0.14f));
             Box("Screen", terminal, 8, 8, 1064, 804, new Color(0.018f, 0.034f, 0.029f));
             BuildCrtTreatment();
             Box("Power strip", terminal, 8, 8, 1064, 5, Muted);
@@ -178,7 +197,6 @@ namespace RunawayChimps.Loading
             staticNoise.color = new Color(0.46f, 0.82f, 0.60f, 0.025f);
             staticNoise.raycastTarget = false;
 
-            // Fixed, very faint scanlines add CRT texture without full-panel brightness flicker.
             for (int y = 28; y < 790; y += 30)
                 Box("CRT scanline " + y, terminal, 12, y, 1056, 1, new Color(0.46f, 0.78f, 0.58f, 0.017f));
 
@@ -258,11 +276,10 @@ namespace RunawayChimps.Loading
 
         private void LateUpdate()
         {
-            if (!startupMode || terminal == null) return;
+            if (!startupMode) return;
             BindStartupCamera();
-            Vector2 size = ((RectTransform)hostCanvas.transform).rect.size;
-            float scale = Mathf.Min(size.x * 0.72f / DesignWidth, size.y * 0.84f / DesignHeight);
-            terminal.localScale = Vector3.one * Mathf.Max(0.01f, scale);
+            if (terminal == null) return;
+
             if (!fading) terminalGroup.alpha = Mathf.Clamp01((Time.unscaledTime - appearedAt) / 0.3f);
 
             Color c = string.IsNullOrEmpty(previousError) ? Phosphor : Amber;
@@ -336,16 +353,23 @@ namespace RunawayChimps.Loading
 
         private void BindStartupCamera()
         {
-            if (boundCamera != null && boundCamera.isActiveAndEnabled) return;
+            if (boundCamera != null && boundCamera.isActiveAndEnabled)
+            {
+                EnsureWorkstation();
+                return;
+            }
+
             var player = GorillaLocomotion.Player.Instance;
             var origin = player != null ? player.GetComponentInParent<XROrigin>() : null;
             if (origin == null || origin.Camera == null || !origin.Camera.isActiveAndEnabled) return;
+
             RestoreCameraForReveal();
             boundCamera = origin.Camera;
             hostCanvas.renderMode = RenderMode.ScreenSpaceCamera;
             hostCanvas.worldCamera = boundCamera;
             hostCanvas.planeDistance = Mathf.Max(1.5f, boundCamera.nearClipPlane + 0.1f);
             MaskStartupCamera();
+            EnsureWorkstation();
 
             foreach (GameObject root in gameObject.scene.GetRootGameObjects())
                 foreach (LoadingFallbackCamera fallback in root.GetComponentsInChildren<LoadingFallbackCamera>(true))
@@ -382,7 +406,16 @@ namespace RunawayChimps.Loading
         public void SetTerminalOpacity(float alpha)
         {
             fading = true;
-            if (terminalGroup != null) terminalGroup.alpha = Mathf.Clamp01(alpha);
+            alpha = Mathf.Clamp01(alpha);
+            if (terminalGroup != null) terminalGroup.alpha = alpha;
+
+            if (workstation != null)
+            {
+                // Let the authored black full-FOV backdrop cover the entire 3D vignette before it is hidden.
+                SetBackdropOpacity(1f - alpha);
+                if (alpha <= 0.001f) workstation.gameObject.SetActive(false);
+                else if (!workstation.gameObject.activeSelf) workstation.gameObject.SetActive(true);
+            }
         }
 
         public void SetBackdropOpacity(float alpha)
@@ -393,7 +426,16 @@ namespace RunawayChimps.Loading
         public void RestoreAfterInterruptedEntry()
         {
             fading = false;
-            SetBackdropOpacity(1f);
+            if (workstation != null)
+            {
+                workstation.gameObject.SetActive(true);
+                SetBackdropOpacity(0f);
+            }
+            else
+            {
+                SetBackdropOpacity(1f);
+            }
+
             MaskStartupCamera();
             if (terminalGroup != null) terminalGroup.alpha = 1f;
         }
@@ -448,6 +490,7 @@ namespace RunawayChimps.Loading
             if (bootAudio != null) bootAudio.Stop();
             if (tick != null) Destroy(tick);
             if (staticTexture != null) Destroy(staticTexture);
+            if (workstation != null) Destroy(workstation.gameObject);
         }
 
         private static RectTransform Rect(string name, Transform parent, float x, float y, float w, float h)
