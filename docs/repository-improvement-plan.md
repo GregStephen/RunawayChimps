@@ -546,3 +546,15 @@ The recommendations preserve the agreed direction: open level access, individual
 **Source validation:** `Tools/validate_level1_contracts.py` now requires the dedicated contact component, non-allocating static-environment casts, arm-chain name binding, surface offset, two-bone rotation solve, self/Rigidbody exclusion, positive contact defaults, and guards against root or torso manipulation. Source validation passed on the implementation/contract head before the documentation sync. This remains source evidence only.
 
 **Pending Unity/headset validation:** verify both hands against vent side walls, floor and ceiling during straight patrol and chase; then repeat at the same 90-degree corner/junction used for the turn test. Required result: hand/wrist stays on the visible surface instead of passing through; elbow follows the same side of the arm without flipping; arm lengths remain stable; no jitter occurs while sliding along a wall; clearing the wall returns smoothly to the authored crawl; static world contact does not falsely react to players, keycards or the monster's own colliders. Record any remaining long-body corner clipping separately—the arm-contact IK does not solve the rigid torso's 90-degree-corner problem.
+
+## September 13 PR #19 threat-feedback merge reconciliation
+
+**Confirmed architecture:** personal threat feedback requires an explicit synchronized target ActorNumber match; shared `IsChasing` alone cannot drive it. `ProximityManager` stays generic, `ThreatFeedbackController` uses bounded `max` aggregation, and the first consumer is a local XR-camera peripheral vignette.
+
+**Implemented source:** reusable `MonsterPursuitState`/provider contracts, fresh cached proximity samples, Crawler `monsterId == 1` composition, travel-priority suppression, and `SectorMonsterSync` protocol v4. Protocol v4 uses authority epochs plus per-authority revisions so same-frame changes and delayed packets from an earlier A -> B -> A authority term fail closed. The combined Source Integrity workflow runs both the security-boot and threat-feedback validators.
+
+**Merge reconciliation completed:** current `main` security-system boot and VentRoom blower changes are preserved while PR #19's threat code is retained. The explicit `UnityEngine.Random.Range` correction is retained. The orphan `Assets/StreamingAssets.meta` reintroduced on the feature branch is dropped because current main already reuses that GUID for the VentBlower conduit material metadata.
+
+**Multiplayer development workflow:** standardize one-PC checks on Unity Editor Client A plus Windows Development Build Client B in the same private Photon room. The convenience launcher/identity/desktop-control/HUD harness remains **planned, not implemented**; see `docs/multiplayer-development-testing.md`.
+
+**Pending validation:** source checks do not replace Unity 2022.3.55f1 import/compile, Editor validators, Play Mode, headset/Quest, or two-client Photon runtime tests.

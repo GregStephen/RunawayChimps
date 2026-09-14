@@ -1,0 +1,42 @@
+name: One-time PR19 docs reconciliation
+
+on:
+  push:
+    branches:
+      - feature/global-threat-feedback
+    paths:
+      - 'Tools/_sync_pr19_docs.py'
+      - '.github/workflows/pr19-doc-sync.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/global-threat-feedback
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Reconcile maintained PR19 docs
+        run: python Tools/_sync_pr19_docs.py
+      - name: Commit reconciled docs
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- docs/design-and-lore.md docs/repository-improvement-plan.md; then
+            echo 'Docs already reconciled.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add docs/design-and-lore.md docs/repository-improvement-plan.md
+          git commit -m 'docs: reconcile PR19 threat feedback with current main'
+          git push origin HEAD:feature/global-threat-feedback
