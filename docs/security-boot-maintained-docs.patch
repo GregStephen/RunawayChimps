@@ -1,0 +1,38 @@
+--- a/docs/design-and-lore.md
++++ b/docs/design-and-lore.md
+@@ -4,4 +4,16 @@
+ 
+ We are building a social VR horror game about gorillas escaping a laboratory that experiments on animals. This document records the current game rules, Level 1, the proposed Listener level, the story, and the scene architecture so future work can build on the same decisions.
+ 
++## September 13 security-boot prototype and travel correction
++
++**Confirmed for prototyping, not final art approval:** Greg requested Option A, the facility security-system boot, on a branch for testing. The floating/abstract idea remains **Proposed, not selected or implemented**. No floating debris or forced camera movement belongs in this prototype.
++
++**Confirmed travel correction:** successful Hub/level travel should be completely black, without a boot terminal, logo, tips or loading text. This supersedes older instructions below that describe visible Loading UI during travel; the Loading scene/lifecycle and full-stereo black coverage remain. Revisit an indicator only after measured transitions approach roughly **10 seconds**. That is a future design-review trigger, not a timer implemented here. Real travel failures still surface recovery/error feedback.
++
++**Implemented on `codex/security-boot-prototype`, draft PR #20, not merged:** a local scene-owned green/amber security terminal replaces cold-launch text/tips. Five indicators observe real Photon room membership, Hub load, rig alignment, avatar spawn and avatar visuals. Existing authentication, additive-load reuse, readiness, timeout and controller-trigger/desktop-R retry remain authoritative. Startup has a configurable 1.5-second presentation floor (0-3) plus two 0.2-second fades; readiness is rechecked through entry and interrupted entry restores the error screen. The persistent camera's original culling mask, clear flags and background are restored after temporary UI-only startup masking. Travel builds no terminal/audio and suppresses legacy labels while retaining its existing rig/Photon/loading/fade/recovery lifecycle and XR overscan. Scene-root discovery is deferred to Start, after scene Awake/OnEnable initialization.
++
++**Prototype limits:** optional quiet local relay tones and a title treatment are included; a final logo, surveillance footage, CRT distortion and floating imagery are **not implemented**. Native Quest/Meta system-splash setup and any license-dependent Unity splash changes remain separate planned work; existing splash settings and XR package versions are unchanged. `Tools > Runaway Chimps > Hold Security Boot For Review` is an Editor-only inspection hold, not a readiness bypass or a playable room.
++
++**Validated source only, 2026-09-13:** Source integrity passed for `74d42b7` in GitHub Actions run `34792159108`, including C# syntax, repository integrity, Level 1/PR15 contracts and the new security-boot contracts. The first run had identified the pre-existing orphan `Assets/StreamingAssets.meta`; the branch removes that metadata only. **Pending validation:** Unity 2022.3.55f1 import/compile, normal startup, slow/failed connection and retry, interruption during both fades, two-client Photon, both-eye headset coverage/readability, camera-mask restoration, optional audio comfort and Quest performance. See [prototype setup and acceptance checks](security-boot-prototype.md). Source checks do not establish runtime success.
++
+ ## Implementation status
+--- a/docs/repository-improvement-plan.md
++++ b/docs/repository-improvement-plan.md
+@@ -4,4 +4,16 @@
+ 
+ Read the [design and lore](design-and-lore.md) for intended behavior and [AGENTS.md](../AGENTS.md) for update rules. A confirmed finding describes source evidence; it does not mean its fix is implemented or tested.
+ 
++## September 13 security-boot prototype and travel correction
++
++**Confirmed for prototyping, not final art approval:** Greg requested Option A, the facility security-system boot, on a branch for testing. The floating/abstract idea remains **Proposed, not selected or implemented**. No floating debris or forced camera movement belongs in this prototype.
++
++**Confirmed travel correction:** successful Hub/level travel should be completely black, without a boot terminal, logo, tips or loading text. This supersedes older instructions below that describe visible Loading UI during travel; the Loading scene/lifecycle and full-stereo black coverage remain. Revisit an indicator only after measured transitions approach roughly **10 seconds**. That is a future design-review trigger, not a timer implemented here. Real travel failures still surface recovery/error feedback.
++
++**Implemented on `codex/security-boot-prototype`, draft PR #20, not merged:** a local scene-owned green/amber security terminal replaces cold-launch text/tips. Five indicators observe real Photon room membership, Hub load, rig alignment, avatar spawn and avatar visuals. Existing authentication, additive-load reuse, readiness, timeout and controller-trigger/desktop-R retry remain authoritative. Startup has a configurable 1.5-second presentation floor (0-3) plus two 0.2-second fades; readiness is rechecked through entry and interrupted entry restores the error screen. The persistent camera's original culling mask, clear flags and background are restored after temporary UI-only startup masking. Travel builds no terminal/audio and suppresses legacy labels while retaining its existing rig/Photon/loading/fade/recovery lifecycle and XR overscan. Scene-root discovery is deferred to Start, after scene Awake/OnEnable initialization.
++
++**Prototype limits:** optional quiet local relay tones and a title treatment are included; a final logo, surveillance footage, CRT distortion and floating imagery are **not implemented**. Native Quest/Meta system-splash setup and any license-dependent Unity splash changes remain separate planned work; existing splash settings and XR package versions are unchanged. `Tools > Runaway Chimps > Hold Security Boot For Review` is an Editor-only inspection hold, not a readiness bypass or a playable room.
++
++**Validated source only, 2026-09-13:** Source integrity passed for `74d42b7` in GitHub Actions run `34792159108`, including C# syntax, repository integrity, Level 1/PR15 contracts and the new security-boot contracts. The first run had identified the pre-existing orphan `Assets/StreamingAssets.meta`; the branch removes that metadata only. **Pending validation:** Unity 2022.3.55f1 import/compile, normal startup, slow/failed connection and retry, interruption during both fades, two-client Photon, both-eye headset coverage/readability, camera-mask restoration, optional audio comfort and Quest performance. See [prototype setup and acceptance checks](security-boot-prototype.md). Source checks do not establish runtime success.
++
+ ## September 13 Level 1 keycard-room environment and regeneration lore

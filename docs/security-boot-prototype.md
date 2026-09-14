@@ -1,6 +1,6 @@
 # Security-system boot prototype - Option A
 
-Date: 2026-09-13. Branch: `codex/security-boot-prototype`, based on `main` commit `05ea14f4af038296eec23f69de12aa9b26985b13`. Unity **2022.3.55f1**, Photon PUN. This is a testable visual direction, not final art approval or a merged feature.
+Date: 2026-09-13. Branch: `codex/security-boot-prototype`, based on `main` commit `05ea14f4af038296eec23f69de12aa9b26985b13`. Draft PR **#20**. Unity **2022.3.55f1**, Photon PUN. This is a testable visual direction, not final art approval or a merged feature.
 
 ## Decision and correction record
 
@@ -31,7 +31,7 @@ For tuning, open **Assets/Scenes/Loading.unity**, select **LoadingFlow**, and ed
 
 ## Ownership and implementation limits
 
-`SecurityBootPresentation` is local and owned by the existing Loading scene. It reuses the authored TMP font, canvas, background and 12% XR overscan. It does not create a second XR rig, alter head/controller transforms, network the intro, or change room selection. Startup temporarily uses the persistent camera's UI-only culling mask and black clear to hide partially initialized world geometry. Its original culling mask, clear flags and background are restored for Hub reveal and on presentation destruction. Interrupted entry reopens the terminal rather than hiding an error behind a half-faded screen.
+`SecurityBootPresentation` is local and owned by the existing Loading scene. It reuses the authored TMP font, canvas, background and 12% XR overscan. It does not create a second XR rig, alter head/controller transforms, network the intro, or change room selection. Startup temporarily uses the persistent camera's UI-only culling mask and black clear to hide partially initialized world geometry. Its original culling mask, clear flags and background are restored for Hub reveal and on presentation destruction. Interrupted entry reopens the terminal rather than hiding an error behind a half-faded screen. Installation and scene-root discovery run in Start, after scene Awake/OnEnable initialization.
 
 The native **Quest/Meta system splash is not implemented or configured by this branch**. Unity splash/logo/license settings and XR package versions are unchanged. This prototype starts after Unity renders the Loading scene. Final branded splash artwork and platform/build validation remain separate planned work. The title is a prototype treatment, not an approved new logo asset.
 
@@ -39,7 +39,11 @@ The old serialized text/UI remain in Loading for fallback/source compatibility; 
 
 ## Validation record
 
-**Pending validation:** source-integrity checks and the new security-boot source-contract check; Unity 2022.3.55f1 import/compile, Play Mode, Photon and headset testing. No Unity runtime result is claimed by this document.
+**Validated source only, 2026-09-13:** both Source integrity push run `34792159108` and PR run `34792189121` passed for code commit `74d42b7eb409c8c12b9751443cf9b77195fb35da`. These include the Unity-version declaration, 125-script/5-scene source and reference checks, C# syntax parsing, repository metadata/GUID integrity, Level 1 contracts, PR15 hardening, new security-boot source contracts, Python syntax, merge markers and human-authored whitespace.
+
+**Earlier failed source check and correction:** run `34791809971` on `f9b7616` passed C# syntax/source references but found the pre-existing orphan `Assets/StreamingAssets.meta`. Commit `74d42b7` removes only that orphaned metadata, defers scene-root discovery to Start and adds the boot-contract check to the existing read-only workflow. No write-enabled preparation workflow is present on this branch.
+
+**Pending validation:** Unity 2022.3.55f1 import/compile, Play Mode, Photon and headset testing. No Unity runtime result is claimed by this document.
 
 ### Runtime acceptance
 
@@ -49,3 +53,9 @@ The old serialized text/UI remain in Loading for fallback/source compatibility; 
 - **Regression:** Hub to Level 1, both Hub returns, Level 1 completion to Level 2, RETURN TO SECURITY, capture respawn, failed travel and two-client Photon in different sectors. No intro replay, successful-travel text, changed room selection, missing avatar, stuck fade or changed monster/interaction behavior.
 
 Record device, build/commit, observed duration and result with screenshots/logs. Green source checks do not close runtime items.
+
+## Maintained-overview synchronization: prepared, not applied
+
+The two maintained overview files, `docs/design-and-lore.md` and `docs/repository-improvement-plan.md`, have **not yet been modified by this prototype branch**. Their synchronization remains a pre-merge item, rather than a completed documentation update. The latest decisions and actual tests are recorded above.
+
+`docs/security-boot-maintained-docs.patch` prepares an additive decision/correction section for both files, preserving all existing text and explicitly superseding the older visible-Loading-UI travel direction. Its insertion context was checked against the retrieved opening sections; it has not been applied or tested against a complete local repository checkout. After reconciling any newer documentation edits, apply and review it as a documentation-only change. It is not required to run the prototype.
