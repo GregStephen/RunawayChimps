@@ -67,7 +67,8 @@ public sealed class RigFloorPenetrationGuard : MonoBehaviour
         if (!scene.IsValid() || !scene.isLoaded)
             return;
 
-        EnsureAboveSupportFloor(scene, out _);
+        if (EnsureAboveSupportFloor(scene, out bool recovered) && recovered)
+            nextRecoveryTime = Time.unscaledTime + recoveryCooldown;
     }
 
     /// <summary>
@@ -79,11 +80,8 @@ public sealed class RigFloorPenetrationGuard : MonoBehaviour
     public bool EnsureAboveSupportFloor(Scene scene, out bool recovered)
     {
         recovered = false;
-        if (!TryBind() || !scene.IsValid() || !scene.isLoaded ||
-            !player.enabled || !player.bodyCollider.enabled)
-        {
+        if (!TryBind() || !scene.IsValid() || !scene.isLoaded || !player.bodyCollider.enabled)
             return false;
-        }
 
         Physics.SyncTransforms();
         if (!TryFindSupportFloor(scene, out RaycastHit floor, out float bodyBottom))
@@ -239,7 +237,6 @@ public sealed class RigFloorPenetrationGuard : MonoBehaviour
         if (playerWasEnabled)
             player.enabled = true;
 
-        nextRecoveryTime = Time.unscaledTime + recoveryCooldown;
         recoveryCount++;
 
         if (recoveryCount <= 5)
