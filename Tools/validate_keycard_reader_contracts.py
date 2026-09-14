@@ -153,6 +153,7 @@ def main() -> int:
     print("PASS: gameplay readers do not perform scene-wide KeyBox discovery.")
     print("PASS: all four reader variants serialize explicit credential identities.")
     print("PASS: Level 1 completion KeyBox remains authored beneath the Amber reader hierarchy.")
+    print("PASS: Unity 2022.3.55f1, XR/physics, Photon, travel, and headset validation remain separate.")
     return 0
 
 
