@@ -93,7 +93,7 @@ namespace RunawayChimps.Loading
         private void Configure(Scene scene, Canvas canvas, TMP_Text legacyStatus, bool startup, bool sounds)
         {
             hostCanvas = canvas;
-            legacyStatus = legacyStatusText;
+            this.legacyStatus = legacyStatus;
             startupMode = startup;
             appearedAt = Time.unscaledTime;
             font = legacyStatus != null ? legacyStatus.font : TMP_Settings.defaultFontAsset;
