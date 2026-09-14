@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Source-level contracts for the reusable keycard reader/progress system.
 
-This deliberately validates serialization and wiring that can be proven without opening
-Unity. It does not claim XR trigger delivery, runtime physics, Photon behavior, travel,
-or headset presentation.
+Source Integrity runs this validator on pull requests. It deliberately checks only
+serialization and wiring that can be proven without opening Unity; it does not claim
+XR trigger delivery, runtime physics, Photon behavior, travel, or headset presentation.
 """
 
 from pathlib import Path
