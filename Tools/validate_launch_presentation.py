@@ -50,6 +50,30 @@ def main() -> int:
         if token not in setup:
             errors.append(f"LaunchPresentationSettings missing {token!r}.")
 
+    boot = read("Assets/Scripts/Loading/SecurityBootPresentation.cs")
+    for token in [
+        "Security Boot Terminal",
+        "BuildCrtTreatment",
+        "StaticRefreshInterval = 0.10f",
+        "RefreshStaticTexture",
+        "Low-level CRT static",
+        "CRT scanline",
+        "CRT interference sweep",
+        "NextNoise01",
+        "staticBurstUntil",
+    ]:
+        if token not in boot:
+            errors.append(f"Security boot CRT treatment missing {token!r}.")
+    for forbidden in ["UnityEngine.Random.Range", "Random.Range(", "new RenderTexture"]:
+        if forbidden in boot:
+            errors.append(f"Security boot CRT treatment must stay local, allocation-light and deterministic: {forbidden!r} found.")
+    if "0.065f" not in boot or "0.045f" not in boot:
+        errors.append("Security boot CRT treatment no longer exposes the reviewed low-alpha interference/static caps.")
+
+    flow = read("Assets/Scripts/Bootstrap/LoadingFlow.cs")
+    if "Security boot prototype" in flow or "Security Boot Prototype" in boot:
+        errors.append("Production launch presentation still contains prototype-only runtime/Inspector naming.")
+
     player = read("ProjectSettings/ProjectSettings.asset")
     if "m_VirtualRealitySplashScreen: {fileID: 0}" not in player:
         errors.append("Unity Virtual Reality Splash Image must remain empty when using Meta system splash + custom startup scene.")
@@ -74,8 +98,8 @@ def main() -> int:
             print(" -", error)
         return 1
 
-    print("PASS: launch presentation source contracts (OpenXR path, Meta system splash asset/config, build guard, black-background ownership).")
-    print("Unity import/compile, APK build, compositor splash, headset handoff, Photon and Quest performance remain separate checks.")
+    print("PASS: launch presentation source contracts (OpenXR path, Meta system splash, build guard, CRT boot treatment, black-background ownership).")
+    print("Unity import/compile, Play Mode appearance, APK build, compositor splash, headset handoff, Photon and Quest performance remain separate checks.")
     return 0
 
 
