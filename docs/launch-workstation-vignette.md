@@ -29,6 +29,10 @@ This is a production-presentation refinement, not a new room, gameplay space or 
 - `ProjectSettings/TagManager.asset` reserves `LoadingPresentation` so startup rendering is isolated from the ordinary `UI` layer.
 - `Tools/validate_security_boot.py` and `Tools/validate_launch_presentation.py` protect startup-only construction, dedicated-layer isolation, world-space monitor UI, fitted monitor scale, bezel note placement, collider removal, no tracked-camera writes, no Photon/readiness writes and unchanged black-only travel.
 
+## Source validation
+
+**Validated source only:** workstation implementation head `2b2bf1a41c637e0108c8b5b4ff8054070543f43f` passed Source Integrity run `34803476268` after reconciliation with current `main`. The full repository suite passed the Level 1, PR #15, security-boot, threat-feedback and launch/workstation contracts together. This is source/tooling evidence only; it does not prove Unity import/compile or visual comfort.
+
 ## Art / lore boundary
 
 **Implemented presentation uses temporary low-poly primitive geometry.** This pass is intentionally about composition, scale, readability, mood and technical ownership rather than final prop art. A later Blender asset pass can replace the runtime geometry without changing startup logic.
@@ -36,12 +40,6 @@ This is a production-presentation refinement, not a new room, gameplay space or 
 The note text is **flavor/Easter-egg copy**, not confirmed progression lore. Treat it as editable dressing until Greg separately approves exact wording. Do not make a note carry required credentials, codes, objective instructions or a definitive claim about the Crawler's origin.
 
 ## Validation plan
-
-### Source / repository
-
-- Unity metadata/GUID integrity and C# syntax must pass.
-- Existing Level 1, PR #15, security-boot, threat-feedback and launch-presentation source contracts must still pass on the current-main merge.
-- Workstation-specific guards must pass: startup-only construction, dedicated `LoadingPresentation` layer, world-space monitor canvas, fitted UI scale, no camera-transform writes, no RenderTexture, no Photon/gameplay writes, colliders disabled/removed and black-travel behavior unchanged.
 
 ### Play Mode
 
