@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: VentBlower_RedMaintenanceLens
+  m_Name: LED_Standby_Amber
   m_Shader: {fileID: 46, guid: 0000000000000000f000000000000000, type: 0}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
@@ -66,7 +66,7 @@ Material:
     - _DetailNormalMapScale: 1
     - _DstBlend: 0
     - _GlossMapScale: 1
-    - _Glossiness: 0.4
+    - _Glossiness: 0.59999996
     - _GlossyReflections: 1
     - _Metallic: 0
     - _Mode: 0
@@ -78,6 +78,6 @@ Material:
     - _UVSec: 0
     - _ZWrite: 1
     m_Colors:
-    - _Color: {r: 0.35, g: 0.01, b: 0.008, a: 1}
-    - _EmissionColor: {r: 2.6, g: 0.035, b: 0.02, a: 1}
+    - _Color: {r: 0.67997575, g: 0.43662706, b: 0.13816993, a: 1}
+    - _EmissionColor: {r: 0.90999997, g: 0.266, b: 0.025199998, a: 1}
   m_BuildTextureStacks: []
