@@ -51,13 +51,18 @@ def main() -> int:
     overscan = (ROOT / "Assets/Scripts/Travel/LoadingCanvasOverscan.cs").read_text(encoding="utf-8")
     require(overscan, ["Overscan = 0.12f", "image.color = Color.black"], "existing XR coverage")
     doc = (ROOT / "docs/security-boot-prototype.md").read_text(encoding="utf-8")
-    require(doc, ["codex/security-boot-prototype", "10 seconds", "not implemented", "2022.3.55f1"], "prototype record")
+    require(doc, ["historical implementation record", "merged through PR #20", "black-only", "technical validation"],
+            "historical security-boot record")
+    launch_doc = ROOT / "docs/launch-presentation.md"
+    if launch_doc.exists():
+        current = launch_doc.read_text(encoding="utf-8")
+        require(current, ["10 seconds", "not implemented", "Unity **2022.3.55f1**"], "current launch presentation record")
     if errors:
         print("FAIL: security boot source contracts")
         for error in errors:
             print(" -", error)
         return 1
-    print("PASS: security boot source contracts (readiness, retry, black travel, editor hold, camera restoration).")
+    print("PASS: security boot source contracts (readiness, retry, black travel, editor hold, camera restoration, historical record).")
     print("Unity compilation, runtime, Photon and headset validation remain separate.")
     return 0
 
