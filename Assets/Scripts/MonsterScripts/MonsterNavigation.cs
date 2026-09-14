@@ -238,7 +238,7 @@ public class MonsterNavigation : MonoBehaviour, IMonsterPursuitSyncTarget
             return;
         }
 
-        int destPoint = Random.Range(0, points.Length);
+        int destPoint = UnityEngine.Random.Range(0, points.Length);
         for (int offset = 0; offset < points.Length; offset++)
         {
             var point = points[(destPoint + offset) % points.Length];
