@@ -25,17 +25,37 @@ public class KeyCard : MonoBehaviour
         if (grab != null) grab.selectEntered.RemoveListener(Selected);
     }
 
+    /// <summary>
+    /// Runs the normal keycard acceptance lifecycle through the supplied KeyBox.
+    /// Reader-driven submissions use this so the existing local-player, scene,
+    /// duplicate-card, completion and travel guards remain authoritative.
+    /// </summary>
+    public bool TryInsertInto(KeyBox box)
+    {
+        if (isInserted || box == null || !box.TryAddKey(this))
+            return false;
+
+        isInserted = true;
+
+        // Accepted objective cards keep the existing consumed-card behavior.
+        Destroy(gameObject);
+        return true;
+    }
+
     private void OnTriggerEnter(Collider other)
     {
-        if (isInserted) return;
+        if (isInserted)
+            return;
 
         KeyBox box = other.GetComponent<KeyBox>();
-        if (box != null && box.TryAddKey(this))
-        {
-            isInserted = true;
+        if (box == null)
+            return;
 
-            // Remove the card (destroy locally)
-            Destroy(gameObject);
-        }
+        // The Level 1 completion KeyBox is now reader-driven: a card must be
+        // presented to its matching color/symbol reader rather than merely
+        // touching the legacy KeyBox trigger. Keep direct insertion available
+        // for older non-travel KeyBox uses.
+        if (!box.travelToLevelTwoOnComplete)
+            TryInsertInto(box);
     }
 }
