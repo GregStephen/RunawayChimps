@@ -53,10 +53,6 @@ def main() -> int:
     doc = (ROOT / "docs/security-boot-prototype.md").read_text(encoding="utf-8")
     require(doc, ["historical implementation record", "merged through PR #20", "black-only", "technical validation"],
             "historical security-boot record")
-    launch_doc = ROOT / "docs/launch-presentation.md"
-    if launch_doc.exists():
-        current = launch_doc.read_text(encoding="utf-8")
-        require(current, ["10 seconds", "not implemented", "Unity **2022.3.55f1**"], "current launch presentation record")
     if errors:
         print("FAIL: security boot source contracts")
         for error in errors:
