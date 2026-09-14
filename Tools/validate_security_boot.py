@@ -46,7 +46,8 @@ def main() -> int:
                  "label.richText = false", "RETRY: EITHER TRIGGER", "DESKTOP: R", "Destroy(tick)",
                  "boundCamera.cullingMask = savedCullingMask", "boundCamera.clearFlags = savedClearFlags",
                  "boundCamera.backgroundColor = savedBackground", "MaskStartupCamera()",
-                 "SetBackdropOpacity(1f - alpha)", "workstation.gameObject.SetActive(false)"], "presentation")
+                 "SetBackdropOpacity(1f - alpha)", "DestroyWorkstationForReveal()",
+                 "legacyStatus.enabled = true"], "presentation")
 
     if "- LoadingPresentation" not in tags:
         errors.append("ProjectSettings/TagManager.asset must reserve the LoadingPresentation layer.")
@@ -57,7 +58,7 @@ def main() -> int:
     if travel_return < 0 or startup_bind < 0 or travel_return > startup_bind:
         errors.append("Travel must return before startup camera/workstation/audio construction.")
 
-    require(workstation, ["Security Workstation Vignette", "SceneManager.MoveGameObjectToScene", "RenderMode.WorldSpace",
+    require(workstation, ["Security Workstation Vignette", "GetComponentInParent<XROrigin>", "DontDestroyOnLoad(root)", "RenderMode.WorldSpace",
                           "Security Monitor World Canvas", "GameObject.CreatePrimitive", "collider.enabled = false",
                           "Destroy(collider)", "Shader.Find(\"Unlit/Color\")", "Shader.Find(\"Standard\")",
                           "CAM 04\\nSTILL DEAD", "VENT B\\nAGAIN?", "IF THEY GET OUT\\nI QUIT."],

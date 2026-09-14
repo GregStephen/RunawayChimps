@@ -28,6 +28,10 @@ def main() -> int:
     if not loader_guid or xr_general.count(f"guid: {loader_guid}") < 2:
         errors.append("Standalone/Android XR loader contract no longer points at OpenXRLoader.")
 
+    openxr_settings = read("Assets/XR/Settings/OpenXR Package Settings.asset")
+    if f"systemSplashScreen: {{fileID: 2800000, guid: {SPLASH_GUID}, type: 3}}" not in openxr_settings:
+        errors.append("MetaXRFeature Android system splash is not committed to the splash asset.")
+
     oculus = read("Assets/Oculus/OculusProjectConfig.asset")
     required_oculus = [
         f"systemSplashScreen: {{fileID: 2800000, guid: {SPLASH_GUID}, type: 3}}",
@@ -78,22 +82,22 @@ def main() -> int:
         "Security Workstation Vignette",
         "Security Monitor World Canvas",
         "RenderMode.WorldSpace",
-        "MonitorCanvasScale = 0.00082f",
         "camera.transform.position + forward * 1.95f",
         "GameObject.CreatePrimitive",
         "collider.enabled = false",
         "Destroy(collider)",
-        "Shader.Find(\"Unlit/Color\")",
-        "Shader.Find(\"Standard\")",
+        "BaseMaterialResourcePath = \"LaunchPresentation/WorkstationBase\"",
+        "Resources.Load<Material>",
         "CAM 04\\nSTILL DEAD",
         "VENT B\\nAGAIN?",
         "IF THEY GET OUT\\nI QUIT.",
-        "new Vector3(-0.535f, 0.16f, -0.055f)",
-        "new Vector3(0.535f, -0.02f, -0.055f)",
     ]
     for token in workstation_tokens:
         if token not in workstation:
             errors.append(f"Security workstation vignette missing {token!r}.")
+    scale = re.search(r"MonitorCanvasScale\s*=\s*([0-9.]+)f", workstation)
+    if not scale or not (0.0006 <= float(scale.group(1)) <= 0.0011):
+        errors.append("Security workstation monitor scale must remain within a reviewed VR-readable range.")
 
     tag_manager = read("ProjectSettings/TagManager.asset")
     if "- LoadingPresentation" not in tag_manager:
@@ -109,6 +113,22 @@ def main() -> int:
 
     if "0.065f" not in boot or "0.045f" not in boot:
         errors.append("Security boot CRT treatment no longer exposes the reviewed low-alpha interference/static caps.")
+
+    allocator = read("Assets/Scripts/Bootstrap/HubSpawnSlotAllocator.cs")
+    for token in ["SlotCount = 10", "SetCustomProperties(desired, expected)", "OnPlayerLeftRoom",
+                  "OnMasterClientSwitched", "TryGetLocalSpawnPose"]:
+        if token not in allocator:
+            errors.append(f"Hub spawn allocator missing {token!r}.")
+    rig_snapper = read("Assets/Scripts/Bootstrap/RigSpawnSnapper.cs")
+    for token in ["HubSpawnSlotAllocator", "TryGetLocalSpawnPose", "SpawnSlotWaitSeconds"]:
+        if token not in rig_snapper:
+            errors.append(f"RigSpawnSnapper multiplayer slot integration missing {token!r}.")
+    manager = read("Assets/Resources/PhotonVR/Scripts/PhotonVRManager.cs")
+    if "HubSpawnSlotAllocator.AddInitialRoomProperties" not in manager or "matchmakingProps" not in manager:
+        errors.append("Photon room creation must initialize Hub slot properties without filtering matchmaking on slot occupancy.")
+    player_spawner = read("Assets/Resources/PhotonVR/Scripts/Player/PlayerSpawner.cs")
+    if "!AppState.I.RigSnapped" not in player_spawner:
+        errors.append("Photon avatar spawning must wait for the local Hub rig slot snap.")
 
     flow = read("Assets/Scripts/Bootstrap/LoadingFlow.cs")
     for token in ["PrepareCameraForHubReveal()", "SetBackdropOpacity(0f)", "RestoreCameraForReveal()"]:

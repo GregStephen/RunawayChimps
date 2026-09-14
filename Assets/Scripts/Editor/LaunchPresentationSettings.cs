@@ -159,8 +159,7 @@ namespace RunawayChimps.EditorTools
             if (report.summary.platform != BuildTarget.Android)
                 return;
 
-            if (!LaunchPresentationSettings.Apply(saveAssets: true, logSuccess: false) ||
-                !LaunchPresentationSettings.Validate(logSuccess: false))
+            if (!LaunchPresentationSettings.Validate(logSuccess: false))
             {
                 throw new BuildFailedException("Runaway Chimps Quest launch presentation is not configured correctly.");
             }

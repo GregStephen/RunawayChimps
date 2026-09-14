@@ -64,3 +64,13 @@ The note text is **flavor/Easter-egg copy**, not confirmed progression lore. Tre
 The prior wording that the workstation remains absolute-world-stationary is superseded. It should remain stationary relative to local head turning/room-scale motion, but it must track hidden **XROrigin root relocation** during startup so a later `RigSpawnSnapper` translation/rotation cannot move the user away from the desk while it is still being viewed.
 
 **Pending implementation from code review:** current `SecurityWorkstationVignette` captures a fixed world pose before `RigSpawnSnapper` necessarily finishes, and current startup uses one shared `HubSpawn`. Fix the vignette anchor and add unique multiplayer Hub spawn slots before treating the launch flow as merge-ready.
+
+## September 14 implementation — review findings and multiplayer Hub slots
+
+**Implemented on `feature/launch-presentation-polish` / PR #21:** the temporary security workstation is now parented to the persistent `XROrigin` root, so hidden startup rig relocation carries the local vignette while ordinary head/room-scale motion does not. The vignette is fully covered by black and destroyed before Hub reveal; interrupted entry can rebuild it. Legacy Loading status/error text stays available until the physical monitor terminal is successfully constructed.
+
+Cold-start multiplayer now uses ten Photon room-owned Hub spawn slots. Public/private room creation initializes slot-owner properties; clients claim free slots with room-property compare-and-swap, the Master Client releases/reconciles orphan claims, `RigSpawnSnapper` waits for the local slot before grounding, and the network avatar waits for `RigSnapped`. The slot poses are compact offsets from the existing authored `HubSpawn`; their exact spacing/clearance remains a Unity/headset validation item. Level-return arrival markers are unchanged.
+
+The workstation now clones a referenced Standard material from `Resources/LaunchPresentation/WorkstationBase` instead of using runtime `Shader.Find`. The Meta Android OpenXR `systemSplashScreen` assignment is committed in project settings, and Android build preprocessing validates rather than mutates that configuration. Source validators protect these architecture contracts without locking exact sticky-note coordinates or one exact monitor scale.
+
+**Pending validation:** Unity 2022.3.55f1 import/compile; one- and multi-client cold starts; ten-slot spacing/floor clearance; simultaneous claim races and slot reuse after leave/master handoff; failure/retry fallback readability; workstation destruction/rebuild across interrupted reveal; Play Mode visual tuning; Photon avatar placement; and later Quest splash/material/headset behavior.

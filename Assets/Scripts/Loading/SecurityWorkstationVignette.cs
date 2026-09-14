@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
-using UnityEngine.SceneManagement;
+using Unity.XR.CoreUtils;
 using UnityEngine.UI;
 
 namespace RunawayChimps.Loading
@@ -14,28 +14,34 @@ namespace RunawayChimps.Loading
     {
         // 1080 x 820 -> ~0.886 x 0.672 m, leaving a deliberate dark margin inside the 1.08 x 0.70 m screen inset.
         private const float MonitorCanvasScale = 0.00082f;
+        private const string BaseMaterialResourcePath = "LaunchPresentation/WorkstationBase";
         private readonly List<Material> runtimeMaterials = new List<Material>();
         private Camera startupCamera;
+        private Material baseMaterial;
         private TMP_FontAsset font;
         private int contentLayer;
 
         public RectTransform MonitorCanvasRoot { get; private set; }
 
         public static SecurityWorkstationVignette Create(
-            Scene scene,
             Camera camera,
             TMP_FontAsset fontAsset,
             int layer)
         {
             if (camera == null) return null;
+            var origin = camera.GetComponentInParent<XROrigin>();
+            if (origin == null) return null;
 
             var root = new GameObject("Security Workstation Vignette");
             root.layer = layer;
-            SceneManager.MoveGameObjectToScene(root, scene);
+            DontDestroyOnLoad(root);
+            root.transform.SetParent(origin.transform, true);
 
             var vignette = root.AddComponent<SecurityWorkstationVignette>();
             vignette.Build(camera, fontAsset, layer);
-            return vignette;
+            if (vignette.MonitorCanvasRoot != null) return vignette;
+            Destroy(root);
+            return null;
         }
 
         private void Build(Camera camera, TMP_FontAsset fontAsset, int layer)
@@ -43,6 +49,12 @@ namespace RunawayChimps.Loading
             startupCamera = camera;
             font = fontAsset;
             contentLayer = layer;
+            baseMaterial = Resources.Load<Material>(BaseMaterialResourcePath);
+            if (baseMaterial == null)
+            {
+                Debug.LogError($"Security workstation is missing Resources/{BaseMaterialResourcePath}.mat.", this);
+                return;
+            }
 
             Vector3 forward = Vector3.ProjectOnPlane(camera.transform.forward, Vector3.up);
             if (forward.sqrMagnitude < 0.01f)
@@ -51,7 +63,7 @@ namespace RunawayChimps.Loading
                 forward = Vector3.forward;
             forward.Normalize();
 
-            // Place once from the initial tracked pose. The desk is intentionally world-stationary after creation.
+            // Head motion does not move the desk, but hidden XROrigin relocation does because this root is parented to the origin.
             transform.position = camera.transform.position + forward * 1.95f + Vector3.down * 0.14f;
             transform.rotation = Quaternion.LookRotation(forward, Vector3.up);
 
@@ -169,15 +181,8 @@ namespace RunawayChimps.Loading
 
         private Material CreateMaterial(string name, Color color)
         {
-            Shader shader = Shader.Find("Unlit/Color");
-            if (shader == null) shader = Shader.Find("Standard");
-            if (shader == null)
-            {
-                Debug.LogWarning("Security workstation could not find an Unlit/Color or Standard shader.", this);
-                return null;
-            }
-
-            var material = new Material(shader)
+            if (baseMaterial == null) return null;
+            var material = new Material(baseMaterial)
             {
                 name = name,
                 color = color,

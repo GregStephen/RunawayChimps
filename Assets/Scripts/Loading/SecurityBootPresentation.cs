@@ -27,6 +27,7 @@ namespace RunawayChimps.Loading
         private const float InterferenceSweepDuration = 0.42f;
 
         private Canvas hostCanvas;
+        private TMP_Text legacyStatus;
         private CanvasGroup backdropGroup;
         private CanvasGroup terminalGroup;
         private RectTransform terminal;
@@ -92,6 +93,7 @@ namespace RunawayChimps.Loading
         private void Configure(Scene scene, Canvas canvas, TMP_Text legacyStatus, bool startup, bool sounds)
         {
             hostCanvas = canvas;
+            legacyStatus = legacyStatusText;
             startupMode = startup;
             appearedAt = Time.unscaledTime;
             font = legacyStatus != null ? legacyStatus.font : TMP_Settings.defaultFontAsset;
@@ -104,15 +106,15 @@ namespace RunawayChimps.Loading
             hostCanvas.sortingOrder = 32000;
 
             foreach (GameObject root in scene.GetRootGameObjects())
-            {
                 foreach (LoadingDebugText debug in root.GetComponentsInChildren<LoadingDebugText>(true))
                     debug.enabled = false;
-                foreach (TMP_Text label in root.GetComponentsInChildren<TMP_Text>(true))
-                    label.enabled = false;
-            }
 
             // Normal sector travel intentionally stops here: black authored backdrop only, no workstation/boot/audio.
-            if (!startupMode) return;
+            if (!startupMode)
+            {
+                DisableLoadingSceneText();
+                return;
+            }
 
             var scaler = canvas.GetComponent<CanvasScaler>();
             if (scaler != null)
@@ -131,14 +133,15 @@ namespace RunawayChimps.Loading
         {
             if (!startupMode || workstation != null || boundCamera == null || presentationLayer < 0) return;
 
-            workstation = SecurityWorkstationVignette.Create(
-                gameObject.scene,
-                boundCamera,
-                font,
-                presentationLayer);
-            if (workstation == null || workstation.MonitorCanvasRoot == null) return;
+            workstation = SecurityWorkstationVignette.Create(boundCamera, font, presentationLayer);
+            if (workstation == null || workstation.MonitorCanvasRoot == null)
+            {
+                if (legacyStatus != null) legacyStatus.enabled = true;
+                return;
+            }
 
             BuildTerminal(workstation.MonitorCanvasRoot);
+            DisableLoadingSceneText();
             // Camera clear is black and only the dedicated presentation layer is visible, so the desk floats in safe darkness.
             SetBackdropOpacity(0f);
         }
@@ -211,7 +214,19 @@ namespace RunawayChimps.Loading
 
         public void Present(AppState state, bool hubLoaded, bool inRoom, string error, bool reviewHeld)
         {
-            if (!startupMode || terminal == null) return;
+            if (!startupMode) return;
+            if (terminal == null)
+            {
+                if (legacyStatus != null)
+                {
+                    legacyStatus.enabled = true;
+                    string fallback = !string.IsNullOrEmpty(error) ? error :
+                        !hubLoaded ? "Loading security sector..." : state != null ? state.Status : "Waiting for Bootstrap...";
+                    if (string.IsNullOrEmpty(fallback)) fallback = "Waiting for startup services...";
+                    legacyStatus.text = string.IsNullOrEmpty(error) ? fallback : fallback + "\nPress either trigger to retry. (Desktop: R)";
+                }
+                return;
+            }
             stages[0] = inRoom;
             stages[1] = hubLoaded;
             stages[2] = state != null && state.RigSnapped;
@@ -438,8 +453,8 @@ namespace RunawayChimps.Loading
             {
                 // Let the authored black full-FOV backdrop cover the entire 3D vignette before it is hidden.
                 SetBackdropOpacity(1f - alpha);
-                if (alpha <= 0.001f) workstation.gameObject.SetActive(false);
-                else if (!workstation.gameObject.activeSelf) workstation.gameObject.SetActive(true);
+                if (alpha <= 0.001f) DestroyWorkstationForReveal();
+                else if (workstation != null && !workstation.gameObject.activeSelf) workstation.gameObject.SetActive(true);
             }
         }
 
@@ -451,6 +466,7 @@ namespace RunawayChimps.Loading
         public void RestoreAfterInterruptedEntry()
         {
             fading = false;
+            if (workstation == null) EnsureWorkstation();
             if (workstation != null)
             {
                 workstation.gameObject.SetActive(true);
@@ -514,8 +530,34 @@ namespace RunawayChimps.Loading
             RestoreCameraForReveal();
             if (bootAudio != null) bootAudio.Stop();
             if (tick != null) Destroy(tick);
-            if (staticTexture != null) Destroy(staticTexture);
+            DestroyWorkstationForReveal();
+        }
+
+        private void DestroyWorkstationForReveal()
+        {
             if (workstation != null) Destroy(workstation.gameObject);
+            workstation = null;
+            terminal = null;
+            terminalGroup = null;
+            headline = detail = instruction = null;
+            cursor = null;
+            staticNoise = null;
+            interferenceLine = null;
+            if (staticTexture != null) Destroy(staticTexture);
+            staticTexture = null;
+            staticPixels = null;
+            for (int i = 0; i < stageLabels.Length; i++)
+            {
+                stageLabels[i] = null;
+                stageLights[i] = null;
+            }
+        }
+
+        private void DisableLoadingSceneText()
+        {
+            foreach (GameObject root in gameObject.scene.GetRootGameObjects())
+                foreach (TMP_Text label in root.GetComponentsInChildren<TMP_Text>(true))
+                    label.enabled = false;
         }
 
         private static void SetLayerRecursively(GameObject root, int layer)
