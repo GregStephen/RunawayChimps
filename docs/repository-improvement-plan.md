@@ -558,3 +558,13 @@ The recommendations preserve the agreed direction: open level access, individual
 **Multiplayer development workflow:** standardize one-PC checks on Unity Editor Client A plus Windows Development Build Client B in the same private Photon room. The convenience launcher/identity/desktop-control/HUD harness remains **planned, not implemented**; see `docs/multiplayer-development-testing.md`.
 
 **Pending validation:** source checks do not replace Unity 2022.3.55f1 import/compile, Editor validators, Play Mode, headset/Quest, or two-client Photon runtime tests.
+
+## September 13 launch-presentation production pass
+
+**Confirmed product decision:** the facility security-system boot approved after PR #20 is the selected launch presentation. The floating/void concept is inactive. Normal Hub/level travel stays black-only unless measured transition duration later justifies a separate review; real errors retain recovery feedback.
+
+**Implemented source on `feature/launch-presentation-polish` / PR #21:** add a lightweight branded Quest system-splash texture, serialize it into `OculusProjectConfig` with a black background, and add Editor/build-time tooling that assigns and validates the same texture on the active Android `MetaXRFeature` while preserving the existing OpenXR loader. The Android build preprocessor fails closed when the splash asset/feature assignment is unavailable. `Tools/validate_launch_presentation.py` protects the OpenXR loader contract, splash GUID/reference, black background, build guard and empty Unity VR splash-image slot. The existing security boot, Photon readiness gates and black-only travel are not replaced.
+
+**Risk/ownership boundary:** this work owns presentation before and during app startup only. It must not create a second XR rig, move the tracked camera, invent progress, change Photon/session state, or expose partially initialized Hub geometry. Unity's built-in splash is deliberately not disabled in source until the active Unity 2022 license/build behavior is verified.
+
+**Pending validation:** PR #21 Source Integrity; Unity 2022.3.55f1 import/compile; Quest Android build/install; compositor system splash -> first app frame -> security boot -> Hub handoff; both-eye/full-FOV readability; pause/resume/recenter/repeated cold launch; Photon startup/retry/two-client checks; black-only Hub/level transitions; and Quest frame-time/memory impact. Record device/build/commit before marking any runtime item validated. See `docs/launch-presentation.md`.
