@@ -1,6 +1,7 @@
 /// <summary>
 /// Shared physical credential identity used by gameplay keycards and matching readers.
 /// Auto exists only as a compatibility fallback for legacy/name-authored content.
+/// Numeric values are serialized in Unity assets/scenes, so existing values must remain stable.
 /// </summary>
 public enum KeycardCredential
 {
