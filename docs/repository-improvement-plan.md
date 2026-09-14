@@ -568,3 +568,9 @@ The recommendations preserve the agreed direction: open level access, individual
 **Risk/ownership boundary:** this work owns presentation before and during app startup only. It must not create a second XR rig, move the tracked camera, invent progress, change Photon/session state, or expose partially initialized Hub geometry. Unity's built-in splash is deliberately not disabled in source until the active Unity 2022 license/build behavior is verified.
 
 **Pending validation:** PR #21 Source Integrity; Unity 2022.3.55f1 import/compile; Quest Android build/install; compositor system splash -> first app frame -> security boot -> Hub handoff; both-eye/full-FOV readability; pause/resume/recenter/repeated cold launch; Photon startup/retry/two-client checks; black-only Hub/level transitions; and Quest frame-time/memory impact. Record device/build/commit before marking any runtime item validated. See `docs/launch-presentation.md`.
+
+## September 13 launch presentation source-validation result
+
+**Validated source only:** Source Integrity run `34798289632` passed on `feature/launch-presentation-polish` commit `75104bd7051a772385636cab61f75e4e0b4e86ac`, including the launch-presentation validator alongside the existing security-boot, threat-feedback, Level 1 and PR #15 contract checks. Repository integrity, C# syntax/reference checks, Python compilation, merge-marker checks and human-authored whitespace also passed.
+
+**Validation boundary:** this does not establish Unity compilation, Android build success, Meta compositor splash behavior, first-frame handoff, headset comfort, Photon runtime behavior or Quest performance. Those remain pending and must be recorded from actual Unity/device tests.

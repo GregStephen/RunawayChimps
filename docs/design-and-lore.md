@@ -562,3 +562,9 @@ This **supersedes the earlier blanket wording that no Zombie bone may ever be wr
 **Platform boundary:** Meta's system splash is compositor-driven and is intended to cover startup before the first app frame, then hand off to the custom security boot. Unity's built-in splash remains serialized as enabled on this Unity 2022.3 project. The branch warns about that layer rather than blindly disabling it because Unity 2022 Personal licensing can require Unity branding; an actual Quest build must establish whether it can be removed under the active license.
 
 **Pending validation:** Source Integrity for PR #21, Unity 2022.3.55f1 import/compile, Editor apply/validate commands, installed Quest APK system-splash display, first-frame handoff into the security boot, both-eye/peripheral coverage, recenter/pause/relaunch behavior, Photon startup/retry/two-client regression, black-only sector travel and Quest performance remain pending. Source inspection does not prove compositor or headset behavior. See `docs/launch-presentation.md`.
+
+## September 13 launch presentation source validation
+
+**Validated source only:** Source Integrity run `34798289632` passed on `feature/launch-presentation-polish` commit `75104bd7051a772385636cab61f75e4e0b4e86ac`. The combined run passed first-party C# syntax/reference checks, Unity metadata/GUID integrity, Level 1 and PR #15 contracts, the merged security-boot contracts, PR #19 local threat-feedback contracts, the new launch-presentation contracts, Python compilation, merge-marker checks and human-authored whitespace. This is source/tooling evidence only.
+
+**Still pending:** Unity 2022.3.55f1 import/compile, Editor splash apply/validate, installed Quest APK system-splash behavior, compositor-to-security-boot handoff, both-eye/peripheral comfort, Unity-license splash behavior, Photon startup/retry/two-client regression, black-only sector travel and Quest performance remain unvalidated.
