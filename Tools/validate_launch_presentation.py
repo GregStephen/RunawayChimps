@@ -73,7 +73,7 @@ def main() -> int:
         "Security Workstation Vignette",
         "Security Monitor World Canvas",
         "RenderMode.WorldSpace",
-        "MonitorCanvasScale = 0.00094f",
+        "MonitorCanvasScale = 0.00082f",
         "camera.transform.position + forward * 1.95f",
         "GameObject.CreatePrimitive",
         "collider.enabled = false",
@@ -83,6 +83,8 @@ def main() -> int:
         "CAM 04\\nSTILL DEAD",
         "VENT B\\nAGAIN?",
         "IF THEY GET OUT\\nI QUIT.",
+        "new Vector3(-0.535f, 0.16f, -0.055f)",
+        "new Vector3(0.535f, -0.02f, -0.055f)",
     ]
     for token in workstation_tokens:
         if token not in workstation:
