@@ -2,32 +2,42 @@
 
 Date: 2026-09-14. Branch: `feature/launch-presentation-polish`. Unity **2022.3.55f1**, Photon PUN.
 
-## Implemented review resolutions
+## Current confirmed presentation
 
-The September 14 review findings for PR #21 are addressed in source:
+**Superseding correction:** Greg rejected the physical workstation/desk vignette and asked for the **old flat green security terminal back**, positioned roughly twice as far away. The active startup target is therefore the green facility terminal alone in black space at approximately **3.9 m** from the initial horizontal player view. Earlier workstation-specific review notes are retained only as historical context in git history and must not be used to restore the desk/prop presentation.
 
-- The startup workstation is client-local, follows hidden `XROrigin` root relocation rather than remaining at a stale absolute world pose, does not follow normal head look, is fully covered by black, and is destroyed before Hub reveal. Interrupted entry can reconstruct the vignette.
-- Legacy Loading status/error text stays available until the physical workstation terminal has actually been constructed, so startup failures retain readable retry feedback instead of becoming a black screen.
-- Android build preprocessing validates the committed Meta OpenXR splash configuration instead of mutating and saving project settings during a build. `MetaXRFeature Android.systemSplashScreen` is committed to the Runaway Chimps system-splash asset.
-- The workstation uses the referenced built-in Standard material at `Resources/LaunchPresentation/WorkstationBase` instead of runtime `Shader.Find` material discovery.
-- Launch validation protects architectural bounds rather than exact sticky-note positions or one exact monitor scale.
-- Cold-start Hub placement uses ten Photon room-owned slots. Clients claim a free slot with room-property compare-and-swap; the Master Client releases/reconciles stale claims; `RigSpawnSnapper` waits for Photon room membership and a slot before grounding; and the network avatar waits for `RigSnapped` before instantiation in the Hub. Route-specific return/level arrival markers are unchanged.
-- The existing Level 1/runtime source contract now validates grounding against the **allocated `spawnPosition`** and requires `TryGetLocalSpawnPose(...)`, rather than incorrectly requiring the superseded single `HubSpawn` grounding call.
+The tracked camera is never moved. The terminal anchor follows hidden `XROrigin` root relocation during startup so Hub snapping cannot leave it behind, while ordinary head look and room-scale motion do not head-lock it.
 
-The ten slot poses are currently compact code-owned offsets around the existing authored `HubSpawn`. Their final spacing and floor/geometry clearance are **pending Unity/headset validation**, not visually approved level design.
+## Implemented review resolutions that remain active
+
+- Legacy Loading status/error text remains available until the custom terminal is successfully constructed, so startup failures retain readable retry feedback rather than becoming a black screen.
+- The final reveal uses an explicit retirement state so the startup terminal cannot reconstruct itself after it has been intentionally covered/removed under black; an interrupted entry/retry may clear that state and rebuild it.
+- The dedicated `LoadingPresentation` render layer keeps additively loaded Hub world/UI content hidden until the controlled reveal.
+- Android build preprocessing validates committed Meta OpenXR splash configuration instead of mutating/saving project settings during a build. The Meta Android system splash and black loading background remain configured.
+- Cold-start Hub placement uses ten Photon room-owned slots. Clients claim slots through room-property compare-and-swap; the Master Client releases/reconciles stale claims; slot acquisition is demand-driven by Hub placement; and the network avatar waits for `RigSnapped` before Hub instantiation.
+- A new Photon-room session invalidates stale Hub placement when appropriate and requires a fresh slot snap before Hub avatar spawn. Existing room-owned slot recovery and retry behavior are preserved.
+- The ten Hub slot poses are authored in `Assets/Resources/HubSpawn/HubSpawnSlots.prefab` rather than hard-coded networking coordinates. Route-specific return/level-arrival markers remain independent.
+- `PlayerVisualReadyReporter` reuses a material list through `Renderer.GetSharedMaterials` instead of allocating copied material arrays during startup settling.
+- Existing Level 1/runtime source contracts validate grounding against the allocated Hub `spawnPosition` rather than the superseded single `HubSpawn` position.
+
+## Presentation-specific implementation correction
+
+`SecurityWorkstationVignette` remains the legacy class/file name, but it no longer builds workstation geometry. It creates only the world-space terminal canvas. The previous desk, monitor shell/stand, keyboard, mug, badge, clipboard, sticky-note copy, runtime primitive construction and `Resources/LaunchPresentation/WorkstationBase` material dependency are removed from the active presentation.
+
+The terminal canvas retains its prior physical scale and uses `TerminalDistance = 3.90f`, exactly twice the former 1.95 m workstation distance. Source validators now require the distant panel and reject reintroduction of workstation props/materials.
 
 ## Pending validation
 
-A fresh Source Integrity run must validate the current post-review branch head. Unity import/compile, Play Mode startup/retry/reveal, simultaneous two-client Photon slot claims, slot reuse and Master Client handoff, Hub spawn spacing, headset comfort, and Quest system-splash/material behavior remain pending until actually tested.
+- Unity **2022.3.55f1** import/compile.
+- Play Mode: 3.9 m distance, eye-height placement, readability and CRT comfort.
+- Head-turn/room-scale behavior and hidden `XROrigin` relocation.
+- Startup failure/retry restoration.
+- `ACCESS GRANTED` -> full black -> terminal absent -> clean Hub reveal with no reconstruction or UI/world leak.
+- Two-client simultaneous slot claims and avatar placement.
+- Hub room switch/rejoin/reconnect placement.
+- Slot reuse after leave/disconnect and Master Client handoff/reconciliation.
+- Authored Hub marker floor/wall/prop clearance and comfortable multiplayer separation.
+- Successful Hub/Level 1/Level 2 travel remains black-only.
+- Quest Android build/install, compositor splash -> green terminal handoff, stereo/peripheral coverage, recenter/pause-resume, comfort and performance.
 
-## September 14 post-review hardening
-
-**Implemented:** the workstation enters a one-way `retired for reveal` state when the final terminal fade reaches black, so the presentation's normal camera-binding loop cannot recreate it during the Hub fade. An interrupted entry explicitly clears that state before rebuilding the local workstation.
-
-Hub-room placement is now session-aware: each new Photon room invalidates the old Hub snap only when the Hub is loaded, then waits for a fresh room-owned slot before spawning the local network avatar. Slot claims are demand-driven, recover an existing local ownership first, and no longer run from an allocator `Update` loop in Level 1/Level 2.
-
-The ten layout poses are authored as `Resources/HubSpawn/HubSpawnSlots.prefab` marker transforms rather than C# coordinates. Android build validation now verifies Meta Android feature enablement, black compositor background, and Android OpenXR loader in addition to the splash references. Player visual-settle hashing reuses a material list to avoid per-frame `sharedMaterials` array allocations.
-
-**Pending validation:** Unity/Play Mode reveal and retry, Hub room switch/reconnect, simultaneous two-client claims, slot reuse/Master handoff, marker clearance, and Quest build/headset behavior.
-
-**Validated source only — PR #21 launch/session hardening:** clean durable head `594a1ba3082e3ab98c0171a245b3902b5ee1644b` passed Source Integrity run `34885765274` on 2026-09-14. The run passed Unity 2022.3.55f1 version enforcement, first-party C# syntax/reference and enabled-scene checks, Unity metadata/GUID integrity, Level 1 and PR #15 contracts, security-boot contracts, local threat-feedback contracts, launch/workstation plus demand-driven Hub-slot/session/build contracts, Python compilation, merge-marker rejection and human-authored whitespace. This is source/tooling evidence only; Unity import/compile, Play Mode, two-client Photon, authored marker clearance and Quest/headset behavior remain pending.
+Source Integrity is meaningful source/tooling evidence only. It does not prove Unity runtime, Photon sessions, XR comfort or Quest device behavior.
