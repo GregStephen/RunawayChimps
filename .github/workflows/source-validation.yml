@@ -33,6 +33,14 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Set up managed card-state test runtime
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Execute production card-consumption state tests
+        run: dotnet run --project Tools/CardSystemHarness/CardSystemHarness.csproj --configuration Release
+
       - name: Install syntax-parser dependencies
         run: |
           python -m pip install --disable-pip-version-check \
