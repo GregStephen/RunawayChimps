@@ -1,0 +1,40 @@
+name: Card reuse review snapshot
+on:
+  push:
+    branches: [feature/keycard-reader-light-feedback]
+    paths: [.github/workflows/card-reuse-review.yml]
+permissions:
+  contents: read
+jobs:
+  snapshot:
+    if: github.repository == 'GregStephen/RunawayChimps'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - name: Archive tracked review text
+        shell: python
+        run: |
+          import os, pathlib, subprocess, zipfile
+          paths = subprocess.check_output(['git', 'ls-files', '-z']).decode().split('\0')
+          allowed = {'.cs','.meta','.prefab','.unity','.mat','.asset','.controller','.anim','.json','.md','.txt','.asmdef','.asmref','.py','.yml','.yaml','.sh'}
+          with zipfile.ZipFile(os.path.join(os.environ['RUNNER_TEMP'], 'review-source.zip'), 'w', zipfile.ZIP_DEFLATED) as archive:
+              archive.writestr('REVIEW_HEAD.txt', subprocess.check_output(['git','rev-parse','HEAD']))
+              archive.writestr('REVIEW_TRACKED.txt', '\n'.join(paths))
+              for name in paths:
+                  path = pathlib.Path(name)
+                  if not path.is_file() or path.suffix not in allowed:
+                      continue
+                  data = path.read_bytes()
+                  try:
+                      data.decode('utf-8-sig')
+                  except UnicodeDecodeError:
+                      continue
+                  archive.writestr(name, data)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: card-reuse-review-source
+          path: ${{ runner.temp }}/review-source.zip
+          retention-days: 3
