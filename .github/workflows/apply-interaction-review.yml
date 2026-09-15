@@ -59,13 +59,27 @@ jobs:
         with:
           name: interaction-review-diff
           path: ${{ runner.temp }}/interaction-review.diff
+      - name: Record successful source checks
+        shell: python
+        run: |
+          from pathlib import Path
+          import os
+          revision = os.environ['GITHUB_SHA']
+          run_id = os.environ['GITHUB_RUN_ID']
+          note = ('\n**Validated source result, 2026-09-15 UTC:** the reviewed patch applied to `' + revision + '` passed the Unity 2022.3.55f1 declaration check, C# syntax/reference and five-scene checks, repository integrity, Level 1/keycard/PR15/security/threat contracts, all eight negative interaction fixtures and fourteen rotated/scaled math fixtures, Python compilation, merge-marker and whitespace checks in Apply interaction review run `' + run_id + '`. This validates the patched source worktree, not Unity compilation or runtime. The final published commit and its read-only PR check are recorded on PR #23. Unity/XRI/Photon/headset validation remains pending.\n')
+          for name in ('docs/design-and-lore.md', 'docs/repository-improvement-plan.md'):
+              path = Path(name)
+              path.write_text(path.read_text(encoding='utf-8').rstrip() + '\n' + note, encoding='utf-8')
       - name: Remove one-time applicator and publish verified correction
         run: |
           set -euo pipefail
+          # The Actions token cannot update workflow configuration. Publish that
+          # already-reviewed read-only step separately through the GitHub connector.
+          git restore -- .github/workflows/source-validation.yml
           rm Tools/_apply_interaction_review.py .github/workflows/apply-interaction-review.yml
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -- Assets/Scripts/NewGorillaLocomotionScripts/Player.cs Assets/Scripts/HeldItemCollisionMode.cs Assets/Scripts/KeyCard.cs Assets/Scripts/KeycardReaderLightController.cs Assets/Scripts/KeyBox.cs Assets/Scripts/KeycardLockProgressIndicator.cs Tools/validate_keycard_reader_contracts.py .github/workflows/source-validation.yml docs/design-and-lore.md docs/repository-improvement-plan.md Tools/_apply_interaction_review.py .github/workflows/apply-interaction-review.yml
+          git add -- Assets/Scripts/NewGorillaLocomotionScripts/Player.cs Assets/Scripts/HeldItemCollisionMode.cs Assets/Scripts/KeyCard.cs Assets/Scripts/KeycardReaderLightController.cs Assets/Scripts/KeyBox.cs Assets/Scripts/KeycardLockProgressIndicator.cs Tools/validate_keycard_reader_contracts.py docs/design-and-lore.md docs/repository-improvement-plan.md Tools/_apply_interaction_review.py .github/workflows/apply-interaction-review.yml
           git diff --cached --check
           git commit -m 'Harden card release, live reader overlap and completion retry interactions'
           git push origin HEAD:feature/keycard-reader-light-feedback
