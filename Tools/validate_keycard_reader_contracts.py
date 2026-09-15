@@ -73,10 +73,11 @@ def main() -> int:
         "Level 1 completion must remain reader-driven while legacy non-travel KeyBoxes keep direct insertion.",
     )
     require(
-        "[DefaultExecutionOrder(-200)]" in keycard
+        "[RequireComponent(typeof(BoxCollider), typeof(Rigidbody), typeof(XRGrabInteractable))]" in keycard
+        and "[DefaultExecutionOrder(-200)]" in keycard
         and "ConfigurePhysicalCard();" in keycard
         and "FitColliderToVisualBounds(box);" in keycard,
-        "Gameplay KeyCard must normalize its physical collider before ordinary physics scripts run.",
+        "Gameplay KeyCard must require its physical/grab components and normalize its collider before ordinary physics scripts run.",
     )
     require(
         "physicalMassKg = 0.05f" in keycard
@@ -100,6 +101,10 @@ def main() -> int:
     held_item = read(held_item_path)
     held_item_guid = asset_guid(held_item_path)
     require(
+        "[DisallowMultipleComponent]" in held_item,
+        "HeldItemCollisionMode must not allow duplicate collision-state handlers on one prop.",
+    )
+    require(
         "XROrigin origin = player != null ? player.GetComponentInParent<XROrigin>() : null;" in held_item,
         "Held props must resolve the local Gorilla XROrigin before changing collision pairs.",
     )
@@ -112,6 +117,11 @@ def main() -> int:
         "Physics.IgnoreCollision(itemCollider, rigCollider, true);" in held_item
         and "Physics.IgnoreCollision(pair.Item, pair.Rig, false);" in held_item,
         "Held props must ignore only local-rig collision pairs while selected and restore those pairs on release/disable.",
+    )
+    require(
+        "RestoreRigCollisionsWhenSeparated()" in held_item
+        and "Physics.ComputePenetration(" in held_item,
+        "Held props must delay local-rig collision restoration until a released prop is physically separated.",
     )
     require(
         "RestoreLocalRigCollisions();" in held_item and "RestoreLayers();" in held_item,
@@ -331,7 +341,7 @@ def main() -> int:
     print("PASS: reader variants and Level 1 gameplay cards serialize explicit credential identities.")
     print("PASS: matching cards retry submission while they remain inside the reader scan zone.")
     print("PASS: gameplay cards auto-fit their colliders to rendered bounds and use lightweight continuous Rigidbody handling.")
-    print("PASS: held gameplay cards ignore local-rig collider pairs and restore them on release/disable.")
+    print("PASS: held gameplay cards ignore local-rig collider pairs and restore them only after separation on release.")
     print("PASS: Level 1 card Rigidbody/collider/XR-grab/held-safety source wiring is intact.")
     print("PASS: Level 1 completion KeyBox remains authored beneath the Amber reader hierarchy.")
     print("PASS: Unity 2022.3.55f1, XR/physics, Photon, travel, and headset validation remain separate.")
