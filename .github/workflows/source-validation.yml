@@ -73,6 +73,9 @@ jobs:
       - name: Validate local threat feedback contracts
         run: python Tools/validate_threat_feedback.py
 
+      - name: Validate launch presentation source contracts
+        run: python Tools/validate_launch_presentation.py
+
       - name: Compile Python validation tools
         run: python -m compileall -q Tools
 

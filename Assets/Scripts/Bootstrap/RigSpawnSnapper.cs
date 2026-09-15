@@ -1,7 +1,9 @@
-﻿using System.Collections;
+using System.Collections;
+using Photon.Pun;
 using Unity.XR.CoreUtils;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using RunawayChimps.Multiplayer;
 
 public class RigSpawnSnapper : MonoBehaviour
 {
@@ -12,6 +14,7 @@ public class RigSpawnSnapper : MonoBehaviour
     [Header("Timing")]
     public int FramesToWait = 2;
     [Min(1)] public int FixedSettleSteps = 3;
+    [Min(1f)] public float SpawnSlotWaitSeconds = 12f;
 
     [Header("XR tracking-origin stability")]
     [Min(2)] public int TrackingOffsetStableFrames = 6;
@@ -30,11 +33,14 @@ public class RigSpawnSnapper : MonoBehaviour
     public CapsuleCollider gorillaBodyCapsule;
 
     private bool _snapping;
+    private HubSpawnSlotAllocator _spawnSlots;
 
     private void Awake()
     {
         if (xrOrigin == null)
             xrOrigin = GetComponent<XROrigin>();
+        _spawnSlots = GetComponent<HubSpawnSlotAllocator>();
+        if (_spawnSlots == null) _spawnSlots = gameObject.AddComponent<HubSpawnSlotAllocator>();
 
         // The Bootstrap rig persists across sector travel. This guard is intentionally
         // created at runtime so it protects startup, travel, capture respawns and later
@@ -116,6 +122,31 @@ public class RigSpawnSnapper : MonoBehaviour
             yield break;
         }
 
+        Vector3 spawnPosition = default;
+        Quaternion spawnRotation = Quaternion.identity;
+        // Hub can load before authentication/Photon. The global startup timeout owns that wait;
+        // the shorter slot timeout starts only after this client is actually in the room.
+        while (!PhotonNetwork.InRoom)
+        {
+            if (AppState.I != null && !string.IsNullOrEmpty(AppState.I.LastError))
+            {
+                _snapping = false;
+                yield break;
+            }
+            yield return null;
+        }
+        float slotDeadline = Time.realtimeSinceStartup + Mathf.Max(1f, SpawnSlotWaitSeconds);
+        while (_spawnSlots == null || !_spawnSlots.TryGetLocalSpawnPose(spawnGo.transform, out spawnPosition, out spawnRotation))
+        {
+            if (Time.realtimeSinceStartup >= slotDeadline)
+            {
+                AppState.I?.Fail("Could not reserve a multiplayer Hub spawn slot.");
+                _snapping = false;
+                yield break;
+            }
+            yield return null;
+        }
+
         // GorillaPlayer is currently also the XROrigin CameraFloorOffsetObject. Freeze the
         // entire compound collider hierarchy before waiting for that XR-managed offset to
         // settle; otherwise hand/head/body physics and XROrigin can move the same hierarchy
@@ -151,11 +182,11 @@ public class RigSpawnSnapper : MonoBehaviour
         yield return new WaitForFixedUpdate();
 
         Transform cam = xrOrigin.Camera.transform;
-        float targetYaw = spawnGo.transform.rotation.eulerAngles.y;
+        float targetYaw = spawnRotation.eulerAngles.y;
         float deltaYaw = Mathf.DeltaAngle(cam.eulerAngles.y, targetYaw);
         xrOrigin.transform.RotateAround(cam.position, Vector3.up, deltaYaw);
 
-        Vector3 cameraShift = spawnGo.transform.position - cam.position;
+        Vector3 cameraShift = spawnPosition - cam.position;
         cameraShift.y = 0f;
         xrOrigin.transform.position += cameraShift;
 
@@ -173,7 +204,7 @@ public class RigSpawnSnapper : MonoBehaviour
         while (stableFixedSteps < settleSteps && settleAttempts < maxSettleAttempts)
         {
             Physics.SyncTransforms();
-            grounded = GroundCorrect(spawnGo.transform.position, hubScene, locomotionPlayer);
+            grounded = GroundCorrect(spawnPosition, hubScene, locomotionPlayer);
             if (!grounded)
                 break;
 
@@ -201,7 +232,7 @@ public class RigSpawnSnapper : MonoBehaviour
         {
             yield return null;
             Physics.SyncTransforms();
-            grounded = GroundCorrect(spawnGo.transform.position, hubScene, locomotionPlayer);
+            grounded = GroundCorrect(spawnPosition, hubScene, locomotionPlayer);
             locomotionPlayer?.ResetAfterTeleport();
             Physics.SyncTransforms();
         }

@@ -17,9 +17,17 @@ namespace RunawayChimps.Loading
         {
             "FACILITY LINK", "SECURITY SECTOR", "ARRIVAL ALIGNMENT", "AVATAR LINK", "VISUAL SYSTEMS"
         };
+
+        private const string PresentationLayerName = "LoadingPresentation";
         private const float DesignWidth = 1080f;
         private const float DesignHeight = 820f;
+        private const int StaticWidth = 64;
+        private const int StaticHeight = 48;
+        private const float StaticRefreshInterval = 0.10f;
+        private const float InterferenceSweepDuration = 0.42f;
+
         private Canvas hostCanvas;
+        private TMP_Text legacyStatus;
         private CanvasGroup backdropGroup;
         private CanvasGroup terminalGroup;
         private RectTransform terminal;
@@ -28,6 +36,11 @@ namespace RunawayChimps.Loading
         private TMP_Text detail;
         private TMP_Text instruction;
         private Image cursor;
+        private RawImage staticNoise;
+        private Image interferenceLine;
+        private Texture2D staticTexture;
+        private Color32[] staticPixels;
+        private SecurityWorkstationVignette workstation;
         private readonly TMP_Text[] stageLabels = new TMP_Text[5];
         private readonly Image[] stageLights = new Image[5];
         private readonly bool[] stages = new bool[5];
@@ -36,16 +49,23 @@ namespace RunawayChimps.Loading
         private AudioClip tick;
         private Camera boundCamera;
         private bool cameraMasked;
+        private int presentationLayer = -1;
         private int savedCullingMask;
         private CameraClearFlags savedClearFlags;
         private Color savedBackground;
         private bool startupMode;
         private bool fading;
+        private bool workstationRetiredForReveal;
         private bool readyLogged;
         private float appearedAt;
         private float nextSoundAt;
+        private float nextStaticRefreshAt;
+        private float staticBurstUntil;
+        private float nextInterferenceAt;
+        private float interferenceStartedAt = -1f;
         private int previousBits;
         private string previousError;
+        private uint noiseState = 0x6D2B79F5u;
 
         public static SecurityBootPresentation Install(Scene scene, TMP_Text legacyStatus, bool startup, bool sounds)
         {
@@ -63,6 +83,7 @@ namespace RunawayChimps.Loading
                 Debug.LogWarning("Security boot needs the Loading canvas; retaining the legacy status fallback.");
                 return null;
             }
+
             var view = canvas.GetComponent<SecurityBootPresentation>();
             if (view != null) return view;
             view = canvas.gameObject.AddComponent<SecurityBootPresentation>();
@@ -73,6 +94,7 @@ namespace RunawayChimps.Loading
         private void Configure(Scene scene, Canvas canvas, TMP_Text legacyStatus, bool startup, bool sounds)
         {
             hostCanvas = canvas;
+            this.legacyStatus = legacyStatus;
             startupMode = startup;
             appearedAt = Time.unscaledTime;
             font = legacyStatus != null ? legacyStatus.font : TMP_Settings.defaultFontAsset;
@@ -83,14 +105,18 @@ namespace RunawayChimps.Loading
             backdropGroup.blocksRaycasts = false;
             hostCanvas.overrideSorting = true;
             hostCanvas.sortingOrder = 32000;
+
             foreach (GameObject root in scene.GetRootGameObjects())
-            {
                 foreach (LoadingDebugText debug in root.GetComponentsInChildren<LoadingDebugText>(true))
                     debug.enabled = false;
-                foreach (TMP_Text label in root.GetComponentsInChildren<TMP_Text>(true))
-                    label.enabled = false;
+
+            // Normal sector travel intentionally stops here: black authored backdrop only, no workstation/boot/audio.
+            if (!startupMode)
+            {
+                DisableLoadingSceneText();
+                return;
             }
-            if (!startupMode) return;
+
             var scaler = canvas.GetComponent<CanvasScaler>();
             if (scaler != null)
             {
@@ -99,20 +125,40 @@ namespace RunawayChimps.Loading
                 scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
                 scaler.matchWidthOrHeight = 0.5f;
             }
-            BuildTerminal();
+
             BindStartupCamera();
             if (sounds) BuildAudio();
         }
 
-        private void BuildTerminal()
+        private void EnsureWorkstation()
         {
-            terminal = Rect("Security Boot Prototype", hostCanvas.transform, 0, 0, DesignWidth, DesignHeight);
+            if (!startupMode || workstationRetiredForReveal || workstation != null || boundCamera == null || presentationLayer < 0) return;
+
+            workstation = SecurityWorkstationVignette.Create(boundCamera, font, presentationLayer);
+            if (workstation == null || workstation.MonitorCanvasRoot == null)
+            {
+                if (legacyStatus != null) legacyStatus.enabled = true;
+                return;
+            }
+
+            BuildTerminal(workstation.MonitorCanvasRoot);
+            DisableLoadingSceneText();
+            // Camera clear is black and only the dedicated presentation layer is visible, so the desk floats in safe darkness.
+            SetBackdropOpacity(0f);
+        }
+
+        private void BuildTerminal(Transform parent)
+        {
+            terminal = Rect("Security Boot Terminal", parent, 0, 0, DesignWidth, DesignHeight);
             terminal.anchorMin = terminal.anchorMax = terminal.pivot = new Vector2(0.5f, 0.5f);
             terminal.anchoredPosition = Vector2.zero;
+            terminal.localScale = Vector3.one;
             terminalGroup = terminal.gameObject.AddComponent<CanvasGroup>();
             terminalGroup.alpha = 0f;
-            Box("Bezel", terminal, 0, 0, 1080, 820, new Color(0.10f, 0.16f, 0.14f));
+
+            Box("CRT face", terminal, 0, 0, 1080, 820, new Color(0.10f, 0.16f, 0.14f));
             Box("Screen", terminal, 8, 8, 1064, 804, new Color(0.018f, 0.034f, 0.029f));
+            BuildCrtTreatment();
             Box("Power strip", terminal, 8, 8, 1064, 5, Muted);
             Label("Asset tag", "RC  /  SECURITY CONTROL", 48, 40, 730, 32, 22, Muted);
             Label("Revision", "BOOT / 01", 822, 40, 210, 32, 22, Amber, TextAlignmentOptions.TopRight);
@@ -121,6 +167,7 @@ namespace RunawayChimps.Loading
             Box("Header divider", terminal, 48, 220, 984, 2, Muted);
             Label("Stage heading", "STARTUP DIAGNOSTICS", 48, 244, 710, 28, 20, Muted);
             Label("State heading", "STATUS", 804, 244, 228, 28, 20, Muted, TextAlignmentOptions.TopRight);
+
             for (int i = 0; i < StageNames.Length; i++)
             {
                 float y = 287 + i * 52;
@@ -128,6 +175,7 @@ namespace RunawayChimps.Loading
                 stageLabels[i] = Label("State " + i, "WAITING", 744, y, 288, 38, 28, Muted, TextAlignmentOptions.TopRight);
                 stageLights[i] = Box("Progress " + i, terminal, 48 + i * 200, 558, 184, 8, Muted);
             }
+
             headline = Label("Headline", "ESTABLISHING FACILITY LINK", 48, 594, 984, 34, 25, Amber);
             detail = Label("Detail", "Starting facility systems...", 48, 637, 984, 79, 24, Phosphor);
             detail.enableWordWrapping = true;
@@ -136,9 +184,50 @@ namespace RunawayChimps.Loading
             cursor = Box("Activity cursor", terminal, 1008, 787, 22, 7, Phosphor);
         }
 
+        private void BuildCrtTreatment()
+        {
+            staticTexture = new Texture2D(StaticWidth, StaticHeight, TextureFormat.RGBA32, false)
+            {
+                name = "Security Boot Procedural Static",
+                filterMode = FilterMode.Point,
+                wrapMode = TextureWrapMode.Repeat,
+                hideFlags = HideFlags.DontSave
+            };
+            staticPixels = new Color32[StaticWidth * StaticHeight];
+            RefreshStaticTexture();
+
+            var noiseRect = Rect("Low-level CRT static", terminal, 12, 14, 1056, 788);
+            staticNoise = noiseRect.gameObject.AddComponent<RawImage>();
+            staticNoise.texture = staticTexture;
+            staticNoise.uvRect = new Rect(0f, 0f, 11f, 8f);
+            staticNoise.color = new Color(0.46f, 0.82f, 0.60f, 0.025f);
+            staticNoise.raycastTarget = false;
+
+            for (int y = 28; y < 790; y += 30)
+                Box("CRT scanline " + y, terminal, 12, y, 1056, 1, new Color(0.46f, 0.78f, 0.58f, 0.017f));
+
+            interferenceLine = Box("CRT interference sweep", terminal, 12, 20, 1056, 3,
+                new Color(0.62f, 0.92f, 0.72f, 0f));
+            nextStaticRefreshAt = Time.unscaledTime;
+            staticBurstUntil = Time.unscaledTime + 0.25f;
+            nextInterferenceAt = Time.unscaledTime + 2.0f + NextNoise01() * 2.5f;
+        }
+
         public void Present(AppState state, bool hubLoaded, bool inRoom, string error, bool reviewHeld)
         {
-            if (!startupMode || terminal == null) return;
+            if (!startupMode) return;
+            if (terminal == null)
+            {
+                if (legacyStatus != null)
+                {
+                    legacyStatus.enabled = true;
+                    string fallback = !string.IsNullOrEmpty(error) ? error :
+                        !hubLoaded ? "Loading security sector..." : state != null ? state.Status : "Waiting for Bootstrap...";
+                    if (string.IsNullOrEmpty(fallback)) fallback = "Waiting for startup services...";
+                    legacyStatus.text = string.IsNullOrEmpty(error) ? fallback : fallback + "\nPress either trigger to retry. (Desktop: R)";
+                }
+                return;
+            }
             stages[0] = inRoom;
             stages[1] = hubLoaded;
             stages[2] = state != null && state.RigSnapped;
@@ -147,6 +236,7 @@ namespace RunawayChimps.Loading
             bool failed = !string.IsNullOrEmpty(error);
             bool ready = !failed && state != null && state.IsReady && hubLoaded && inRoom;
             int bits = 0;
+
             for (int i = 0; i < stages.Length; i++)
             {
                 if (stages[i])
@@ -157,11 +247,17 @@ namespace RunawayChimps.Loading
                 SetLabel(stageLabels[i], stages[i] ? "ONLINE" : "WAITING", stages[i] ? Phosphor : Muted);
                 stageLights[i].color = stages[i] ? Phosphor : new Color(0.10f, 0.17f, 0.14f);
             }
-            if (bits != previousBits && (bits & ~previousBits) != 0 && !failed && Time.unscaledTime >= nextSoundAt)
+
+            bool stageAdvanced = (bits & ~previousBits) != 0;
+            if (stageAdvanced)
+                staticBurstUntil = Mathf.Max(staticBurstUntil, Time.unscaledTime + 0.12f);
+
+            if (bits != previousBits && stageAdvanced && !failed && Time.unscaledTime >= nextSoundAt)
             {
                 if (bootAudio != null && tick != null) bootAudio.PlayOneShot(tick);
                 nextSoundAt = Time.unscaledTime + 0.18f;
             }
+
             previousBits = bits;
             previousError = error;
             if (ready && !readyLogged)
@@ -169,6 +265,7 @@ namespace RunawayChimps.Loading
                 readyLogged = true;
                 LogReadyTiming();
             }
+
             SetLabel(headline, failed ? "STARTUP INTERRUPTED" : ready ?
                 (reviewHeld ? "ACCESS READY / EDITOR REVIEW HOLD" : "ACCESS GRANTED") : "RESTORING FACILITY ACCESS",
                 failed ? Fault : ready ? Phosphor : Amber);
@@ -197,29 +294,110 @@ namespace RunawayChimps.Loading
 
         private void LateUpdate()
         {
-            if (!startupMode || terminal == null) return;
+            if (!startupMode) return;
             BindStartupCamera();
-            Vector2 size = ((RectTransform)hostCanvas.transform).rect.size;
-            float scale = Mathf.Min(size.x * 0.72f / DesignWidth, size.y * 0.84f / DesignHeight);
-            terminal.localScale = Vector3.one * Mathf.Max(0.01f, scale);
+            if (terminal == null) return;
+
             if (!fading) terminalGroup.alpha = Mathf.Clamp01((Time.unscaledTime - appearedAt) / 0.3f);
+
             Color c = string.IsNullOrEmpty(previousError) ? Phosphor : Amber;
             c.a = 0.55f + 0.18f * Mathf.Sin(Time.unscaledTime * 2f);
             cursor.color = c;
+            UpdateCrtTreatment();
+        }
+
+        private void UpdateCrtTreatment()
+        {
+            float now = Time.unscaledTime;
+            if (staticNoise != null && now >= nextStaticRefreshAt)
+            {
+                RefreshStaticTexture();
+                nextStaticRefreshAt = now + StaticRefreshInterval + NextNoise01() * 0.025f;
+            }
+
+            if (staticNoise != null)
+            {
+                float alpha = now < staticBurstUntil ? 0.045f : 0.025f;
+                if (!string.IsNullOrEmpty(previousError)) alpha = 0.033f;
+                staticNoise.color = new Color(0.46f, 0.82f, 0.60f, alpha);
+            }
+
+            if (interferenceLine == null) return;
+            if (interferenceStartedAt >= 0f)
+            {
+                float phase = (now - interferenceStartedAt) / InterferenceSweepDuration;
+                if (phase >= 1f)
+                {
+                    interferenceStartedAt = -1f;
+                    interferenceLine.color = new Color(0.62f, 0.92f, 0.72f, 0f);
+                    nextInterferenceAt = now + 3.0f + NextNoise01() * 4.5f;
+                }
+                else
+                {
+                    float y = Mathf.Lerp(20f, 790f, phase);
+                    interferenceLine.rectTransform.anchoredPosition = new Vector2(12f, -y);
+                    float alpha = Mathf.Sin(phase * Mathf.PI) * 0.065f;
+                    interferenceLine.color = new Color(0.62f, 0.92f, 0.72f, alpha);
+                }
+            }
+            else if (now >= nextInterferenceAt)
+            {
+                interferenceStartedAt = now;
+                staticBurstUntil = Mathf.Max(staticBurstUntil, now + 0.10f);
+            }
+        }
+
+        private void RefreshStaticTexture()
+        {
+            if (staticTexture == null || staticPixels == null) return;
+            for (int i = 0; i < staticPixels.Length; i++)
+            {
+                byte value = (byte)(54 + NextNoise01() * 174f);
+                staticPixels[i] = new Color32(value, value, value, 255);
+            }
+            staticTexture.SetPixels32(staticPixels);
+            staticTexture.Apply(false, false);
+        }
+
+        private float NextNoise01()
+        {
+            uint x = noiseState;
+            x ^= x << 13;
+            x ^= x >> 17;
+            x ^= x << 5;
+            noiseState = x == 0 ? 0x6D2B79F5u : x;
+            return (noiseState & 0x00FFFFFFu) / 16777215f;
         }
 
         private void BindStartupCamera()
         {
-            if (boundCamera != null && boundCamera.isActiveAndEnabled) return;
+            if (boundCamera != null && boundCamera.isActiveAndEnabled)
+            {
+                EnsureWorkstation();
+                return;
+            }
+
             var player = GorillaLocomotion.Player.Instance;
             var origin = player != null ? player.GetComponentInParent<XROrigin>() : null;
             if (origin == null || origin.Camera == null || !origin.Camera.isActiveAndEnabled) return;
+
             RestoreCameraForReveal();
+            int layer = LayerMask.NameToLayer(PresentationLayerName);
+            if (layer < 0)
+            {
+                Debug.LogError($"Security boot requires the '{PresentationLayerName}' layer.", this);
+                return;
+            }
+
             boundCamera = origin.Camera;
+            presentationLayer = layer;
+            SetLayerRecursively(hostCanvas.gameObject, presentationLayer);
             hostCanvas.renderMode = RenderMode.ScreenSpaceCamera;
             hostCanvas.worldCamera = boundCamera;
             hostCanvas.planeDistance = Mathf.Max(1.5f, boundCamera.nearClipPlane + 0.1f);
             MaskStartupCamera();
+            EnsureWorkstation();
+
             foreach (GameObject root in gameObject.scene.GetRootGameObjects())
                 foreach (LoadingFallbackCamera fallback in root.GetComponentsInChildren<LoadingFallbackCamera>(true))
                 {
@@ -230,14 +408,28 @@ namespace RunawayChimps.Loading
 
         private void MaskStartupCamera()
         {
-            if (boundCamera == null || cameraMasked) return;
-            savedCullingMask = boundCamera.cullingMask;
-            savedClearFlags = boundCamera.clearFlags;
-            savedBackground = boundCamera.backgroundColor;
-            cameraMasked = true;
-            boundCamera.cullingMask = 1 << hostCanvas.gameObject.layer;
+            if (boundCamera == null || presentationLayer < 0) return;
+            if (!cameraMasked)
+            {
+                savedCullingMask = boundCamera.cullingMask;
+                savedClearFlags = boundCamera.clearFlags;
+                savedBackground = boundCamera.backgroundColor;
+                cameraMasked = true;
+            }
+
+            // Always reapply this mask. An interrupted Hub reveal can call this while the saved-state flag is still true.
+            boundCamera.cullingMask = 1 << presentationLayer;
             boundCamera.clearFlags = CameraClearFlags.SolidColor;
             boundCamera.backgroundColor = Color.black;
+        }
+
+        public void PrepareCameraForHubReveal()
+        {
+            if (!cameraMasked || boundCamera == null || presentationLayer < 0) return;
+            // Render the Hub and the black LoadingPresentation overlay together during the reveal fade.
+            boundCamera.cullingMask = savedCullingMask | (1 << presentationLayer);
+            boundCamera.clearFlags = savedClearFlags;
+            boundCamera.backgroundColor = savedBackground;
         }
 
         public void RestoreCameraForReveal()
@@ -255,7 +447,17 @@ namespace RunawayChimps.Loading
         public void SetTerminalOpacity(float alpha)
         {
             fading = true;
-            if (terminalGroup != null) terminalGroup.alpha = Mathf.Clamp01(alpha);
+            alpha = Mathf.Clamp01(alpha);
+            if (terminalGroup != null) terminalGroup.alpha = alpha;
+            if (alpha <= 0.001f) workstationRetiredForReveal = true;
+
+            if (workstation != null)
+            {
+                // Let the authored black full-FOV backdrop cover the entire 3D vignette before it is hidden.
+                SetBackdropOpacity(1f - alpha);
+                if (workstationRetiredForReveal) DestroyWorkstationForReveal();
+                else if (!workstation.gameObject.activeSelf) workstation.gameObject.SetActive(true);
+            }
         }
 
         public void SetBackdropOpacity(float alpha)
@@ -266,7 +468,18 @@ namespace RunawayChimps.Loading
         public void RestoreAfterInterruptedEntry()
         {
             fading = false;
-            SetBackdropOpacity(1f);
+            workstationRetiredForReveal = false;
+            if (workstation == null) EnsureWorkstation();
+            if (workstation != null)
+            {
+                workstation.gameObject.SetActive(true);
+                SetBackdropOpacity(0f);
+            }
+            else
+            {
+                SetBackdropOpacity(1f);
+            }
+
             MaskStartupCamera();
             if (terminalGroup != null) terminalGroup.alpha = 1f;
         }
@@ -279,6 +492,12 @@ namespace RunawayChimps.Loading
             previousBits = 0;
             previousError = null;
             readyLogged = false;
+            staticBurstUntil = Time.unscaledTime + 0.25f;
+            nextStaticRefreshAt = Time.unscaledTime;
+            nextInterferenceAt = Time.unscaledTime + 1.8f + NextNoise01() * 2.2f;
+            interferenceStartedAt = -1f;
+            if (interferenceLine != null)
+                interferenceLine.color = new Color(0.62f, 0.92f, 0.72f, 0f);
             for (int i = 0; i < stageReachedAt.Length; i++) stageReachedAt[i] = -1f;
             if (terminalGroup != null) terminalGroup.alpha = 0f;
         }
@@ -314,6 +533,41 @@ namespace RunawayChimps.Loading
             RestoreCameraForReveal();
             if (bootAudio != null) bootAudio.Stop();
             if (tick != null) Destroy(tick);
+            DestroyWorkstationForReveal();
+        }
+
+        private void DestroyWorkstationForReveal()
+        {
+            if (workstation != null) Destroy(workstation.gameObject);
+            workstation = null;
+            terminal = null;
+            terminalGroup = null;
+            headline = detail = instruction = null;
+            cursor = null;
+            staticNoise = null;
+            interferenceLine = null;
+            if (staticTexture != null) Destroy(staticTexture);
+            staticTexture = null;
+            staticPixels = null;
+            for (int i = 0; i < stageLabels.Length; i++)
+            {
+                stageLabels[i] = null;
+                stageLights[i] = null;
+            }
+        }
+
+        private void DisableLoadingSceneText()
+        {
+            foreach (GameObject root in gameObject.scene.GetRootGameObjects())
+                foreach (TMP_Text label in root.GetComponentsInChildren<TMP_Text>(true))
+                    label.enabled = false;
+        }
+
+        private static void SetLayerRecursively(GameObject root, int layer)
+        {
+            root.layer = layer;
+            foreach (Transform child in root.transform)
+                SetLayerRecursively(child.gameObject, layer);
         }
 
         private static RectTransform Rect(string name, Transform parent, float x, float y, float w, float h)
