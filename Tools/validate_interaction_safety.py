@@ -102,12 +102,12 @@ def validate(sources: dict[str, str]) -> None:
     require("!ScannerActive" in submit and "!gameplayCard.isActiveAndEnabled" in submit,
             "Submission must reject disabled readers and cards")
 
-    insert = method(card, "TryInsertInto")
+    insert = method(card, "TryInsertCore")
     require(all(token in insert for token in (
-        "!isActiveAndEnabled", "insertionInProgress", "try", "finally",
-        "insertionInProgress = true;", "insertionInProgress = false;")),
+        "!isActiveAndEnabled", "consumption.TryBegin(box)", "try", "finally",
+        "box.TryAcceptKey(this, reader)", "consumption.End(box);")),
         "Card consumption must reject disabled and reentrant submissions")
-    add = method(box, "TryAddKey")
+    add = method(box, "TryAcceptKey")
     require("!isActiveAndEnabled" in add and "!card.isActiveAndEnabled" in add and
             "acceptingKey" in add, "Inactive or reentrant objectives must not advance")
     notify = method(box, "NotifyProgressChanged")
@@ -173,6 +173,8 @@ def check_rotated_bounds_math() -> int:
 def main() -> None:
     sources = {key: (ROOT / path).read_text(encoding="utf-8-sig") for key, path in PATHS.items()}
     validate(sources)
+    from validate_card_reuse import validate_reuse
+    validate_reuse(ROOT)
     negatives = check_negative_fixtures(sources)
     rotations = check_rotated_bounds_math()
     print(f"PASS: interaction source contracts; {negatives} rejected regression mutations; {rotations} rotated/scaled math fixtures.")

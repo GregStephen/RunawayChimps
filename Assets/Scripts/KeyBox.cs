@@ -14,6 +14,24 @@ public class KeyBox : MonoBehaviour
     public SlidingDoor door;
     [Tooltip("Enable only for the personal Level 1 completion keybox.")]
     public bool travelToLevelTwoOnComplete;
+    [Tooltip("Require an authorized matching reader even before readers are enabled. New Inspector-authored locks default to this; legacy unbound boxes may leave it off.")]
+    public bool requireMatchingReader;
+
+    // Binding a gameplay reader permanently opts this visit's objective into reader
+    // authorization. Disabling/unbinding that reader must never reopen a bypass.
+    private bool hasAuthoredReader;
+    public bool RequiresMatchingReader => travelToLevelTwoOnComplete || requireMatchingReader || hasAuthoredReader;
+
+    private void Reset()
+    {
+        requireMatchingReader = true;
+    }
+
+    internal void RegisterReader(KeycardReaderLightController reader)
+    {
+        if (reader != null && reader.Objective == this && reader.gameObject.scene == gameObject.scene)
+            hasAuthoredReader = true;
+    }
 
     private int currentKeys = 0;
     private readonly HashSet<int> acceptedCards = new HashSet<int>();
@@ -40,14 +58,30 @@ public class KeyBox : MonoBehaviour
 
     public bool TryAddKey(KeyCard card)
     {
+        // Public compatibility API is a full consume-on-success transaction, not
+        // a second count-only entrance that can credit one card to several locks.
+        return card != null && card.TryInsertInto(this);
+    }
+
+    internal bool TryAcceptKey(KeyCard card, KeycardReaderLightController reader)
+    {
         if (!isActiveAndEnabled || acceptingKey || card == null || !card.isActiveAndEnabled ||
-            card.IsInserted || IsComplete || card.gameObject.scene != gameObject.scene)
+            card.IsInserted || !card.IsInsertionPendingFor(this) || IsComplete ||
+            card.gameObject.scene != gameObject.scene)
+            return false;
+        if (RequiresMatchingReader && reader == null)
+            return false;
+        if ((RequiresMatchingReader || reader != null) && !card.WasHeldByLocalPlayer)
+            return false;
+        if (reader != null && !reader.CanSubmitCard(card, this))
             return false;
         if (travelToLevelTwoOnComplete && (!card.WasHeldByLocalPlayer ||
             gameObject.scene != SceneManager.GetActiveScene() || SectorTravelService.I == null ||
             SectorTravelService.I.IsBusy || SectorTravelService.I.CurrentSector != SectorId.Containment))
             return false;
-        if (!acceptedCards.Add(card.GetInstanceID())) return false;
+        int cardId = card.GetInstanceID();
+        if (acceptedCards.Contains(cardId) || !card.CommitInsertion(this)) return false;
+        acceptedCards.Add(cardId);
         AcceptKey();
         return true;
     }
@@ -55,7 +89,7 @@ public class KeyBox : MonoBehaviour
     // Preserve older non-travel UnityEvent bindings; completion requires a local card.
     public void AddKey()
     {
-        if (isActiveAndEnabled && !acceptingKey && !travelToLevelTwoOnComplete && !IsComplete) AcceptKey();
+        if (isActiveAndEnabled && !acceptingKey && !RequiresMatchingReader && !IsComplete) AcceptKey();
     }
 
     private void AcceptKey()
@@ -131,7 +165,8 @@ public class KeyBox : MonoBehaviour
 
     private void RetrySelected(SelectEnterEventArgs args)
     {
-        if (args.interactorObject.transform.GetComponentInParent<LocalRigMarker>() != null)
+        if (args != null && args.interactorObject != null &&
+            args.interactorObject.transform.GetComponentInParent<LocalRigMarker>() != null)
             RetryCompletion();
     }
 

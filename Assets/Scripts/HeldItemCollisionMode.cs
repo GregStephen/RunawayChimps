@@ -13,9 +13,11 @@ public class HeldItemCollisionMode : MonoBehaviour
     readonly Dictionary<Transform, int> originalLayers = new Dictionary<Transform, int>();
     readonly List<IgnoredCollisionPair> ignoredLocalRigPairs = new List<IgnoredCollisionPair>();
     readonly List<IgnoredCollisionPair> localRigContactPairs = new List<IgnoredCollisionPair>();
+    readonly List<Collider> localItemColliders = new List<Collider>();
 
     XRGrabInteractable grab;
     Coroutine restoreRigCollisionsRoutine;
+    bool restoreSafetyOnEnable;
 
     struct IgnoredCollisionPair
     {
@@ -38,15 +40,21 @@ public class HeldItemCollisionMode : MonoBehaviour
     {
         grab.firstSelectEntered.AddListener(OnGrab);
         grab.lastSelectExited.AddListener(OnRelease);
-        if (grab.isSelected)
+        if (grab.isSelected || restoreSafetyOnEnable)
         {
+            restoreSafetyOnEnable = false;
             ApplyHeldLayer();
             IgnoreLocalRigCollisions();
+            if (!grab.isSelected)
+                restoreRigCollisionsRoutine = StartCoroutine(RestoreRigCollisionsWhenSeparated());
         }
     }
 
     void OnDisable()
     {
+        // Deactivating a recovering/held object must not discard its need for
+        // separation when it is reactivated beside the local rig.
+        restoreSafetyOnEnable |= originalLayers.Count > 0 || ignoredLocalRigPairs.Count > 0;
         if (grab != null)
         {
             grab.firstSelectEntered.RemoveListener(OnGrab);
@@ -73,6 +81,11 @@ public class HeldItemCollisionMode : MonoBehaviour
 
         ApplyHeldLayer();
         IgnoreLocalRigCollisions();
+    }
+
+    internal int GetUnheldLayer(Transform target)
+    {
+        return originalLayers.TryGetValue(target, out int original) ? original : target.gameObject.layer;
     }
 
     void ApplyHeldLayer()
@@ -112,6 +125,7 @@ public class HeldItemCollisionMode : MonoBehaviour
         // Rebuild separation contacts on every grab, including an immediate
         // re-grab while old owned ignores are still active. Never undo pre-existing ignores.
         localRigContactPairs.Clear();
+        localItemColliders.Clear();
 
         GorillaLocomotion.Player player = GorillaLocomotion.Player.Instance;
         XROrigin origin = player != null ? player.GetComponentInParent<XROrigin>() : null;
@@ -126,6 +140,7 @@ public class HeldItemCollisionMode : MonoBehaviour
             if (itemCollider == null || !itemCollider.enabled || itemCollider.isTrigger)
                 continue;
 
+            localItemColliders.Add(itemCollider);
             foreach (Collider rigCollider in rigColliders)
             {
                 if (rigCollider == null || !rigCollider.enabled || rigCollider.isTrigger || rigCollider == itemCollider)
@@ -159,10 +174,13 @@ public class HeldItemCollisionMode : MonoBehaviour
 
         ignoredLocalRigPairs.Clear();
         localRigContactPairs.Clear();
+        localItemColliders.Clear();
     }
 
     void OnRelease(SelectExitEventArgs args)
     {
+        if (!isActiveAndEnabled)
+            return; // OnDisable owns cleanup; never start a coroutine on an inactive object.
         // Pair ignores do not affect Gorilla's casts. Keep solid colliders on
         // HeldItem until separation as well; trigger-only grab sensors never moved.
 
@@ -173,6 +191,9 @@ public class HeldItemCollisionMode : MonoBehaviour
 
     IEnumerator RestoreRigCollisionsWhenSeparated()
     {
+        // Defer until XRI has completed final selection teardown and the next
+        // physics step. Never restore state from a half-completed exit callback.
+        yield return new WaitForFixedUpdate();
         // The card/prop can still be intersecting the hand, head or body on the exact frame
         // the grab ends. Re-enabling that collision immediately recreates the same violent
         // depenetration impulse we avoid while held. Keep only the local-rig pairs ignored
@@ -207,7 +228,33 @@ public class HeldItemCollisionMode : MonoBehaviour
                 return true;
         }
 
+        GorillaLocomotion.Player player = GorillaLocomotion.Player.Instance;
+        if (player != null)
+        {
+            float handRadius = Mathf.Max(0.05f, player.minimumRaycastDistance) + 0.005f;
+            foreach (Collider item in localItemColliders)
+            {
+                if (item == null || item.isTrigger || !item.enabled || !item.gameObject.activeInHierarchy)
+                    continue;
+                if (HandStillNear(item, player.leftHandFollower, handRadius) ||
+                    HandStillNear(item, player.rightHandFollower, handRadius))
+                    return true;
+            }
+        }
         return false;
+    }
+
+    static bool HandStillNear(Collider item, Transform hand, float radius)
+    {
+        if (hand == null)
+            return false;
+        // Physics.ClosestPoint supports these shapes and accepts a current pose,
+        // avoiding a global SyncTransforms just to check virtual-hand clearance.
+        if (!(item is BoxCollider) && !(item is SphereCollider) && !(item is CapsuleCollider) &&
+            !(item is MeshCollider mesh && mesh.convex))
+            return false;
+        Vector3 closest = Physics.ClosestPoint(hand.position, item, item.transform.position, item.transform.rotation);
+        return (closest - hand.position).sqrMagnitude <= radius * radius;
     }
 
     void RestoreLayers()

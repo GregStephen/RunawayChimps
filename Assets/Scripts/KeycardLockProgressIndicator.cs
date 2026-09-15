@@ -20,6 +20,8 @@ public sealed class KeycardLockProgressIndicator : MonoBehaviour
     [SerializeField, Min(0.01f)] private float lampSpacing = 0.048f;
 
     private bool subscribed;
+    private KeyBox subscribedSource;
+    private bool explicitBinding;
     private bool warnedMissingSource;
     private bool warnedCapacity;
 
@@ -65,8 +67,10 @@ public sealed class KeycardLockProgressIndicator : MonoBehaviour
 
     public void Bind(KeyBox source)
     {
+        explicitBinding = true;
         if (keyBox == source)
         {
+            Subscribe();
             Refresh();
             return;
         }
@@ -88,7 +92,20 @@ public sealed class KeycardLockProgressIndicator : MonoBehaviour
 
     private void HandleProgressChanged(int acceptedKeys, int requiredKeys)
     {
-        ApplyProgress(acceptedKeys, requiredKeys);
+        // Event invocation lists are snapshots. Another listener may have disabled
+        // or rebound this panel since this callback was captured by the old source.
+        if (isActiveAndEnabled)
+            Refresh();
+    }
+
+    private void Update()
+    {
+        if (subscribed && subscribedSource == null)
+        {
+            subscribed = false;
+            subscribedSource = null;
+            Refresh();
+        }
     }
 
     private void ApplyProgress(int acceptedKeys, int requiredKeys)
@@ -108,6 +125,11 @@ public sealed class KeycardLockProgressIndicator : MonoBehaviour
                 "Add more lamp renderers to represent every required card.",
                 this);
         }
+
+        // Never display an apparently fully green lock because its panel silently
+        // truncated the requirement (for example four configured lamps at 4/5).
+        if (requiredKeys > progressLights.Length)
+            acceptedKeys = 0;
 
         float firstLampX = -0.5f * (visibleCount - 1) * lampSpacing;
 
@@ -137,7 +159,7 @@ public sealed class KeycardLockProgressIndicator : MonoBehaviour
 
     private void ResolveParentKeyBox()
     {
-        if (keyBox != null)
+        if (explicitBinding || keyBox != null)
             return;
 
         // Parent-only lookup is deterministic authoring, unlike the previous scene-wide
@@ -150,7 +172,8 @@ public sealed class KeycardLockProgressIndicator : MonoBehaviour
         if (!isActiveAndEnabled || subscribed || keyBox == null)
             return;
 
-        keyBox.ProgressChanged += HandleProgressChanged;
+        subscribedSource = keyBox;
+        subscribedSource.ProgressChanged += HandleProgressChanged;
         subscribed = true;
     }
 
@@ -159,8 +182,9 @@ public sealed class KeycardLockProgressIndicator : MonoBehaviour
         if (!subscribed)
             return;
 
-        if (keyBox != null)
-            keyBox.ProgressChanged -= HandleProgressChanged;
+        if (subscribedSource != null)
+            subscribedSource.ProgressChanged -= HandleProgressChanged;
+        subscribedSource = null;
         subscribed = false;
     }
 }

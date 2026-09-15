@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.XR.Interaction.Toolkit;
 
 [RequireComponent(typeof(BoxCollider), typeof(Rigidbody), typeof(XRGrabInteractable))]
+[RequireComponent(typeof(HeldItemCollisionMode))]
 [DefaultExecutionOrder(-200)]
 [DisallowMultipleComponent]
 public class KeyCard : MonoBehaviour
@@ -26,13 +27,12 @@ public class KeyCard : MonoBehaviour
     [Tooltip("Minimum world-space thickness of the trigger-only grab volume so a dropped flat card remains easy to acquire with a Gorilla hand.")]
     [SerializeField, Min(0.01f)] private float minimumGrabThicknessMeters = 0.06f;
 
-    private bool isInserted = false;
-    private bool insertionInProgress;
+    private readonly CardConsumptionState consumption = new CardConsumptionState();
     private XRGrabInteractable grab;
     private BoxCollider physicalCollider;
     private BoxCollider grabAffordanceCollider;
 
-    public bool IsInserted => isInserted;
+    public bool IsInserted => consumption.IsConsumed;
     public bool WasHeldByLocalPlayer { get; private set; }
     public KeycardCredential Credential => credential;
     public Collider PhysicalCollider => physicalCollider;
@@ -41,6 +41,10 @@ public class KeyCard : MonoBehaviour
     private void Awake()
     {
         grab = GetComponent<XRGrabInteractable>();
+        // RequireComponent covers newly authored cards; this covers older serialized
+        // cards that predate the requirement without depending on a scene-specific fix.
+        if (GetComponent<HeldItemCollisionMode>() == null)
+            gameObject.AddComponent<HeldItemCollisionMode>();
         ConfigurePhysicalCard();
     }
 
@@ -50,7 +54,12 @@ public class KeyCard : MonoBehaviour
             grab = GetComponent<XRGrabInteractable>();
 
         if (grab != null)
+        {
             grab.selectEntered.AddListener(Selected);
+            // Re-enabling KeyCard while already held must not require another pickup.
+            foreach (IXRSelectInteractor interactor in grab.interactorsSelecting)
+                RecordLocalHolder(interactor);
+        }
     }
 
     /// <summary>
@@ -68,6 +77,11 @@ public class KeyCard : MonoBehaviour
             FitColliderToVisualBounds(physicalCollider);
             ConfigureGrabAffordance(physicalCollider);
         }
+
+        // The imported cards used Instantaneous (Transform teleport) movement,
+        // which cannot provide the promised held-card/world collision behavior.
+        if (grab != null)
+            grab.movementType = XRBaseInteractable.MovementType.VelocityTracking;
 
         Rigidbody body = GetComponent<Rigidbody>();
         if (body == null)
@@ -88,7 +102,8 @@ public class KeyCard : MonoBehaviour
 
         foreach (Renderer renderer in renderers)
         {
-            if (renderer == null)
+            if (renderer == null || (!(renderer is MeshRenderer) && !(renderer is SkinnedMeshRenderer)) ||
+                renderer.GetComponentInParent<KeyCard>() != this)
                 continue;
 
             // Do not inverse-transform a world AABB: rotating a thin card
@@ -157,7 +172,10 @@ public class KeyCard : MonoBehaviour
             affordanceObject.transform.SetParent(transform, false);
         }
 
-        affordanceObject.layer = gameObject.layer;
+        HeldItemCollisionMode collisionMode = GetComponent<HeldItemCollisionMode>();
+        // A runtime-added card may already be held. Do not permanently give its
+        // newly created acquisition trigger the temporary solid HeldItem layer.
+        affordanceObject.layer = collisionMode != null ? collisionMode.GetUnheldLayer(transform) : gameObject.layer;
         affordanceObject.transform.localPosition = Vector3.zero;
         affordanceObject.transform.localRotation = Quaternion.identity;
         affordanceObject.transform.localScale = Vector3.one;
@@ -188,8 +206,16 @@ public class KeyCard : MonoBehaviour
         {
             // XRI interaction uses only the generous trigger volume. The tight solid collider
             // remains responsible for world physics and reader scanning.
+            // Normal scene Awake precedes XRI registration. Adding KeyCard to an
+            // already-live XRGrabInteractable must refresh the manager's collider map.
+            XRInteractionManager manager = grab.interactionManager;
+            bool registered = manager != null && manager.IsRegistered((IXRInteractable)grab);
+            if (registered)
+                manager.UnregisterInteractable((IXRInteractable)grab);
             grab.colliders.Clear();
             grab.colliders.Add(grabAffordanceCollider);
+            if (registered && grab != null && grab.isActiveAndEnabled && manager != null)
+                manager.RegisterInteractable((IXRInteractable)grab);
         }
     }
 
@@ -204,7 +230,13 @@ public class KeyCard : MonoBehaviour
 
     private void Selected(SelectEnterEventArgs args)
     {
-        if (args.interactorObject.transform.GetComponentInParent<LocalRigMarker>() != null)
+        RecordLocalHolder(args != null ? args.interactorObject : null);
+    }
+
+    private void RecordLocalHolder(IXRSelectInteractor interactor)
+    {
+        if (interactor != null && interactor.transform != null &&
+            interactor.transform.GetComponentInParent<LocalRigMarker>() != null)
             WasHeldByLocalPlayer = true;
     }
 
@@ -221,41 +253,56 @@ public class KeyCard : MonoBehaviour
     /// </summary>
     public bool TryInsertInto(KeyBox box)
     {
-        if (!isActiveAndEnabled || isInserted || insertionInProgress || box == null)
+        return TryInsertCore(box, null);
+    }
+
+    internal bool TryInsertFromReader(KeyBox box, KeycardReaderLightController reader)
+    {
+        return TryInsertCore(box, reader);
+    }
+
+    internal bool IsInsertionPendingFor(KeyBox box) => consumption.IsPendingFor(box);
+    internal bool CommitInsertion(KeyBox box) => consumption.Commit(box);
+
+    private bool TryInsertCore(KeyBox box, KeycardReaderLightController reader)
+    {
+        if (!isActiveAndEnabled || box == null || !consumption.TryBegin(box))
             return false;
 
-        // Progress listeners run synchronously. They must not submit this same card
-        // to another reader/lock before the first acceptance has finished consuming it.
-        insertionInProgress = true;
         try
         {
-            if (!box.TryAddKey(this))
+            if (!box.TryAcceptKey(this, reader))
                 return false;
 
-            isInserted = true;
-            Destroy(gameObject);
+            // The box commits consumption BEFORE it notifies observers. A callback
+            // may already have destroyed this object or started scene travel.
+            if (this != null)
+            {
+                if (grab != null)
+                    grab.enabled = false;
+                if (this != null)
+                    Destroy(gameObject);
+            }
             return true;
         }
         finally
         {
-            insertionInProgress = false;
+            consumption.End(box);
         }
     }
 
     private void OnTriggerEnter(Collider other)
     {
-        if (isInserted)
+        if (IsInserted)
             return;
 
         KeyBox box = other.GetComponent<KeyBox>();
         if (box == null)
             return;
 
-        // The Level 1 completion KeyBox is reader-driven: a card must be
-        // presented to its matching color/symbol reader rather than merely
-        // touching the legacy KeyBox trigger. Keep direct insertion available
-        // for older non-travel KeyBox uses.
-        if (!box.travelToLevelTwoOnComplete)
+        // Any reader-backed objective, in any level, requires a matching reader.
+        // Unbound legacy boxes retain their explicitly supported direct path.
+        if (!box.RequiresMatchingReader)
             TryInsertInto(box);
     }
 }

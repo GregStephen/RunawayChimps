@@ -69,7 +69,7 @@ def main() -> int:
         "Gameplay KeyCard must expose an explicit serialized credential identity.",
     )
     require(
-        "if (!box.travelToLevelTwoOnComplete)" in keycard and "TryInsertInto(box);" in keycard,
+        "if (!box.RequiresMatchingReader)" in keycard and "TryInsertInto(box);" in keycard,
         "Level 1 completion must remain reader-driven while legacy non-travel KeyBoxes keep direct insertion.",
     )
     require(
@@ -170,7 +170,7 @@ def main() -> int:
         "Reader must retry a matching card while it remains physically inside the scan zone.",
     )
     require(
-        "gameplayCard.TryInsertInto(keyBox)" in controller,
+        "gameplayCard.TryInsertFromReader(keyBox, this)" in controller,
         "Matching readers must submit through the shared KeyCard acceptance lifecycle.",
     )
     require(

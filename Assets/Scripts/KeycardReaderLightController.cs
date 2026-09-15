@@ -7,6 +7,7 @@ using UnityEngine;
 /// and optionally submits a matching gameplay KeyCard to an explicitly authored objective.
 /// Persistent accepted-card progress is displayed separately by KeycardLockProgressIndicator.
 /// </summary>
+[RequireComponent(typeof(BoxCollider))]
 [DisallowMultipleComponent]
 public sealed class KeycardReaderLightController : MonoBehaviour
 {
@@ -34,8 +35,15 @@ public sealed class KeycardReaderLightController : MonoBehaviour
     private readonly List<Collider> staleColliderScratch = new List<Collider>();
     private readonly List<KeyCard> pendingCardScratch = new List<KeyCard>();
 
+    private bool objectiveResolutionAttempted;
+    private int bindingRevision;
+    private int overlapReseedSteps;
+    private bool scannerWasActive;
+    private readonly Collider[] overlapScratch = new Collider[32];
+    public KeyBox Objective => keyBox;
+    public KeycardCredential ExpectedCredential => resolvedCredential;
     private BoxCollider scanVolume;
-    private bool ScannerActive => isActiveAndEnabled && scanVolume != null &&
+    private bool ScannerActive => this != null && isActiveAndEnabled && scanVolume != null &&
         scanVolume.enabled && scanVolume.isTrigger && scanVolume.gameObject.activeInHierarchy;
 
     private KeycardCredential resolvedCredential;
@@ -56,6 +64,10 @@ public sealed class KeycardReaderLightController : MonoBehaviour
             ? ParseCredential(readerRoot != null ? readerRoot.name : string.Empty)
             : expectedCredential;
 
+        if (resolvedCredential < KeycardCredential.AmberTriangle ||
+            resolvedCredential > KeycardCredential.VioletDiamond)
+            resolvedCredential = KeycardCredential.Auto;
+
         if (standbyMaterial == null && statusLedRenderer != null)
             standbyMaterial = statusLedRenderer.sharedMaterial;
 
@@ -66,6 +78,41 @@ public sealed class KeycardReaderLightController : MonoBehaviour
         }
 
         SetAcceptedVisual(false);
+    }
+
+    private void OnEnable()
+    {
+        // A sleeping card may not generate another Stay after only the reader
+        // behaviour is re-enabled. Rebuild nearby candidates after physics catches up.
+        overlapReseedSteps = 2;
+    }
+
+    private void FixedUpdate()
+    {
+        if (!ScannerActive || overlapReseedSteps <= 0 || --overlapReseedSteps > 0)
+            return;
+
+        Vector3 scale = scanVolume.transform.lossyScale;
+        Vector3 halfExtents = Vector3.Scale(scanVolume.size * 0.5f,
+            new Vector3(Mathf.Abs(scale.x), Mathf.Abs(scale.y), Mathf.Abs(scale.z)));
+        Vector3 center = scanVolume.transform.TransformPoint(scanVolume.center);
+        Quaternion rotation = scanVolume.transform.rotation;
+        int count = Physics.OverlapBoxNonAlloc(center, halfExtents, overlapScratch,
+            rotation, ~0, QueryTriggerInteraction.Ignore);
+        // Do not silently lose a card in a crowded overlap. Allocation happens
+        // only when a one-time enable/rebind rescan fills the reusable buffer.
+        Collider[] candidates = count == overlapScratch.Length
+            ? Physics.OverlapBox(center, halfExtents, rotation, ~0, QueryTriggerInteraction.Ignore)
+            : overlapScratch;
+        if (candidates != overlapScratch)
+            count = candidates.Length;
+        for (int i = 0; i < count; i++)
+        {
+            Collider candidate = candidates[i];
+            if (ScannerActive && candidate != null && !acceptedColliders.Contains(candidate))
+                OnTriggerEnter(candidate);
+            candidates[i] = null;
+        }
     }
 
     private void OnTriggerEnter(Collider other)
@@ -130,9 +177,13 @@ public sealed class KeycardReaderLightController : MonoBehaviour
     {
         if (!ScannerActive)
         {
+            scannerWasActive = false;
             ClearOverlapState();
             return;
         }
+        if (!scannerWasActive)
+            overlapReseedSteps = 2;
+        scannerWasActive = true;
 
         RemoveInvalidAcceptedColliders();
         RetryPendingSubmissions();
@@ -143,6 +194,8 @@ public sealed class KeycardReaderLightController : MonoBehaviour
 
     private void OnDisable()
     {
+        scannerWasActive = false;
+        overlapReseedSteps = 0;
         ClearOverlapState();
     }
 
@@ -161,9 +214,15 @@ public sealed class KeycardReaderLightController : MonoBehaviour
     /// </summary>
     public void BindObjective(KeyBox source)
     {
+        bindingRevision++;
+        overlapReseedSteps = 2;
+        ClearOverlapState();
         keyBox = source;
+        objectiveResolutionAttempted = true; // Bind(null) is an explicit unbind, not a fallback request.
         warnedMissingProgressSource = false;
         warnedAmbiguousProgressSource = false;
+        if (keyBox != null && submitMatchingCardsToKeyBox)
+            keyBox.RegisterReader(this);
     }
 
     private void ResolveReferences()
@@ -181,7 +240,16 @@ public sealed class KeycardReaderLightController : MonoBehaviour
 
     private void ResolveAuthoredKeyBox()
     {
-        if (keyBox != null || readerRoot == null)
+        if (objectiveResolutionAttempted)
+            return;
+        objectiveResolutionAttempted = true;
+        if (keyBox != null)
+        {
+            if (submitMatchingCardsToKeyBox)
+                keyBox.RegisterReader(this);
+            return;
+        }
+        if (readerRoot == null)
             return;
 
         // The existing Level 1 objective was deliberately reparented beneath its
@@ -191,6 +259,8 @@ public sealed class KeycardReaderLightController : MonoBehaviour
         if (nestedBoxes.Length == 1)
         {
             keyBox = nestedBoxes[0];
+            if (submitMatchingCardsToKeyBox)
+                keyBox.RegisterReader(this);
             return;
         }
 
@@ -271,14 +341,23 @@ public sealed class KeycardReaderLightController : MonoBehaviour
             return;
         }
 
-        if (!gameplayCard.TryInsertInto(keyBox))
-            return;
+        TrySubmitCard(gameplayCard);
+    }
+
+    /// <summary>Explicit callers get the same current-geometry/credential/binding checks as triggers.</summary>
+    public bool TrySubmitCard(KeyCard gameplayCard)
+    {
+        ResolveAuthoredKeyBox();
+        int submittedRevision = bindingRevision;
+        if (!CanSubmitCard(gameplayCard, keyBox) || !gameplayCard.TryInsertFromReader(keyBox, this))
+            return false;
 
         pendingGameplayCards.Remove(gameplayCard);
 
-        // A progress listener can disable the reader during acceptance.
-        if (!ScannerActive)
-            return;
+        // A progress listener can disable or rebind the reader during acceptance.
+        // Do not attach the old objective's acknowledgement to a new binding.
+        if (!ScannerActive || submittedRevision != bindingRevision)
+            return true;
 
         // The accepted card is destroyed by its normal lifecycle, so hold the
         // reader green briefly even after its collider disappears.
@@ -286,6 +365,16 @@ public sealed class KeycardReaderLightController : MonoBehaviour
             acceptedVisualUntil,
             Time.unscaledTime + Mathf.Max(0f, acceptedFlashSeconds));
         SetAcceptedVisual(true);
+        return true;
+    }
+
+    internal bool CanSubmitCard(KeyCard card, KeyBox objective)
+    {
+        if (!ScannerActive || !submitMatchingCardsToKeyBox || objective == null || keyBox != objective ||
+            !objective.isActiveAndEnabled || card == null || !card.isActiveAndEnabled || card.IsInserted ||
+            !HasLiveOverlap(card.PhysicalCollider))
+            return false;
+        return TryResolveMatchingCard(card.PhysicalCollider, out KeyCard resolved) && resolved == card;
     }
 
     private bool HasMatchingOverlap(KeyCard gameplayCard)
@@ -310,7 +399,11 @@ public sealed class KeycardReaderLightController : MonoBehaviour
             return false;
 
         KeyCard card = other.GetComponentInParent<KeyCard>();
-        if (card != null && (!card.isActiveAndEnabled || card.IsInserted))
+        if (card != null && (!card.isActiveAndEnabled || card.IsInserted || other != card.PhysicalCollider))
+            return false;
+
+        if ((other.attachedRigidbody != null && !other.attachedRigidbody.detectCollisions) ||
+            (scanVolume.attachedRigidbody != null && !scanVolume.attachedRigidbody.detectCollisions))
             return false;
 
         if (Physics.GetIgnoreLayerCollision(scanVolume.gameObject.layer, other.gameObject.layer) ||
@@ -403,8 +496,12 @@ public sealed class KeycardReaderLightController : MonoBehaviour
         foreach (Collider collider in staleColliderScratch)
             matchingGameplayColliders.Remove(collider);
 
-        pendingGameplayCards.RemoveWhere(card =>
-            card == null || card.IsInserted || !HasMatchingOverlap(card));
+        pendingCardScratch.Clear();
+        foreach (KeyCard card in pendingGameplayCards)
+            if (card == null || card.IsInserted || !HasMatchingOverlap(card))
+                pendingCardScratch.Add(card);
+        foreach (KeyCard card in pendingCardScratch)
+            pendingGameplayCards.Remove(card);
     }
 
     private void SetAcceptedVisual(bool accepted)
