@@ -87,35 +87,47 @@ def main() -> int:
         "workstationRetiredForReveal = false",
     ]:
         if token not in boot:
-            errors.append(f"Security boot workstation/CRT treatment missing {token!r}.")
+            errors.append(f"Security boot terminal/CRT treatment missing {token!r}.")
 
-    workstation = read("Assets/Scripts/Loading/SecurityWorkstationVignette.cs")
-    workstation_tokens = [
-        "Security Workstation Vignette",
-        "Security Monitor World Canvas",
+    panel = read("Assets/Scripts/Loading/SecurityWorkstationVignette.cs")
+    panel_tokens = [
+        "Security Boot Panel Vignette",
+        "Security Boot World Canvas",
         "RenderMode.WorldSpace",
-        "camera.transform.position + forward * 1.95f",
+        "TerminalDistance = 3.90f",
+        "camera.transform.position + forward * TerminalDistance",
+        "root.transform.SetParent(origin.transform, true)",
+    ]
+    for token in panel_tokens:
+        if token not in panel:
+            errors.append(f"Distant security boot panel missing {token!r}.")
+
+    scale = re.search(r"MonitorCanvasScale\s*=\s*([0-9.]+)f", panel)
+    if not scale or not (0.0006 <= float(scale.group(1)) <= 0.0011):
+        errors.append("Security boot panel scale must remain within the reviewed VR-readable range.")
+
+    distance = re.search(r"TerminalDistance\s*=\s*([0-9.]+)f", panel)
+    if not distance or not (3.6 <= float(distance.group(1)) <= 4.2):
+        errors.append("Security boot panel should remain roughly twice the former 1.95 m viewing distance.")
+
+    for forbidden in [
         "GameObject.CreatePrimitive",
-        "collider.enabled = false",
-        "Destroy(collider)",
-        "BaseMaterialResourcePath = \"LaunchPresentation/WorkstationBase\"",
-        "Resources.Load<Material>",
+        "BaseMaterialResourcePath",
         "CAM 04\\nSTILL DEAD",
         "VENT B\\nAGAIN?",
         "IF THEY GET OUT\\nI QUIT.",
-    ]
-    for token in workstation_tokens:
-        if token not in workstation:
-            errors.append(f"Security workstation vignette missing {token!r}.")
-    scale = re.search(r"MonitorCanvasScale\s*=\s*([0-9.]+)f", workstation)
-    if not scale or not (0.0006 <= float(scale.group(1)) <= 0.0011):
-        errors.append("Security workstation monitor scale must remain within a reviewed VR-readable range.")
+        "Desk top",
+        "Keyboard",
+        "Night shift mug",
+    ]:
+        if forbidden in panel:
+            errors.append(f"Superseded physical workstation dressing returned: {forbidden!r}.")
 
     tag_manager = read("ProjectSettings/TagManager.asset")
     if "- LoadingPresentation" not in tag_manager:
         errors.append("LoadingPresentation layer is not reserved in TagManager.asset.")
 
-    for text, name in ((boot, "SecurityBootPresentation"), (workstation, "SecurityWorkstationVignette")):
+    for text, name in ((boot, "SecurityBootPresentation"), (panel, "SecurityWorkstationVignette")):
         for forbidden in ["UnityEngine.Random.Range", "Random.Range(", "new RenderTexture",
                           "PhotonNetwork.Join", "PhotonNetwork.Instantiate", "MarkRigSnapped(", "TryMarkReady("]:
             if forbidden in text:
@@ -146,19 +158,24 @@ def main() -> int:
             errors.append("HubSpawnSlots.prefab must not serialize a GameObject/component with Unity's reserved prefab fileID 100100000.")
         if len(document_ids) != len(set(document_ids)):
             errors.append("HubSpawnSlots.prefab contains duplicate serialized YAML object fileIDs.")
+
     rig_snapper = read("Assets/Scripts/Bootstrap/RigSpawnSnapper.cs")
     for token in ["HubSpawnSlotAllocator", "TryGetLocalSpawnPose", "SpawnSlotWaitSeconds"]:
         if token not in rig_snapper:
             errors.append(f"RigSpawnSnapper multiplayer slot integration missing {token!r}.")
+
     manager = read("Assets/Resources/PhotonVR/Scripts/PhotonVRManager.cs")
     if "HubSpawnSlotAllocator.AddInitialRoomProperties" not in manager or "matchmakingProps" not in manager:
         errors.append("Photon room creation must initialize Hub slot properties without filtering matchmaking on slot occupancy.")
+
     player_spawner = read("Assets/Resources/PhotonVR/Scripts/Player/PlayerSpawner.cs")
     if "!AppState.I.RigSnapped" not in player_spawner:
         errors.append("Photon avatar spawning must wait for the local Hub rig slot snap.")
+
     app_state = read("Assets/Scripts/Bootstrap/AppState.cs")
     if "ResetHubPlacementReady" not in app_state or "RigSnapped = false" not in app_state:
         errors.append("AppState must support invalidating Hub placement on a new Photon-room session.")
+
     visuals = read("Assets/Scripts/PlayerScripts/PlayerVisualReadyReporter.cs")
     if "GetSharedMaterials(materialScratch)" not in visuals or ".sharedMaterials" in visuals:
         errors.append("Player visual readiness must reuse a shared-material list instead of allocating arrays each frame.")
@@ -166,7 +183,7 @@ def main() -> int:
     flow = read("Assets/Scripts/Bootstrap/LoadingFlow.cs")
     for token in ["PrepareCameraForHubReveal()", "SetBackdropOpacity(0f)", "RestoreCameraForReveal()"]:
         if token not in flow:
-            errors.append(f"LoadingFlow safe workstation-to-Hub reveal missing {token!r}.")
+            errors.append(f"LoadingFlow safe terminal-to-Hub reveal missing {token!r}.")
     if "Security boot prototype" in flow or "Security Boot Prototype" in boot:
         errors.append("Production launch presentation still contains prototype-only runtime/Inspector naming.")
 
@@ -188,17 +205,16 @@ def main() -> int:
         if token not in launch_doc:
             errors.append(f"Launch presentation documentation missing {token!r}.")
 
-    workstation_doc = read("docs/launch-workstation-vignette.md")
+    vignette_doc = read("docs/launch-workstation-vignette.md")
     for token in [
-        "Confirmed direction",
-        "Exact branch implementation",
-        "world-space monitor canvas",
-        "CAM 04 / STILL DEAD",
+        "Superseding correction",
+        "3.9 m",
+        "flat green security terminal",
         "black-only",
-        "Validation plan",
+        "Pending validation",
     ]:
-        if token not in workstation_doc:
-            errors.append(f"Workstation vignette documentation missing {token!r}.")
+        if token not in vignette_doc:
+            errors.append(f"Launch vignette documentation missing {token!r}.")
 
     if errors:
         print("FAIL: launch presentation source contracts")
@@ -206,7 +222,7 @@ def main() -> int:
             print(" -", error)
         return 1
 
-    print("PASS: launch presentation source contracts (OpenXR path, Meta system splash, isolated physical workstation monitor, bounded CRT treatment, safe Hub reveal).")
+    print("PASS: launch presentation source contracts (OpenXR path, Meta system splash, distant flat green terminal, bounded CRT treatment, safe Hub reveal).")
     print("Unity import/compile, Play Mode appearance, APK build, compositor splash, headset handoff, Photon and Quest performance remain separate checks.")
     return 0
 
