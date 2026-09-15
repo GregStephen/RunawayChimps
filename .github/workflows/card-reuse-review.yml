@@ -19,7 +19,7 @@ jobs:
         run: |
           import os, pathlib, subprocess, zipfile
           paths = subprocess.check_output(['git', 'ls-files', '-z']).decode().split('\0')
-          allowed = {'.cs','.meta','.prefab','.unity','.mat','.asset','.controller','.anim','.json','.md','.txt','.asmdef','.asmref','.py','.yml','.yaml','.sh'}
+          allowed = {'.cs','.meta','.prefab','.unity','.mat','.asset','.controller','.anim','.json','.md','.txt','.asmdef','.asmref','.py','.yml','.yaml','.sh','.patch'}
           with zipfile.ZipFile(os.path.join(os.environ['RUNNER_TEMP'], 'review-source.zip'), 'w', zipfile.ZIP_DEFLATED) as archive:
               archive.writestr('REVIEW_HEAD.txt', subprocess.check_output(['git','rev-parse','HEAD']))
               archive.writestr('REVIEW_TRACKED.txt', '\n'.join(paths))
