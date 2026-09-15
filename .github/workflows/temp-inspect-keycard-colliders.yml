@@ -1,0 +1,97 @@
+name: Temporary keycard collider inspection
+
+on:
+  push:
+    branches:
+      - feature/keycard-reader-light-feedback
+    paths:
+      - '.github/workflows/temp-inspect-keycard-colliders.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/keycard-reader-light-feedback
+
+      - name: Inspect Level 1 reader objective collider hierarchy
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+
+          root = Path('.')
+          scene = (root / 'Assets/Scenes/Level1_Containment.unity').read_text(encoding='utf-8-sig')
+          keybox_meta = (root / 'Assets/Scripts/KeyBox.cs.meta').read_text(encoding='utf-8-sig')
+          keybox_guid = re.search(r'^guid:\s*([0-9a-f]{32})', keybox_meta, re.M).group(1)
+          blocks = [b for b in re.split(r'(?=^--- !u!)', scene, flags=re.M) if b.startswith('--- !u!')]
+
+          def fid(block, unity_type=None):
+              first = block.splitlines()[0]
+              pattern = rf'--- !u!{unity_type} &(-?\d+)' if unity_type is not None else r'--- !u!\d+ &(-?\d+)'
+              match = re.match(pattern, first)
+              return int(match.group(1)) if match else None
+
+          def go_id(block):
+              match = re.search(r'm_GameObject: \{fileID: (-?\d+)\}', block)
+              return int(match.group(1)) if match else None
+
+          by_fid = {fid(b): b for b in blocks if fid(b) is not None}
+          game_objects = {fid(b, 1): b for b in blocks if fid(b, 1) is not None}
+          transforms = {fid(b, 4): b for b in blocks if fid(b, 4) is not None}
+
+          objective = next(b for b in blocks if keybox_guid in b and 'travelToLevelTwoOnComplete: 1' in b)
+          objective_go = go_id(objective)
+          print('OBJECTIVE MONOBEHAVIOUR')
+          print(objective)
+          print('OBJECTIVE GAMEOBJECT')
+          print(game_objects.get(objective_go, '<missing>'))
+
+          objective_transform = next((b for b in transforms.values() if go_id(b) == objective_go), None)
+          print('OBJECTIVE TRANSFORM')
+          print(objective_transform or '<missing>')
+
+          child_ids = []
+          if objective_transform:
+              children_match = re.search(r'm_Children:\n((?:\s*- \{fileID: -?\d+\}\n)*)', objective_transform)
+              if children_match:
+                  child_ids = [int(x) for x in re.findall(r'fileID: (-?\d+)', children_match.group(1))]
+
+          descendant_go_ids = {objective_go}
+          frontier = list(child_ids)
+          visited = set()
+          while frontier:
+              transform_id = frontier.pop()
+              if transform_id in visited:
+                  continue
+              visited.add(transform_id)
+              block = transforms.get(transform_id)
+              if not block:
+                  continue
+              child_go = go_id(block)
+              if child_go is not None:
+                  descendant_go_ids.add(child_go)
+              frontier.extend(int(x) for x in re.findall(r'^\s*- \{fileID: (-?\d+)\}$', block, re.M))
+
+          print('OBJECTIVE/DESCENDANT COLLIDERS')
+          collider_types = {64: 'MeshCollider', 65: 'BoxCollider', 135: 'SphereCollider', 136: 'CapsuleCollider'}
+          found = False
+          for block in blocks:
+              first = block.splitlines()[0]
+              match = re.match(r'--- !u!(64|65|135|136) &(-?\d+)', first)
+              if not match or go_id(block) not in descendant_go_ids:
+                  continue
+              found = True
+              print(collider_types[int(match.group(1))], block)
+          if not found:
+              print('<none>')
+
+          print('READER PREFAB COLLIDERS')
+          reader = (root / 'Assets/RunawayChimps/Environment/KeycardReaders/Prefabs/Reader_Base.prefab').read_text(encoding='utf-8-sig')
+          for block in [b for b in re.split(r'(?=^--- !u!)', reader, flags=re.M) if b.startswith('--- !u!')]:
+              if re.match(r'--- !u!(64|65|135|136) &', block.splitlines()[0]):
+                  print(block)
