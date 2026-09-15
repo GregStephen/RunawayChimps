@@ -1,0 +1,40 @@
+name: Temporary keycard validator fix
+
+on:
+  push:
+    branches:
+      - feature/keycard-reader-light-feedback
+    paths:
+      - '.github/workflows/temp-fix-keycard-validator.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/keycard-reader-light-feedback
+      - name: Update validator call-site contract
+        shell: python
+        run: |
+          from pathlib import Path
+          path = Path('Tools/validate_keycard_reader_contracts.py')
+          text = path.read_text(encoding='utf-8-sig')
+          old = 'and "FitColliderToVisualBounds(box);" in keycard,'
+          new = 'and "FitColliderToVisualBounds(physicalCollider);" in keycard,'
+          if text.count(old) != 1:
+              raise SystemExit(f'Expected one validator call-site contract, found {text.count(old)}')
+          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+      - name: Commit validator correction and remove helper
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          rm .github/workflows/temp-fix-keycard-validator.yml
+          git add Tools/validate_keycard_reader_contracts.py .github/workflows/temp-fix-keycard-validator.yml
+          git commit -m 'Align keycard validator with pickup affordance refactor'
+          git push origin HEAD:feature/keycard-reader-light-feedback
