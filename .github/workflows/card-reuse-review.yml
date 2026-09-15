@@ -90,6 +90,9 @@ jobs:
           for path in temporary:
               if path.is_file():
                   path.unlink()
+          # Unity ignores generated solution projects globally. This one is reviewed,
+          # hand-authored test infrastructure; include only this exact project file.
+          subprocess.run(['git','add','-f','--','Tools/CardSystemHarness/CardSystemHarness.csproj'], check=True)
           subprocess.run(['git','add','--',*expected.keys(),*[str(p) for p in temporary]], check=True)
           subprocess.run(['git','diff','--cached','--check'], check=True)
       - name: Publish reviewed corrections without rewriting branch history
