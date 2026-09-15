@@ -87,7 +87,9 @@ def main() -> int:
     )
     require(
         "GetComponentsInChildren<Renderer>(true)" in keycard
-        and "renderer.bounds" in keycard
+        and "renderer.localBounds" in keycard
+        and "renderer.transform.TransformPoint" in keycard
+        and "renderer.bounds" not in keycard
         and "transform.InverseTransformPoint(worldCorner)" in keycard,
         "KeyCard collider fitting must derive from the actual rendered card bounds rather than a fixed metre-scale cube.",
     )
@@ -179,7 +181,9 @@ def main() -> int:
     keybox = read("Assets/Scripts/KeyBox.cs")
     require(
         "public event Action<int, int> ProgressChanged;" in keybox
-        and "ProgressChanged?.Invoke(CurrentKeys, RequiredKeys);" in keybox,
+        and "NotifyProgressChanged();" in keybox
+        and "callback(acceptedKeys, requiredKeys);" in keybox
+        and "listeners.GetInvocationList()" in keybox,
         "KeyBox must publish accepted-card progress for the separate lock indicator.",
     )
 

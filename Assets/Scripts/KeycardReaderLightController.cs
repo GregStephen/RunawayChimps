@@ -34,6 +34,10 @@ public sealed class KeycardReaderLightController : MonoBehaviour
     private readonly List<Collider> staleColliderScratch = new List<Collider>();
     private readonly List<KeyCard> pendingCardScratch = new List<KeyCard>();
 
+    private BoxCollider scanVolume;
+    private bool ScannerActive => isActiveAndEnabled && scanVolume != null &&
+        scanVolume.enabled && scanVolume.isTrigger && scanVolume.gameObject.activeInHierarchy;
+
     private KeycardCredential resolvedCredential;
     private bool showingAccepted;
     private bool warnedAboutConfiguration;
@@ -44,6 +48,7 @@ public sealed class KeycardReaderLightController : MonoBehaviour
 
     private void Awake()
     {
+        scanVolume = GetComponent<BoxCollider>();
         ResolveReferences();
         ResolveAuthoredKeyBox();
 
@@ -68,7 +73,7 @@ public sealed class KeycardReaderLightController : MonoBehaviour
         // KeyCards use a deliberately larger trigger-only volume for easy XR pickup.
         // Scanner acceptance must come from the card's tight solid physical collider so the
         // grab affordance cannot make a card count while it is still several centimetres away.
-        if (other == null || other.isTrigger)
+        if (other == null || other.isTrigger || !HasLiveOverlap(other))
             return;
 
         if (!TryResolveMatchingCard(other, out KeyCard gameplayCard))
@@ -92,9 +97,21 @@ public sealed class KeycardReaderLightController : MonoBehaviour
         TrySubmitPendingCard(gameplayCard);
     }
 
+    private void OnTriggerStay(Collider other)
+    {
+        // Unity can deliver trigger messages to disabled behaviours. Enter's live
+        // guard also makes re-enabling while a card is still inside recover safely.
+        if (other != null && !acceptedColliders.Contains(other))
+            OnTriggerEnter(other);
+    }
+
     private void OnTriggerExit(Collider other)
     {
-        if (other == null || other.isTrigger)
+        if (other == null || other.isTrigger || !isActiveAndEnabled)
+            return;
+
+        // A stale physics exit must not erase a newer, still-valid overlap.
+        if (HasLiveOverlap(other))
             return;
 
         acceptedColliders.Remove(other);
@@ -111,13 +128,25 @@ public sealed class KeycardReaderLightController : MonoBehaviour
 
     private void LateUpdate()
     {
+        if (!ScannerActive)
+        {
+            ClearOverlapState();
+            return;
+        }
+
+        RemoveInvalidAcceptedColliders();
         RetryPendingSubmissions();
 
-        if (showingAccepted)
+        if (ScannerActive && showingAccepted)
             RefreshAcceptedVisual();
     }
 
     private void OnDisable()
+    {
+        ClearOverlapState();
+    }
+
+    private void ClearOverlapState()
     {
         acceptedColliders.Clear();
         matchingGameplayColliders.Clear();
@@ -223,7 +252,11 @@ public sealed class KeycardReaderLightController : MonoBehaviour
 
     private void TrySubmitPendingCard(KeyCard gameplayCard)
     {
-        if (gameplayCard == null || gameplayCard.IsInserted || !HasMatchingOverlap(gameplayCard))
+        if (!ScannerActive || !submitMatchingCardsToKeyBox)
+            return;
+
+        if (gameplayCard == null || !gameplayCard.isActiveAndEnabled ||
+            gameplayCard.IsInserted || !HasMatchingOverlap(gameplayCard))
         {
             pendingGameplayCards.Remove(gameplayCard);
             return;
@@ -243,6 +276,10 @@ public sealed class KeycardReaderLightController : MonoBehaviour
 
         pendingGameplayCards.Remove(gameplayCard);
 
+        // A progress listener can disable the reader during acceptance.
+        if (!ScannerActive)
+            return;
+
         // The accepted card is destroyed by its normal lifecycle, so hold the
         // reader green briefly even after its collider disappears.
         acceptedVisualUntil = Mathf.Max(
@@ -259,11 +296,33 @@ public sealed class KeycardReaderLightController : MonoBehaviour
         foreach (KeyValuePair<Collider, KeyCard> pair in matchingGameplayColliders)
         {
             Collider collider = pair.Key;
-            if (collider != null && collider.enabled && collider.gameObject.activeInHierarchy && pair.Value == gameplayCard)
+            if (pair.Value == gameplayCard && HasLiveOverlap(collider))
                 return true;
         }
 
         return false;
+    }
+
+    private bool HasLiveOverlap(Collider other)
+    {
+        if (!ScannerActive || other == null || other.isTrigger || !other.enabled ||
+            !other.gameObject.activeInHierarchy || other.gameObject.scene != gameObject.scene)
+            return false;
+
+        KeyCard card = other.GetComponentInParent<KeyCard>();
+        if (card != null && (!card.isActiveAndEnabled || card.IsInserted))
+            return false;
+
+        if (Physics.GetIgnoreLayerCollision(scanVolume.gameObject.layer, other.gameObject.layer) ||
+            Physics.GetIgnoreCollision(scanVolume, other))
+            return false;
+
+        // Trigger exits can lag a transform/respawn or layer change. Check current
+        // geometry without requiring a global SyncTransforms or physics simulation.
+        return Physics.ComputePenetration(
+            scanVolume, scanVolume.transform.position, scanVolume.transform.rotation,
+            other, other.transform.position, other.transform.rotation,
+            out _, out _);
     }
 
     private static KeycardCredential FindCredentialInHierarchy(Transform root)
@@ -323,7 +382,7 @@ public sealed class KeycardReaderLightController : MonoBehaviour
         staleColliderScratch.Clear();
         foreach (Collider collider in acceptedColliders)
         {
-            if (collider == null || !collider.enabled || !collider.gameObject.activeInHierarchy)
+            if (!HasLiveOverlap(collider))
                 staleColliderScratch.Add(collider);
         }
 

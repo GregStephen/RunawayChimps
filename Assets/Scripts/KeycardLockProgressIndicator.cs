@@ -147,7 +147,7 @@ public sealed class KeycardLockProgressIndicator : MonoBehaviour
 
     private void Subscribe()
     {
-        if (subscribed || keyBox == null)
+        if (!isActiveAndEnabled || subscribed || keyBox == null)
             return;
 
         keyBox.ProgressChanged += HandleProgressChanged;

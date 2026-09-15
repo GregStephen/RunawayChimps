@@ -450,7 +450,7 @@ namespace GorillaLocomotion
                 //check a spherecase from the original position to the intended final position
                 if (Physics.SphereCast(startPosition, sphereRadius * precision * precision, finalPosition - startPosition, out innerHit, (finalPosition - startPosition).magnitude + sphereRadius * (1 - precision * precision), locomotionEnabledLayers.value, QueryTriggerInteraction.Ignore))
                 {
-                    finalPosition = startPosition + (finalPosition - startPosition).normalized * Mathf.Max(0, hitInfo.distance - sphereRadius * (1f - precision * precision));
+                    finalPosition = startPosition + (finalPosition - startPosition).normalized * Mathf.Max(0, innerHit.distance - sphereRadius * (1f - precision * precision));
                     hitInfo = innerHit;
                 }
                 //bonus raycast check to make sure that something odd didn't happen. helps prevent clipping through geometry

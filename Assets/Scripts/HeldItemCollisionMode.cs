@@ -12,6 +12,7 @@ public class HeldItemCollisionMode : MonoBehaviour
 
     readonly Dictionary<Transform, int> originalLayers = new Dictionary<Transform, int>();
     readonly List<IgnoredCollisionPair> ignoredLocalRigPairs = new List<IgnoredCollisionPair>();
+    readonly List<IgnoredCollisionPair> localRigContactPairs = new List<IgnoredCollisionPair>();
 
     XRGrabInteractable grab;
     Coroutine restoreRigCollisionsRoutine;
@@ -108,8 +109,9 @@ public class HeldItemCollisionMode : MonoBehaviour
     /// </summary>
     void IgnoreLocalRigCollisions()
     {
-        if (ignoredLocalRigPairs.Count != 0)
-            return;
+        // Rebuild separation contacts on every grab, including an immediate
+        // re-grab while old owned ignores are still active. Never undo pre-existing ignores.
+        localRigContactPairs.Clear();
 
         GorillaLocomotion.Player player = GorillaLocomotion.Player.Instance;
         XROrigin origin = player != null ? player.GetComponentInParent<XROrigin>() : null;
@@ -134,6 +136,8 @@ public class HeldItemCollisionMode : MonoBehaviour
                 if (rigCollider.transform.IsChildOf(transform))
                     continue;
 
+                localRigContactPairs.Add(new IgnoredCollisionPair(itemCollider, rigCollider));
+
                 // Only restore pairs this component actually changed. Do not undo
                 // an ignore relationship that another system already owns.
                 if (Physics.GetIgnoreCollision(itemCollider, rigCollider))
@@ -154,11 +158,13 @@ public class HeldItemCollisionMode : MonoBehaviour
         }
 
         ignoredLocalRigPairs.Clear();
+        localRigContactPairs.Clear();
     }
 
     void OnRelease(SelectExitEventArgs args)
     {
-        RestoreLayers();
+        // Pair ignores do not affect Gorilla's casts. Keep solid colliders on
+        // HeldItem until separation as well; trigger-only grab sensors never moved.
 
         if (restoreRigCollisionsRoutine != null)
             StopCoroutine(restoreRigCollisionsRoutine);
@@ -175,14 +181,17 @@ public class HeldItemCollisionMode : MonoBehaviour
             yield return new WaitForFixedUpdate();
 
         if (grab == null || !grab.isSelected)
+        {
             RestoreLocalRigCollisions();
+            RestoreLayers();
+        }
 
         restoreRigCollisionsRoutine = null;
     }
 
     bool HasLocalRigOverlap()
     {
-        foreach (IgnoredCollisionPair pair in ignoredLocalRigPairs)
+        foreach (IgnoredCollisionPair pair in localRigContactPairs)
         {
             Collider item = pair.Item;
             Collider rig = pair.Rig;

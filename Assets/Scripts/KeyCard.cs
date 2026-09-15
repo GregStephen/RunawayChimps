@@ -27,6 +27,7 @@ public class KeyCard : MonoBehaviour
     [SerializeField, Min(0.01f)] private float minimumGrabThicknessMeters = 0.06f;
 
     private bool isInserted = false;
+    private bool insertionInProgress;
     private XRGrabInteractable grab;
     private BoxCollider physicalCollider;
     private BoxCollider grabAffordanceCollider;
@@ -90,9 +91,11 @@ public class KeyCard : MonoBehaviour
             if (renderer == null)
                 continue;
 
-            Bounds worldBounds = renderer.bounds;
-            Vector3 center = worldBounds.center;
-            Vector3 extents = worldBounds.extents;
+            // Do not inverse-transform a world AABB: rotating a thin card
+            // would inflate its collider thickness. Transform renderer-local corners directly.
+            Bounds rendererBounds = renderer.localBounds;
+            Vector3 center = rendererBounds.center;
+            Vector3 extents = rendererBounds.extents;
 
             for (int x = -1; x <= 1; x += 2)
             {
@@ -100,7 +103,8 @@ public class KeyCard : MonoBehaviour
                 {
                     for (int z = -1; z <= 1; z += 2)
                     {
-                        Vector3 worldCorner = center + Vector3.Scale(extents, new Vector3(x, y, z));
+                        Vector3 worldCorner = renderer.transform.TransformPoint(
+                            center + Vector3.Scale(extents, new Vector3(x, y, z)));
                         Vector3 localCorner = transform.InverseTransformPoint(worldCorner);
                         if (!foundBounds)
                         {
@@ -217,14 +221,25 @@ public class KeyCard : MonoBehaviour
     /// </summary>
     public bool TryInsertInto(KeyBox box)
     {
-        if (isInserted || box == null || !box.TryAddKey(this))
+        if (!isActiveAndEnabled || isInserted || insertionInProgress || box == null)
             return false;
 
-        isInserted = true;
+        // Progress listeners run synchronously. They must not submit this same card
+        // to another reader/lock before the first acceptance has finished consuming it.
+        insertionInProgress = true;
+        try
+        {
+            if (!box.TryAddKey(this))
+                return false;
 
-        // Accepted objective cards keep the existing consumed-card behavior.
-        Destroy(gameObject);
-        return true;
+            isInserted = true;
+            Destroy(gameObject);
+            return true;
+        }
+        finally
+        {
+            insertionInProgress = false;
+        }
     }
 
     private void OnTriggerEnter(Collider other)
