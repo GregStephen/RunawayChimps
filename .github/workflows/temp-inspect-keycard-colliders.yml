@@ -18,7 +18,7 @@ jobs:
         with:
           ref: feature/keycard-reader-light-feedback
 
-      - name: Inspect Level 1 reader and wall parent transforms
+      - name: Inspect Level 2 gate colliders near keycard reader
         shell: python
         run: |
           from pathlib import Path
@@ -32,14 +32,11 @@ jobs:
               if match:
                   by_id[int(match.group(1))] = block
 
-          for transform_id in (602973297, 2122819246, 1927466659):
-              print('\n### TRANSFORM', transform_id)
-              print(by_id.get(transform_id, '<missing>'))
+          for component_id in (702843213, 702843214, 341390862, 1298815337):
+              print('\n### GATE ADDED COMPONENT', component_id)
+              print(by_id.get(component_id, '<missing>'))
 
-          # Also print GameObjects owned by these transforms when available.
-          for transform_id in (602973297, 2122819246, 1927466659):
-              block = by_id.get(transform_id, '')
-              go = re.search(r'm_GameObject: \{fileID: (-?\d+)\}', block)
-              if go:
-                  print('\n### GAMEOBJECT FOR', transform_id)
-                  print(by_id.get(int(go.group(1)), '<missing>'))
+          for go_id in (702843206, 702843207, 702843208, 702843209, 702843210, 702843211, 702843212):
+              if go_id in by_id:
+                  print('\n### GATE SCENE OBJECT/TRANSFORM', go_id)
+                  print(by_id[go_id])
