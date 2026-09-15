@@ -65,6 +65,12 @@ public sealed class KeycardReaderLightController : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
+        // KeyCards use a deliberately larger trigger-only volume for easy XR pickup.
+        // Scanner acceptance must come from the card's tight solid physical collider so the
+        // grab affordance cannot make a card count while it is still several centimetres away.
+        if (other == null || other.isTrigger)
+            return;
+
         if (!TryResolveMatchingCard(other, out KeyCard gameplayCard))
             return;
 
@@ -88,6 +94,9 @@ public sealed class KeycardReaderLightController : MonoBehaviour
 
     private void OnTriggerExit(Collider other)
     {
+        if (other == null || other.isTrigger)
+            return;
+
         acceptedColliders.Remove(other);
 
         if (matchingGameplayColliders.TryGetValue(other, out KeyCard gameplayCard))
