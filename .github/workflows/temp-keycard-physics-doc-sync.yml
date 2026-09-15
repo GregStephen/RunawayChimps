@@ -23,34 +23,35 @@ jobs:
         shell: python
         run: |
           from pathlib import Path
+          import textwrap
 
           design = Path('docs/design-and-lore.md')
           plan = Path('docs/repository-improvement-plan.md')
           marker = '## September 14 keycard physics runtime correction'
 
-          design_section = r'''
+          design_section = textwrap.dedent('''
+          
+          ## September 14 keycard physics runtime correction
+          
+          **Confirmed runtime failure:** Greg's Unity test shows the two imported Level 1 Amber keycards are physically wrong: they can appear to float well above the visible support surface, and grabbing one can violently push/throw the local Gorilla into a wall until the card is released. This supersedes the earlier pending-validation assumption that merely having a Collider, Rigidbody and XR grab component was enough to call the imported gameplay-card setup physically plausible.
+          
+          **Source finding:** the imported Level 1 card instances were authored with root `BoxCollider` size `1 x 1 x 1`, while the actual card art is a thin badge-sized object; one of the current card instances is also scaled to `2 x 2 x 2`. That creates a roughly metre-scale (and for the scaled instance, roughly two-metre-scale) invisible solid volume around the visible card. The same instances use a 1 kg dynamic Rigidbody. `HeldItemCollisionMode` changed the held object's layer but did not explicitly isolate the held prop from the local Gorilla rig's own colliders. Together those conditions explain both observed symptoms: the oversized invisible box contacts the floor before the visible card does, and a transform-driven held card overlapping the local body/head/hand colliders can make PhysX depenetrate the player violently.
+          
+          **Implemented on `feature/keycard-reader-light-feedback`:** `KeyCard` now runs before ordinary physics scripts, fits its root `BoxCollider` to the actual child-renderer bounds with small world-space padding and a thin minimum contact depth, and normalizes the card Rigidbody to a lightweight 0.05 kg dynamic prop with gravity, interpolation and continuous collision detection. `HeldItemCollisionMode` now ignores collision pairs only between the selected prop and the local Gorilla `XROrigin` collider hierarchy while it is held; world/environment and reader-trigger interactions remain available. On release, normal layers are restored immediately, but local-rig collision pairs remain ignored until the prop is physically separated from the rig so the release frame cannot recreate the same depenetration launch. Disable/destruction still restores the ignored pairs defensively.
+          
+          **Pending validation:** Unity 2022.3.55f1 must prove the correction in Play Mode. Both Amber cards must fall/rest on their visible geometry instead of floating on an invisible cube; grabbing, moving and pinning a card near the local hand/body/head or a wall must not move or launch the player; the held card must still collide with ordinary world geometry and enter the reader trigger; release must restore normal loose-prop behavior without a release-frame kick; card recovery after a fall must still work; and the two cards must still advance the reader objective exactly once each. Two-client Photon and Quest/headset checks remain pending. Do not mark this runtime defect resolved until those checks pass.
+          ''')
 
-## September 14 keycard physics runtime correction
-
-**Confirmed runtime failure:** Greg's Unity test shows the two imported Level 1 Amber keycards are physically wrong: they can appear to float well above the visible support surface, and grabbing one can violently push/throw the local Gorilla into a wall until the card is released. This supersedes the earlier pending-validation assumption that merely having a Collider, Rigidbody and XR grab component was enough to call the imported gameplay-card setup physically plausible.
-
-**Source finding:** the imported Level 1 card instances were authored with root `BoxCollider` size `1 x 1 x 1`, while the actual card art is a thin badge-sized object; one of the current card instances is also scaled to `2 x 2 x 2`. That creates a roughly metre-scale (and for the scaled instance, roughly two-metre-scale) invisible solid volume around the visible card. The same instances use a 1 kg dynamic Rigidbody. `HeldItemCollisionMode` changed the held object's layer but did not explicitly isolate the held prop from the local Gorilla rig's own colliders. Together those conditions explain both observed symptoms: the oversized invisible box contacts the floor before the visible card does, and a transform-driven held card overlapping the local body/head/hand colliders can make PhysX depenetrate the player violently.
-
-**Implemented on `feature/keycard-reader-light-feedback`:** `KeyCard` now runs before ordinary physics scripts, fits its root `BoxCollider` to the actual child-renderer bounds with small world-space padding and a thin minimum contact depth, and normalizes the card Rigidbody to a lightweight 0.05 kg dynamic prop with gravity, interpolation and continuous collision detection. `HeldItemCollisionMode` now ignores collision pairs only between the selected prop and the local Gorilla `XROrigin` collider hierarchy while it is held; world/environment and reader-trigger interactions remain available. On release, normal layers are restored immediately, but local-rig collision pairs remain ignored until the prop is physically separated from the rig so the release frame cannot recreate the same depenetration launch. Disable/destruction still restores the ignored pairs defensively.
-
-**Pending validation:** Unity 2022.3.55f1 must prove the correction in Play Mode. Both Amber cards must fall/rest on their visible geometry instead of floating on an invisible cube; grabbing, moving and pinning a card near the local hand/body/head or a wall must not move or launch the player; the held card must still collide with ordinary world geometry and enter the reader trigger; release must restore normal loose-prop behavior without a release-frame kick; card recovery after a fall must still work; and the two cards must still advance the reader objective exactly once each. Two-client Photon and Quest/headset checks remain pending. Do not mark this runtime defect resolved until those checks pass.
-'''
-
-          plan_section = r'''
-
-## September 14 keycard physics runtime correction
-
-**Confirmed runtime failure / source finding:** Unity runtime testing invalidated the earlier component-presence check for the imported Level 1 cards. The active Amber card instances have `BoxCollider` size `1 x 1 x 1` even though their visible art is badge-sized and thin; one instance is authored at `2 x 2 x 2` transform scale, making its invisible solid volume dramatically larger still. They also carried 1 kg dynamic bodies. This matches Greg's observed floating card and the severe player shove while holding it. Existing `HeldItemCollisionMode` moved a selected prop to the `HeldItem` layer but did not explicitly ignore collision pairs against the local Gorilla rig, so an XR-driven held card could remain a physical depenetration source for the player.
-
-**Implemented correction on `feature/keycard-reader-light-feedback`:** `KeyCard` now performs an early renderer-bounds-derived `BoxCollider` fit, including small padding and a minimum thin-card depth, and normalizes Rigidbody handling to a 0.05 kg interpolated `ContinuousDynamic` prop with gravity. `HeldItemCollisionMode` now ignores only held-prop/local-`XROrigin` collider pairs, preserving environment and reader interactions. Pair restoration is delayed until a released prop is actually separated from the local rig, avoiding a release-frame depenetration impulse; disable/destruction restores pairs immediately. `Tools/validate_keycard_reader_contracts.py` now protects the collider auto-fit, lightweight/continuous Rigidbody defaults, local-rig collision isolation, and the requirement that the two active Level 1 cards retain `HeldItemCollisionMode`.
-
-**Validation boundary:** this is implemented source behavior, not a claimed runtime resolution. Re-run Source Integrity, then in Unity 2022.3.55f1 verify both cards rest at their visible surfaces, gravity behaves normally, held cards cannot push/launch the Gorilla even against nearby walls, world collision remains present while held, release does not kick the player, the reader trigger still detects them, accepted cards still count exactly once and are consumed correctly, fall recovery still works, and the 0/2 -> 1/2 -> 2/2 panel/travel flow remains intact. Repeat the relevant two-client Photon and Quest/headset checks before merge.
-'''
+          plan_section = textwrap.dedent('''
+          
+          ## September 14 keycard physics runtime correction
+          
+          **Confirmed runtime failure / source finding:** Unity runtime testing invalidated the earlier component-presence check for the imported Level 1 cards. The active Amber card instances have `BoxCollider` size `1 x 1 x 1` even though their visible art is badge-sized and thin; one instance is authored at `2 x 2 x 2` transform scale, making its invisible solid volume dramatically larger still. They also carried 1 kg dynamic bodies. This matches Greg's observed floating card and the severe player shove while holding it. Existing `HeldItemCollisionMode` moved a selected prop to the `HeldItem` layer but did not explicitly ignore collision pairs against the local Gorilla rig, so an XR-driven held card could remain a physical depenetration source for the player.
+          
+          **Implemented correction on `feature/keycard-reader-light-feedback`:** `KeyCard` now performs an early renderer-bounds-derived `BoxCollider` fit, including small padding and a minimum thin-card depth, and normalizes Rigidbody handling to a 0.05 kg interpolated `ContinuousDynamic` prop with gravity. `HeldItemCollisionMode` now ignores only held-prop/local-`XROrigin` collider pairs, preserving environment and reader interactions. Pair restoration is delayed until a released prop is actually separated from the local rig, avoiding a release-frame depenetration impulse; disable/destruction restores pairs immediately. `Tools/validate_keycard_reader_contracts.py` now protects the collider auto-fit, lightweight/continuous Rigidbody defaults, local-rig collision isolation, and the requirement that the two active Level 1 cards retain `HeldItemCollisionMode`.
+          
+          **Validation boundary:** this is implemented source behavior, not a claimed runtime resolution. Re-run Source Integrity, then in Unity 2022.3.55f1 verify both cards rest at their visible surfaces, gravity behaves normally, held cards cannot push/launch the Gorilla even against nearby walls, world collision remains present while held, release does not kick the player, the reader trigger still detects them, accepted cards still count exactly once and are consumed correctly, fall recovery still works, and the 0/2 -> 1/2 -> 2/2 panel/travel flow remains intact. Repeat the relevant two-client Photon and Quest/headset checks before merge.
+          ''')
 
           for path, section in ((design, design_section), (plan, plan_section)):
               text = path.read_text(encoding='utf-8-sig')
