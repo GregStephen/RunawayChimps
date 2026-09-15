@@ -1,0 +1,59 @@
+name: One-time PR21 validation record
+
+on:
+  push:
+    branches:
+      - feature/launch-presentation-polish
+    paths:
+      - '.github/workflows/pr21-validation-record.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  record:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/launch-presentation-polish
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Record restored-terminal source validation
+        shell: python
+        run: |
+          from pathlib import Path
+
+          paragraph = """\n\n**Validated source only — restored distant green terminal:** clean head `cdf6b87a55d429351acf0d6b96a632fda4847893` passed Source Integrity run `34917902460` on 2026-09-14. The run passed Unity 2022.3.55f1 version enforcement, first-party C# syntax/reference and enabled-scene checks, Unity metadata/GUID integrity, Level 1 and PR #15 contracts, the restored distant security-boot contracts, local threat-feedback contracts, launch/Quest/Hub-slot/session contracts, Python compilation, merge-marker rejection and human-authored whitespace. This validates source/tooling only; Unity import/compile, Play Mode, Photon multi-client behavior and Quest/headset behavior remain pending.\n"""
+          marker = "Validated source only — restored distant green terminal"
+
+          for name in (
+              'docs/design-and-lore.md',
+              'docs/repository-improvement-plan.md',
+              'docs/launch-presentation.md',
+              'docs/launch-review-resolution.md',
+              'docs/launch-workstation-vignette.md',
+          ):
+              path = Path(name)
+              text = path.read_text(encoding='utf-8-sig').rstrip()
+              if marker not in text:
+                  text += paragraph.rstrip()
+              path.write_text(text.rstrip() + '\n', encoding='utf-8', newline='\n')
+      - name: Commit validation record
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- docs; then
+            echo 'Validation already recorded.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add docs/design-and-lore.md docs/repository-improvement-plan.md docs/launch-presentation.md docs/launch-review-resolution.md docs/launch-workstation-vignette.md
+          git commit -m 'docs: record restored launch terminal source validation'
+          git push origin HEAD:feature/launch-presentation-polish
