@@ -18,7 +18,7 @@ jobs:
         with:
           ref: feature/keycard-reader-light-feedback
 
-      - name: Inspect colliders belonging to walls around Level 1 reader
+      - name: Inspect Level 1 reader and wall parent transforms
         shell: python
         run: |
           from pathlib import Path
@@ -32,20 +32,14 @@ jobs:
               if match:
                   by_id[int(match.group(1))] = block
 
-          wall_component_ids = {
-              'LabWall (12)': 1053882261,
-              'LabWall (13)': 916541124,
-              'LabWall (23)': 713069941,
-              'LabWall (24)': 358216536,
-              'LabWall (25)': 765382315,
-          }
-          for name, component_id in wall_component_ids.items():
-              print('\n###', name, 'added collider/component', component_id)
-              print(by_id.get(component_id, '<missing>'))
+          for transform_id in (602973297, 2122819246, 1927466659):
+              print('\n### TRANSFORM', transform_id)
+              print(by_id.get(transform_id, '<missing>'))
 
-          print('\n### components referencing reader-adjacent prefab stripped objects')
-          for block in blocks:
-              if not re.match(r'--- !u!(64|65|135|136) &', block.splitlines()[0]):
-                  continue
-              if any(token in block for token in ('1053882261','916541124','713069941','358216536','765382315')):
-                  print(block)
+          # Also print GameObjects owned by these transforms when available.
+          for transform_id in (602973297, 2122819246, 1927466659):
+              block = by_id.get(transform_id, '')
+              go = re.search(r'm_GameObject: \{fileID: (-?\d+)\}', block)
+              if go:
+                  print('\n### GAMEOBJECT FOR', transform_id)
+                  print(by_id.get(int(go.group(1)), '<missing>'))
