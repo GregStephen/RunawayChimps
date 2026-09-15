@@ -22,6 +22,7 @@ jobs:
         shell: python
         run: |
           from pathlib import Path
+          import math
           import re
 
           root = Path('.')
@@ -40,9 +41,13 @@ jobs:
               match = re.search(r'm_GameObject: \{fileID: (-?\d+)\}', block)
               return int(match.group(1)) if match else None
 
-          by_fid = {fid(b): b for b in blocks if fid(b) is not None}
+          def vec(block, field, default=(0.0, 0.0, 0.0)):
+              match = re.search(rf'{field}: \{{x: ([^,]+), y: ([^,]+), z: ([^}}]+)\}}', block)
+              return tuple(float(v) for v in match.groups()) if match else default
+
           game_objects = {fid(b, 1): b for b in blocks if fid(b, 1) is not None}
           transforms = {fid(b, 4): b for b in blocks if fid(b, 4) is not None}
+          transform_for_go = {go_id(b): fid(b, 4) for b in transforms.values() if go_id(b) is not None}
 
           objective = next(b for b in blocks if keybox_guid in b and 'travelToLevelTwoOnComplete: 1' in b)
           objective_go = go_id(objective)
@@ -95,3 +100,48 @@ jobs:
           for block in [b for b in re.split(r'(?=^--- !u!)', reader, flags=re.M) if b.startswith('--- !u!')]:
               if re.match(r'--- !u!(64|65|135|136) &', block.splitlines()[0]):
                   print(block)
+
+          print('SCENE COLLIDERS WITH LOCAL TRANSFORMS NEAR READER')
+          reader_pos = (-10.4, 0.6, -7.3)
+          candidates = []
+          for block in blocks:
+              match = re.match(r'--- !u!(64|65|135|136) &(-?\d+)', block.splitlines()[0])
+              if not match:
+                  continue
+              go = go_id(block)
+              transform_id = transform_for_go.get(go)
+              transform_block = transforms.get(transform_id)
+              if not transform_block:
+                  continue
+              p = vec(transform_block, 'm_LocalPosition')
+              d = math.dist(p, reader_pos)
+              if d <= 3.0:
+                  go_block = game_objects.get(go, '')
+                  name_match = re.search(r'm_Name: (.+)', go_block)
+                  name = name_match.group(1).strip() if name_match else '<unnamed>'
+                  trigger = re.search(r'm_IsTrigger: (\d+)', block)
+                  size = re.search(r'm_Size: \{([^}]+)\}', block)
+                  candidates.append((round(d, 3), name, int(match.group(1)), p, trigger.group(1) if trigger else '?', size.group(1) if size else ''))
+          for candidate in sorted(candidates):
+              print(candidate)
+
+          print('PREFAB INSTANCE ROOTS NEAR READER')
+          for block in blocks:
+              if not block.startswith('--- !u!1001'):
+                  continue
+              values = {}
+              for axis in ('x','y','z'):
+                  m = re.search(rf'propertyPath: m_LocalPosition\.{axis}\n\s*value: ([^\n]+)', block)
+                  if m:
+                      try:
+                          values[axis] = float(m.group(1))
+                      except ValueError:
+                          pass
+              if set(values) != {'x','y','z'}:
+                  continue
+              p = (values['x'], values['y'], values['z'])
+              if math.dist(p, reader_pos) > 3.0:
+                  continue
+              guid = re.search(r'm_SourcePrefab: \{fileID: 100100000, guid: ([0-9a-f]{32})', block)
+              name = re.search(r'propertyPath: m_Name\n\s*value: ([^\n]+)', block)
+              print('prefab', p, 'guid', guid.group(1) if guid else '?', 'name', name.group(1).strip() if name else '?')
