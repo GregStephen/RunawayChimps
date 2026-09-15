@@ -1,0 +1,38 @@
+name: Apply interaction fix
+
+on:
+  push:
+    branches:
+      - feature/keycard-reader-light-feedback
+    paths:
+      - .github/workflows/apply-interaction-fix.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/keycard-reader-light-feedback
+          fetch-depth: 0
+      - name: Apply reviewed patches
+        run: |
+          git apply --check Tools/interaction-fix-code.patch
+          git apply Tools/interaction-fix-code.patch
+          git apply --check Tools/interaction-fix-docs.patch
+          git apply Tools/interaction-fix-docs.patch
+      - name: Remove one-time patch machinery
+        run: |
+          rm Tools/interaction-fix-code.patch Tools/interaction-fix-docs.patch
+          rm .github/workflows/apply-interaction-fix.yml
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit -m "Fix trigger-safe hand and keycard interactions"
+          git push origin HEAD:feature/keycard-reader-light-feedback
