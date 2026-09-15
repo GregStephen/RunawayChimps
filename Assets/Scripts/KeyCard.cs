@@ -6,6 +6,8 @@ using UnityEngine.XR.Interaction.Toolkit;
 [DisallowMultipleComponent]
 public class KeyCard : MonoBehaviour
 {
+    private const string GrabAffordanceObjectName = "Keycard_GrabAffordance";
+
     [Header("Credential")]
     [Tooltip("Assign the card's color/symbol identity explicitly. Auto is retained only for legacy/name-authored compatibility.")]
     [SerializeField] private KeycardCredential credential = KeycardCredential.Auto;
@@ -13,17 +15,27 @@ public class KeyCard : MonoBehaviour
     [Header("Physical handling")]
     [Tooltip("Gameplay cards are light props. Keeping their mass low prevents an XR-held card from imparting large impulses to other dynamic objects.")]
     [SerializeField, Min(0.01f)] private float physicalMassKg = 0.05f;
-    [Tooltip("Small world-space padding added around the rendered card when fitting its BoxCollider at startup.")]
+    [Tooltip("Small world-space padding added around the rendered card when fitting its solid BoxCollider at startup.")]
     [SerializeField, Min(0f)] private float colliderPaddingMeters = 0.002f;
-    [Tooltip("Minimum world-space collider thickness so the thin card still has reliable contacts and reader-trigger delivery.")]
+    [Tooltip("Minimum world-space thickness for the solid card collider so the thin card still has reliable contacts and reader-trigger delivery.")]
     [SerializeField, Min(0.001f)] private float minimumColliderThicknessMeters = 0.006f;
+
+    [Header("Grab affordance")]
+    [Tooltip("World-space padding around the visible card used only for XR hover/grab detection. This volume is a trigger and never blocks the world.")]
+    [SerializeField, Min(0f)] private float grabPaddingMeters = 0.035f;
+    [Tooltip("Minimum world-space thickness of the trigger-only grab volume so a dropped flat card remains easy to acquire with a Gorilla hand.")]
+    [SerializeField, Min(0.01f)] private float minimumGrabThicknessMeters = 0.06f;
 
     private bool isInserted = false;
     private XRGrabInteractable grab;
+    private BoxCollider physicalCollider;
+    private BoxCollider grabAffordanceCollider;
 
     public bool IsInserted => isInserted;
     public bool WasHeldByLocalPlayer { get; private set; }
     public KeycardCredential Credential => credential;
+    public Collider PhysicalCollider => physicalCollider;
+    public Collider GrabAffordanceCollider => grabAffordanceCollider;
 
     private void Awake()
     {
@@ -41,17 +53,20 @@ public class KeyCard : MonoBehaviour
     }
 
     /// <summary>
-    /// The imported card FBX instances were originally given a 1x1x1 BoxCollider. At the
-    /// authored card scales that creates a roughly metre-scale invisible physics cube, which
-    /// can hold the visible card above the floor and violently depenetrate the Gorilla rig
-    /// when the card is grabbed. Fit the collider to the actual rendered card before the
-    /// first physics step and normalize the tiny prop's Rigidbody settings.
+    /// Keep the solid card collider tight to the visible badge, then use a separate
+    /// trigger-only volume for XR hover/grab acquisition. A dropped thin card can therefore
+    /// be easy to reacquire without recreating the oversized invisible physics body that
+    /// previously made cards float and pushed the Gorilla rig.
     /// </summary>
     private void ConfigurePhysicalCard()
     {
-        BoxCollider box = GetComponent<BoxCollider>();
-        if (box != null)
-            FitColliderToVisualBounds(box);
+        physicalCollider = GetComponent<BoxCollider>();
+        if (physicalCollider != null)
+        {
+            physicalCollider.isTrigger = false;
+            FitColliderToVisualBounds(physicalCollider);
+            ConfigureGrabAffordance(physicalCollider);
+        }
 
         Rigidbody body = GetComponent<Rigidbody>();
         if (body == null)
@@ -107,12 +122,7 @@ public class KeyCard : MonoBehaviour
             return;
         }
 
-        Vector3 scale = transform.lossyScale;
-        scale = new Vector3(
-            Mathf.Max(0.0001f, Mathf.Abs(scale.x)),
-            Mathf.Max(0.0001f, Mathf.Abs(scale.y)),
-            Mathf.Max(0.0001f, Mathf.Abs(scale.z)));
-
+        Vector3 scale = SafeLossyScale();
         float padding = Mathf.Max(0f, colliderPaddingMeters);
         float minimumThickness = Mathf.Max(0.001f, minimumColliderThicknessMeters);
         Vector3 localPadding = new Vector3(padding / scale.x, padding / scale.y, padding / scale.z);
@@ -122,13 +132,70 @@ public class KeyCard : MonoBehaviour
             minimumThickness / scale.z);
 
         Vector3 size = localBounds.size + localPadding * 2f;
-        size = new Vector3(
+        box.center = localBounds.center;
+        box.size = new Vector3(
+            Mathf.Max(size.x, localMinimum.x),
+            Mathf.Max(size.y, localMinimum.y),
+            Mathf.Max(size.z, localMinimum.z));
+    }
+
+    private void ConfigureGrabAffordance(BoxCollider solidCollider)
+    {
+        Transform existing = transform.Find(GrabAffordanceObjectName);
+        GameObject affordanceObject;
+        if (existing != null)
+        {
+            affordanceObject = existing.gameObject;
+        }
+        else
+        {
+            affordanceObject = new GameObject(GrabAffordanceObjectName);
+            affordanceObject.transform.SetParent(transform, false);
+        }
+
+        affordanceObject.layer = gameObject.layer;
+        affordanceObject.transform.localPosition = Vector3.zero;
+        affordanceObject.transform.localRotation = Quaternion.identity;
+        affordanceObject.transform.localScale = Vector3.one;
+
+        grabAffordanceCollider = affordanceObject.GetComponent<BoxCollider>();
+        if (grabAffordanceCollider == null)
+            grabAffordanceCollider = affordanceObject.AddComponent<BoxCollider>();
+
+        grabAffordanceCollider.isTrigger = true;
+        grabAffordanceCollider.center = solidCollider.center;
+
+        Vector3 scale = SafeLossyScale();
+        float padding = Mathf.Max(0f, grabPaddingMeters);
+        float minimumThickness = Mathf.Max(0.01f, minimumGrabThicknessMeters);
+        Vector3 localPadding = new Vector3(padding / scale.x, padding / scale.y, padding / scale.z);
+        Vector3 localMinimum = new Vector3(
+            minimumThickness / scale.x,
+            minimumThickness / scale.y,
+            minimumThickness / scale.z);
+
+        Vector3 size = solidCollider.size + localPadding * 2f;
+        grabAffordanceCollider.size = new Vector3(
             Mathf.Max(size.x, localMinimum.x),
             Mathf.Max(size.y, localMinimum.y),
             Mathf.Max(size.z, localMinimum.z));
 
-        box.center = localBounds.center;
-        box.size = size;
+        if (grab != null)
+        {
+            // XRI interaction uses only the generous trigger volume. The tight solid collider
+            // remains responsible for world physics and reader scanning.
+            grab.colliders.Clear();
+            grab.colliders.Add(grabAffordanceCollider);
+        }
+    }
+
+    private Vector3 SafeLossyScale()
+    {
+        Vector3 scale = transform.lossyScale;
+        return new Vector3(
+            Mathf.Max(0.0001f, Mathf.Abs(scale.x)),
+            Mathf.Max(0.0001f, Mathf.Abs(scale.y)),
+            Mathf.Max(0.0001f, Mathf.Abs(scale.z)));
     }
 
     private void Selected(SelectEnterEventArgs args)
