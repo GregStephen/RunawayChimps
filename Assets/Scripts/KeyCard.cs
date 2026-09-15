@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.XR.Interaction.Toolkit;
 
+[RequireComponent(typeof(BoxCollider), typeof(Rigidbody), typeof(XRGrabInteractable))]
 [DefaultExecutionOrder(-200)]
 [DisallowMultipleComponent]
 public class KeyCard : MonoBehaviour
