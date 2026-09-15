@@ -96,6 +96,15 @@ def main() -> int:
         and "CollisionDetectionMode.ContinuousDynamic" in keycard,
         "Gameplay keycards must retain interpolated continuous Rigidbody handling for the thin moving prop.",
     )
+    require(
+        'GrabAffordanceObjectName = "Keycard_GrabAffordance"' in keycard
+        and "grabPaddingMeters = 0.035f" in keycard
+        and "minimumGrabThicknessMeters = 0.06f" in keycard
+        and "grabAffordanceCollider.isTrigger = true;" in keycard
+        and "grab.colliders.Clear();" in keycard
+        and "grab.colliders.Add(grabAffordanceCollider);" in keycard,
+        "Gameplay keycards must keep a generous trigger-only XR grab affordance separate from their tight solid physics collider.",
+    )
 
     held_item_path = "Assets/Scripts/HeldItemCollisionMode.cs"
     held_item = read(held_item_path)
@@ -162,6 +171,10 @@ def main() -> int:
         "gameplayCard.TryInsertInto(keyBox)" in controller,
         "Matching readers must submit through the shared KeyCard acceptance lifecycle.",
     )
+    require(
+        controller.count("other == null || other.isTrigger") >= 2,
+        "Reader enter/exit handling must ignore trigger-only grab affordances and scan only the physical card collider.",
+    )
 
     keybox = read("Assets/Scripts/KeyBox.cs")
     require(
@@ -175,6 +188,11 @@ def main() -> int:
     base = read(base_path)
     require("m_Name: ScanTarget_FRONT" in base, "Reader_Base must keep its authored scan target.")
     require("m_IsTrigger: 1" in base, "Reader_Base scan target must remain a trigger.")
+    require(
+        "m_LocalPosition: {x: 0, y: 0.155, z: 0.095}" in base
+        and "m_Size: {x: 0.18, y: 0.16, z: 0.13}" in base,
+        "Reader_Base must keep the enlarged forward scan envelope proven necessary by runtime reachability feedback.",
+    )
     require(
         f"m_Script: {{fileID: 11500000, guid: {reader_script_guid}, type: 3}}" in base,
         "Reader_Base scan target must keep KeycardReaderLightController.",
@@ -341,6 +359,8 @@ def main() -> int:
     print("PASS: reader variants and Level 1 gameplay cards serialize explicit credential identities.")
     print("PASS: matching cards retry submission while they remain inside the reader scan zone.")
     print("PASS: gameplay cards auto-fit their colliders to rendered bounds and use lightweight continuous Rigidbody handling.")
+    print("PASS: dropped cards retain a trigger-only XR grab affordance and readers ignore that proxy for scanning.")
+    print("PASS: reader scan geometry keeps the enlarged forward reach envelope.")
     print("PASS: held gameplay cards ignore local-rig collider pairs and restore them only after separation on release.")
     print("PASS: Level 1 card Rigidbody/collider/XR-grab/held-safety source wiring is intact.")
     print("PASS: Level 1 completion KeyBox remains authored beneath the Amber reader hierarchy.")
