@@ -76,7 +76,7 @@ def main() -> int:
         "[RequireComponent(typeof(BoxCollider), typeof(Rigidbody), typeof(XRGrabInteractable))]" in keycard
         and "[DefaultExecutionOrder(-200)]" in keycard
         and "ConfigurePhysicalCard();" in keycard
-        and "FitColliderToVisualBounds(box);" in keycard,
+        and "FitColliderToVisualBounds(physicalCollider);" in keycard,
         "Gameplay KeyCard must require its physical/grab components and normalize its collider before ordinary physics scripts run.",
     )
     require(
