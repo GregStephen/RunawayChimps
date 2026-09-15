@@ -1,88 +1,51 @@
-# Launch workstation vignette
+# Launch vignette — restored flat security terminal
 
-Date: 2026-09-13. Branch: `feature/launch-presentation-polish`, reconciled onto current `main` after PR #22 (`f9edea67af08ff7c35d043e05ad66a5615a9aeb2`). Unity **2022.3.55f1**, Photon PUN.
+Date: 2026-09-14. Branch: `feature/launch-presentation-polish`. Runaway Chimps uses Unity **2022.3.55f1** and Photon PUN.
 
-## Confirmed direction
+## Superseding correction
 
-Greg approved taking the existing green facility security-system boot one step further by presenting it on a **physical security workstation monitor** instead of leaving the boot as a flat floating panel. The workstation is startup-only. Successful Hub/level travel remains black-only. The player/head camera must never be artificially translated or rotated.
+**Confirmed by Greg on September 14:** the physical security workstation/desk vignette is no longer the selected launch presentation. Restore the earlier **flat green security terminal** and place it substantially farther from the player. Greg asked for roughly **twice the distance** of the workstation version.
 
-This is a production-presentation refinement, not a new room, gameplay space or loading mechanic. Startup still advances only from the existing real Photon/Hub/rig/avatar readiness state.
+This correction supersedes the earlier physical-desk direction in this document and elsewhere on PR #21. The desk, monitor shell, keyboard, mug, badge, clipboard and sticky-note flavor props are no longer part of the active startup presentation.
 
-## Exact branch implementation
-
-1. Keep the authored `Loading` canvas as the full-FOV black safety/transition layer. It remains responsible for opaque stereo coverage, errors and the final fade into the Hub.
-2. Reserve project layer **`LoadingPresentation`** for cold-start presentation. On startup, move the Loading canvas hierarchy onto that layer, mask the persistent camera to that layer and clear to black. This prevents additively loaded Hub UI/world content from appearing behind the workstation.
-3. Create one local-only `SecurityWorkstationVignette` after the persistent XR camera becomes available. Place it once from the camera's initial horizontal heading, approximately **1.95 m** in front of the player, without parenting it to the head.
-4. Build a deliberately simple low-poly workstation from runtime primitives on `LoadingPresentation`: desk surface/pedestals, monitor body/stand/base, keyboard, mug, badge/card prop and clipboard/paper. Disable and remove all primitive colliders so the vignette cannot affect Gorilla locomotion or physics.
-5. Render the existing green security boot on a **world-space monitor canvas** inside the physical monitor. The fitted canvas uses scale `0.00082`, making the 1080 × 820 UI approximately 0.886 × 0.672 m inside the 1.08 × 0.70 m monitor inset, leaving a deliberate dark margin instead of clipping the CRT face.
-6. Preserve the current real readiness rows, retry/error text, quiet relay ticks, CRT noise, scanlines, interference sweep and `ACCESS GRANTED` dwell. Do not introduce a fake percentage or simulated boot stages.
-7. Add readable optional flavor notes. First-pass text is `CAM 04 / STILL DEAD`, `VENT B / AGAIN?`, and `IF THEY GET OUT / I QUIT.` The first two are fitted to the physical bezel; the third lies on the desk/clipboard area. These are non-progression-critical Easter eggs and may be revised later.
-8. During the existing terminal fade, raise the authored black backdrop as the monitor content fades. Once covered, hide the workstation. After Hub activation, temporarily render the saved Hub camera mask plus `LoadingPresentation`, fade the black overlay away, then restore the exact original camera culling mask, clear flags and background.
-9. If readiness/session state fails during entry, reapply the isolated startup mask and restore the workstation/error presentation instead of leaving a half-faded desk or leaking Hub content.
-10. Normal sector travel constructs **no workstation, monitor canvas, notes, CRT objects or boot audio**. Existing travel remains black-only.
+The multiplayer Hub-slot, reconnect/session, Quest splash, render-isolation, readiness, error/retry and final-reveal hardening from PR #21 remain in scope. Only the startup visual composition is reverted.
 
 ## Implemented on this branch
 
-- `Assets/Scripts/Loading/SecurityWorkstationVignette.cs` owns the local visual set only.
-- `SecurityBootPresentation` creates the workstation only on cold startup, mounts the boot UI on its world-space monitor, owns CRT/static treatment and coordinates the black-cover handoff.
-- `LoadingFlow` now asks the presentation to prepare a combined Hub + black-overlay camera mask for the final reveal, then restores the camera exactly after the fade.
-- `ProjectSettings/TagManager.asset` reserves `LoadingPresentation` so startup rendering is isolated from the ordinary `UI` layer.
-- `Tools/validate_security_boot.py` and `Tools/validate_launch_presentation.py` protect startup-only construction, dedicated-layer isolation, world-space monitor UI, fitted monitor scale, bezel note placement, collider removal, no tracked-camera writes, no Photon/readiness writes and unchanged black-only travel.
+`SecurityWorkstationVignette` remains the legacy class/file name for the moment, but its implementation is now only a local presentation anchor for the green terminal. It creates no primitive workstation geometry and no prop materials.
 
-## Source validation
+The terminal canvas keeps the same physical scale used by the previous monitor (`0.00082` for the 1080 × 820 UI), but its anchor is now **3.9 m** from the initial horizontal camera heading. That is exactly twice the former **1.95 m** workstation distance. The panel is centered at eye height.
 
-**Validated source only:** workstation implementation head `2b2bf1a41c637e0108c8b5b4ff8054070543f43f` passed Source Integrity run `34803476268` after reconciliation with current `main`. The full repository suite passed the Level 1, PR #15, security-boot, threat-feedback and launch/workstation contracts together. Subsequent changes on the branch are documentation-only cleanup/recording unless otherwise noted; the PR's latest Source Integrity run remains the final source gate before merge. This is source/tooling evidence only; it does not prove Unity import/compile or visual comfort.
+The anchor is parented to the persistent `XROrigin`, so hidden startup rig relocation carries it while ordinary head look and room-scale head motion do not head-lock the panel. The tracked camera transform is never written.
 
-## Art / lore boundary
+The green terminal still shows real Photon/Hub/rig/avatar readiness only. Existing retry/error behavior, quiet relay ticks, CRT noise/scanlines/interference and the brief `ACCESS GRANTED` state remain unchanged. Normal successful Hub/Level 1/Level 2 travel remains **black-only**.
 
-**Implemented presentation uses temporary low-poly primitive geometry.** This pass is intentionally about composition, scale, readability, mood and technical ownership rather than final prop art. A later Blender asset pass can replace the runtime geometry without changing startup logic.
+## Removed from the active presentation
 
-The note text is **flavor/Easter-egg copy**, not confirmed progression lore. Treat it as editable dressing until Greg separately approves exact wording. Do not make a note carry required credentials, codes, objective instructions or a definitive claim about the Crawler's origin.
+- Physical desk and pedestals.
+- Monitor shell, stand and base.
+- Keyboard, mug, badge/card and clipboard.
+- `CAM 04 / STILL DEAD`, `VENT B / AGAIN?`, and `IF THEY GET OUT / I QUIT.` presentation notes.
+- Runtime primitive construction and the workstation material resource as a visual dependency.
 
-## Validation plan
+The old workstation implementation remains historical context in earlier commits, not the selected design.
 
-### Play Mode
+## Reveal and failure behavior
 
-- Start from `Assets/Scenes/Bootstrap.unity` in Unity 2022.3.55f1.
-- Workstation appears in front of the initial player view without following head rotation.
-- Physical monitor reads at comfortable distance/scale; green boot fits inside the screen with a dark margin and no clipping.
-- Desk/monitor silhouette is visible but surrounding environment remains black; additively loaded Hub UI does not appear behind it.
-- Static/scanlines/interference remain subtle and text stays readable.
-- Notes stay attached to the bezel/desk, are discoverable when looking and do not compete with startup status.
-- `ACCESS GRANTED` holds briefly, workstation becomes fully covered by black before hiding, then Hub reveals cleanly.
-- Failure/retry restores the workstation, isolated camera mask and error text correctly.
-- Hub/level travel remains black-only and never constructs the vignette.
+The full-FOV black Loading cover still owns startup isolation. The camera sees only `LoadingPresentation` against black until the Hub reveal is prepared. When startup completes, the green terminal fades under black and is retired before the Hub becomes visible. An interrupted entry/retry may rebuild the local terminal presentation.
 
-### Headset / Quest later
+Successful sector travel continues to construct no launch terminal or boot audio. Real travel failures keep recovery feedback.
 
-- Both-eye/peripheral black coverage, head turning/recenter comfort, physical monitor distance, note legibility, no world-stuck discomfort, no compositor/world flash, native system-splash handoff, and Quest frame/memory cost remain pending until device setup is available.
+## Pending validation
 
-## September 14 correction — presentation-space anchoring and disappearance
+- Unity **2022.3.55f1** import/compile.
+- Play Mode: confirm the flat green terminal appears about **3.9 m** ahead, is centered comfortably, and the new angular size/readability feels right.
+- Confirm head turning does not move/head-lock the panel and hidden `XROrigin` relocation does not leave it behind.
+- Confirm CRT treatment remains subtle and text is still readable at the increased distance.
+- Confirm `ACCESS GRANTED` -> full black -> terminal absent -> Hub reveal has no pop, flash or Hub leakage.
+- Confirm failure/retry restores the terminal and readable error state.
+- Confirm ordinary Hub/Level 1/Level 2 travel remains black-only.
+- Two-client Photon slot/session/reconnect tests remain pending.
+- Quest compositor splash, stereo/peripheral coverage, recenter/pause-resume, performance and comfort remain pending.
 
-**Confirmed correction:** the workstation is not shared Hub geometry and must not survive into gameplay. It is a client-local loading set. Before `Hub_Base` becomes visible, the workstation must be completely covered by black and destroyed/unloaded; the user then fades up at the normal Hub spawn assigned to that client.
-
-The prior wording that the workstation remains absolute-world-stationary is superseded. It should remain stationary relative to local head turning/room-scale motion, but it must track hidden **XROrigin root relocation** during startup so a later `RigSpawnSnapper` translation/rotation cannot move the user away from the desk while it is still being viewed.
-
-**Pending implementation from code review:** current `SecurityWorkstationVignette` captures a fixed world pose before `RigSpawnSnapper` necessarily finishes, and current startup uses one shared `HubSpawn`. Fix the vignette anchor and add unique multiplayer Hub spawn slots before treating the launch flow as merge-ready.
-
-## September 14 implementation — review findings and multiplayer Hub slots
-
-**Implemented on `feature/launch-presentation-polish` / PR #21:** the temporary security workstation is now parented to the persistent `XROrigin` root, so hidden startup rig relocation carries the local vignette while ordinary head/room-scale motion does not. The vignette is fully covered by black and destroyed before Hub reveal; interrupted entry can rebuild it. Legacy Loading status/error text stays available until the physical monitor terminal is successfully constructed.
-
-Cold-start multiplayer now uses ten Photon room-owned Hub spawn slots. Public/private room creation initializes slot-owner properties; clients claim free slots with room-property compare-and-swap, the Master Client releases/reconciles orphan claims, `RigSpawnSnapper` waits for the local slot before grounding, and the network avatar waits for `RigSnapped`. The slot poses are compact offsets from the existing authored `HubSpawn`; their exact spacing/clearance remains a Unity/headset validation item. Level-return arrival markers are unchanged.
-
-The workstation now clones a referenced Standard material from `Resources/LaunchPresentation/WorkstationBase` instead of using runtime `Shader.Find`. The Meta Android OpenXR `systemSplashScreen` assignment is committed in project settings, and Android build preprocessing validates rather than mutates that configuration. Source validators protect these architecture contracts without locking exact sticky-note coordinates or one exact monitor scale.
-
-**Pending validation:** Unity 2022.3.55f1 import/compile; one- and multi-client cold starts; ten-slot spacing/floor clearance; simultaneous claim races and slot reuse after leave/master handoff; failure/retry fallback readability; workstation destruction/rebuild across interrupted reveal; Play Mode visual tuning; Photon avatar placement; and later Quest splash/material/headset behavior.
-
-## September 14 post-review hardening
-
-**Implemented:** the workstation enters a one-way `retired for reveal` state when the final terminal fade reaches black, so the presentation's normal camera-binding loop cannot recreate it during the Hub fade. An interrupted entry explicitly clears that state before rebuilding the local workstation.
-
-Hub-room placement is now session-aware: each new Photon room invalidates the old Hub snap only when the Hub is loaded, then waits for a fresh room-owned slot before spawning the local network avatar. Slot claims are demand-driven, recover an existing local ownership first, and no longer run from an allocator `Update` loop in Level 1/Level 2.
-
-The ten layout poses are authored as `Resources/HubSpawn/HubSpawnSlots.prefab` marker transforms rather than C# coordinates. Android build validation now verifies Meta Android feature enablement, black compositor background, and Android OpenXR loader in addition to the splash references. Player visual-settle hashing reuses a material list to avoid per-frame `sharedMaterials` array allocations.
-
-**Pending validation:** Unity/Play Mode reveal and retry, Hub room switch/reconnect, simultaneous two-client claims, slot reuse/Master handoff, marker clearance, and Quest build/headset behavior.
-
-**Validated source only — PR #21 launch/session hardening:** clean durable head `594a1ba3082e3ab98c0171a245b3902b5ee1644b` passed Source Integrity run `34885765274` on 2026-09-14. The run passed Unity 2022.3.55f1 version enforcement, first-party C# syntax/reference and enabled-scene checks, Unity metadata/GUID integrity, Level 1 and PR #15 contracts, security-boot contracts, local threat-feedback contracts, launch/workstation plus demand-driven Hub-slot/session/build contracts, Python compilation, merge-marker rejection and human-authored whitespace. This is source/tooling evidence only; Unity import/compile, Play Mode, two-client Photon, authored marker clearance and Quest/headset behavior remain pending.
+Source validation is not Unity/headset proof.
