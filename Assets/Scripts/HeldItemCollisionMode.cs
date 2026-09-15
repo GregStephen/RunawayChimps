@@ -5,6 +5,7 @@ using UnityEngine;
 using UnityEngine.XR.Interaction.Toolkit;
 
 [RequireComponent(typeof(XRGrabInteractable))]
+[DisallowMultipleComponent]
 public class HeldItemCollisionMode : MonoBehaviour
 {
     public string heldLayerName = "HeldItem";
