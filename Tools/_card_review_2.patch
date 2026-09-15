@@ -1,0 +1,267 @@
+diff --git a/Assets/Scripts/KeyBox.cs b/Assets/Scripts/KeyBox.cs
+index 2bbb9cc..0fe642a 100644
+--- a/Assets/Scripts/KeyBox.cs
++++ b/Assets/Scripts/KeyBox.cs
+@@ -16,2 +16,20 @@ public class KeyBox : MonoBehaviour
+     public bool travelToLevelTwoOnComplete;
++    [Tooltip("Require an authorized matching reader even before readers are enabled. New Inspector-authored locks default to this; legacy unbound boxes may leave it off.")]
++    public bool requireMatchingReader;
++
++    // Binding a gameplay reader permanently opts this visit's objective into reader
++    // authorization. Disabling/unbinding that reader must never reopen a bypass.
++    private bool hasAuthoredReader;
++    public bool RequiresMatchingReader => travelToLevelTwoOnComplete || requireMatchingReader || hasAuthoredReader;
++
++    private void Reset()
++    {
++        requireMatchingReader = true;
++    }
++
++    internal void RegisterReader(KeycardReaderLightController reader)
++    {
++        if (reader != null && reader.Objective == this && reader.gameObject.scene == gameObject.scene)
++            hasAuthoredReader = true;
++    }
+ 
+@@ -41,5 +59,19 @@ public class KeyBox : MonoBehaviour
+     public bool TryAddKey(KeyCard card)
++    {
++        // Public compatibility API is a full consume-on-success transaction, not
++        // a second count-only entrance that can credit one card to several locks.
++        return card != null && card.TryInsertInto(this);
++    }
++
++    internal bool TryAcceptKey(KeyCard card, KeycardReaderLightController reader)
+     {
+         if (!isActiveAndEnabled || acceptingKey || card == null || !card.isActiveAndEnabled ||
+-            card.IsInserted || IsComplete || card.gameObject.scene != gameObject.scene)
++            card.IsInserted || !card.IsInsertionPendingFor(this) || IsComplete ||
++            card.gameObject.scene != gameObject.scene)
++            return false;
++        if (RequiresMatchingReader && reader == null)
++            return false;
++        if ((RequiresMatchingReader || reader != null) && !card.WasHeldByLocalPlayer)
++            return false;
++        if (reader != null && !reader.CanSubmitCard(card, this))
+             return false;
+@@ -49,3 +81,5 @@ public class KeyBox : MonoBehaviour
+             return false;
+-        if (!acceptedCards.Add(card.GetInstanceID())) return false;
++        int cardId = card.GetInstanceID();
++        if (acceptedCards.Contains(cardId) || !card.CommitInsertion(this)) return false;
++        acceptedCards.Add(cardId);
+         AcceptKey();
+@@ -57,3 +91,3 @@ public class KeyBox : MonoBehaviour
+     {
+-        if (isActiveAndEnabled && !acceptingKey && !travelToLevelTwoOnComplete && !IsComplete) AcceptKey();
++        if (isActiveAndEnabled && !acceptingKey && !RequiresMatchingReader && !IsComplete) AcceptKey();
+     }
+@@ -133,3 +167,4 @@ public class KeyBox : MonoBehaviour
+     {
+-        if (args.interactorObject.transform.GetComponentInParent<LocalRigMarker>() != null)
++        if (args != null && args.interactorObject != null &&
++            args.interactorObject.transform.GetComponentInParent<LocalRigMarker>() != null)
+             RetryCompletion();
+diff --git a/Assets/Scripts/KeyCard.cs b/Assets/Scripts/KeyCard.cs
+index 2f2f120..3185bd7 100644
+--- a/Assets/Scripts/KeyCard.cs
++++ b/Assets/Scripts/KeyCard.cs
+@@ -4,2 +4,3 @@ using UnityEngine.XR.Interaction.Toolkit;
+ [RequireComponent(typeof(BoxCollider), typeof(Rigidbody), typeof(XRGrabInteractable))]
++[RequireComponent(typeof(HeldItemCollisionMode))]
+ [DefaultExecutionOrder(-200)]
+@@ -28,4 +29,3 @@ public class KeyCard : MonoBehaviour
+ 
+-    private bool isInserted = false;
+-    private bool insertionInProgress;
++    private readonly CardConsumptionState consumption = new CardConsumptionState();
+     private XRGrabInteractable grab;
+@@ -34,3 +34,3 @@ public class KeyCard : MonoBehaviour
+ 
+-    public bool IsInserted => isInserted;
++    public bool IsInserted => consumption.IsConsumed;
+     public bool WasHeldByLocalPlayer { get; private set; }
+@@ -43,2 +43,6 @@ public class KeyCard : MonoBehaviour
+         grab = GetComponent<XRGrabInteractable>();
++        // RequireComponent covers newly authored cards; this covers older serialized
++        // cards that predate the requirement without depending on a scene-specific fix.
++        if (GetComponent<HeldItemCollisionMode>() == null)
++            gameObject.AddComponent<HeldItemCollisionMode>();
+         ConfigurePhysicalCard();
+@@ -52,3 +56,8 @@ public class KeyCard : MonoBehaviour
+         if (grab != null)
++        {
+             grab.selectEntered.AddListener(Selected);
++            // Re-enabling KeyCard while already held must not require another pickup.
++            foreach (IXRSelectInteractor interactor in grab.interactorsSelecting)
++                RecordLocalHolder(interactor);
++        }
+     }
+@@ -71,2 +80,7 @@ public class KeyCard : MonoBehaviour
+ 
++        // The imported cards used Instantaneous (Transform teleport) movement,
++        // which cannot provide the promised held-card/world collision behavior.
++        if (grab != null)
++            grab.movementType = XRBaseInteractable.MovementType.VelocityTracking;
++
+         Rigidbody body = GetComponent<Rigidbody>();
+@@ -90,3 +104,4 @@ public class KeyCard : MonoBehaviour
+         {
+-            if (renderer == null)
++            if (renderer == null || (!(renderer is MeshRenderer) && !(renderer is SkinnedMeshRenderer)) ||
++                renderer.GetComponentInParent<KeyCard>() != this)
+                 continue;
+@@ -159,3 +174,6 @@ public class KeyCard : MonoBehaviour
+ 
+-        affordanceObject.layer = gameObject.layer;
++        HeldItemCollisionMode collisionMode = GetComponent<HeldItemCollisionMode>();
++        // A runtime-added card may already be held. Do not permanently give its
++        // newly created acquisition trigger the temporary solid HeldItem layer.
++        affordanceObject.layer = collisionMode != null ? collisionMode.GetUnheldLayer(transform) : gameObject.layer;
+         affordanceObject.transform.localPosition = Vector3.zero;
+@@ -190,4 +208,12 @@ public class KeyCard : MonoBehaviour
+             // remains responsible for world physics and reader scanning.
++            // Normal scene Awake precedes XRI registration. Adding KeyCard to an
++            // already-live XRGrabInteractable must refresh the manager's collider map.
++            XRInteractionManager manager = grab.interactionManager;
++            bool registered = manager != null && manager.IsRegistered((IXRInteractable)grab);
++            if (registered)
++                manager.UnregisterInteractable((IXRInteractable)grab);
+             grab.colliders.Clear();
+             grab.colliders.Add(grabAffordanceCollider);
++            if (registered && grab != null && grab.isActiveAndEnabled && manager != null)
++                manager.RegisterInteractable((IXRInteractable)grab);
+         }
+@@ -206,3 +232,9 @@ public class KeyCard : MonoBehaviour
+     {
+-        if (args.interactorObject.transform.GetComponentInParent<LocalRigMarker>() != null)
++        RecordLocalHolder(args != null ? args.interactorObject : null);
++    }
++
++    private void RecordLocalHolder(IXRSelectInteractor interactor)
++    {
++        if (interactor != null && interactor.transform != null &&
++            interactor.transform.GetComponentInParent<LocalRigMarker>() != null)
+             WasHeldByLocalPlayer = true;
+@@ -223,15 +255,32 @@ public class KeyCard : MonoBehaviour
+     {
+-        if (!isActiveAndEnabled || isInserted || insertionInProgress || box == null)
++        return TryInsertCore(box, null);
++    }
++
++    internal bool TryInsertFromReader(KeyBox box, KeycardReaderLightController reader)
++    {
++        return TryInsertCore(box, reader);
++    }
++
++    internal bool IsInsertionPendingFor(KeyBox box) => consumption.IsPendingFor(box);
++    internal bool CommitInsertion(KeyBox box) => consumption.Commit(box);
++
++    private bool TryInsertCore(KeyBox box, KeycardReaderLightController reader)
++    {
++        if (!isActiveAndEnabled || box == null || !consumption.TryBegin(box))
+             return false;
+ 
+-        // Progress listeners run synchronously. They must not submit this same card
+-        // to another reader/lock before the first acceptance has finished consuming it.
+-        insertionInProgress = true;
+         try
+         {
+-            if (!box.TryAddKey(this))
++            if (!box.TryAcceptKey(this, reader))
+                 return false;
+ 
+-            isInserted = true;
+-            Destroy(gameObject);
++            // The box commits consumption BEFORE it notifies observers. A callback
++            // may already have destroyed this object or started scene travel.
++            if (this != null)
++            {
++                if (grab != null)
++                    grab.enabled = false;
++                if (this != null)
++                    Destroy(gameObject);
++            }
+             return true;
+@@ -240,3 +289,3 @@ public class KeyCard : MonoBehaviour
+         {
+-            insertionInProgress = false;
++            consumption.End(box);
+         }
+@@ -246,3 +295,3 @@ public class KeyCard : MonoBehaviour
+     {
+-        if (isInserted)
++        if (IsInserted)
+             return;
+@@ -253,7 +302,5 @@ public class KeyCard : MonoBehaviour
+ 
+-        // The Level 1 completion KeyBox is reader-driven: a card must be
+-        // presented to its matching color/symbol reader rather than merely
+-        // touching the legacy KeyBox trigger. Keep direct insertion available
+-        // for older non-travel KeyBox uses.
+-        if (!box.travelToLevelTwoOnComplete)
++        // Any reader-backed objective, in any level, requires a matching reader.
++        // Unbound legacy boxes retain their explicitly supported direct path.
++        if (!box.RequiresMatchingReader)
+             TryInsertInto(box);
+diff --git a/Assets/Scripts/KeycardLockProgressIndicator.cs b/Assets/Scripts/KeycardLockProgressIndicator.cs
+index 60de193..96b6e3e 100644
+--- a/Assets/Scripts/KeycardLockProgressIndicator.cs
++++ b/Assets/Scripts/KeycardLockProgressIndicator.cs
+@@ -22,2 +22,4 @@ public sealed class KeycardLockProgressIndicator : MonoBehaviour
+     private bool subscribed;
++    private KeyBox subscribedSource;
++    private bool explicitBinding;
+     private bool warnedMissingSource;
+@@ -67,4 +69,6 @@ public sealed class KeycardLockProgressIndicator : MonoBehaviour
+     {
++        explicitBinding = true;
+         if (keyBox == source)
+         {
++            Subscribe();
+             Refresh();
+@@ -90,3 +94,16 @@ public sealed class KeycardLockProgressIndicator : MonoBehaviour
+     {
+-        ApplyProgress(acceptedKeys, requiredKeys);
++        // Event invocation lists are snapshots. Another listener may have disabled
++        // or rebound this panel since this callback was captured by the old source.
++        if (isActiveAndEnabled)
++            Refresh();
++    }
++
++    private void Update()
++    {
++        if (subscribed && subscribedSource == null)
++        {
++            subscribed = false;
++            subscribedSource = null;
++            Refresh();
++        }
+     }
+@@ -111,2 +128,7 @@ public sealed class KeycardLockProgressIndicator : MonoBehaviour
+ 
++        // Never display an apparently fully green lock because its panel silently
++        // truncated the requirement (for example four configured lamps at 4/5).
++        if (requiredKeys > progressLights.Length)
++            acceptedKeys = 0;
++
+         float firstLampX = -0.5f * (visibleCount - 1) * lampSpacing;
+@@ -139,3 +161,3 @@ public sealed class KeycardLockProgressIndicator : MonoBehaviour
+     {
+-        if (keyBox != null)
++        if (explicitBinding || keyBox != null)
+             return;
+@@ -152,3 +174,4 @@ public sealed class KeycardLockProgressIndicator : MonoBehaviour
+ 
+-        keyBox.ProgressChanged += HandleProgressChanged;
++        subscribedSource = keyBox;
++        subscribedSource.ProgressChanged += HandleProgressChanged;
+         subscribed = true;
+@@ -161,4 +184,5 @@ public sealed class KeycardLockProgressIndicator : MonoBehaviour
+ 
+-        if (keyBox != null)
+-            keyBox.ProgressChanged -= HandleProgressChanged;
++        if (subscribedSource != null)
++            subscribedSource.ProgressChanged -= HandleProgressChanged;
++        subscribedSource = null;
+         subscribed = false;
