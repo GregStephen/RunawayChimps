@@ -84,6 +84,15 @@ public class HeldItemCollisionMode : MonoBehaviour
         // and keep the held layer until the final selecting hand releases.
         foreach (var child in GetComponentsInChildren<Transform>(true))
         {
+            // Keep trigger-only interaction sensors on their authored layer. HeldItem
+            // excludes hand/fingertip layers, which would hide these sensors from XRI.
+            Collider[] childColliders = child.GetComponents<Collider>();
+            bool triggerOnly = childColliders.Length > 0;
+            foreach (Collider childCollider in childColliders)
+                triggerOnly &= childCollider.isTrigger;
+            if (triggerOnly)
+                continue;
+
             originalLayers.Add(child, child.gameObject.layer);
             child.gameObject.layer = heldLayer;
         }
@@ -93,9 +102,9 @@ public class HeldItemCollisionMode : MonoBehaviour
     /// A physics-driven XRGrabInteractable must still collide with the world while held, but
     /// it must not collide with the same local Gorilla rig that is driving its hand pose.
     /// Otherwise a held prop can become wedged between the hand/body and a wall and PhysX
-    /// resolves that overlap by pushing the player. Ignore only local-rig collider pairs for
-    /// the duration of the grab; environment, reader-trigger, and remote-world collisions
-    /// remain available.
+    /// resolves that overlap by pushing the player. Ignore only solid-to-solid local-rig
+    /// pairs; item grab affordances and XR detection triggers must remain active during
+    /// holding and delayed release recovery. Environment and reader interactions stay intact.
     /// </summary>
     void IgnoreLocalRigCollisions()
     {
@@ -112,17 +121,22 @@ public class HeldItemCollisionMode : MonoBehaviour
 
         foreach (Collider itemCollider in itemColliders)
         {
-            if (itemCollider == null || !itemCollider.enabled)
+            if (itemCollider == null || !itemCollider.enabled || itemCollider.isTrigger)
                 continue;
 
             foreach (Collider rigCollider in rigColliders)
             {
-                if (rigCollider == null || !rigCollider.enabled || rigCollider == itemCollider)
+                if (rigCollider == null || !rigCollider.enabled || rigCollider.isTrigger || rigCollider == itemCollider)
                     continue;
 
                 // Be defensive if a future held object is temporarily parented beneath the
                 // XR rig: do not treat its own descendants as player colliders.
                 if (rigCollider.transform.IsChildOf(transform))
+                    continue;
+
+                // Only restore pairs this component actually changed. Do not undo
+                // an ignore relationship that another system already owns.
+                if (Physics.GetIgnoreCollision(itemCollider, rigCollider))
                     continue;
 
                 Physics.IgnoreCollision(itemCollider, rigCollider, true);
@@ -173,6 +187,7 @@ public class HeldItemCollisionMode : MonoBehaviour
             Collider item = pair.Item;
             Collider rig = pair.Rig;
             if (item == null || rig == null || !item.enabled || !rig.enabled ||
+                item.isTrigger || rig.isTrigger ||
                 !item.gameObject.activeInHierarchy || !rig.gameObject.activeInHierarchy)
                 continue;
 
