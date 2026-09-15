@@ -10,7 +10,7 @@ def main() -> int:
     errors: list[str] = []
     flow = (ROOT / "Assets/Scripts/Bootstrap/LoadingFlow.cs").read_text(encoding="utf-8")
     ui = (ROOT / "Assets/Scripts/Loading/SecurityBootPresentation.cs").read_text(encoding="utf-8")
-    workstation = (ROOT / "Assets/Scripts/Loading/SecurityWorkstationVignette.cs").read_text(encoding="utf-8")
+    panel = (ROOT / "Assets/Scripts/Loading/SecurityWorkstationVignette.cs").read_text(encoding="utf-8")
     travel = (ROOT / "Assets/Scripts/Travel/SectorTravelService.cs").read_text(encoding="utf-8")
     menu = (ROOT / "Assets/Scripts/Editor/SecurityBootReviewMenu.cs").read_text(encoding="utf-8")
     tags = (ROOT / "ProjectSettings/TagManager.asset").read_text(encoding="utf-8-sig")
@@ -58,27 +58,35 @@ def main() -> int:
     travel_return = configure.find("return;", travel_guard) if travel_guard >= 0 else -1
     startup_bind = configure.find("BindStartupCamera();")
     if travel_guard < 0 or travel_return < 0 or startup_bind < 0 or not (travel_guard < travel_return < startup_bind):
-        errors.append("Travel must return before startup camera/workstation/audio construction.")
+        errors.append("Travel must return before startup camera/panel/audio construction.")
 
-    require(workstation, ["Security Workstation Vignette", "GetComponentInParent<XROrigin>", "DontDestroyOnLoad(root)", "RenderMode.WorldSpace",
-                          "Security Monitor World Canvas", "GameObject.CreatePrimitive", "collider.enabled = false",
-                          "Destroy(collider)", "BaseMaterialResourcePath = \"LaunchPresentation/WorkstationBase\"",
-                          "Resources.Load<Material>", "CAM 04\\nSTILL DEAD", "VENT B\\nAGAIN?",
-                          "IF THEY GET OUT\\nI QUIT."],
-            "startup workstation")
+    require(panel, ["Security Boot Panel Vignette", "GetComponentInParent<XROrigin>", "DontDestroyOnLoad(root)",
+                    "RenderMode.WorldSpace", "Security Boot World Canvas", "TerminalDistance = 3.90f",
+                    "camera.transform.position + forward * TerminalDistance",
+                    "root.transform.SetParent(origin.transform, true)"],
+            "startup security panel")
+
+    for forbidden in ["GameObject.CreatePrimitive", "BaseMaterialResourcePath", "Desk top", "Night shift mug",
+                      "CAM 04\\nSTILL DEAD", "VENT B\\nAGAIN?", "IF THEY GET OUT\\nI QUIT."]:
+        if forbidden in panel:
+            errors.append(f"Superseded workstation presentation returned: {forbidden!r}")
+
+    distance = re.search(r"TerminalDistance\s*=\s*([0-9.]+)f", panel)
+    if not distance or not (3.6 <= float(distance.group(1)) <= 4.2):
+        errors.append("Restored green terminal must remain roughly twice the former 1.95 m workstation distance.")
 
     require(travel, ["origin.Camera.backgroundColor = Color.black", "debug.debugText.text = \"\"",
                      "ShowLoadingScene", "RestoreCamera()"], "existing black travel and recovery")
     require(menu, ["Hold Security Boot For Review", "SessionState.SetBool", "Menu.SetChecked"], "editor review")
 
-    for text, name in ((ui, "SecurityBootPresentation"), (workstation, "SecurityWorkstationVignette")):
+    for text, name in ((ui, "SecurityBootPresentation"), (panel, "SecurityWorkstationVignette")):
         for forbidden in ("PhotonNetwork.Join", "PhotonNetwork.Instantiate", "MarkRigSnapped(", "TryMarkReady(",
                           "SceneManager.LoadScene", "new RenderTexture", "allowSceneActivation", "Random.Range"):
             if forbidden in text:
                 errors.append(f"{name} must remain presentation-only: {forbidden}")
 
     for text, name in ((flow, "LoadingFlow"), (ui, "SecurityBootPresentation"),
-                       (workstation, "SecurityWorkstationVignette")):
+                       (panel, "SecurityWorkstationVignette")):
         if re.search(r"(?:origin|boundCamera|camera|startupCamera)\.transform\.(?:position|rotation|localPosition|localRotation)\s*=", text):
             errors.append(f"{name} must not move the tracked camera.")
 
@@ -93,7 +101,7 @@ def main() -> int:
         for error in errors:
             print(" -", error)
         return 1
-    print("PASS: security boot source contracts (readiness, retry, isolated workstation layer, black travel, editor hold, safe Hub reveal).")
+    print("PASS: security boot source contracts (readiness, retry, isolated distant green terminal, black travel, editor hold, safe Hub reveal).")
     print("Unity compilation, runtime, Photon and headset validation remain separate.")
     return 0
 
