@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using Unity.XR.CoreUtils;
 using UnityEngine;
@@ -12,6 +13,7 @@ public class HeldItemCollisionMode : MonoBehaviour
     readonly List<IgnoredCollisionPair> ignoredLocalRigPairs = new List<IgnoredCollisionPair>();
 
     XRGrabInteractable grab;
+    Coroutine restoreRigCollisionsRoutine;
 
     struct IgnoredCollisionPair
     {
@@ -49,12 +51,24 @@ public class HeldItemCollisionMode : MonoBehaviour
             grab.lastSelectExited.RemoveListener(OnRelease);
         }
 
+        if (restoreRigCollisionsRoutine != null)
+        {
+            StopCoroutine(restoreRigCollisionsRoutine);
+            restoreRigCollisionsRoutine = null;
+        }
+
         RestoreLocalRigCollisions();
         RestoreLayers();
     }
 
     void OnGrab(SelectEnterEventArgs args)
     {
+        if (restoreRigCollisionsRoutine != null)
+        {
+            StopCoroutine(restoreRigCollisionsRoutine);
+            restoreRigCollisionsRoutine = null;
+        }
+
         ApplyHeldLayer();
         IgnoreLocalRigCollisions();
     }
@@ -129,8 +143,46 @@ public class HeldItemCollisionMode : MonoBehaviour
 
     void OnRelease(SelectExitEventArgs args)
     {
-        RestoreLocalRigCollisions();
         RestoreLayers();
+
+        if (restoreRigCollisionsRoutine != null)
+            StopCoroutine(restoreRigCollisionsRoutine);
+        restoreRigCollisionsRoutine = StartCoroutine(RestoreRigCollisionsWhenSeparated());
+    }
+
+    IEnumerator RestoreRigCollisionsWhenSeparated()
+    {
+        // The card/prop can still be intersecting the hand, head or body on the exact frame
+        // the grab ends. Re-enabling that collision immediately recreates the same violent
+        // depenetration impulse we avoid while held. Keep only the local-rig pairs ignored
+        // until the released prop has physically separated; world collisions are unaffected.
+        while (isActiveAndEnabled && grab != null && !grab.isSelected && HasLocalRigOverlap())
+            yield return new WaitForFixedUpdate();
+
+        if (grab == null || !grab.isSelected)
+            RestoreLocalRigCollisions();
+
+        restoreRigCollisionsRoutine = null;
+    }
+
+    bool HasLocalRigOverlap()
+    {
+        foreach (IgnoredCollisionPair pair in ignoredLocalRigPairs)
+        {
+            Collider item = pair.Item;
+            Collider rig = pair.Rig;
+            if (item == null || rig == null || !item.enabled || !rig.enabled ||
+                !item.gameObject.activeInHierarchy || !rig.gameObject.activeInHierarchy)
+                continue;
+
+            if (Physics.ComputePenetration(
+                    item, item.transform.position, item.transform.rotation,
+                    rig, rig.transform.position, rig.transform.rotation,
+                    out _, out _))
+                return true;
+        }
+
+        return false;
     }
 
     void RestoreLayers()
