@@ -115,6 +115,12 @@ public class RespawnToOriginalSpawn : MonoBehaviour
             grab.enabled = false;
         }
 
+        if (card != null && card.IsInserted)
+        {
+            restoreGrabPending = false;
+            return; // A synchronous release listener consumed it; do not move it again.
+        }
+
         Vector3 targetPosition = spawnPos + Vector3.up * Mathf.Max(0.02f, respawnUpOffset);
 
         if (rb != null)

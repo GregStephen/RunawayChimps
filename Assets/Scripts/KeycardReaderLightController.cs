@@ -106,10 +106,12 @@ public sealed class KeycardReaderLightController : MonoBehaviour
             : overlapScratch;
         if (candidates != overlapScratch)
             count = candidates.Length;
+        int reseedRevision = bindingRevision;
         for (int i = 0; i < count; i++)
         {
             Collider candidate = candidates[i];
-            if (ScannerActive && candidate != null && !acceptedColliders.Contains(candidate))
+            if (ScannerActive && bindingRevision == reseedRevision &&
+                candidate != null && !acceptedColliders.Contains(candidate))
                 OnTriggerEnter(candidate);
             candidates[i] = null;
         }
@@ -194,6 +196,7 @@ public sealed class KeycardReaderLightController : MonoBehaviour
 
     private void OnDisable()
     {
+        bindingRevision++;
         scannerWasActive = false;
         overlapReseedSteps = 0;
         ClearOverlapState();

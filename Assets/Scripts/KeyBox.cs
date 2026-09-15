@@ -14,8 +14,8 @@ public class KeyBox : MonoBehaviour
     public SlidingDoor door;
     [Tooltip("Enable only for the personal Level 1 completion keybox.")]
     public bool travelToLevelTwoOnComplete;
-    [Tooltip("Require an authorized matching reader even before readers are enabled. New Inspector-authored locks default to this; legacy unbound boxes may leave it off.")]
-    public bool requireMatchingReader;
+    [Tooltip("Require an authorized matching reader even before readers are enabled. Default for every new or migrated lock. Disable explicitly only for an unbound legacy direct-insertion lock.")]
+    public bool requireMatchingReader = true;
 
     // Binding a gameplay reader permanently opts this visit's objective into reader
     // authorization. Disabling/unbinding that reader must never reopen a bypass.

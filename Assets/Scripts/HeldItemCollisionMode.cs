@@ -67,6 +67,18 @@ public class HeldItemCollisionMode : MonoBehaviour
             restoreRigCollisionsRoutine = null;
         }
 
+        // An inactive hierarchy cannot collide. If only this behaviour was
+        // disabled, keep its safety state until re-enable/destruction rather than
+        // restoring a solid card inside the player while XRI can still move it.
+        if (!gameObject.activeInHierarchy)
+        {
+            RestoreLocalRigCollisions();
+            RestoreLayers();
+        }
+    }
+
+    void OnDestroy()
+    {
         RestoreLocalRigCollisions();
         RestoreLayers();
     }
@@ -100,6 +112,8 @@ public class HeldItemCollisionMode : MonoBehaviour
         {
             // Keep trigger-only interaction sensors on their authored layer. HeldItem
             // excludes hand/fingertip layers, which would hide these sensors from XRI.
+            if (child.GetComponentInParent<XRGrabInteractable>() != grab)
+                continue;
             Collider[] childColliders = child.GetComponents<Collider>();
             bool triggerOnly = childColliders.Length > 0;
             foreach (Collider childCollider in childColliders)
@@ -137,7 +151,8 @@ public class HeldItemCollisionMode : MonoBehaviour
 
         foreach (Collider itemCollider in itemColliders)
         {
-            if (itemCollider == null || !itemCollider.enabled || itemCollider.isTrigger)
+            if (itemCollider == null || !itemCollider.enabled || itemCollider.isTrigger ||
+                itemCollider.GetComponentInParent<XRGrabInteractable>() != grab)
                 continue;
 
             localItemColliders.Add(itemCollider);
@@ -148,7 +163,8 @@ public class HeldItemCollisionMode : MonoBehaviour
 
                 // Be defensive if a future held object is temporarily parented beneath the
                 // XR rig: do not treat its own descendants as player colliders.
-                if (rigCollider.transform.IsChildOf(transform))
+                if (rigCollider.transform.IsChildOf(transform) ||
+                    rigCollider.GetComponentInParent<XRGrabInteractable>() != null)
                     continue;
 
                 localRigContactPairs.Add(new IgnoredCollisionPair(itemCollider, rigCollider));

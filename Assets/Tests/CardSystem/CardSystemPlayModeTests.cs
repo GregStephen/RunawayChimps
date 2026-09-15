@@ -107,7 +107,7 @@ namespace RunawayChimps.Tests
         {
             GameObject root = Root("FixtureCard");
             root.transform.localScale = Vector3.one * scale;
-            root.transform.rotation = Quaternion.Euler(0f, yaw, 0f);
+            root.transform.rotation = Quaternion.Euler(yaw * 0.6f, yaw, yaw * 0.25f);
             Visual(root, "BadgeMesh", new Vector3(0.10f, 0.005f, 0.06f));
             Component card = root.AddComponent(Production("KeyCard"));
             Set(card, "credential", credential);
@@ -484,6 +484,104 @@ namespace RunawayChimps.Tests
             float floorTop = floor.GetComponent<Collider>().bounds.max.y;
             float cardBottom = Property<Collider>(card, "PhysicalCollider").bounds.min.y;
             Assert.That(cardBottom, Is.InRange(floorTop - 0.005f, floorTop + 0.04f));
+        }
+
+        [Test]
+        public void NewLocksRequireAReaderBeforeAnyReaderAwakes()
+        {
+            GameObject root = Root("UninitializedReaderLock");
+            Component box = root.AddComponent(Production("KeyBox"));
+            root.SetActive(true);
+            Assert.That(Property<bool>(box, "RequiresMatchingReader"), Is.True);
+            Assert.That((bool)Call(box, "TryAddKey", Card()), Is.False);
+            Call(box, "AddKey");
+            Assert.That(Property<int>(box, "CurrentKeys"), Is.Zero);
+        }
+
+        [Test]
+        public void ConsumedCardsDisableTheirPhysicalAndPickupCollidersImmediately()
+        {
+            Component box = Box();
+            Component card = Card();
+            Assert.That((bool)Call(box, "TryAddKey", card), Is.True);
+            Assert.That(Property<Collider>(card, "PhysicalCollider").enabled, Is.False);
+            Assert.That(Property<Collider>(card, "GrabAffordanceCollider").enabled, Is.False);
+            Assert.That(card.GetComponent<XRGrabInteractable>().enabled, Is.False);
+        }
+
+        [Test]
+        public void DisableReenableDuringAcceptanceCannotRelightAnOldScan()
+        {
+            Component box = Box();
+            Component reader = Reader(box);
+            Set(reader, "acceptedFlashSeconds", 1f);
+            Observe(box, (count, required) =>
+            {
+                ((Behaviour)reader).enabled = false;
+                ((Behaviour)reader).enabled = true;
+            });
+            Assert.That((bool)Call(reader, "TrySubmitCard", Card()), Is.True);
+            Renderer led = (Renderer)reader.GetType().GetField("statusLedRenderer", Members).GetValue(reader);
+            Assert.That(led.sharedMaterial, Is.SameAs(standby));
+        }
+
+        [Test]
+        public void DuplicateLampReferencesCannotImplyCompletion()
+        {
+            Component box = Box();
+            Component panel = Panel(box, 2, out Renderer[] lamps);
+            Set(panel, "progressLights", new Renderer[] { lamps[0], lamps[0] });
+            Call(box, "AddKey");
+            Call(box, "AddKey");
+            Assert.That(lamps[0].sharedMaterial, Is.SameAs(standby));
+            Assert.That(panel.gameObject.activeSelf, Is.True);
+        }
+
+        [Test]
+        public void DisablingOnlyHeldSafetyDoesNotExposeThePropToThePlayer()
+        {
+            Component card = Card();
+            Component safety = card.GetComponent(Production("HeldItemCollisionMode"));
+            Call(safety, "ApplyHeldLayer");
+            int held = LayerMask.NameToLayer("HeldItem");
+            Assert.That(held, Is.GreaterThanOrEqualTo(0));
+            ((Behaviour)safety).enabled = false;
+            Assert.That(card.gameObject.layer, Is.EqualTo(held));
+            Assert.That(Property<Collider>(card, "GrabAffordanceCollider").gameObject.layer, Is.Not.EqualTo(held));
+            ((Behaviour)safety).enabled = true;
+            Assert.That(card.gameObject.layer, Is.EqualTo(held));
+        }
+
+        [Test]
+        public void TenImmediateXriReleaseRegrabCyclesRetainAcquisitionMapping()
+        {
+            Component card = Card(1, false);
+            XRDirectInteractor hand = SelectWithLocalHand(card);
+            var grab = card.GetComponent<XRGrabInteractable>();
+            Collider affordance = Property<Collider>(card, "GrabAffordanceCollider");
+            for (int iteration = 0; iteration < 10; iteration++)
+            {
+                manager.SelectExit((IXRSelectInteractor)hand, (IXRSelectInteractable)grab);
+                Assert.That(grab.isSelected, Is.False);
+                Assert.That(manager.TryGetInteractableForCollider(affordance, out IXRInteractable mapped), Is.True);
+                Assert.That(mapped, Is.SameAs(grab));
+                manager.SelectEnter((IXRSelectInteractor)hand, (IXRSelectInteractable)grab);
+                Assert.That(grab.isSelected, Is.True);
+            }
+            Assert.That(Property<bool>(card, "WasHeldByLocalPlayer"), Is.True);
+        }
+
+        [UnityTest]
+        public IEnumerator CardCannotCreditALockInAnotherAdditiveScene()
+        {
+            Component card = Card();
+            Component box = Box();
+            var scene = UnityEngine.SceneManagement.SceneManager.CreateScene("CardTest_" + Guid.NewGuid());
+            UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(box.gameObject, scene);
+            Assert.That((bool)Call(box, "TryAddKey", card), Is.False);
+            Assert.That(Property<bool>(card, "IsInserted"), Is.False);
+            Assert.That(Property<int>(box, "CurrentKeys"), Is.Zero);
+            yield return UnityEngine.SceneManagement.SceneManager.UnloadSceneAsync(scene);
         }
     }
 }

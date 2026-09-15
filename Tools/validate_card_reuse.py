@@ -29,6 +29,16 @@ def validate_reuse(root: Path) -> None:
     for token in ("RequiresMatchingReader", "card.IsInsertionPendingFor(this)",
                   "reader.CanSubmitCard(card, this)", "card.WasHeldByLocalPlayer", "RegisterReader("):
         require(token in box, "Missing reusable objective boundary: " + token)
+    require("requireMatchingReader = true;" in box,
+            "New and migrated locks must fail closed even before inactive readers initialize")
+    require("finally" in card and "physicalCollider.enabled = false" in card,
+            "Committed cards must quiesce even when selection cleanup fails")
+    require("bindingRevision++" in reader and "bindingRevision == reseedRevision" in reader,
+            "An old scan snapshot must not submit after rebind/reactivation")
+    require("if (!gameObject.activeInHierarchy)" in held and "void OnDestroy()" in held,
+            "Disabling a safety behaviour alone must not restore player collision")
+    require("warnedLampConfiguration" in panel and "configuredLights.Add(lamp)" in panel,
+            "Missing, duplicate or external lamps must not imply completion")
     require("if (!box.RequiresMatchingReader)" in card,
             "Direct contact must not bypass a reader in other levels")
     for token in ("KeyBox Objective => keyBox", "objectiveResolutionAttempted = true",

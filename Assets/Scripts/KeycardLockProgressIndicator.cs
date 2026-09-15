@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
@@ -24,6 +25,8 @@ public sealed class KeycardLockProgressIndicator : MonoBehaviour
     private bool explicitBinding;
     private bool warnedMissingSource;
     private bool warnedCapacity;
+    private bool warnedLampConfiguration;
+    private readonly HashSet<Renderer> configuredLights = new HashSet<Renderer>();
 
     private void OnEnable()
     {
@@ -131,12 +134,30 @@ public sealed class KeycardLockProgressIndicator : MonoBehaviour
         if (requiredKeys > progressLights.Length)
             acceptedKeys = 0;
 
-        float firstLampX = -0.5f * (visibleCount - 1) * lampSpacing;
+        configuredLights.Clear();
+        bool invalidLamps = false;
+        foreach (Renderer lamp in progressLights)
+            if (lamp == null || !lamp.transform.IsChildOf(transform) || lamp.transform == transform ||
+                !configuredLights.Add(lamp))
+                invalidLamps = true;
+        if (invalidLamps)
+        {
+            acceptedKeys = 0;
+            if (!warnedLampConfiguration)
+            {
+                warnedLampConfiguration = true;
+                Debug.LogWarning($"[KeycardLockProgress] '{name}' has missing, duplicate or external lamps. Configure distinct child renderers; progress will not appear complete with invalid wiring.", this);
+            }
+        }
+        configuredLights.Clear();
+        float spacing = Mathf.Max(0.01f, lampSpacing);
+        float firstLampX = -0.5f * (visibleCount - 1) * spacing;
 
         for (int index = 0; index < progressLights.Length; index++)
         {
             Renderer lamp = progressLights[index];
-            if (lamp == null)
+            if (lamp == null || lamp.transform == transform || !lamp.transform.IsChildOf(transform) ||
+                !configuredLights.Add(lamp))
                 continue;
 
             bool used = index < visibleCount;
@@ -148,7 +169,7 @@ public sealed class KeycardLockProgressIndicator : MonoBehaviour
 
             Transform lampTransform = lamp.transform;
             Vector3 localPosition = lampTransform.localPosition;
-            localPosition.x = firstLampX + index * lampSpacing;
+            localPosition.x = firstLampX + index * spacing;
             lampTransform.localPosition = localPosition;
 
             Material target = index < acceptedKeys ? acceptedMaterial : standbyMaterial;

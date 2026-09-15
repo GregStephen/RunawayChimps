@@ -41,6 +41,9 @@ public class KeyCard : MonoBehaviour
     private void Awake()
     {
         grab = GetComponent<XRGrabInteractable>();
+        if (grab != null)
+            foreach (IXRSelectInteractor interactor in grab.interactorsSelecting)
+                RecordLocalHolder(interactor);
         // RequireComponent covers newly authored cards; this covers older serialized
         // cards that predate the requirement without depending on a scene-specific fix.
         if (GetComponent<HeldItemCollisionMode>() == null)
@@ -278,10 +281,26 @@ public class KeyCard : MonoBehaviour
             // may already have destroyed this object or started scene travel.
             if (this != null)
             {
-                if (grab != null)
-                    grab.enabled = false;
-                if (this != null)
-                    Destroy(gameObject);
+                try
+                {
+                    if (grab != null)
+                        grab.enabled = false;
+                }
+                catch (System.Exception exception)
+                {
+                    Debug.LogException(exception, this);
+                }
+                finally
+                {
+                    // A throwing select-exit listener cannot leave a spent card
+                    // in the world. Consumption is already committed at this point.
+                    if (this != null)
+                    {
+                        if (physicalCollider != null) physicalCollider.enabled = false;
+                        if (grabAffordanceCollider != null) grabAffordanceCollider.enabled = false;
+                        Destroy(gameObject);
+                    }
+                }
             }
             return true;
         }
