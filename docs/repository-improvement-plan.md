@@ -1,6 +1,6 @@
 # Runaway Chimps repository improvement plan
 
-Last updated: 2026-09-13. Maintained repository edition, migrated from `Runaway_Chimps_Repository_Review_and_Plan.docx`, Revision 2. The original review examined `main` at `4f6894141aa2b132d744cb2423c1ee227e0fc5be`; its evidence links remain pinned to that baseline. The Word document is a historical downloadable snapshot.
+Last updated: 2026-09-14. Maintained repository edition, migrated from `Runaway_Chimps_Repository_Review_and_Plan.docx`, Revision 2. The original review examined `main` at `4f6894141aa2b132d744cb2423c1ee227e0fc5be`; its evidence links remain pinned to that baseline. The Word document is a historical downloadable snapshot.
 
 Read the [design and lore](design-and-lore.md) for intended behavior and [AGENTS.md](../AGENTS.md) for update rules. A confirmed finding describes source evidence; it does not mean its fix is implemented or tested.
 
@@ -626,3 +626,14 @@ The workstation now clones a referenced Standard material from `Resources/Launch
 **Source validation required after this change:** rerun the full Source Integrity suite on the clean final PR head. **Runtime validation remains pending:** Unity import/compile, startup/retry/reveal, room switch/reconnect, simultaneous two-client slot claims, slot reuse/Master handoff, authored marker clearance, black-only sector travel, and Quest build/headset behavior.
 
 **Validated source only — PR #21 launch/session hardening:** clean durable head `594a1ba3082e3ab98c0171a245b3902b5ee1644b` passed Source Integrity run `34885765274` on 2026-09-14. The run passed Unity 2022.3.55f1 version enforcement, first-party C# syntax/reference and enabled-scene checks, Unity metadata/GUID integrity, Level 1 and PR #15 contracts, security-boot contracts, local threat-feedback contracts, launch/workstation plus demand-driven Hub-slot/session/build contracts, Python compilation, merge-marker rejection and human-authored whitespace. This is source/tooling evidence only; Unity import/compile, Play Mode, two-client Photon, authored marker clearance and Quest/headset behavior remain pending.
+
+## September 14 PR #21 visual correction — restore distant green terminal
+
+**Confirmed correction:** the physical workstation/desk vignette previously implemented on PR #21 is no longer the selected launch presentation. Greg explicitly asked to restore the **old flat green security terminal** and move it roughly twice as far away. Treat the workstation-specific sections above as superseded design history, not the active target.
+
+**Implemented source on `feature/launch-presentation-polish`:** `SecurityWorkstationVignette` remains the legacy class/file name but now owns only a world-space terminal anchor. It creates no primitive desk/monitor/keyboard/mug/badge/clipboard geometry and no flavor notes. The existing 1080 x 820 terminal canvas keeps its prior physical scale and is placed **3.90 m** from the initial horizontal camera heading, twice the former 1.95 m workstation distance. The obsolete `Resources/LaunchPresentation/WorkstationBase` material dependency was removed.
+
+**Preserved implementation:** PR #21 still keeps the dedicated `LoadingPresentation` isolation layer, real startup readiness/error/retry behavior, bounded CRT treatment, final-reveal retirement guard, Meta/Quest system-splash validation, demand-driven 10-slot Photon Hub allocation, room-switch/reconnect resnap behavior, authored `HubSpawnSlots.prefab`, and the startup material-allocation cleanup. Successful sector travel remains black-only.
+
+**Validation boundary:** rerun Source Integrity on the corrected head, then validate Unity **2022.3.55f1** import/compile and Play Mode presentation before merge. Runtime acceptance now focuses on the 3.9 m flat terminal's readability/comfort, no head-locking, clean black cover and reveal, retry recovery, plus the existing two-client Photon room/slot/reconnect and Quest/headset checks. Do not carry forward workstation-prop or note-readability tests; those presentation elements are intentionally removed.
+

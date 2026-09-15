@@ -1,6 +1,6 @@
 # Runaway Chimps design and lore
 
-Last updated: 2026-09-13. Maintained repository edition, migrated from `Runaway_Chimps_Design_and_Lore.docx` version 0.9. The existing Word document is a downloadable snapshot; future edits belong here. See [AGENTS.md](../AGENTS.md) for the documentation workflow and the [repository improvement plan](repository-improvement-plan.md) for implementation evidence.
+Last updated: 2026-09-14. Maintained repository edition, migrated from `Runaway_Chimps_Design_and_Lore.docx` version 0.9. The existing Word document is a downloadable snapshot; future edits belong here. See [AGENTS.md](../AGENTS.md) for the documentation workflow and the [repository improvement plan](repository-improvement-plan.md) for implementation evidence.
 
 We are building a social VR horror game about gorillas escaping a laboratory that experiments on animals. This document records the current game rules, Level 1, the proposed Listener level, the story, and the scene architecture so future work can build on the same decisions.
 
@@ -622,3 +622,16 @@ The workstation now clones a referenced Standard material from `Resources/Launch
 **Pending validation:** Unity 2022.3.55f1 import/compile; Play Mode proof that the workstation never reappears during Hub reveal or retry; two-client same-time cold start; Hub room switch/rejoin/reconnect placement; slot reuse/Master handoff; authored marker floor/wall/prop clearance; and later Quest Android validation/device behavior. Source checks remain separate from those runtime results.
 
 **Validated source only — PR #21 launch/session hardening:** clean durable head `594a1ba3082e3ab98c0171a245b3902b5ee1644b` passed Source Integrity run `34885765274` on 2026-09-14. The run passed Unity 2022.3.55f1 version enforcement, first-party C# syntax/reference and enabled-scene checks, Unity metadata/GUID integrity, Level 1 and PR #15 contracts, security-boot contracts, local threat-feedback contracts, launch/workstation plus demand-driven Hub-slot/session/build contracts, Python compilation, merge-marker rejection and human-authored whitespace. This is source/tooling evidence only; Unity import/compile, Play Mode, two-client Photon, authored marker clearance and Quest/headset behavior remain pending.
+
+## September 14 launch presentation correction — restored distant green terminal
+
+**Confirmed correction / supersedes the workstation direction above:** Greg rejected the physical security workstation/desk presentation and explicitly asked for the **old green security screen back**, positioned roughly **twice as far away**. The selected cold-start Unity presentation is again the flat green facility security terminal in black space. The desk, monitor shell, stand, keyboard, mug, badge/card prop, clipboard and flavor notes are no longer part of the active launch design.
+
+**Confirmed placement:** keep the terminal centered around eye height on the initial horizontal viewing direction and place it at approximately **3.9 m**, exactly twice the former 1.95 m workstation-vignette distance. The tracked camera is never translated or rotated. The terminal may follow hidden `XROrigin` root relocation during startup so rig snapping does not leave it behind, but ordinary head look and room-scale motion must not head-lock the panel.
+
+**Still confirmed:** the terminal reports only real Photon/Hub/rig/avatar readiness; successful Hub/Level 1/Level 2 travel remains black-only; failures retain recovery feedback; CRT noise/scanlines/interference remain restrained; the Meta/Quest system splash remains a separate pre-first-frame layer; and the Hub slot/session/reconnect/reveal hardening on PR #21 remains in scope. This visual correction does not undo those reliability changes.
+
+**Implemented on `feature/launch-presentation-polish` / PR #21, pending runtime validation:** the legacy-named `SecurityWorkstationVignette` no longer constructs physical workstation primitives or prop materials. It now creates only the world-space terminal canvas, using the prior monitor canvas physical scale and a 3.90 m startup anchor. The obsolete workstation material resource was removed. Launch source validation was updated to reject reintroduction of the desk/prop presentation while preserving the existing render-isolation, readiness, final-reveal and multiplayer/session contracts.
+
+**Pending validation:** Unity **2022.3.55f1** import/compile; Play Mode distance/readability/eye-height review; head-turn and hidden-origin-relocation behavior; retry/error restoration; `ACCESS GRANTED` -> full black -> terminal absent -> Hub reveal; two-client Photon slot/session/reconnect behavior; authored Hub-slot clearance; and Quest compositor splash, stereo/peripheral coverage, recenter/pause-resume, comfort and performance. Source checks do not establish those runtime/device results.
+
