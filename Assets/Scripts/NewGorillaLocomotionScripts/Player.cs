@@ -287,7 +287,7 @@ namespace GorillaLocomotion
             {
                 rigidBodyMovement = finalPosition - lastHeadPosition;
                 //last check to make sure the head won't phase through geometry
-                if (Physics.Raycast(lastHeadPosition, headCollider.transform.position - lastHeadPosition + rigidBodyMovement, out hitInfo, (headCollider.transform.position - lastHeadPosition + rigidBodyMovement).magnitude + headCollider.radius * defaultPrecision * 0.999f, locomotionEnabledLayers.value))
+                if (Physics.Raycast(lastHeadPosition, headCollider.transform.position - lastHeadPosition + rigidBodyMovement, out hitInfo, (headCollider.transform.position - lastHeadPosition + rigidBodyMovement).magnitude + headCollider.radius * defaultPrecision * 0.999f, locomotionEnabledLayers.value, QueryTriggerInteraction.Ignore))
                 {
                     rigidBodyMovement = lastHeadPosition - headCollider.transform.position;
                 }
@@ -367,7 +367,7 @@ namespace GorillaLocomotion
 
             //check to see if left hand is stuck and we should unstick it
 
-            if (leftHandColliding && (CurrentLeftHandPosition() - lastLeftHandPosition).magnitude > unStickDistance && !Physics.SphereCast(headCollider.transform.position, minimumRaycastDistance * defaultPrecision, CurrentLeftHandPosition() - headCollider.transform.position, out hitInfo, (CurrentLeftHandPosition() - headCollider.transform.position).magnitude - minimumRaycastDistance, locomotionEnabledLayers.value))
+            if (leftHandColliding && (CurrentLeftHandPosition() - lastLeftHandPosition).magnitude > unStickDistance && !Physics.SphereCast(headCollider.transform.position, minimumRaycastDistance * defaultPrecision, CurrentLeftHandPosition() - headCollider.transform.position, out hitInfo, (CurrentLeftHandPosition() - headCollider.transform.position).magnitude - minimumRaycastDistance, locomotionEnabledLayers.value, QueryTriggerInteraction.Ignore))
             {
                 lastLeftHandPosition = CurrentLeftHandPosition();
                 leftHandColliding = false;
@@ -375,7 +375,7 @@ namespace GorillaLocomotion
 
             //check to see if right hand is stuck and we should unstick it
 
-            if (rightHandColliding && (CurrentRightHandPosition() - lastRightHandPosition).magnitude > unStickDistance && !Physics.SphereCast(headCollider.transform.position, minimumRaycastDistance * defaultPrecision, CurrentRightHandPosition() - headCollider.transform.position, out hitInfo, (CurrentRightHandPosition() - headCollider.transform.position).magnitude - minimumRaycastDistance, locomotionEnabledLayers.value))
+            if (rightHandColliding && (CurrentRightHandPosition() - lastRightHandPosition).magnitude > unStickDistance && !Physics.SphereCast(headCollider.transform.position, minimumRaycastDistance * defaultPrecision, CurrentRightHandPosition() - headCollider.transform.position, out hitInfo, (CurrentRightHandPosition() - headCollider.transform.position).magnitude - minimumRaycastDistance, locomotionEnabledLayers.value, QueryTriggerInteraction.Ignore))
             {
                 lastRightHandPosition = CurrentRightHandPosition();
                 rightHandColliding = false;
@@ -442,19 +442,19 @@ namespace GorillaLocomotion
 
             //initial spherecase
             RaycastHit innerHit;
-            if (Physics.SphereCast(startPosition, sphereRadius * precision, movementVector, out hitInfo, movementVector.magnitude + sphereRadius * (1 - precision), locomotionEnabledLayers.value))
+            if (Physics.SphereCast(startPosition, sphereRadius * precision, movementVector, out hitInfo, movementVector.magnitude + sphereRadius * (1 - precision), locomotionEnabledLayers.value, QueryTriggerInteraction.Ignore))
             {
                 //if we hit, we're trying to move to a position a sphereradius distance from the normal
                 finalPosition = hitInfo.point + hitInfo.normal * sphereRadius;
 
                 //check a spherecase from the original position to the intended final position
-                if (Physics.SphereCast(startPosition, sphereRadius * precision * precision, finalPosition - startPosition, out innerHit, (finalPosition - startPosition).magnitude + sphereRadius * (1 - precision * precision), locomotionEnabledLayers.value))
+                if (Physics.SphereCast(startPosition, sphereRadius * precision * precision, finalPosition - startPosition, out innerHit, (finalPosition - startPosition).magnitude + sphereRadius * (1 - precision * precision), locomotionEnabledLayers.value, QueryTriggerInteraction.Ignore))
                 {
-                    finalPosition = startPosition + (finalPosition - startPosition).normalized * Mathf.Max(0, hitInfo.distance - sphereRadius * (1f - precision * precision));
+                    finalPosition = startPosition + (finalPosition - startPosition).normalized * Mathf.Max(0, innerHit.distance - sphereRadius * (1f - precision * precision));
                     hitInfo = innerHit;
                 }
                 //bonus raycast check to make sure that something odd didn't happen. helps prevent clipping through geometry
-                else if (Physics.Raycast(startPosition, finalPosition - startPosition, out innerHit, (finalPosition - startPosition).magnitude + sphereRadius * precision * precision * 0.999f, locomotionEnabledLayers.value))
+                else if (Physics.Raycast(startPosition, finalPosition - startPosition, out innerHit, (finalPosition - startPosition).magnitude + sphereRadius * precision * precision * 0.999f, locomotionEnabledLayers.value, QueryTriggerInteraction.Ignore))
                 {
                     finalPosition = startPosition;
                     hitInfo = innerHit;
@@ -463,7 +463,7 @@ namespace GorillaLocomotion
                 return true;
             }
             //anti-clipping through geometry check
-            else if (Physics.Raycast(startPosition, movementVector, out hitInfo, movementVector.magnitude + sphereRadius * precision * 0.999f, locomotionEnabledLayers.value))
+            else if (Physics.Raycast(startPosition, movementVector, out hitInfo, movementVector.magnitude + sphereRadius * precision * 0.999f, locomotionEnabledLayers.value, QueryTriggerInteraction.Ignore))
             {
                 finalPosition = startPosition;
                 return true;

@@ -171,14 +171,39 @@ public static class SectorTravelValidator
         else
         {
             var objectives = Find<KeyBox>(scene).Where(b => b.travelToLevelTwoOnComplete).ToArray();
-            var cards = Find<KeyCard>(scene);
+            var cards = Find<KeyCard>(scene).Where(card => card.gameObject.activeInHierarchy).ToArray();
             if (objectives.Length != 1 || objectives[0].door == null || objectives[0].keysNeeded < 1 ||
                 cards.Length < objectives[0].keysNeeded)
-                errors.Add("Containment requires one completion keybox, its door, and enough personal cards.");
+                errors.Add("Containment requires one completion keybox, its door, and enough active personal cards.");
 
             foreach (var card in cards)
+            {
+                if (card.Credential == KeycardCredential.Auto)
+                    errors.Add(card.name + " needs an explicit color/symbol KeycardCredential.");
                 if (card.GetComponent<XRGrabInteractable>() == null)
                     errors.Add(card.name + " needs a grab interaction to prove local pickup before completion.");
+                if (!card.GetComponentsInChildren<Collider>(true).Any(c => c.enabled && !c.isTrigger))
+                    errors.Add(card.name + " needs an enabled solid collider for physical reader overlap.");
+                if (card.GetComponent<Rigidbody>() == null && card.GetComponentInChildren<Rigidbody>(true) == null)
+                    errors.Add(card.name + " needs a Rigidbody so the reader trigger receives physical overlap callbacks.");
+            }
+
+            var readers = Find<KeycardReaderLightController>(scene)
+                .Where(reader => reader.gameObject.activeInHierarchy).ToArray();
+            if (readers.Length == 0)
+                errors.Add("Containment requires at least one active keycard reader.");
+
+            foreach (var reader in readers)
+            {
+                var trigger = reader.GetComponent<Collider>();
+                if (trigger == null || !trigger.enabled || !trigger.isTrigger)
+                    errors.Add(reader.name + " requires an enabled trigger collider for keycard scanning.");
+
+                var serializedReader = new SerializedObject(reader);
+                var expectedCredential = serializedReader.FindProperty("expectedCredential");
+                if (expectedCredential == null || expectedCredential.intValue <= (int)KeycardCredential.Auto)
+                    errors.Add(reader.name + " needs an explicit reader credential rather than Auto/name parsing.");
+            }
 
             var monsters = Find<SectorMonsterSync>(scene);
             if (monsters.Length != 1 || monsters[0].GetComponent<NavMeshAgent>() == null)
