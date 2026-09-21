@@ -17,6 +17,8 @@ The earlier management assessment's large-beta/20-tester and weekly-capacity sug
 
 **Current technology and rules:** Unity 2022.3.55f1, Photon PUN and built-in rendering remain the recorded baseline. #27 investigates approved security remediation; this planning change does not update the editor or authorize Unity 6, networking or rendering migration. Keep two personal Amber cards and visit-local consumption rules. The intended ten-player room cap is unchanged; #45 must resolve full-capacity evidence or an explicitly approved alternative before public claims.
 
+**#27 investigation, September 21:** the [Unity runtime security review](unity-runtime-security-review.md) recommends **2022.3.62f3** as an isolated compatibility candidate instead of the earlier 62f2 suggestion. This is not an approved or applied version change. The review corrects the overbroad Quest vulnerability assumption, records the ordinary 2022.3 support-lifecycle limitation and unresolved exact Meta/XR compatibility, and provides installation, validation and rollback steps. The project and CI remain pinned to 2022.3.55f1; exact-version approval, implementation and real Unity/build/headset evidence remain pending in #27.
+
 ## Working method
 
 One implementation item in progress; at most one other waiting on volunteer testing. Follow prerequisites rather than treating every P0 as work to start today. P0 identifies a foundation or release gate; P1 identifies planned MVP work. These are title priorities, not a statement that every ticket is a newly discovered critical defect.
