@@ -29,7 +29,7 @@ Use the project statuses precisely: Proposed, Confirmed, Planned, Open, Implemen
 
 ## Ordered work index
 
-The phase groups below are planning groups, not a claim that GitHub milestone or Project-board objects have been created. The original 23 work issues were created open and assigned to GregStephen; the September 21 shop correction added #50 and the approved bounded Unity 6 feasibility investigation added #51. Live issue state is authoritative.
+The phase groups below are planning groups, not a claim that GitHub milestone or Project-board objects have been created. The original 23 work issues were created open and assigned to GregStephen; the September 21 shop correction added #50 and the approved bounded Unity 6 feasibility investigation added #51, for **25 tracked work items**. Live issue state is authoritative.
 
 | Phase | Work item | Ticket |
 | --- | --- | --- |
