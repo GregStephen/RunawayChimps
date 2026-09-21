@@ -17,7 +17,7 @@ The earlier management assessment's large-beta/20-tester and weekly-capacity sug
 
 **Current technology and rules:** Unity 2022.3.55f1, Photon PUN and built-in rendering remain the recorded baseline. #27 investigates approved security remediation; this planning change does not update the editor or authorize Unity 6, networking or rendering migration. Keep two personal Amber cards and visit-local consumption rules. The intended ten-player room cap is unchanged; #45 must resolve full-capacity evidence or an explicitly approved alternative before public claims.
 
-**#27 investigation, September 21:** the [Unity runtime security review](unity-runtime-security-review.md) recommends **2022.3.62f3** as an isolated compatibility candidate instead of the earlier 62f2 suggestion. This is not an approved or applied version change. The review corrects the overbroad Quest vulnerability assumption, records the ordinary 2022.3 support-lifecycle limitation and unresolved exact Meta/XR compatibility, and provides installation, validation and rollback steps. The project and CI remain pinned to 2022.3.55f1; exact-version approval, implementation and real Unity/build/headset evidence remain pending in #27.
+**#27 investigation, September 21:** Greg approved **Unity 2022.3.62f3 (`96770f904ca7`)** as the isolated compatibility candidate, replacing the earlier 62f2 suggestion. The [Unity runtime security review](unity-runtime-security-review.md) corrects the overbroad Quest vulnerability assumption, records the ordinary 2022.3 support-lifecycle limitation and unresolved exact Meta/XR compatibility, and provides installation, validation and rollback steps. The project and CI remain pinned to 2022.3.55f1 until the isolated branch is implemented and validated; Unity/build/headset evidence is still pending in #27.
 
 ## Working method
 
@@ -29,7 +29,7 @@ Use the project statuses precisely: Proposed, Confirmed, Planned, Open, Implemen
 
 ## Ordered work index
 
-The phase groups below are planning groups, not a claim that GitHub milestone or Project-board objects have been created. The original 23 work issues were created open and assigned to GregStephen; the September 21 confirmed shop-scope correction added #50 as a 24th work item. Live issue state is authoritative.
+The phase groups below are planning groups, not a claim that GitHub milestone or Project-board objects have been created. The original 23 work issues were created open and assigned to GregStephen; the September 21 shop correction added #50 and the approved bounded Unity 6 feasibility investigation added #51. Live issue state is authoritative.
 
 | Phase | Work item | Ticket |
 | --- | --- | --- |
@@ -51,6 +51,7 @@ The phase groups below are planning groups, not a claim that GitHub milestone or
 | D - player quality | 16. Onboarding, comfort and readable controls | [#41](https://github.com/GregStephen/RunawayChimps/issues/41) |
 | D - player quality | 17. Bounded environment/audio polish | [#42](https://github.com/GregStephen/RunawayChimps/issues/42) |
 | D - player quality | Shop. Small fixed Coconut cosmetic shop | [#50](https://github.com/GregStephen/RunawayChimps/issues/50) |
+| Future technical investigation | Measure Unity 6 migration feasibility without blocking MVP | [#51](https://github.com/GregStephen/RunawayChimps/issues/51) |
 | E - release readiness | 18. Minimum public-session social safety | [#43](https://github.com/GregStephen/RunawayChimps/issues/43) |
 | E - release readiness | 19. Settings, account recovery and diagnostics | [#44](https://github.com/GregStephen/RunawayChimps/issues/44) |
 | E - release readiness | 20. Rights, privacy and store readiness | [#46](https://github.com/GregStephen/RunawayChimps/issues/46) |
@@ -58,7 +59,7 @@ The phase groups below are planning groups, not a claim that GitHub milestone or
 | F - release | 22. Small closed beta and exact-candidate approval | [#47](https://github.com/GregStephen/RunawayChimps/issues/47) |
 | F - release | 23. Release/hotfix procedure and approved publication | [#48](https://github.com/GregStephen/RunawayChimps/issues/48) |
 
-With #26 complete, continue with #27 and then #28. After the baseline, #29 and #30 can be worked sequentially in either practical order; both precede #31, then #32, #33 and safe external delivery #34. The small launch shop in #50 can be developed after the repeatable build/test baseline is available and must pass account/ownership/release checks before #47. Distribution setup and account/asset-rights checks can begin early without waiting for final art. Each later ticket states its actual prerequisites. #35 is not a prerequisite to sending a headset build.
+With #26 complete, continue with the approved #27 2022.3.62f3 compatibility trial and then #28. After the baseline, #29 and #30 can be worked sequentially in either practical order; both precede #31, then #32, #33 and safe external delivery #34. The small launch shop in #50 can be developed after the repeatable build/test baseline is available and must pass account/ownership/release checks before #47. **#51 is a separate non-blocking Unity 6 feasibility investigation after #27 establishes a known 2022.3 baseline; it does not authorize a Unity 6 migration or delay the MVP by itself.** Distribution setup and account/asset-rights checks can begin early without waiting for final art. Each later ticket states its actual prerequisites. #35 is not a prerequisite to sending a headset build.
 
 ## Testing adapted to available people
 
