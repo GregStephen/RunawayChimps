@@ -10,7 +10,7 @@ Greg confirmed on September 21 that he is the sole developer and will be the onl
 
 The earlier management assessment's large-beta/20-tester and weekly-capacity suggestions are not staffing commitments or prerequisites to private testing. Use Greg's local checks plus the available volunteers in repeated small sessions. Missing hardware, extra testers and unfamiliar first-time users remain evidence limitations, not presumed resources.
 
-**Proposed product scope:** one complete Hub + Level 1 Chapter 1, with a deliberate completion/return/replay loop. Defer Level 2/Listener, the larger utility inventory and rotating/seasonal/paid shop. Preserve their existing assets and approved design. Pricing, exact device/platform support, audience, public/private release mode, permanent progression and the chapter-ending rule remain explicit decisions in #26. Creating an implementation ticket does not approve its unresolved design.
+**Confirmed product-scope correction, September 21:** the first release includes one complete Hub + Level 1 Chapter 1 **plus a small Coconut cosmetic shop**. Greg confirmed that individual Coconut balances and the daily Coconut update/grant behavior are already working in his current runtime and wants the earned currency to have a launch use. Track the bounded shop in #50. Defer playable Level 2/Listener, the larger utility inventory, weekly/seasonal shop rotation and real-money purchases while preserving existing assets/design. Player-color changing is **not** currently a working release feature per Greg's runtime correction; source code for it exists, but do not treat it as validated or make it a launch dependency. Pricing for the game itself, exact device/platform support, audience, public/private release mode, permanent chapter progression and the chapter-ending rule remain explicit decisions in #26.
 
 **Current technology and rules:** Unity 2022.3.55f1, Photon PUN and built-in rendering remain the recorded baseline. #27 investigates approved security remediation; this planning change does not update the editor or authorize Unity 6, networking or rendering migration. Keep two personal Amber cards and visit-local consumption rules. The intended ten-player room cap is unchanged; #45 must resolve full-capacity evidence or an explicitly approved alternative before public claims.
 
@@ -24,7 +24,7 @@ Use the project statuses precisely: Proposed, Confirmed, Planned, Open, Implemen
 
 ## Ordered work index
 
-The phase groups below are planning groups, not a claim that GitHub milestone or Project-board objects have been created. All 23 work issues were initially created open and assigned to GregStephen. Live issue state is authoritative.
+The phase groups below are planning groups, not a claim that GitHub milestone or Project-board objects have been created. The original 23 work issues were created open and assigned to GregStephen; the September 21 confirmed shop-scope correction added #50 as a 24th work item. Live issue state is authoritative.
 
 | Phase | Work item | Ticket |
 | --- | --- | --- |
@@ -45,6 +45,7 @@ The phase groups below are planning groups, not a claim that GitHub milestone or
 | D - player quality | 15. Target-device performance baseline | [#40](https://github.com/GregStephen/RunawayChimps/issues/40) |
 | D - player quality | 16. Onboarding, comfort and readable controls | [#41](https://github.com/GregStephen/RunawayChimps/issues/41) |
 | D - player quality | 17. Bounded environment/audio polish | [#42](https://github.com/GregStephen/RunawayChimps/issues/42) |
+| D - player quality | Shop. Small fixed Coconut cosmetic shop | [#50](https://github.com/GregStephen/RunawayChimps/issues/50) |
 | E - release readiness | 18. Minimum public-session social safety | [#43](https://github.com/GregStephen/RunawayChimps/issues/43) |
 | E - release readiness | 19. Settings, account recovery and diagnostics | [#44](https://github.com/GregStephen/RunawayChimps/issues/44) |
 | E - release readiness | 20. Rights, privacy and store readiness | [#46](https://github.com/GregStephen/RunawayChimps/issues/46) |
@@ -52,7 +53,7 @@ The phase groups below are planning groups, not a claim that GitHub milestone or
 | F - release | 22. Small closed beta and exact-candidate approval | [#47](https://github.com/GregStephen/RunawayChimps/issues/47) |
 | F - release | 23. Release/hotfix procedure and approved publication | [#48](https://github.com/GregStephen/RunawayChimps/issues/48) |
 
-Start with #26, then #27 and #28. After the baseline, #29 and #30 can be worked sequentially in either practical order; both precede #31, then #32, #33 and safe external delivery #34. Distribution setup and account/asset-rights checks can begin early without waiting for final art. Each later ticket states its actual prerequisites. #35 is not a prerequisite to sending a headset build.
+Start with #26, then #27 and #28. After the baseline, #29 and #30 can be worked sequentially in either practical order; both precede #31, then #32, #33 and safe external delivery #34. The small launch shop in #50 can be developed after the repeatable build/test baseline is available and must pass account/ownership/release checks before #47. Distribution setup and account/asset-rights checks can begin early without waiting for final art. Each later ticket states its actual prerequisites. #35 is not a prerequisite to sending a headset build.
 
 ## Testing adapted to available people
 
@@ -74,6 +75,6 @@ No known critical/high-severity defects, all applicable acceptance checks passed
 
 Repository baseline read: main `f9edea67af08ff7c35d043e05ad66a5615a9aeb2`. At review, PR #24 (`52223e9`) and PR #23 (`d12d8b6`) remained open/draft; PR #21 (`cf6f7f6`) remained open. Their implementation is reused by the tickets rather than duplicated. Recheck live PR state/head before implementation; these are dated observations.
 
-The issue review checked scope, priorities, dependencies, existing-PR references, sole ownership, acceptance/evidence boundaries and the distinction between small human samples and full-capacity proof. It clarified isolated-versus-integrated closure in #29/#31, performance baseline versus later regression in #40, the volunteer dependency in #37 and reuse of first-exposure observations in #41.
+The issue review checked scope, priorities, dependencies, existing-PR references, sole ownership, acceptance/evidence boundaries and the distinction between small human samples and full-capacity proof. It clarified isolated-versus-integrated closure in #29/#31, performance baseline versus later regression in #40, the volunteer dependency in #37 and reuse of first-exposure observations in #41. Later on September 21, Greg corrected the launch scope to include a small Coconut cosmetic shop and reported player-color changing as non-working; #50 and the affected release tickets were updated accordingly.
 
 **Planning evidence only:** tickets and documentation do not implement gameplay or establish any new Unity, Photon, headset, performance or release pass. The maintained docs and current issue comments must carry actual results when those checks are executed.
