@@ -1,0 +1,73 @@
+name: Apply solo MVP documentation correction
+on:
+  push:
+    branches: [docs/solo-mvp-roadmap]
+    paths: [.github/workflows/apply-solo-mvp-docs.yml]
+permissions:
+  contents: write
+jobs:
+  apply:
+    if: github.ref == 'refs/heads/docs/solo-mvp-roadmap'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 1
+          ref: docs/solo-mvp-roadmap
+      - name: Preserve existing documents and insert dated planning correction
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import subprocess
+          expected = {
+              'docs/design-and-lore.md': 'a6a762abd6932729eca838363b3fbbe471a15684',
+              'docs/repository-improvement-plan.md': 'f57ec2cd0597d832f02b31e0a9c0e0953532ae4b',
+          }
+          heading = '## September 21 solo-developer MVP planning correction\n\n'
+          note = (
+              '**Confirmed by Greg, 2026-09-21:** Greg is the sole developer and will be the only person implementing the game. He can most likely recruit one or two volunteer testers after a build can be delivered. He requested an actionable GitHub backlog and a double-check of every created ticket. Do not assume separate engineering, art, QA or operations staff.\n\n'
+              '**Planning correction:** the initial release assessment\'s 20-tester/large-beta and assumed weekly-capacity suggestions are not accepted prerequisites or staffing commitments. Plan early testing for Greg plus one or two volunteers, provide a distributable private build early, and accumulate repeatable scenario evidence over small sessions. Weekly development hours, extra hardware and extra testers remain unknown. Limited samples cannot establish population-wide usability or prove absence of bugs.\n\n'
+              '**Planned workflow:** use the [solo MVP tracker, issue #25](https://github.com/GregStephen/RunawayChimps/issues/25) as the ordered work queue. Keep one implementation item active and at most one other waiting for volunteer testing. Link existing PR implementations instead of duplicating them; keep an acceptance issue open until its stated checks actually pass. Record build/commit, device, scenario and outcome, and distinguish source, Unity, local-client and headset evidence.\n\n'
+              '**Proposed release scope, not silently confirmed:** finish a complete Hub + Level 1 Chapter 1 loop and defer Level 2/Listener, expanded utility inventory and rotating/paid shop work. Preserve the existing Level 2 assets and approved dimensions. Exact platform/device support, pricing, audience, permanent progression and Chapter 1 ending must be resolved in the scope ticket before related design changes. General enthusiasm for the roadmap does not approve every optional recommendation.\n\n'
+              '**Existing contracts remain active:** Unity 2022.3.55f1, Photon PUN and the built-in render pipeline remain the recorded current baseline. A security-remediation/editor change requires explicit selection and validation; no Unity 6 or networking migration is authorized by this planning update. Preserve two personal Amber cards and visit-local ownership/consumption rules described in the current card work. The ten-player target is not reduced: two/three-person tests do not validate ten-player capacity. Full-capacity evidence, an explicitly approved lower launch cap, or remaining in private testing must resolve that gap before public claims.\n\n'
+              '**Status boundary:** this update records planning and confirmed staffing only. The backlog is not implementation, merged PRs are not automatic runtime passes, and no Unity, Photon, headset, performance or release test is newly marked validated here. See [solo MVP roadmap](mvp-roadmap.md) for the execution index once included in this documentation change.\n\n'
+          )
+          for name, sha in expected.items():
+              path = Path(name)
+              actual = subprocess.check_output(['git', 'hash-object', str(path)], text=True).strip()
+              if actual != sha:
+                  raise SystemExit('Refusing changed input: ' + name)
+              original = path.read_bytes()
+              text = original.decode('utf-8')
+              if heading in text:
+                  raise SystemExit('Correction already exists: ' + name)
+              lines = text.splitlines(keepends=True)
+              at = next(i for i, line in enumerate(lines) if line.startswith('## '))
+              updated = ''.join(lines[:at]) + heading + note + ''.join(lines[at:])
+              if 'Last updated: 2026-09-13.' not in updated:
+                  raise SystemExit('Unexpected date header: ' + name)
+              updated = updated.replace('Last updated: 2026-09-13.', 'Last updated: 2026-09-21.', 1)
+              if name.endswith('design-and-lore.md'):
+                  marker = '## Decision and correction record\n\n| Recorded | Decision or correction | Status |\n| --- | --- | --- |\n'
+                  if updated.count(marker) != 1:
+                      raise SystemExit('Unexpected decision table')
+                  row = '| 2026-09-21 | Greg is the sole developer; one or two volunteer testers may help after build delivery. Supersedes assumed team staffing/large-beta prerequisites from the initial release assessment. Work through issue #25; product-scope choices and full-capacity evidence remain explicit gates. | Confirmed staffing; planned workflow; scope choices open |\n'
+                  updated = updated.replace(marker, marker + row, 1)
+                  restored = updated.replace(marker + row, marker, 1)
+              else:
+                  restored = updated
+              restored = restored.replace(heading + note, '', 1).replace('Last updated: 2026-09-21.', 'Last updated: 2026-09-13.', 1)
+              if restored.encode('utf-8') != original:
+                  raise SystemExit('Existing content preservation failed: ' + name)
+              path.write_bytes(updated.encode('utf-8'))
+              print('PASS: retained all original content; added correction to ' + name)
+          PY
+          git diff --check
+          git add -- docs/design-and-lore.md docs/repository-improvement-plan.md
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'docs: record solo developer and limited-test capacity correction'
+          git push origin HEAD:refs/heads/docs/solo-mvp-roadmap
