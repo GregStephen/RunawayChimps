@@ -1,8 +1,22 @@
 # Runaway Chimps repository improvement plan
 
-Last updated: 2026-09-13. Maintained repository edition, migrated from `Runaway_Chimps_Repository_Review_and_Plan.docx`, Revision 2. The original review examined `main` at `4f6894141aa2b132d744cb2423c1ee227e0fc5be`; its evidence links remain pinned to that baseline. The Word document is a historical downloadable snapshot.
+Last updated: 2026-09-21. Maintained repository edition, migrated from `Runaway_Chimps_Repository_Review_and_Plan.docx`, Revision 2. The original review examined `main` at `4f6894141aa2b132d744cb2423c1ee227e0fc5be`; its evidence links remain pinned to that baseline. The Word document is a historical downloadable snapshot.
 
 Read the [design and lore](design-and-lore.md) for intended behavior and [AGENTS.md](../AGENTS.md) for update rules. A confirmed finding describes source evidence; it does not mean its fix is implemented or tested.
+
+## September 21 solo-developer MVP planning correction
+
+**Confirmed by Greg, 2026-09-21:** Greg is the sole developer and will be the only person implementing the game. He can most likely recruit one or two volunteer testers after a build can be delivered. He requested an actionable GitHub backlog and a double-check of every created ticket. Do not assume separate engineering, art, QA or operations staff.
+
+**Planning correction:** the initial release assessment's 20-tester/large-beta and assumed weekly-capacity suggestions are not accepted prerequisites or staffing commitments. Plan early testing for Greg plus one or two volunteers, provide a distributable private build early, and accumulate repeatable scenario evidence over small sessions. Weekly development hours, extra hardware and extra testers remain unknown. Limited samples cannot establish population-wide usability or prove absence of bugs.
+
+**Planned workflow:** use the [solo MVP tracker, issue #25](https://github.com/GregStephen/RunawayChimps/issues/25) as the ordered work queue. Keep one implementation item active and at most one other waiting for volunteer testing. Link existing PR implementations instead of duplicating them; keep an acceptance issue open until its stated checks actually pass. Record build/commit, device, scenario and outcome, and distinguish source, Unity, local-client and headset evidence.
+
+**Proposed release scope, not silently confirmed:** finish a complete Hub + Level 1 Chapter 1 loop and defer Level 2/Listener, expanded utility inventory and rotating/paid shop work. Preserve the existing Level 2 assets and approved dimensions. Exact platform/device support, pricing, audience, permanent progression and Chapter 1 ending must be resolved in the scope ticket before related design changes. General enthusiasm for the roadmap does not approve every optional recommendation.
+
+**Existing contracts remain active:** Unity 2022.3.55f1, Photon PUN and the built-in render pipeline remain the recorded current baseline. A security-remediation/editor change requires explicit selection and validation; no Unity 6 or networking migration is authorized by this planning update. Preserve two personal Amber cards and visit-local ownership/consumption rules described in the current card work. The ten-player target is not reduced: two/three-person tests do not validate ten-player capacity. Full-capacity evidence, an explicitly approved lower launch cap, or remaining in private testing must resolve that gap before public claims.
+
+**Status boundary:** this update records planning and confirmed staffing only. The backlog is not implementation, merged PRs are not automatic runtime passes, and no Unity, Photon, headset, performance or release test is newly marked validated here. See [solo MVP roadmap](mvp-roadmap.md) for the execution index once included in this documentation change.
 
 ## September 13 Level 1 keycard-room environment and regeneration lore
 
