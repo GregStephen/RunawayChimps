@@ -87,6 +87,12 @@ def main():
         'RotorName = "FanRotor"',
         'RotorHubName = "FanHub"',
         'RotorPivotName = "FanRotor_CenteredPivot"',
+        'HousingLeftLipName = "Housing_LeftLip"',
+        'HousingRightLipName = "Housing_RightLip"',
+        "HousingLipCenterX = 0.662f",
+        "CorrectHousingLipOverlap(visualRoot.transform)",
+        "position.x = -HousingLipCenterX",
+        "position.x = HousingLipCenterX",
         "RotorSpinAxis = Vector3.up",
         "ConfigureRotor(importedRotor)",
         "FindDescendant(importedRotor, RotorHubName)",
@@ -118,7 +124,14 @@ def main():
         "LightShadows.None",
         "bounceIntensity = 0f",
         "spatialBlend = 1f",
-        "maxDistance = 6.5f",
+        "MotorVolume = 0.72f",
+        "MotorMinDistance = 1.5f",
+        "MotorMaxDistance = 10f",
+        "humSource.volume = MotorVolume",
+        "humSource.minDistance = MotorMinDistance",
+        "humSource.maxDistance = MotorMaxDistance",
+        "Mathf.PI * 92f * t",
+        "Mathf.PI * 640f * t",
         'AudioClip.Create("Vent_Blower_ProceduralLoop"',
     ])
     if re.search(r"^using\s+Photon\.", blower, re.M):
@@ -150,7 +163,10 @@ def main():
 
     blower_mat = ROOT / "Assets/RunawayChimps/Shared/Models/Materials/VentBlower_DarkPaintedMetal.mat"
     blower_mat_meta = ROOT / "Assets/RunawayChimps/Shared/Models/Materials/VentBlower_DarkPaintedMetal.mat.meta"
-    require(errors, blower_mat, ["m_Shader: {fileID: 46, guid: 0000000000000000f000000000000000, type: 0}"])
+    require(errors, blower_mat, [
+        "m_Shader: {fileID: 46, guid: 0000000000000000f000000000000000, type: 0}",
+        "_MainTex: {m_Texture: {fileID: 2800000, guid: 91adcb038ce34a8aa749fc2b00ba7e66, type: 3}",
+    ])
     blower_mat_guid = guid(blower_mat_meta, errors)
     if blower_mat_guid and meta:
         if "name: M_DarkPaintedMetal" not in meta or blower_mat_guid not in meta:
@@ -158,7 +174,10 @@ def main():
 
     blower_mat = ROOT / "Assets/RunawayChimps/Shared/Models/Materials/VentBlower_DullSteel.mat"
     blower_mat_meta = ROOT / "Assets/RunawayChimps/Shared/Models/Materials/VentBlower_DullSteel.mat.meta"
-    require(errors, blower_mat, ["m_Shader: {fileID: 46, guid: 0000000000000000f000000000000000, type: 0}"])
+    require(errors, blower_mat, [
+        "m_Shader: {fileID: 46, guid: 0000000000000000f000000000000000, type: 0}",
+        "_MainTex: {m_Texture: {fileID: 2800000, guid: 5f19b7dd7c834e5ab83638f5c9f20e81, type: 3}",
+    ])
     blower_mat_guid = guid(blower_mat_meta, errors)
     if blower_mat_guid and meta:
         if "name: M_DullSteel" not in meta or blower_mat_guid not in meta:
@@ -166,7 +185,10 @@ def main():
 
     blower_mat = ROOT / "Assets/RunawayChimps/Shared/Models/Materials/VentBlower_FanBlade.mat"
     blower_mat_meta = ROOT / "Assets/RunawayChimps/Shared/Models/Materials/VentBlower_FanBlade.mat.meta"
-    require(errors, blower_mat, ["m_Shader: {fileID: 46, guid: 0000000000000000f000000000000000, type: 0}"])
+    require(errors, blower_mat, [
+        "m_Shader: {fileID: 46, guid: 0000000000000000f000000000000000, type: 0}",
+        "_MainTex: {m_Texture: {fileID: 2800000, guid: 91adcb038ce34a8aa749fc2b00ba7e66, type: 3}",
+    ])
     blower_mat_guid = guid(blower_mat_meta, errors)
     if blower_mat_guid and meta:
         if "name: M_FanBlade" not in meta or blower_mat_guid not in meta:
@@ -174,7 +196,10 @@ def main():
 
     blower_mat = ROOT / "Assets/RunawayChimps/Shared/Models/Materials/VentBlower_Conduit.mat"
     blower_mat_meta = ROOT / "Assets/RunawayChimps/Shared/Models/Materials/VentBlower_Conduit.mat.meta"
-    require(errors, blower_mat, ["m_Shader: {fileID: 46, guid: 0000000000000000f000000000000000, type: 0}"])
+    require(errors, blower_mat, [
+        "m_Shader: {fileID: 46, guid: 0000000000000000f000000000000000, type: 0}",
+        "_MainTex: {m_Texture: {fileID: 2800000, guid: 4d2d5d39b76547b291a6fe6c8e27b67f, type: 3}",
+    ])
     blower_mat_guid = guid(blower_mat_meta, errors)
     if blower_mat_guid and meta:
         if "name: M_Conduit" not in meta or blower_mat_guid not in meta:
@@ -187,6 +212,20 @@ def main():
     if blower_mat_guid and meta:
         if "name: M_RedMaintenanceLens" not in meta or blower_mat_guid not in meta:
             errors.append(f"{rel(blower_meta)}: M_RedMaintenanceLens is not mapped to VentBlower_RedMaintenanceLens.mat.")
+
+    for texture_name in (
+        "VentBlower_PaintedMetal_Albedo.tga",
+        "VentBlower_BareSteel_Albedo.tga",
+        "VentBlower_Conduit_Albedo.tga",
+    ):
+        texture_path = ROOT / "Assets/RunawayChimps/Shared/Models/Textures" / texture_name
+        texture_meta = Path(str(texture_path) + ".meta")
+        if not texture_path.exists():
+            errors.append(f"{rel(texture_path)}: blower surface texture is missing.")
+        elif texture_path.stat().st_size < 10000:
+            errors.append(f"{rel(texture_path)}: blower surface texture is unexpectedly small.")
+        require(errors, texture_meta, ["TextureImporter:", "enableMipMap: 1", "wrapU: 0", "wrapV: 0"])
+        guid(texture_meta, errors)
 
     nav_path = ROOT / "Assets/Scripts/MonsterScripts/MonsterNavigation.cs"
     require(errors, nav_path, ["gameObject.AddComponent<CrawlerVisualController>();", "agent.updateRotation = false;"])

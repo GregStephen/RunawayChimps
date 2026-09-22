@@ -190,6 +190,32 @@ namespace RunawayChimps.Tests
         }
 
         [Test]
+        public void HousingSideTrimIsMovedOutsideTheCaseAndCorrectionIsIdempotent()
+        {
+            Component component = ImportedFixture(out Transform visual, out Transform rotor);
+            Transform left = Find(visual, "Housing_LeftLip");
+            Transform right = Find(visual, "Housing_RightLip");
+            Assert.That(left, Is.Not.Null);
+            Assert.That(right, Is.Not.Null);
+            float leftY = left.localPosition.y;
+            float leftZ = left.localPosition.z;
+            float rightY = right.localPosition.y;
+            float rightZ = right.localPosition.z;
+
+            MethodInfo correction = Method("CorrectHousingLipOverlap");
+            correction.Invoke(null, new object[] { visual });
+            correction.Invoke(null, new object[] { visual });
+
+            Assert.That(left.localPosition.x, Is.EqualTo(-0.662f).Within(PositionTolerance));
+            Assert.That(right.localPosition.x, Is.EqualTo(0.662f).Within(PositionTolerance));
+            Assert.That(left.localPosition.y, Is.EqualTo(leftY).Within(PositionTolerance));
+            Assert.That(left.localPosition.z, Is.EqualTo(leftZ).Within(PositionTolerance));
+            Assert.That(right.localPosition.y, Is.EqualTo(rightY).Within(PositionTolerance));
+            Assert.That(right.localPosition.z, Is.EqualTo(rightZ).Within(PositionTolerance));
+            LogAssert.NoUnexpectedReceived();
+        }
+
+        [Test]
         public void MissingHubReportsTheAssetProblemWithoutMovingTheRemainingGeometry()
         {
             Component component = ImportedFixture(out Transform visual, out Transform rotor);
@@ -236,12 +262,34 @@ namespace RunawayChimps.Tests
             Assert.That(sources[0].clip, Is.Not.Null);
             Assert.That(sources[0].loop, Is.True);
             Assert.That(sources[0].spatialBlend, Is.EqualTo(1f));
+            Assert.That(sources[0].volume, Is.GreaterThanOrEqualTo(0.7f));
+            Assert.That(sources[0].minDistance, Is.GreaterThanOrEqualTo(1.4f));
+            Assert.That(sources[0].maxDistance, Is.GreaterThanOrEqualTo(9.5f));
+            var samples = new float[Mathf.Min(2048, sources[0].clip.samples)];
+            Assert.That(sources[0].clip.GetData(samples, 0), Is.True);
+            float peak = 0f;
+            foreach (float sample in samples)
+                peak = Mathf.Max(peak, Mathf.Abs(sample));
+            Assert.That(peak, Is.GreaterThan(0.08f), "Motor loop is too quiet at the clip level.");
             Light[] lights = root.GetComponentsInChildren<Light>(true);
             Assert.That(lights.Length, Is.EqualTo(1));
             Assert.That(lights[0].transform.parent.name, Is.EqualTo("RedLightLens"));
             Assert.That(lights[0].shadows, Is.EqualTo(LightShadows.None));
             foreach (Collider collider in root.GetComponentsInChildren<Collider>(true))
                 Assert.That(collider.enabled, Is.False, "Decorative geometry must not obstruct the vent route.");
+
+            int texturedMaterials = 0;
+            foreach (Renderer renderer in root.GetComponentsInChildren<Renderer>(true))
+            {
+                foreach (Material material in renderer.sharedMaterials)
+                {
+                    if (material == null || material.name.Contains("RedMaintenanceLens"))
+                        continue;
+                    Assert.That(material.mainTexture, Is.Not.Null, material.name + " must keep its authored surface texture.");
+                    texturedMaterials++;
+                }
+            }
+            Assert.That(texturedMaterials, Is.GreaterThan(0));
             return root;
         }
 
