@@ -16,6 +16,23 @@ public class RespawnToOriginalSpawn : MonoBehaviour
 
     XRGrabInteractable grab;
     Rigidbody rb;
+    KeyCard card;
+    bool restoreGrabPending;
+    Coroutine reenableRoutine;
+
+    void OnEnable()
+    {
+        if (restoreGrabPending)
+            ScheduleGrabRestore();
+    }
+
+    void OnDisable()
+    {
+        if (reenableRoutine != null)
+            StopCoroutine(reenableRoutine);
+        reenableRoutine = null;
+        // Keep ownership of our temporary disable across scene/prefab deactivation.
+    }
 
     Vector3 spawnPos;
     Quaternion spawnRot;
@@ -25,6 +42,7 @@ public class RespawnToOriginalSpawn : MonoBehaviour
     {
         grab = GetComponent<XRGrabInteractable>();
         rb = GetComponent<Rigidbody>();
+        card = GetComponent<KeyCard>();
 
         spawnPos = transform.position;
         spawnRot = transform.rotation;
@@ -40,6 +58,8 @@ public class RespawnToOriginalSpawn : MonoBehaviour
 
     void Update()
     {
+        if (card != null && card.IsInserted)
+            return;
         // The original absolute KillY is a useful last-resort guard, but it is not enough
         // for additive levels whose authored world height can vary. Recover as soon as an
         // item has fallen meaningfully below its own recorded spawn height so a keycard that
@@ -81,6 +101,8 @@ public class RespawnToOriginalSpawn : MonoBehaviour
 
     public void RespawnNow()
     {
+        if (card != null && card.IsInserted)
+            return;
         if (verboseLogging)
             Debug.Log($"[Respawn] RespawnNow() called on {name}");
 
@@ -89,7 +111,14 @@ public class RespawnToOriginalSpawn : MonoBehaviour
         {
             if (verboseLogging)
                 Debug.Log($"[Respawn] {name} was selected. Forcing release.");
+            restoreGrabPending = true;
             grab.enabled = false;
+        }
+
+        if (card != null && card.IsInserted)
+        {
+            restoreGrabPending = false;
+            return; // A synchronous release listener consumed it; do not move it again.
         }
 
         Vector3 targetPosition = spawnPos + Vector3.up * Mathf.Max(0.02f, respawnUpOffset);
@@ -106,22 +135,35 @@ public class RespawnToOriginalSpawn : MonoBehaviour
             // render or restore the old below-floor pose for another physics frame.
             rb.position = targetPosition;
             rb.rotation = spawnRot;
-            rb.Sleep();
+            // Let gravity settle the recovered card. Sleeping it here can strand
+            // a loose card above its support surface until another object touches it.
         }
 
         transform.SetPositionAndRotation(targetPosition, spawnRot);
         transform.localScale = spawnScale;
         Physics.SyncTransforms();
+        if (rb != null && !rb.isKinematic)
+            rb.WakeUp();
 
-        if (reenableGrab && isActiveAndEnabled)
-            StartCoroutine(ReenableGrabNextFrame());
+        if (restoreGrabPending)
+            ScheduleGrabRestore();
+    }
+
+    void ScheduleGrabRestore()
+    {
+        if (isActiveAndEnabled && reenableRoutine == null)
+            reenableRoutine = StartCoroutine(ReenableGrabNextFrame());
     }
 
     System.Collections.IEnumerator ReenableGrabNextFrame()
     {
         yield return null;
 
-        if (grab != null)
+        reenableRoutine = null;
+        if (!isActiveAndEnabled || !restoreGrabPending)
+            yield break;
+        restoreGrabPending = false;
+        if (grab != null && (card == null || !card.IsInserted))
             grab.enabled = true;
 
         if (verboseLogging)

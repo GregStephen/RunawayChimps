@@ -395,8 +395,9 @@ def main():
     spawn = require(errors, spawn_path, [
         "gameObject.AddComponent<RigFloorPenetrationGuard>();",
         "GetComponentsInChildren<Collider>(true)",
-        "WaitForTrackingOffsetStability()",
-        "GroundCorrect(spawnGo.transform.position, hubScene, locomotionPlayer)",
+        "WaitForTrackingOffsetStability(generation, hubScene, room, actorNumber)",
+        "GroundCorrect(spawnPosition, hubScene, locomotionPlayer)",
+        "TryGetLocalSpawnPose(spawnGo.transform, out spawnPosition, out spawnRotation)",
         "out blocker",
     ])
     positive_defaults(errors, spawn_path, spawn, [

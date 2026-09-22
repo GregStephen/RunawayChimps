@@ -54,12 +54,79 @@ def main() -> int:
         "A post-release recovery must restart the consecutive stability proof.",
     )
 
-    restore_index = snapper.find("locomotionPlayer.enabled = playerWasEnabled;")
-    verify_index = snapper.find("_floorGuard.EnsureAboveSupportFloor(hubScene, out bool recovered)")
-    snapped_index = snapper.find("AppState.I?.MarkRigSnapped();")
+    attempt_start = snapper.index("private IEnumerator CoSnapAndGround(")
+    attempt_end = snapper.index("private IEnumerator WaitForTrackingOffsetStability(", attempt_start)
+    attempt = snapper[attempt_start:attempt_end]
+    try_index = attempt.index("\n        try\n")
+    finally_index = attempt.index("\n        finally\n")
+    execution = attempt[try_index:finally_index]
+    cleanup = attempt[finally_index:]
+    slot_index = execution.find("_spawnSlots.TryGetLocalSpawnPose(")
+    freeze_index = execution.find("frozenBody.isKinematic = true;")
+    restore_index = execution.find("RestoreFrozenRig();")
+    verify_index = execution.find("_floorGuard.EnsureAboveSupportFloor(hubScene, out bool recovered)")
+    snapped_index = execution.find("AppState.I?.MarkRigSnapped();")
     require(
-        restore_index >= 0 and verify_index > restore_index and snapped_index > verify_index,
-        "Live-physics floor verification must happen after locomotion/physics restore and before MarkRigSnapped.",
+        0 <= slot_index < freeze_index < restore_index < verify_index < snapped_index,
+        "Current-room slot selection, frozen placement, release, live floor verification and RigSnapped must remain ordered.",
+    )
+    require(
+        "RestoreFrozenRig();" in cleanup and
+        cleanup.index("RestoreFrozenRig();") < cleanup.index("_snapping = false;") <
+        cleanup.index("if (_retryRequested) BeginSnap();"),
+        "Every attempt must restore its frozen rig before a queued retry can begin.",
+    )
+    require(
+        "frozenBody.isKinematic = prevKinematic;" in attempt and
+        "rigColliders[i].enabled = colliderStates[i]" in attempt and
+        "locomotionPlayer.enabled = playerWasEnabled;" in attempt and
+        "locomotionPlayer.ResetAfterTeleport();" in attempt[:try_index],
+        "Cancellation cleanup must restore original collider/body/locomotion state and teleport caches.",
+    )
+
+    retry = snapper[snapper.index("public void RetrySnap()"):snapper.index("private void BeginSnap()")]
+    require(
+        "_snapGeneration++;" in retry and "_retryRequested = true;" in retry and
+        "AppState.I?.ResetHubPlacementReady();" in retry and
+        retry.index("_retryRequested = true;") < retry.index("if (!_snapping) BeginSnap();"),
+        "New placement requests must invalidate stale readiness and remain queued behind an active attempt.",
+    )
+    ownership = snapper[snapper.index("private bool IsCurrentAttempt("):snapper.index("private bool HasLivePhysics(")]
+    for token in ["generation != _snapGeneration", "IsTravelBusy()", "!hubScene.isLoaded",
+                  "SceneManager.GetSceneByName(HubSceneName) != hubScene", "AppState.I.LastError",
+                  "PhotonNetwork.InRoom", "ReferenceEquals(room, PhotonNetwork.CurrentRoom)",
+                  "PhotonNetwork.LocalPlayer.ActorNumber == actorNumber"]:
+        require(token in ownership, f"Snap ownership check is missing {token!r}.")
+    require(
+        "room = PhotonNetwork.CurrentRoom;" in execution[:slot_index] and
+        "actorNumber = PhotonNetwork.LocalPlayer.ActorNumber;" in execution[:slot_index],
+        "The snap must bind its Photon room object and actor before reserving a slot.",
+    )
+
+    live = snapper[snapper.index("private bool HasLivePhysics("):attempt_start]
+    for token in ["locomotionPlayer.isActiveAndEnabled", "!gorillaPlayerRigidbody.isKinematic",
+                  "gorillaBodyCapsule.enabled"]:
+        require(token in live, f"The live-physics proof must require {token!r}.")
+    proof = execution[execution.index("while (postReleaseStableSteps < requiredPostReleaseSteps"):verify_index]
+    require(
+        "postReleaseAttempts < postReleaseAttemptLimit" in proof and "postReleaseAttempts++;" in proof,
+        "Live floor verification must count attempts and stop at the configured limit.",
+    )
+    require(
+        "if (!IsCurrentAttempt(generation, hubScene, room, actorNumber)) yield break;" in proof and
+        "if (!HasLivePhysics(locomotionPlayer))" in proof,
+        "Each resumed live-physics step must verify session ownership and a released rig before floor recovery.",
+    )
+    require(
+        "if (!IsCurrentAttempt(generation, hubScene, room, actorNumber) || !HasLivePhysics(locomotionPlayer))" in
+        execution[verify_index:snapped_index],
+        "Readiness must remain guarded by current session ownership and live physics.",
+    )
+    disable = snapper[snapper.index("private void OnDisable()"):snapper.index("private void OnSceneLoaded(")]
+    require(
+        "_snapGeneration++;" in disable and "_retryRequested = false;" in disable and
+        "StopCoroutine(_snapCoroutine);" in disable and "System.IDisposable)?.Dispose();" in disable,
+        "Disabling the snapper must invalidate pending work and dispose its frozen-state cleanup.",
     )
 
     require(
@@ -107,8 +174,9 @@ def main() -> int:
             "maxRecoveryDepth must exceed allowedPenetration.")
 
     print("PASS: cold-start floor safety contracts are intact.")
-    print("PASS: released rig is proven floor-safe before RigSnapped.")
-    print("PASS: floor recovery remains active through the cold-start Loading presentation.")
+    print("PASS: source requires current-room placement and live floor checks before RigSnapped.")
+    print("PASS: source protects queued retries, cancelled-rig cleanup and released-physics ownership.")
+    print("PASS: source keeps floor recovery active through the cold-start Loading presentation.")
     print("PASS: Unity/Photon/XR/headset validation remains separate.")
     return 0
 
@@ -116,6 +184,6 @@ def main() -> int:
 if __name__ == "__main__":
     try:
         raise SystemExit(main())
-    except AssertionError as exc:
+    except (AssertionError, ValueError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         raise SystemExit(1)

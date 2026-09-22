@@ -73,9 +73,11 @@ public class HandImpactAudio : MonoBehaviour
 
     private void Update()
     {
-        // Scene travel and capture move the rig without a physical hand impact.
-        // Keep the velocity sample current and require a fresh contact afterward.
-        if (SectorTravelService.I != null && SectorTravelService.I.IsBusy)
+        // Cold startup grounding, scene travel and capture can move the rig without a
+        // player-authored physical hand impact. Keep the velocity sample current and
+        // require a fresh contact afterward so hidden spawn settling stays silent.
+        if (LoadingFlow.IsColdStartupPresentationActive ||
+            (SectorTravelService.I != null && SectorTravelService.I.IsBusy))
         {
             if (_src.isPlaying) _src.Stop();
             ResetContact();

@@ -486,7 +486,7 @@ SphereCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Radius: 0.6
+  m_Radius: 0.08
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!114 &229875586
 MonoBehaviour:
@@ -573,11 +573,11 @@ MonoBehaviour:
   m_HapticHoverCancelIntensity: 0
   m_HapticHoverCancelDuration: 0
   m_AllowHoverHapticsWhileSelecting: 1
-  m_ImproveAccuracyWithSphereCollider: 0
+  m_ImproveAccuracyWithSphereCollider: 1
   m_PhysicsLayerMask:
     serializedVersion: 2
     m_Bits: 1
-  m_PhysicsTriggerInteraction: 1
+  m_PhysicsTriggerInteraction: 2
 --- !u!114 &229875587
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1784,7 +1784,7 @@ SphereCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Radius: 0.6
+  m_Radius: 0.08
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!114 &1289901870
 MonoBehaviour:
@@ -1871,11 +1871,11 @@ MonoBehaviour:
   m_HapticHoverCancelIntensity: 0
   m_HapticHoverCancelDuration: 0
   m_AllowHoverHapticsWhileSelecting: 1
-  m_ImproveAccuracyWithSphereCollider: 0
+  m_ImproveAccuracyWithSphereCollider: 1
   m_PhysicsLayerMask:
     serializedVersion: 2
     m_Bits: 1
-  m_PhysicsTriggerInteraction: 1
+  m_PhysicsTriggerInteraction: 2
 --- !u!114 &1289901871
 MonoBehaviour:
   m_ObjectHideFlags: 0
