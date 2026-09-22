@@ -12,6 +12,8 @@ def main() -> int:
     ui = (ROOT / "Assets/Scripts/Loading/SecurityBootPresentation.cs").read_text(encoding="utf-8")
     travel = (ROOT / "Assets/Scripts/Travel/SectorTravelService.cs").read_text(encoding="utf-8")
     menu = (ROOT / "Assets/Scripts/Editor/SecurityBootReviewMenu.cs").read_text(encoding="utf-8")
+    tags = (ROOT / "ProjectSettings/TagManager.asset").read_text(encoding="utf-8-sig")
+    hand_audio = (ROOT / "Assets/Scripts/PlayerScripts/HandImpactAudio.cs").read_text(encoding="utf-8")
 
     def require(text: str, tokens: list[str], name: str) -> None:
         for token in tokens:
@@ -22,42 +24,85 @@ def main() -> int:
     require(gate, ["state.IsReady", "state.HubActive", "state.RigSnapped", "state.PhotonPlayerSpawned",
                    "state.PlayerVisualsReady", "PhotonNetwork.InRoom", "isLoaded",
                    "string.IsNullOrEmpty(state.LastError)", "string.IsNullOrEmpty(loadError)"], "readiness")
-    require(flow, ["SectorTravelService.I.IsBusy", "if (!startup) return;", "SecurityBootPresentation.Install",
+    require(flow, ["SectorTravelService.I.IsBusy", "IsColdStartupPresentationActive", "if (!startup) return;", "SecurityBootPresentation.Install",
                    "hubLoad != null && !hubLoad.isDone", "LoadSceneMode.Additive", "GameBootstrap.I.RetryStartup()",
                    "Keyboard.current.rKey.wasPressedThisFrame", "XRNode.LeftHand", "XRNode.RightHand",
                    "if (!ready && Time.realtimeSinceStartup >= deadline", "if (!startup || entering) return;",
-                   "RestoreCameraForReveal()", "RestoreAfterInterruptedEntry()", "minimumIntroSeconds = 1.5f",
-                   "Mathf.Clamp(minimumIntroSeconds, 0f, 3f)", "#if UNITY_EDITOR", "#else\n        return false;"], "flow")
+                   "PrepareCameraForHubReveal()", "RestoreCameraForReveal()", "RestoreAfterInterruptedEntry()",
+                   "minimumIntroSeconds = 1.5f", "Mathf.Clamp(minimumIntroSeconds, 0f, 3f)",
+                   "#if UNITY_EDITOR", "#else\n        return false;"], "flow")
     if flow.count("if (!CanEnterHub()) { AbortEntry(); yield break; }") < 3:
         errors.append("Recheck readiness throughout both fades and before activation.")
-    require(ui, ["if (!startupMode) return;", "stages[0] = inRoom", "stages[1] = hubLoaded", "state.RigSnapped",
+    if flow.find("PrepareCameraForHubReveal()") > flow.find("SetBackdropOpacity(0f)"):
+        errors.append("Hub reveal must combine the Hub mask with the black presentation layer before fading black away.")
+
+    require(ui, ["BuildTerminal(hostCanvas.transform)", "RenderMode.ScreenSpaceCamera",
+                 "hostCanvas.planeDistance = Mathf.Max(1.5f", "BaseTerminalViewWidthFraction = 0.72f",
+                 "BaseTerminalViewHeightFraction = 0.84f",
+                 "[SerializeField, Range(0.40f, 1.00f)] private float terminalScale = 0.50f",
+                 "size.x * BaseTerminalViewWidthFraction * terminalScale / DesignWidth",
+                 "size.y * BaseTerminalViewHeightFraction * terminalScale / DesignHeight",
+                 "PresentationLayerName = \"LoadingPresentation\"", "LayerMask.NameToLayer(PresentationLayerName)",
+                 "SetLayerRecursively(hostCanvas.gameObject, presentationLayer)",
+                 "boundCamera.cullingMask = 1 << presentationLayer",
+                 "boundCamera.cullingMask = savedCullingMask | (1 << presentationLayer)",
+                 "stages[0] = inRoom", "stages[1] = hubLoaded", "state.RigSnapped",
                  "state.PhotonPlayerSpawned", "state.PlayerVisualsReady", "label.enabled = false", "debug.enabled = false",
                  "label.richText = false", "RETRY: EITHER TRIGGER", "DESKTOP: R", "Destroy(tick)",
                  "boundCamera.cullingMask = savedCullingMask", "boundCamera.clearFlags = savedClearFlags",
-                 "boundCamera.backgroundColor = savedBackground", "MaskStartupCamera()"], "presentation")
+                 "boundCamera.backgroundColor = savedBackground", "MaskStartupCamera()",
+                 "SetBackdropOpacity(1f)", "legacyStatus.enabled = true",
+                 "staticCrackle", "PlayOneShot(staticCrackle"], "presentation")
+
+    if "- LoadingPresentation" not in tags:
+        errors.append("ProjectSettings/TagManager.asset must reserve the LoadingPresentation layer.")
+
     configure = ui.split("private void Configure", 1)[-1].split("private void BuildTerminal", 1)[0]
-    if configure.find("if (!startupMode) return;") > configure.find("BuildTerminal();"):
-        errors.append("Travel must return before constructing the terminal or sound source.")
+    travel_guard = configure.find("if (!startupMode)")
+    travel_return = configure.find("return;", travel_guard) if travel_guard >= 0 else -1
+    startup_build = configure.find("BuildTerminal(hostCanvas.transform);")
+    startup_bind = configure.find("BindStartupCamera();")
+    if travel_guard < 0 or travel_return < 0 or startup_build < 0 or startup_bind < 0 or not (
+        travel_guard < travel_return < startup_build < startup_bind
+    ):
+        errors.append("Travel must return before startup terminal/camera/audio construction.")
+
+    if (ROOT / "Assets/Scripts/Loading/SecurityWorkstationVignette.cs").exists():
+        errors.append("Superseded world-space launch panel helper must remain removed.")
+    for forbidden in ["SecurityWorkstationVignette", "RenderMode.WorldSpace", "TerminalDistance", "MonitorCanvasRoot"]:
+        if forbidden in ui:
+            errors.append(f"Restored security boot must remain screen-space: {forbidden!r} found.")
+
+    if "LoadingFlow.IsColdStartupPresentationActive" not in hand_audio:
+        errors.append("Cold startup must suppress hidden rig-settle hand impact audio.")
+
     require(travel, ["origin.Camera.backgroundColor = Color.black", "debug.debugText.text = \"\"",
                      "ShowLoadingScene", "RestoreCamera()"], "existing black travel and recovery")
-    require(menu, ["Hold Security Boot For Review", "SessionState.SetBool", "Menu.SetChecked"], "editor review")
+    require(menu, ["Hold Security Boot For Review", "Select Active Security Boot Tuning",
+                   "FindObjectOfType<SecurityBootPresentation>", "Selection.activeGameObject",
+                   "SessionState.SetBool", "Menu.SetChecked"], "editor review/live tuning")
+
     for forbidden in ("PhotonNetwork.Join", "PhotonNetwork.Instantiate", "MarkRigSnapped(", "TryMarkReady(",
                       "SceneManager.LoadScene", "new RenderTexture", "allowSceneActivation", "Random.Range"):
         if forbidden in ui:
-            errors.append(f"Presentation must remain read-only/local: {forbidden}")
+            errors.append(f"SecurityBootPresentation must remain presentation-only: {forbidden}")
+
     for text, name in ((flow, "LoadingFlow"), (ui, "SecurityBootPresentation")):
-        if re.search(r"(?:origin|boundCamera|camera)\.transform\.(?:position|rotation|localPosition|localRotation)\s*=", text):
+        if re.search(r"(?:origin|boundCamera|camera|startupCamera)\.transform\.(?:position|rotation|localPosition|localRotation)\s*=", text):
             errors.append(f"{name} must not move the tracked camera.")
+
     overscan = (ROOT / "Assets/Scripts/Travel/LoadingCanvasOverscan.cs").read_text(encoding="utf-8")
     require(overscan, ["Overscan = 0.12f", "image.color = Color.black"], "existing XR coverage")
     doc = (ROOT / "docs/security-boot-prototype.md").read_text(encoding="utf-8")
-    require(doc, ["codex/security-boot-prototype", "10 seconds", "not implemented", "2022.3.55f1"], "prototype record")
+    require(doc, ["historical implementation record", "merged through PR #20", "black-only", "technical validation"],
+            "historical security-boot record")
+
     if errors:
         print("FAIL: security boot source contracts")
         for error in errors:
             print(" -", error)
         return 1
-    print("PASS: security boot source contracts (readiness, retry, black travel, editor hold, camera restoration).")
+    print("PASS: security boot source contracts (readiness, retry, restored PR #20 screen-space terminal, black travel, editor hold, safe Hub reveal).")
     print("Unity compilation, runtime, Photon and headset validation remain separate.")
     return 0
 

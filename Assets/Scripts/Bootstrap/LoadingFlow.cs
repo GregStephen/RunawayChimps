@@ -9,11 +9,12 @@ using UnityEngine.XR;
 
 public class LoadingFlow : MonoBehaviour
 {
+    public static bool IsColdStartupPresentationActive { get; private set; }
     [SerializeField] private string hubSceneName = "Hub_Base";
     [SerializeField] private TMP_Text statusText;
     [Min(10f)] [SerializeField] private float startupTimeout = 90f;
-    [Header("Security boot prototype - cold startup only")]
-    [Tooltip("Small presentation floor, not a simulated loading time. Set to zero for immediate entry when ready.")]
+    [Header("Security boot - cold startup only")]
+    [Tooltip("Minimum presentation time, not a simulated loading delay. Set to zero for immediate entry when ready.")]
     [Range(0f, 3f)] [SerializeField] private float minimumIntroSeconds = 1.5f;
     [Tooltip("Keeps ACCESS GRANTED visible briefly after real readiness is reached.")]
     [Range(0f, 1f)] [SerializeField] private float minimumReadyHoldSeconds = 0.35f;
@@ -33,6 +34,7 @@ public class LoadingFlow : MonoBehaviour
     {
         startup = !(RunawayChimps.Travel.SectorTravelService.I != null &&
             RunawayChimps.Travel.SectorTravelService.I.IsBusy);
+        if (startup) IsColdStartupPresentationActive = true;
     }
 
     private void Start()
@@ -161,7 +163,7 @@ public class LoadingFlow : MonoBehaviour
             yield break;
         }
         RunawayChimps.Travel.SectorTravelService.I?.NotifySceneReady(hub);
-        presentation?.RestoreCameraForReveal();
+        presentation?.PrepareCameraForHubReveal();
         for (float elapsed = 0f; elapsed < FadeDuration; elapsed += Time.unscaledDeltaTime)
         {
             if (!CanEnterHub()) { AbortEntry(); yield break; }
@@ -169,7 +171,13 @@ public class LoadingFlow : MonoBehaviour
             yield return null;
         }
         presentation?.SetBackdropOpacity(0f);
+        presentation?.RestoreCameraForReveal();
         yield return SceneManager.UnloadSceneAsync(gameObject.scene);
+    }
+
+    private void OnDestroy()
+    {
+        if (startup) IsColdStartupPresentationActive = false;
     }
 
     private void AbortEntry()

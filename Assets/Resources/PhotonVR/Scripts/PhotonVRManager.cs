@@ -8,6 +8,7 @@ using Photon.Pun;
 using Photon.Realtime;
 
 using RunawayChimps.Zones;
+using RunawayChimps.Multiplayer;
 using Photon.VR.Saving;
 
 namespace Photon.VR
@@ -470,25 +471,31 @@ namespace Photon.VR
             maxPlayers = Mathf.Clamp(maxPlayers, 1, 10);
             Manager._state = ConnectionState.JoiningRoom;
 
-            var roomProps = new ExitGames.Client.Photon.Hashtable
+            var matchmakingProps = new ExitGames.Client.Photon.Hashtable
             {
                 { "queue", queue },
                 { "version", Application.version }
             };
+            var creationProps = new ExitGames.Client.Photon.Hashtable
+            {
+                { "queue", queue },
+                { "version", Application.version }
+            };
+            HubSpawnSlotAllocator.AddInitialRoomProperties(creationProps);
 
             var roomOptions = new RoomOptions
             {
                 MaxPlayers = (byte)maxPlayers,
                 IsVisible = true,
                 IsOpen = true,
-                CustomRoomProperties = roomProps,
+                CustomRoomProperties = creationProps,
                 CustomRoomPropertiesForLobby = new[] { "queue", "version" }
             };
 
             // Save so HandleJoinError can create a matching room if needed.
             Manager._lastMatchmakingOptions = roomOptions;
 
-            bool started = PhotonNetwork.JoinRandomRoom(roomProps, (byte)maxPlayers, MatchmakingMode.RandomMatching, null, null, null);
+            bool started = PhotonNetwork.JoinRandomRoom(matchmakingProps, (byte)maxPlayers, MatchmakingMode.RandomMatching, null, null, null);
             if (!started) Manager._state = ConnectionState.Connected;
             Debug.Log($"Joining random room (queue={queue}, version={Application.version})");
             return started;
@@ -506,6 +513,7 @@ namespace Photon.VR
                     { "queue", PublicQueue },
                     { "version", Application.version }
                 };
+                HubSpawnSlotAllocator.AddInitialRoomProperties(roomProps);
 
                 _lastMatchmakingOptions = new RoomOptions
                 {
@@ -535,13 +543,16 @@ namespace Photon.VR
             if (Manager == null || string.IsNullOrWhiteSpace(roomId)) return false;
             maxPlayers = Mathf.Clamp(maxPlayers, 1, 10);
             Manager._state = ConnectionState.JoiningRoom;
+            var privateProps = new ExitGames.Client.Photon.Hashtable();
+            HubSpawnSlotAllocator.AddInitialRoomProperties(privateProps);
             bool started = PhotonNetwork.JoinOrCreateRoom(
                 roomId,
                 new RoomOptions
                 {
                     IsVisible = false,
                     IsOpen = true,
-                    MaxPlayers = (byte)maxPlayers
+                    MaxPlayers = (byte)maxPlayers,
+                    CustomRoomProperties = privateProps
                 },
                 null,
                 null

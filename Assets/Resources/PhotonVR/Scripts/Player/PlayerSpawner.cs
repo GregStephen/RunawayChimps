@@ -91,6 +91,7 @@ namespace Photon.VR.Player
             // Startup still waits for Hub; an active level is also a valid environment.
             if (!hub.isLoaded && SectorScene.Find(active) == null) return false;
             var manager = PhotonVRManager.Manager;
+            if (hub.isLoaded && AppState.I != null && !AppState.I.RigSnapped) return false;
             if (manager != null && manager.Head != null)
             {
                 position = manager.Head.position;

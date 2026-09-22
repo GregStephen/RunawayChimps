@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using Photon.Pun;
 using Photon.Realtime;
@@ -14,6 +15,7 @@ public class PlayerVisualReadyReporter : MonoBehaviour
     private Renderer[] _renderers;
     private PhotonView ownerView;
     private Room reportingRoom;
+    private readonly List<Material> materialScratch = new List<Material>(8);
 
     private void Awake()
     {
@@ -45,11 +47,11 @@ public class PlayerVisualReadyReporter : MonoBehaviour
     {
         StopAllCoroutines();
         reportingRoom = null;
+        materialScratch.Clear();
     }
 
     private IEnumerator CoWaitForVisualsToSettle()
     {
-        // Give PhotonVR a moment to run its own Start/Awake and apply initial values
         yield return null;
         yield return new WaitForEndOfFrame();
         if (!CanReportReady()) yield break;
@@ -69,7 +71,6 @@ public class PlayerVisualReadyReporter : MonoBehaviour
             yield return null;
             if (!CanReportReady()) yield break;
 
-            // Animated material swaps must not hold the loading screen forever.
             if (Time.realtimeSinceStartup >= deadline)
             {
                 Debug.LogWarning("Player materials continue changing; finishing visual setup after the settle limit.", this);
@@ -103,23 +104,19 @@ public class PlayerVisualReadyReporter : MonoBehaviour
             int h = 17;
             for (int i = 0; i < _renderers.Length; i++)
             {
-                var r = _renderers[i];
-                if (r == null) continue;
+                var renderer = _renderers[i];
+                if (renderer == null) continue;
 
-                // sharedMaterials avoids forcing instancing; we just want to know when swaps happen
-                var mats = r.sharedMaterials;
-                if (mats == null) { h = h * 31 + 1; continue; }
+                materialScratch.Clear();
+                renderer.GetSharedMaterials(materialScratch);
+                h = h * 31 + materialScratch.Count;
 
-                h = h * 31 + mats.Length;
-
-                for (int m = 0; m < mats.Length; m++)
+                for (int m = 0; m < materialScratch.Count; m++)
                 {
-                    var mat = mats[m];
-                    h = h * 31 + (mat != null ? mat.GetInstanceID() : 0);
-
-                    // If a texture gets assigned later without swapping material, include it too
-                    if (mat != null && mat.mainTexture != null)
-                        h = h * 31 + mat.mainTexture.GetInstanceID();
+                    Material material = materialScratch[m];
+                    h = h * 31 + (material != null ? material.GetInstanceID() : 0);
+                    if (material != null && material.mainTexture != null)
+                        h = h * 31 + material.mainTexture.GetInstanceID();
                 }
             }
             return h;
