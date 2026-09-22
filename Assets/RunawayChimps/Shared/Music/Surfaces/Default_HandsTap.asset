@@ -13,11 +13,12 @@ MonoBehaviour:
   m_Name: Default_HandsTap
   m_EditorClassIdentifier: 
   clips:
-  - {fileID: 8300000, guid: ee30d225ac9fb9b449c341e3bf04325d, type: 3}
-  - {fileID: 8300000, guid: ee30d225ac9fb9b449c341e3bf04325d, type: 3}
+  - {fileID: 8300000, guid: 65a35c651cb24c9bb9fec8e3ae6a0079, type: 3}
   volume: 0.8
-  pitchMin: 0.95
-  pitchMax: 1.05
+  pitchMin: 0.98
+  pitchMax: 1.02
   minInterval: 0.06
-  minImpact: 0.5
+  minImpact: 0.25
+  fullImpactSpeed: 2.5
+  minVolumeFraction: 0.25
   outputGroup: {fileID: 8760804464899535137, guid: f4dbf6c998d18f44ba24f2583d3443f8, type: 2}

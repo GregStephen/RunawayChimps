@@ -6,6 +6,7 @@ A Photon PUN VR horror game about escaping a laboratory. Open this project with 
 
 - [Design and lore](docs/design-and-lore.md): maintained game rules, level concepts, images, proposals, and decision corrections.
 - [Repository improvement plan](docs/repository-improvement-plan.md): review evidence, implementation status, priorities, and acceptance checks.
+- [Hand impacts and surface audio](docs/hand-impact-audio.md): reusable Inspector profiles, urgent hand-contact fix and headset acceptance checks.
 - [Automated source validation](docs/ci-validation.md): what the GitHub `Source integrity` check verifies, first-run findings, and what remains manual.
 - [Codebase audit — September 10, 2026](docs/codebase-audit-2026-09-10.md): reliability findings, fixes, and remaining test scope for PR #5.
 - [AGENTS.md](AGENTS.md): instructions to read and update the relevant documents when decisions, implementation, or test results meaningfully change.
@@ -71,6 +72,8 @@ The first run immediately caught a real syntax error in `Tools/Level2Blockout/dr
 A green Source integrity check is **not Unity validation**. It does not import or compile the project in Unity, run either Unity Editor validator, enter Play Mode, connect Photon clients, exercise XR interactions, or test Quest/headset performance. See [Automated source validation](docs/ci-validation.md) for the exact boundary and the possible future Unity-aware CI tier.
 
 ## Audio and proximity fixes
+
+The September 22 hand-impact correction on `fix/hand-impact-surface-audio` uses actual Gorilla hand contacts, shared configurable surface profiles, bounded spatial voices with Doppler disabled, and a cleaned single-transient default tap. See [configuration and validation](docs/hand-impact-audio.md). Unity/headset acceptance remains pending; vent-metal content (#57), keycard drop/grip polish (#52) and blower audio (#56) retain their scope.
 
 - `AudioScaler` stops its source when vent, patrol/chase, or distance filters exclude playback. Disabling the scaler also stops its source. Mute-change logging respects `debugLogs`.
 - `PlayerVentState.LocalPlayerInVent` uses `ZoneStateService.LocalZone` when available in a Photon room. Older scenes without the service retain their fallback.
@@ -145,7 +148,7 @@ Only the local hand/fingertip should activate it. A remote hand, local head/body
 2. On the Name page, test blank input, repeated Enter while pending, failed/signed-out saves, retry, and travel while saving.
 3. Press a physical button, disable the pressing collider/button, restore it, and press again. It should rest correctly and accept one new press.
 4. Repeated proximity/material changes should restore the original state and should not create unnecessary material instances merely to swap one binding.
-5. With hand-audio fallback casts temporarily off, approach a wall/ceiling and move away. Sound should require inward impact. Restore test settings.
+5. Follow the [hand-impact audio checks](docs/hand-impact-audio.md): tap floors/walls/ceilings with each hand, release briefly and repeat, then rest/slide/withdraw. Expect one sound per accepted strike, no proximity/rest/withdrawal sounds, independent hands and silent startup/travel/capture. The old fallback-cast settings are removed.
 6. Verify `HeldItemCollisionMode` imports without a missing script. Test mixed child layers, two hands, final release, disable/re-enable while held, and travel while holding the item.
 7. Confirm the corrected component filenames (`ComputerTerminalUI`, `LoadingDebugText`, `AntiHandPhase`, `RandomTileRegion`, `MonsterTouchRespawnPhotonVR`, `KeyCard`, `VRKeyCard`) load with their expected classes and no missing script.
 

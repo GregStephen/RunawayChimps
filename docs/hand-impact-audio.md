@@ -1,0 +1,89 @@
+# Hand impacts and reusable surface audio
+
+Recorded 2026-09-22. **Implemented on `fix/hand-impact-surface-audio`, based on main `9da4a1e`; pending Unity and headset acceptance.** This branch retains Unity 2022.3.55f1, Photon PUN, the current locomotion solver, and the existing two Bootstrap hand components. It does not change the separate 62f3 compatibility trial.
+
+## Confirmed requirement
+
+Greg reports doubled, missing and strange hand-ground sounds and wants this fixed before surface-specific vent polish. Meaningful hand impacts must be consistent across floors, walls and ceilings and support reusable, easily configured surface responses. Planned materials include aluminum ductwork, heavier hard metal for future Listener content, glass, dirt and other surfaces. Ordinary walls/floors may share a default; exceptions use profiles. This report supersedes treating the earlier probe-direction cleanup as a complete hand-audio fix.
+
+The urgent shared fix can change the faulty ordinary hand tap. The later vent content should still apply only to vent surfaces. [#57](https://github.com/GregStephen/RunawayChimps/issues/57) retains metallic duct recordings, surface assignments, player/object response and runtime acceptance; [#52](https://github.com/GregStephen/RunawayChimps/issues/52) retains keycard edge grip and dropped-object impact integration; [#56](https://github.com/GregStephen/RunawayChimps/issues/56) retains blower-loop diagnosis. No new Photon audio messages, Listener hearing behavior, body-impact audio or scrape loops are introduced here.
+
+## Diagnosis from current source and assets
+
+- `HandImpactAudio` ran up to six independent proximity casts from raw controller positions. The 7 cm probe plus 12 cm forward distance could find a surface well before the virtual hand touched it; starting a cast inside geometry could miss. Being near another wall also prevented the old release timer from rearming. The detector did not consume the actual Gorilla contact result.
+- The default profile referenced `Walk2b.wav` twice. These were the same recording, so this provided no clip variation. The original is about 917 ms long with the first strong transient delayed roughly 114 ms, another bump near 210 ms and a long low-level tail.
+- The source followed the moving controller and left Doppler enabled. Repeated `PlayOneShot` calls changed shared source pitch/mixer settings while prior sounds could still be playing.
+- Profile `minImpact` and `minInterval` were authored but unused by hand playback. An empty vent profile fell back to the ordinary default; it was not a finished metallic response.
+
+These are source/asset findings consistent with Greg's report. They do not prove the exact contribution of each cause in the previously tested headset build.
+
+## Implemented behavior
+
+`GorillaLocomotion.Player` publishes one observation per hand after solving movement. It captures the incoming collision collider/point/normal before subsequent slide queries overwrite the hit. The additional observation output does not change collision queries, their order, movement positions, forces, hand unstick behavior or loose-card nudges.
+
+Impact strength comes from tracked hand motion sampled before body correction and artificial downward sticking bias. The next sample is seeded after correction. Turning rotates that history with the rig. Startup, travel, teleport/capture reset, disabled movement, blocked teleport poses, application pause/focus loss, long stalls and large tracking jumps cannot be accepted as fresh impacts. A fresh release is required afterward.
+
+`HandImpactGate` owns a separate state per hand. A first contact consumes the armed state even if too gentle, blocked or inside its cooldown. Resting pressure, sliding and moving between adjacent colliders do not repeatedly play. A stable release rearms; the default is 20 ms with at least two released observations. A one-frame missing-contact result does not rearm. Each hand's default minimum interval is the larger of its 55 ms guard and the selected profile's interval.
+
+`SurfaceImpactEmitter` owns four reusable 3D voices. Every accepted impact keeps its contact position, pitch, clip, volume and mixer while it plays; Doppler is zero. Sources are detached from the moving rig and explicitly owned/cleaned up by their emitter. A saturated pool replaces its oldest voice rather than creating more objects. The two current hands therefore create eight impact sources total, once. Disabling, resetting or destroying their owners stops playback; scene re-entry does not add an extra hand-audio component.
+
+The default now uses `Assets/RunawayChimps/Shared/Music/HandTap_Dry.wav`, a 93 ms mono edit of the existing recording's first transient. It removes the leading delay, later bump and noisy tail, removes DC offset and uses short endpoint fades without boosting gain. The original recording remains unchanged. `Tools/Audio/prepare_hand_tap.py --check` verifies the source hash, exact generated bytes, prompt onset, endpoint fades and sample headroom. This is conservative cleanup of an existing asset, not newly recorded Foley; subjective timbre and comfort still require headset approval.
+
+## Configure a surface in Unity
+
+1. In the Project window, use **Create > RunawayChimps > Audio > Surface Audio Profile**. Name it for the response, for example `HeavyMetal_Hands`, `Glass_Hands`, `Dirt_Hands` or `VentDuct_Hands`.
+2. Assign short recordings of single impacts to **Clips**. Use distinct recordings for variation. Null entries and duplicate references are skipped; when another distinct clip exists, the immediately previous clip is avoided. An array containing only one valid recording remains usable.
+3. Tune the fields below, starting quietly. Use mono, preloaded short SFX for these nearby spatial impacts. Avoid clips that contain multiple footsteps or a long silent lead-in.
+4. Add **Surface Audio** to the contacted collider's GameObject, or to a parent that owns several surface colliders. Assign the profile. A child override with usable clips takes precedence. Empty/disabled overrides inherit a usable parent, then the hand's default.
+5. Keep the collider on a layer included by both locomotion and the hand's **Surface Layers**. Assigning an audio profile does not make a trigger or non-colliding decorative mesh into a hand-contact surface.
+6. For controls with their own click, retain/add **Block Hand Surface Audio** on the collider or a parent. It suppresses generic hand impacts while preserving that control's own sound.
+
+| Inspector field | Meaning | Current default hand profile |
+| --- | --- | --- |
+| Clips | Distinct single-impact recordings | One cleaned existing dry tap |
+| Volume | Maximum source volume before mixer/3D attenuation | 0.8 |
+| Pitch Min / Max | Restrained playback variation | 0.98 / 1.02 |
+| Min Impact | Minimum speed into the surface, in m/s | 0.25 |
+| Full Impact Speed | Inward speed reaching full profile volume | 2.5 m/s |
+| Min Volume Fraction | Fraction of maximum volume at the minimum accepted speed | 0.25 |
+| Min Interval | Minimum spacing per emitter, not globally across both hands | 0.06 s |
+| Output Group | Optional existing AudioMixer routing | Existing default hand mixer binding retained |
+
+Volume grows smoothly with accepted impact strength and remains capped. A zero-volume configured profile is intentionally silent. A surface profile with no usable clips falls back rather than randomly selecting a null entry. Numeric profile values are sanitized; hand sensor/cooldown values remain separate Inspector guards.
+
+You can tune the two **Hand Impact Audio** components on Bootstrap's `LeftHand Controller` and `RightHand Controller`. Their Player references are already serialized. The old probe radius/distance, fallback casts and per-collider dictionary are removed; there is no second detector to configure. Keep both hand settings consistent unless an intentional asymmetry is needed.
+
+## Reuse for future object impacts
+
+A future prop adapter can resolve the contacted collider with `SurfaceAudio.ResolveProfile(collider, fallback)` and call its own `SurfaceImpactEmitter.TryPlay(profile, contactPoint, inwardRelativeSpeed, Time.time)` once for a meaningful collision. The emitter applies profile strength, variation, routing and bounded spatial playback. It rejects stationary/invalid impacts and enforces spacing even across profile changes.
+
+That adapter still owns collision/contact detection, object-specific impact strength and resting/rolling suppression. It must not call on every `OnCollisionStay`, reuse the hand emitter or add another hand detector. Thin-duct and heavy-metal response assets can be separate profiles; no material-name enum or new C# branch is needed to add glass, dirt or another material. Hand versus keycard timbre may need different recordings/adapters when #52/#57 are implemented. Final vent material assignments and recordings are not included in this patch.
+
+The existing Listener/noise-event design remains a separate gameplay consumer. Audible playback alone must not silently change AI hearing, reveal a quiet player or send raw collisions over Photon.
+
+## Validation and first headset retest
+
+**Automated source/managed checks** cover source syntax/metadata, maintained feature contracts, the actual production gate's contact transitions, and deterministic audio-file processing. Dedicated `Assets/Tests/HandImpactAudio` fixtures exercise production code through reflection from a Unity test assembly. A test file's presence does not mean it was executed.
+
+**Executed on 2026-09-22:** the production `HandImpactGate` harness passed **10,758 assertions**; the existing `CardConsumptionState` harness passed **18,015 assertions**. C# 9 compilation of the actual Player/contact/profile/emitter classes against temporary external Unity/travel/keycard API stubs passed with zero errors (only the preexisting unused `jumpHandIsLeft` warning), and **30 supplemental assertions** exercised the actual contact-to-voice methods, including persistent pause/focus suppression and recovery. The repository source/serialization/feature contracts, Python compilation, deterministic audio check and whitespace checks passed. The temporary stub harness is supplemental evidence; the durable managed gate regression is committed under `Tools/HandImpactHarness` and runs in CI. Dedicated Unity fixture execution is still pending.
+
+**Pending acceptance:** Unity 2022.3.55f1 import/compilation and Test Runner execution; actual spatial sound and clip quality; headset contact timing; two-client isolation; target Quest performance. Source parsing and a managed compiler with Unity stubs do not execute Unity physics or an audio device.
+
+Start from Bootstrap on this branch and test:
+
+| Scenario | Expected result |
+| --- | --- |
+| Alternate ten light and ten firm taps per hand on ordinary floor, wall and ceiling | One prompt sound for each accepted strike; stronger impacts louder within the cap |
+| Lift only a short distance and tap again, including next to a wall/vent corner | Fresh taps recover after brief actual release; proximity to another surface does not itself suppress them |
+| Leave a hand resting, increase pressure, slide over a collider seam, then withdraw | No repeated knocks and no sound on withdrawal |
+| Strike with both hands at once, then alternate quickly | Two intentional simultaneous hits remain possible; one hand does not mute the other |
+| Tap floor/wall corners with different authored profiles | Correct contacted surface response and comfortable strength; check the existing solver's corrective normal/material selection |
+| Approach a surface and stop before contact | No proximity-triggered sound |
+| Test a child profile override, empty override, null clip entry, one clip, several clips and an intentionally silent profile | Correct fallback/override; no randomly silent null selection; restrained variation |
+| Touch the physical keyboard/buttons | Their dedicated click remains; generic hand slap stays blocked where the marker is authored |
+| Move the hand/head after a strike | The sound remains at its contact point without hand-motion Doppler warble |
+| Startup, capture, Hub/Level 1 travel, pause/resume and disable/re-enable | No arrival/resume slap; fresh released tap works afterward; no orphan voice pools |
+| Keycard pickup/drop/nudge and floor/wall blocking | Existing accepted handling and locomotion behavior remain intact |
+| Two Photon clients in same/different sectors; Quest 3 and Quest 2 when available | Local impact behavior, no duplicate network events, acceptable levels and frame cost |
+
+Record editor, branch/commit, device, actor count, scenario and actual result. Do not close #52/#57/#56 or mark this hand-audio experience accepted solely because Source Integrity passes.

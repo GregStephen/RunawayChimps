@@ -638,18 +638,14 @@ MonoBehaviour:
   surfaceLayers:
     serializedVersion: 2
     m_Bits: 1
-  probeRadius: 0.07
-  probeDistance: 0.12
-  localProbeOffset: {x: 0, y: 0, z: 0}
-  minSlapSpeed: 1.6
-  minIntoSurfaceSpeed: 1.1
-  slapLockout: 0.12
-  rearmOffSurfaceTime: 0.08
-  perColliderCooldown: 0.1
+  minSlapSpeed: 0.2
+  minIntoSurfaceSpeed: 0.2
+  slapLockout: 0.055
+  rearmOffSurfaceTime: 0.02
+  locomotionPlayer: {fileID: 1327789700}
   maxDistance3D: 10
   playerRoot: {fileID: 1205685183}
   handTag: HandTag
-  enableFallback: 1
 --- !u!1 &238835702
 GameObject:
   m_ObjectHideFlags: 0
@@ -1936,18 +1932,14 @@ MonoBehaviour:
   surfaceLayers:
     serializedVersion: 2
     m_Bits: 1
-  probeRadius: 0.07
-  probeDistance: 0.12
-  localProbeOffset: {x: 0, y: 0, z: 0}
-  minSlapSpeed: 1.6
-  minIntoSurfaceSpeed: 1.1
-  slapLockout: 0.12
-  rearmOffSurfaceTime: 0.08
-  perColliderCooldown: 0.1
+  minSlapSpeed: 0.2
+  minIntoSurfaceSpeed: 0.2
+  slapLockout: 0.055
+  rearmOffSurfaceTime: 0.02
+  locomotionPlayer: {fileID: 1327789700}
   maxDistance3D: 10
   playerRoot: {fileID: 1205685183}
   handTag: HandTag
-  enableFallback: 1
 --- !u!1 &1327279336
 GameObject:
   m_ObjectHideFlags: 0

@@ -33,13 +33,19 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Set up managed card-state test runtime
+      - name: Set up managed state test runtime
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
 
       - name: Execute production card-consumption state tests
         run: dotnet run --project Tools/CardSystemHarness/CardSystemHarness.csproj --configuration Release
+
+      - name: Execute production hand-impact contact state tests
+        run: dotnet run --project Tools/HandImpactHarness/HandImpactHarness.csproj --configuration Release
+
+      - name: Verify default hand-impact audio asset
+        run: python Tools/Audio/prepare_hand_tap.py --check
 
       - name: Install syntax-parser dependencies
         run: |

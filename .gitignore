@@ -36,3 +36,6 @@ __pycache__/
 
 # Repository-local generated artifacts
 /TempAssembly.dll
+
+# Managed regression harness build output (keep Unity/plugin DLLs tracked)
+/Tools/**/bin/
