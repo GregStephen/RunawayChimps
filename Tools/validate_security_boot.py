@@ -48,9 +48,8 @@ def main() -> int:
                  "label.richText = false", "RETRY: EITHER TRIGGER", "DESKTOP: R", "Destroy(tick)",
                  "boundCamera.cullingMask = savedCullingMask", "boundCamera.clearFlags = savedClearFlags",
                  "boundCamera.backgroundColor = savedBackground", "MaskStartupCamera()",
-                 "SetBackdropOpacity(1f - alpha)", "DestroyWorkstationForReveal()",
-                 "workstationRetiredForReveal", "workstationRetiredForReveal = true",
-                 "workstationRetiredForReveal = false", "legacyStatus.enabled = true"], "presentation")
+                 "SetBackdropOpacity(1f)", "legacyStatus.enabled = true",
+                 "staticCrackle", "PlayOneShot(staticCrackle"], "presentation")
 
     if "- LoadingPresentation" not in tags:
         errors.append("ProjectSettings/TagManager.asset must reserve the LoadingPresentation layer.")
