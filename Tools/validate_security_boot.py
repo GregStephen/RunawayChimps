@@ -10,7 +10,6 @@ def main() -> int:
     errors: list[str] = []
     flow = (ROOT / "Assets/Scripts/Bootstrap/LoadingFlow.cs").read_text(encoding="utf-8")
     ui = (ROOT / "Assets/Scripts/Loading/SecurityBootPresentation.cs").read_text(encoding="utf-8")
-    panel = (ROOT / "Assets/Scripts/Loading/SecurityWorkstationVignette.cs").read_text(encoding="utf-8")
     travel = (ROOT / "Assets/Scripts/Travel/SectorTravelService.cs").read_text(encoding="utf-8")
     menu = (ROOT / "Assets/Scripts/Editor/SecurityBootReviewMenu.cs").read_text(encoding="utf-8")
     tags = (ROOT / "ProjectSettings/TagManager.asset").read_text(encoding="utf-8-sig")
@@ -36,7 +35,9 @@ def main() -> int:
     if flow.find("PrepareCameraForHubReveal()") > flow.find("SetBackdropOpacity(0f)"):
         errors.append("Hub reveal must combine the Hub mask with the black presentation layer before fading black away.")
 
-    require(ui, ["SecurityWorkstationVignette.Create", "MonitorCanvasRoot",
+    require(ui, ["BuildTerminal(hostCanvas.transform)", "RenderMode.ScreenSpaceCamera",
+                 "hostCanvas.planeDistance = Mathf.Max(1.5f", "size.x * 0.72f / DesignWidth",
+                 "size.y * 0.84f / DesignHeight",
                  "PresentationLayerName = \"LoadingPresentation\"", "LayerMask.NameToLayer(PresentationLayerName)",
                  "SetLayerRecursively(hostCanvas.gameObject, presentationLayer)",
                  "boundCamera.cullingMask = 1 << presentationLayer",
@@ -53,43 +54,32 @@ def main() -> int:
     if "- LoadingPresentation" not in tags:
         errors.append("ProjectSettings/TagManager.asset must reserve the LoadingPresentation layer.")
 
-    configure = ui.split("private void Configure", 1)[-1].split("private void EnsureWorkstation", 1)[0]
+    configure = ui.split("private void Configure", 1)[-1].split("private void BuildTerminal", 1)[0]
     travel_guard = configure.find("if (!startupMode)")
     travel_return = configure.find("return;", travel_guard) if travel_guard >= 0 else -1
+    startup_build = configure.find("BuildTerminal(hostCanvas.transform);")
     startup_bind = configure.find("BindStartupCamera();")
-    if travel_guard < 0 or travel_return < 0 or startup_bind < 0 or not (travel_guard < travel_return < startup_bind):
-        errors.append("Travel must return before startup camera/panel/audio construction.")
+    if travel_guard < 0 or travel_return < 0 or startup_build < 0 or startup_bind < 0 or not (
+        travel_guard < travel_return < startup_build < startup_bind
+    ):
+        errors.append("Travel must return before startup terminal/camera/audio construction.")
 
-    require(panel, ["Security Boot Panel Vignette", "GetComponentInParent<XROrigin>", "DontDestroyOnLoad(root)",
-                    "RenderMode.WorldSpace", "Security Boot World Canvas", "TerminalDistance = 2.50f",
-                    "rect.localRotation = Quaternion.identity;",
-                    "camera.transform.position + forward * TerminalDistance",
-                    "root.transform.SetParent(origin.transform, true)"],
-            "startup security panel")
-
-    for forbidden in ["GameObject.CreatePrimitive", "BaseMaterialResourcePath", "Desk top", "Night shift mug",
-                      "CAM 04\\nSTILL DEAD", "VENT B\\nAGAIN?", "IF THEY GET OUT\\nI QUIT."]:
-        if forbidden in panel:
-            errors.append(f"Superseded workstation presentation returned: {forbidden!r}")
-
-    distance = re.search(r"TerminalDistance\s*=\s*([0-9.]+)f", panel)
-    if not distance or not (2.3 <= float(distance.group(1)) <= 2.7):
-        errors.append("Restored green terminal must remain in the corrected comfortable mid-distance range.")
-    if "Quaternion.Euler(0f, 180f, 0f)" in panel:
-        errors.append("Restored green terminal must not render from the mirrored back face.")
+    if (ROOT / "Assets/Scripts/Loading/SecurityWorkstationVignette.cs").exists():
+        errors.append("Superseded world-space launch panel helper must remain removed.")
+    for forbidden in ["SecurityWorkstationVignette", "RenderMode.WorldSpace", "TerminalDistance", "MonitorCanvasRoot"]:
+        if forbidden in ui:
+            errors.append(f"Restored security boot must remain screen-space: {forbidden!r} found.")
 
     require(travel, ["origin.Camera.backgroundColor = Color.black", "debug.debugText.text = \"\"",
                      "ShowLoadingScene", "RestoreCamera()"], "existing black travel and recovery")
     require(menu, ["Hold Security Boot For Review", "SessionState.SetBool", "Menu.SetChecked"], "editor review")
 
-    for text, name in ((ui, "SecurityBootPresentation"), (panel, "SecurityWorkstationVignette")):
-        for forbidden in ("PhotonNetwork.Join", "PhotonNetwork.Instantiate", "MarkRigSnapped(", "TryMarkReady(",
-                          "SceneManager.LoadScene", "new RenderTexture", "allowSceneActivation", "Random.Range"):
-            if forbidden in text:
-                errors.append(f"{name} must remain presentation-only: {forbidden}")
+    for forbidden in ("PhotonNetwork.Join", "PhotonNetwork.Instantiate", "MarkRigSnapped(", "TryMarkReady(",
+                      "SceneManager.LoadScene", "new RenderTexture", "allowSceneActivation", "Random.Range"):
+        if forbidden in ui:
+            errors.append(f"SecurityBootPresentation must remain presentation-only: {forbidden}")
 
-    for text, name in ((flow, "LoadingFlow"), (ui, "SecurityBootPresentation"),
-                       (panel, "SecurityWorkstationVignette")):
+    for text, name in ((flow, "LoadingFlow"), (ui, "SecurityBootPresentation")):
         if re.search(r"(?:origin|boundCamera|camera|startupCamera)\.transform\.(?:position|rotation|localPosition|localRotation)\s*=", text):
             errors.append(f"{name} must not move the tracked camera.")
 
@@ -104,7 +94,7 @@ def main() -> int:
         for error in errors:
             print(" -", error)
         return 1
-    print("PASS: security boot source contracts (readiness, retry, isolated front-facing green terminal, black travel, editor hold, safe Hub reveal).")
+    print("PASS: security boot source contracts (readiness, retry, restored PR #20 screen-space terminal, black travel, editor hold, safe Hub reveal).")
     print("Unity compilation, runtime, Photon and headset validation remain separate.")
     return 0
 
