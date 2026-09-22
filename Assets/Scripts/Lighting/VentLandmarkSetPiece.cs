@@ -9,7 +9,8 @@ public sealed class VentLandmarkSetPiece : MonoBehaviour
     private const string LevelOneScene = "Level1_Containment";
     private const string RuntimeRootName = "Level1_VentLandmarks";
     private const int LandmarkCount = 4;
-    private const float FixtureHeight = 0.38f;\n    private const float ExistingLandmarkExclusionRadius = 2.25f;
+    private const float FixtureHeight = 0.38f;
+    private const float ExistingLandmarkExclusionRadius = 2.25f;
 
     private readonly List<Light> pulseLights = new List<Light>();
     private readonly List<float> pulseSeeds = new List<float>();
