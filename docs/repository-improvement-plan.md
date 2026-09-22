@@ -842,3 +842,11 @@ This tuning workflow is Editor-only and does not bypass real startup readiness o
 ## September 21 terminal scale approval
 
 **Validated visual tuning:** Greg used the live Play Mode tuning workflow and reported that **Terminal Scale = 0.50 looked awesome**. Record **0.50** as the approved default for the screen-space green security boot. This validates the terminal's visual size in that Play Mode review only; it does not by itself validate the remaining startup audio/static, Photon multi-client, Hub reveal, or Quest/headset checks.
+
+## September 21 PR #21 current-main merge resolution
+
+**Completed:** reconciled `feature/launch-presentation-polish` with current `main` `6da06331621f3e03a6d4dec9743e68afe393182e` in merge commit `dab4dbce826f19d52842fb3e75bb1b7cb5408140`. The only overlapping files were the Source Integrity workflow and the two maintained project docs.
+
+**Resolution details:** the workflow keeps current-main managed card-state, keycard-reader and interaction-safety checks and adds PR #21's launch-presentation validator. The maintained docs keep all newer mainline card-system/keycard/fan records plus PR #21's complete launch-presentation chronology and latest approved screen-space scale `0.50`. Non-overlapping PR #21 source/assets were retained unchanged.
+
+**Validation boundary:** branch is no longer behind main. Run the combined Source Integrity suite on the final post-reconciliation head; do not treat mergeability alone as Unity/runtime proof.
