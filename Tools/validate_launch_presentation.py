@@ -94,7 +94,7 @@ def main() -> int:
         "Security Boot Panel Vignette",
         "Security Boot World Canvas",
         "RenderMode.WorldSpace",
-        "TerminalDistance = 3.90f",
+        "TerminalDistance = 2.50f",
         "camera.transform.position + forward * TerminalDistance",
         "root.transform.SetParent(origin.transform, true)",
     ]
@@ -107,8 +107,13 @@ def main() -> int:
         errors.append("Security boot panel scale must remain within the reviewed VR-readable range.")
 
     distance = re.search(r"TerminalDistance\s*=\s*([0-9.]+)f", panel)
-    if not distance or not (3.6 <= float(distance.group(1)) <= 4.2):
-        errors.append("Security boot panel should remain roughly twice the former 1.95 m viewing distance.")
+    if not distance or not (2.3 <= float(distance.group(1)) <= 2.7):
+        errors.append("Security boot panel should remain in the corrected comfortable mid-distance range.")
+
+    if "rect.localRotation = Quaternion.identity;" not in panel:
+        errors.append("Security boot world canvas must face the player without a mirrored 180-degree flip.")
+    if "Quaternion.Euler(0f, 180f, 0f)" in panel:
+        errors.append("Security boot world canvas must not restore the mirrored 180-degree Y rotation.")
 
     for forbidden in [
         "GameObject.CreatePrimitive",
@@ -208,7 +213,7 @@ def main() -> int:
     vignette_doc = read("docs/launch-workstation-vignette.md")
     for token in [
         "Superseding correction",
-        "3.9 m",
+        "2.5 m",
         "flat green security terminal",
         "black-only",
         "Pending validation",
@@ -222,7 +227,7 @@ def main() -> int:
             print(" -", error)
         return 1
 
-    print("PASS: launch presentation source contracts (OpenXR path, Meta system splash, distant flat green terminal, bounded CRT treatment, safe Hub reveal).")
+    print("PASS: launch presentation source contracts (OpenXR path, Meta system splash, corrected front-facing green terminal, bounded CRT treatment, safe Hub reveal).")
     print("Unity import/compile, Play Mode appearance, APK build, compositor splash, headset handoff, Photon and Quest performance remain separate checks.")
     return 0
 
