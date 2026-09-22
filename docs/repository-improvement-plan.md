@@ -650,3 +650,13 @@ The workstation now clones a referenced Standard material from `Resources/Launch
 **Pending validation:** Unity 2022.3.55f1 import/compile and Play Mode visual approval of the 2.50 m placement/orientation remain required. Two-client Photon and Quest/headset checks remain pending separately.
 
 **Validated source only — September 21 terminal distance/orientation retune:** code/docs head `cdfdfe16e3fb9809339bfad507e18e749a022393` passed Source Integrity run `35676148648`. The run passed Unity 2022.3.55f1 version enforcement, C# syntax/references, repository integrity, Level 1 and PR #15 contracts, front-facing security-boot contracts, local threat-feedback contracts, launch/Quest/Hub-slot/session contracts, Python compilation, merge-marker rejection and whitespace checks. This validates source/tooling only; Unity Play Mode/headset visual approval of the 2.50 m placement remains pending.
+
+## September 21 PR #21 correction — restore PR #20 screen-space loading boot
+
+**Runtime finding:** the world-space launch-panel approach is now rejected. Even after reducing the panel from 3.90 m to 2.50 m and correcting mirroring, Greg observed the panel/perceived view drop with startup rig settling, heard hand-floor impacts behind loading, and did not get the intended static presentation.
+
+**Implemented correction:** remove `SecurityWorkstationVignette.cs` and return the green terminal to the Loading canvas using `ScreenSpaceCamera`, the original PR #20 view-relative scale calculation, and the original camera plane distance. There is no `TerminalDistance` or world-space launch canvas to tune. Cold startup now exposes `LoadingFlow.IsColdStartupPresentationActive`; `HandImpactAudio` uses it to suppress hidden grounding/teleport impacts and re-arms after Loading unload. The CRT treatment retains visual noise/scanlines/interference and now has a soft initial/periodic static crackle.
+
+**Regression protection:** launch/security validators reject reintroduction of the world-space panel helper, `RenderMode.WorldSpace`, `TerminalDistance`, or `MonitorCanvasRoot`; they require the restored screen-space camera path, original view-relative scale, startup hand-impact suppression, and existing Photon/Quest/reveal contracts.
+
+**Pending validation:** Unity 2022.3.55f1 import/compile and Play Mode/headset retest of screen stability, framing, hand-audio suppression and CRT presentation. Multiplayer Hub-slot/session and Quest-device checks remain pending separately.
