@@ -858,3 +858,12 @@ This tuning workflow is Editor-only and does not bypass real startup readiness o
 **Active launch implementation on main:** screen-space green security terminal with approved `terminalScale = 0.50`; no physical desk/workstation and no world-space distance tuning. Retain the Meta/Quest splash, Loading isolation, CRT/static audio/visual treatment, startup hand-impact suppression, ten-slot Photon Hub allocation, room-session/reconnect hardening, and black-only successful sector travel.
 
 **Pending validation after merge:** complete the post-merge Source Integrity run, then keep Unity 2022.3.55f1 import/compile, startup/retry/reveal behavior, simultaneous two-client slot claims, room switch/reconnect, slot reuse/Master handoff, authored Hub-slot clearance, and Quest build/headset behavior open until actually observed.
+
+
+## September 21 Level 1 vent landmark navigation pass
+
+**Confirmed design requirement:** add sparse, recognizable environmental landmarks throughout the existing Level 1 vent maze to support spatial memory. The first pass should help a player answer “have I been here before?” rather than “which way is the objective?” Explicit arrows, destination labels, breadcrumb trails to the keycard room, or a color-coded correct route are out of scope unless later playtest feedback demonstrates that stronger guidance is needed.
+
+**Planned implementation, not yet authored:** use a small vocabulary of localized practical-light differences, maintenance writing/identifiers, restrained stains or splatter, pipe/cable/electrical variations, and occasional small fixed vent props/equipment. Reuse distinctive existing set pieces such as the VentRoom blower/red practical as landmarks where appropriate. Preserve existing vent geometry, Crawler navigation/capture behavior, safe-room boundaries, player clearance, dark-but-readable lighting, and the established cage-to-vent escape evidence; do not extend that escape trail from the regeneration lab.
+
+**Acceptance target:** in Unity 2022.3.55f1/headset testing, players should be able to recognize major junctions/sections and notice when they have looped back without being told the correct route. Landmarks must remain readable with the existing ambient/headlamp presentation, must not obstruct the player or Crawler, and should not introduce unacceptable Quest lighting/draw-call cost. Exact landmark count and placement remain an environment-art/layout task pending scene review.
