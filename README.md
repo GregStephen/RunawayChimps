@@ -13,6 +13,7 @@ The older project-layout/audit sections below describe earlier development snaps
 
 - [Design and lore](docs/design-and-lore.md): maintained game rules, level concepts, images, proposals, and decision corrections.
 - [Repository improvement plan](docs/repository-improvement-plan.md): review evidence, implementation status, priorities, and acceptance checks.
+- [Hand impacts and surface audio](docs/hand-impact-audio.md): reusable Inspector profiles, hand-contact reliability fix, and headset acceptance checks.
 - [Automated source validation](docs/ci-validation.md): what the GitHub `Source integrity` check verifies, first-run findings, and what remains manual.
 - [Codebase audit — September 10, 2026](docs/codebase-audit-2026-09-10.md): reliability findings, fixes, and remaining test scope for PR #5.
 - [AGENTS.md](AGENTS.md): instructions to read and update the relevant documents when decisions, implementation, or test results meaningfully change.
@@ -78,6 +79,9 @@ The first run immediately caught a real syntax error in `Tools/Level2Blockout/dr
 A green Source integrity check is **not Unity validation**. It does not import or compile the project in Unity, run either Unity Editor validator, enter Play Mode, connect Photon clients, exercise XR interactions, or test Quest/headset performance. See [Automated source validation](docs/ci-validation.md) for the exact boundary and the possible future Unity-aware CI tier.
 
 ## Audio and proximity fixes
+
+The September 22 hand-impact correction on `fix/hand-impact-surface-audio` uses actual Gorilla hand contacts, shared configurable surface profiles, and bounded spatial voices with Doppler disabled. The active default is temporarily a deterministic 20 ms diagnostic tick at fixed pitch/volume so headset testing can isolate trigger timing from Foley quality; the earlier dry edit remains in the repository as a non-active candidate. It is reconciled to the adopted Unity **2022.3.62f3 (96770f904ca7)** baseline. See [configuration and validation](docs/hand-impact-audio.md). Unity/headset acceptance remains pending; vent-metal content (#57), keycard drop/grip polish (#52), and blower audio (#56) retain their scope.
+
 
 - `AudioScaler` stops its source when vent, patrol/chase, or distance filters exclude playback. Disabling the scaler also stops its source. Mute-change logging respects `debugLogs`.
 - `PlayerVentState.LocalPlayerInVent` uses `ZoneStateService.LocalZone` when available in a Photon room. Older scenes without the service retain their fallback.
@@ -152,7 +156,7 @@ Only the local hand/fingertip should activate it. A remote hand, local head/body
 2. On the Name page, test blank input, repeated Enter while pending, failed/signed-out saves, retry, and travel while saving.
 3. Press a physical button, disable the pressing collider/button, restore it, and press again. It should rest correctly and accept one new press.
 4. Repeated proximity/material changes should restore the original state and should not create unnecessary material instances merely to swap one binding.
-5. With hand-audio fallback casts temporarily off, approach a wall/ceiling and move away. Sound should require inward impact. Restore test settings.
+5. Follow the [hand-impact audio checks](docs/hand-impact-audio.md): tap floors/walls/ceilings with each hand, release briefly and repeat, then rest/slide/withdraw. Expect one sound per accepted strike, no proximity/rest/withdrawal sounds, independent hands and silent startup/travel/capture. The old fallback-cast settings are removed.
 6. Verify `HeldItemCollisionMode` imports without a missing script. Test mixed child layers, two hands, final release, disable/re-enable while held, and travel while holding the item.
 7. Confirm the corrected component filenames (`ComputerTerminalUI`, `LoadingDebugText`, `AntiHandPhase`, `RandomTileRegion`, `MonsterTouchRespawnPhotonVR`, `KeyCard`, `VRKeyCard`) load with their expected classes and no missing script.
 
@@ -162,4 +166,8 @@ Only the local hand/fingertip should activate it. A remote hand, local head/body
 
 **Source validated on PR #11, 2026-09-12:** both push and pull-request Source integrity runs passed after the check first exposed and prompted fixes for the broken Level 2 floorplan drawing script and whitespace in three new Unity metadata files. This automated evidence covers source/serialization/tool syntax and whitespace only.
 
-**Pending on the current branches:** Unity 2022.3.55f1 compile/import; both Editor validators; startup/live-service tests; Hub entrance button Play Mode/headset behavior; Level 1/2 routes; two-client Photon; capture/controller handover/reconnect; voice; headset pause/resume; repeated travel; Quest performance and comfort.
+**Pending on the current branches:** Unity 2022.3.55f1 compile/import; both Editor validators; startup/live-service tests; Hub entrance button Play Mode/headset behavior; Level 1/2 routes; two-client Photon; capture/controller handover/reconnect; voice; headset pause/resume; repeated travel; Quest performance and comfort.## Current Unity baseline
+
+**Unity 2022.3.62f3 (`96770f904ca7`) is now adopted on main through PR #61 (`a8c3fd8`).** Greg completed the compatibility import/playthrough without new errors or warnings and approved the merge. Photon PUN, packages, built-in rendering and XR/OpenXR settings were not intentionally changed by that editor update. Remaining Android/Quest/package checks and unrelated gameplay defects stay separate.
+
+

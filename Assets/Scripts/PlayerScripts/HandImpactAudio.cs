@@ -1,226 +1,155 @@
-using UnityEngine;
-using System.Collections.Generic;
+using GorillaLocomotion;
 using RunawayChimps.Travel;
+using UnityEngine;
 
+/// <summary>Local hand audio driven by the locomotion solver's actual contacts.</summary>
+[DisallowMultipleComponent]
 public class HandImpactAudio : MonoBehaviour
 {
-    [Header("Profiles")]
+    [Header("Surface response")]
     public SurfaceAudioProfile defaultProfile;
-
-    [Header("Probe (audio only)")]
     public LayerMask surfaceLayers = ~0;
-    public float probeRadius = 0.07f;
-    public float probeDistance = 0.12f;
-    public Vector3 localProbeOffset = Vector3.zero;
 
-    [Header("GTag thresholds")]
-    public float minSlapSpeed = 1.6f;          // total hand speed
-    public float minIntoSurfaceSpeed = 1.1f;   // component INTO the surface normal
+    [Header("Hand contact")]
+    [Tooltip("Minimum total tracked hand speed in metres per second.")]
+    [Min(0f)] public float minSlapSpeed = 0.2f;
+    [Tooltip("Minimum speed into the surface. The profile's minImpact also applies.")]
+    [Min(0f)] public float minIntoSurfaceSpeed = 0.2f;
+    [Tooltip("Minimum seconds between impacts from this hand; profiles can require longer.")]
+    [Min(0f)] public float slapLockout = 0.055f;
+    [Tooltip("Seconds of actual released contact needed for another strike. Nearby walls do not block release.")]
+    [Min(0f)] public float rearmOffSurfaceTime = 0.02f;
 
-    [Header("Anti-machine-gun")]
-    public float slapLockout = 0.12f;          // hard cooldown after any slap
-    public float rearmOffSurfaceTime = 0.08f;  // must be off all surfaces this long to re-arm
-    public float perColliderCooldown = 0.10f;  // avoid double hits on compound colliders
-
-    [Header("Audio")]
-    public float maxDistance3D = 10f;
-
-    [Header("Ignore")]
-    public Transform playerRoot;               // GorillaRig root
+    [Header("Rig binding")]
+    public Player locomotionPlayer;
+    public Transform playerRoot;
     public string handTag = "HandTag";
 
-    [Header("Fallback casts")]
-    public bool enableFallback = true;
+    [Header("Audio")]
+    [Min(0.1f)] public float maxDistance3D = 10f;
 
-    private AudioSource _src;
-    private Vector3 _prevPos;
-
-    private bool _armed = true;
-    private float _offSurfaceTimer = 0f;
-    private float _lockoutUntil = 0f;
-
-    private readonly Dictionary<int, float> _perColliderNext = new(64);
-    private readonly Vector3[] _fallbackDirections = new Vector3[5];
+    private readonly HandImpactGate gate = new HandImpactGate();
+    private SurfaceImpactEmitter emitter;
+    private Player boundPlayer;
+    private bool isLeft;
+    private bool applicationPaused;
+    private bool applicationFocused = true;
 
     private void Awake()
     {
-        _src = gameObject.AddComponent<AudioSource>();
-        _src.playOnAwake = false;
-        _src.loop = false;
-        _src.spatialBlend = 1f;
-        _src.rolloffMode = AudioRolloffMode.Logarithmic;
-        _src.maxDistance = maxDistance3D;
-
-        _prevPos = transform.position;
+        emitter = GetComponent<SurfaceImpactEmitter>();
+        if (emitter == null) emitter = gameObject.AddComponent<SurfaceImpactEmitter>();
+        emitter.maxDistance3D = maxDistance3D;
     }
 
-    private void OnEnable() => ResetContact();
+    private void OnEnable()
+    {
+        ResetContact();
+        TryBind();
+    }
 
     private void OnDisable()
     {
-        if (_src != null) _src.Stop();
+        Unbind();
         ResetContact();
     }
 
-    private void ResetContact()
+    private void OnApplicationPause(bool paused)
     {
-        _prevPos = transform.position;
-        _armed = false;
-        _offSurfaceTimer = 0f;
-        _lockoutUntil = Time.time + slapLockout;
-        _perColliderNext.Clear();
+        applicationPaused = paused;
+        ResetContact();
+    }
+
+    private void OnApplicationFocus(bool focused)
+    {
+        applicationFocused = focused;
+        ResetContact();
     }
 
     private void Update()
     {
-        // Cold startup grounding, scene travel and capture can move the rig without a
-        // player-authored physical hand impact. Keep the velocity sample current and
-        // require a fresh contact afterward so hidden spawn settling stays silent.
-        if (LoadingFlow.IsColdStartupPresentationActive ||
-            (SectorTravelService.I != null && SectorTravelService.I.IsBusy))
+        if (boundPlayer == null) TryBind();
+        // Stop tails even if the disabled locomotion component cannot publish a sample.
+        if (IsSuppressed || (boundPlayer != null && !boundPlayer.isActiveAndEnabled))
+            ResetContact();
+    }
+
+    private bool IsSuppressed => applicationPaused || !applicationFocused ||
+        LoadingFlow.IsColdStartupPresentationActive ||
+        (SectorTravelService.I != null && SectorTravelService.I.IsBusy);
+
+    private void TryBind()
+    {
+        if (boundPlayer != null) return;
+        Player candidate = locomotionPlayer;
+        if (candidate == null && playerRoot != null)
+            candidate = playerRoot.GetComponentInChildren<Player>(true);
+        if (candidate == null) candidate = GetComponentInParent<Player>();
+        if (candidate == null) return;
+
+        // Only the actual local controller/follower may subscribe for that hand.
+        // A remote avatar or unrelated child cannot create another copy of its sound.
+        bool left = transform == candidate.leftHandTransform || transform == candidate.leftHandFollower;
+        bool right = transform == candidate.rightHandTransform || transform == candidate.rightHandFollower;
+        if (!left && !right) return;
+        boundPlayer = candidate;
+        isLeft = left;
+        boundPlayer.HandContactUpdated += OnHandContact;
+        boundPlayer.HandContactsReset += ResetContact;
+    }
+
+    private void Unbind()
+    {
+        if (boundPlayer != null)
         {
-            if (_src.isPlaying) _src.Stop();
+            boundPlayer.HandContactUpdated -= OnHandContact;
+            boundPlayer.HandContactsReset -= ResetContact;
+        }
+        boundPlayer = null;
+    }
+
+    private void ResetContact()
+    {
+        gate.Reset(Time.time);
+        if (emitter != null) emitter.StopAll();
+    }
+
+    private void OnHandContact(Player.HandContactSample sample)
+    {
+        if (!isActiveAndEnabled || sample.IsLeft != isLeft) return;
+        if (sample.Suppressed || IsSuppressed)
+        {
             ResetContact();
             return;
         }
 
-        float dt = Mathf.Max(Time.deltaTime, 0.0001f);
-        Vector3 pos = transform.position;
-        Vector3 v = (pos - _prevPos) / dt;   // hand velocity
-        float speed = v.magnitude;
-        _prevPos = pos;
+        Collider surface = sample.Hit.collider;
+        bool eligible = sample.IsTouching && !IsIgnored(surface);
+        SurfaceAudioProfile profile = eligible ? SurfaceAudio.ResolveProfile(surface, defaultProfile) : null;
+        Vector3 velocity = sample.Velocity;
+        if (eligible && surface.attachedRigidbody != null)
+            velocity -= surface.attachedRigidbody.GetPointVelocity(sample.Hit.point);
+        float intoSpeed = Vector3.Dot(-velocity, sample.Hit.normal.normalized);
+        if (profile == null || velocity.magnitude < minSlapSpeed || intoSpeed < minIntoSurfaceSpeed)
+            intoSpeed = 0f;
 
-        Vector3 origin = transform.TransformPoint(localProbeOffset);
-
-        // Track arming based on whether we are near ANY surface.
-        bool nearSurface = false;
-
-        // Best candidate across casts
-        bool hasCandidate = false;
-        RaycastHit bestHit = default;
-        float bestInto = 0f;
-
-        // 1) Probe toward the surface the hand is approaching.
-        if (speed > 0.001f)
-        {
-            Vector3 impactDir = v.normalized;
-
-            if (Physics.SphereCast(origin, probeRadius, impactDir, out RaycastHit hit, probeDistance, surfaceLayers, QueryTriggerInteraction.Ignore))
-            {
-                if (!IsIgnored(hit.collider))
-                {
-                    nearSurface = true;
-
-                    float into = Vector3.Dot(-v, hit.normal.normalized);
-                    if (into > bestInto)
-                    {
-                        bestInto = into;
-                        bestHit = hit;
-                        hasCandidate = true;
-                    }
-                }
-            }
-        }
-
-        // 2) Fallback: helps in edge cases (slow velocity / odd alignment)
-        if (enableFallback)
-        {
-            // Down (floors), forward/back (walls), right/left (walls)
-            _fallbackDirections[0] = Vector3.down;
-            _fallbackDirections[1] = transform.forward;
-            _fallbackDirections[2] = -transform.forward;
-            _fallbackDirections[3] = transform.right;
-            _fallbackDirections[4] = -transform.right;
-
-            for (int i = 0; i < _fallbackDirections.Length; i++)
-            {
-                if (Physics.SphereCast(origin, probeRadius, _fallbackDirections[i], out RaycastHit hit, probeDistance, surfaceLayers, QueryTriggerInteraction.Ignore))
-                {
-                    if (IsIgnored(hit.collider))
-                        continue;
-
-                    nearSurface = true;
-
-                    float into = Vector3.Dot(-v, hit.normal.normalized);
-                    if (into > bestInto)
-                    {
-                        bestInto = into;
-                        bestHit = hit;
-                        hasCandidate = true;
-                    }
-                }
-            }
-        }
-
-        // Rearm logic (GTag-style): only rearm after being truly off surfaces briefly
-        if (!nearSurface)
-        {
-            _offSurfaceTimer += Time.deltaTime;
-            if (_offSurfaceTimer >= rearmOffSurfaceTime)
-                _armed = true;
-
+        // Latch every contact, including quiet or explicitly blocked contacts. Pressing
+        // harder later or moving over a collider seam must not become a fresh strike.
+        float threshold = profile != null ? Mathf.Max(minIntoSurfaceSpeed, profile.EffectiveMinImpact) : float.MaxValue;
+        float interval = profile != null ? Mathf.Max(slapLockout, profile.EffectiveMinInterval) : slapLockout;
+        if (!gate.Observe(sample.IsTouching, intoSpeed, Time.time, threshold, interval, rearmOffSurfaceTime))
             return;
-        }
-        else
-        {
-            _offSurfaceTimer = 0f;
-        }
-
-        // Gates
-        if (!hasCandidate) return;
-        if (Time.time < _lockoutUntil) return;
-        if (!_armed) return;
-
-        // GTag slap conditions
-        if (speed < minSlapSpeed) return;
-        if (bestInto < minIntoSurfaceSpeed) return;
-
-        int id = bestHit.collider.GetInstanceID();
-        if (_perColliderNext.TryGetValue(id, out float nextT) && Time.time < nextT)
-            return;
-
-        PlaySlap(bestHit.collider, bestInto);
-
-        _armed = false;
-        _lockoutUntil = Time.time + slapLockout;
-        _perColliderNext[id] = Time.time + perColliderCooldown;
+        if (profile == null || emitter == null) return;
+        emitter.maxDistance3D = maxDistance3D;
+        emitter.TryPlay(profile, sample.Hit.point, intoSpeed, Time.time);
     }
 
-    private bool IsIgnored(Collider c)
+    private bool IsIgnored(Collider surface)
     {
-        if (c == null) return true;
-
-        if (!string.IsNullOrEmpty(handTag) && c.CompareTag(handTag))
-            return true;
-
-        if (playerRoot != null && c.transform.IsChildOf(playerRoot))
-            return true;
-
-        if (c.GetComponentInParent<BlockHandSurfaceAudio>() != null)
-            return true;
-
-        return false;
-    }
-
-    private void PlaySlap(Collider surface, float into)
-    {
-        var sa = surface.GetComponentInParent<SurfaceAudio>();
-        var profile = (sa != null && sa.profile != null) ? sa.profile : defaultProfile;
-        if (profile == null || profile.clips == null || profile.clips.Length == 0)
-            profile = defaultProfile;
-        if (profile == null || profile.clips == null || profile.clips.Length == 0)
-            return;
-
-        // Volume curve: use INTO component, punchier like GTag
-        float t = Mathf.InverseLerp(minIntoSurfaceSpeed, minIntoSurfaceSpeed * 2.2f, into);
-        t = Mathf.Clamp01(t);
-        t = t * t;
-
-        float vol = Mathf.Lerp(profile.volume * 0.35f, profile.volume, t);
-
-        var clip = profile.clips[Random.Range(0, profile.clips.Length)];
-        _src.pitch = Random.Range(profile.pitchMin, profile.pitchMax);
-        _src.outputAudioMixerGroup = profile.outputGroup;
-        _src.PlayOneShot(clip, vol);
+        if (surface == null || surface.isTrigger) return true;
+        if ((surfaceLayers.value & (1 << surface.gameObject.layer)) == 0) return true;
+        if (playerRoot != null && surface.transform.IsChildOf(playerRoot)) return true;
+        if (!string.IsNullOrEmpty(handTag) && surface.CompareTag(handTag)) return true;
+        return surface.GetComponentInParent<BlockHandSurfaceAudio>() != null;
     }
 }

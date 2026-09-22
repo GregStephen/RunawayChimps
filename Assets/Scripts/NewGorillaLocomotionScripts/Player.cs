@@ -55,6 +55,23 @@ namespace GorillaLocomotion
 
         public bool disableMovement = false;
 
+        // Read-only observations of the existing solver. Audio must not run a second
+        // proximity solver or change a collision/locomotion result.
+        public struct HandContactSample
+        {
+            public bool IsLeft;
+            public bool IsTouching;
+            public bool Suppressed;
+            public RaycastHit Hit;
+            public Vector3 Velocity;
+        }
+
+        public event System.Action<HandContactSample> HandContactUpdated;
+        public event System.Action HandContactsReset;
+        private Vector3 previousLeftAudioPosition;
+        private Vector3 previousRightAudioPosition;
+        private bool hasPreviousAudioSample;
+
         private void Awake()
         {
             if (_instance != null && _instance != this)
@@ -87,6 +104,9 @@ namespace GorillaLocomotion
             lastHeadPosition = headCollider.transform.position;
             velocityIndex = 0;
             lastPosition = transform.position;
+            previousLeftAudioPosition = CurrentLeftHandPosition();
+            previousRightAudioPosition = CurrentRightHandPosition();
+            hasPreviousAudioSample = false;
         }
 
         public void ResetAfterTeleport()
@@ -109,6 +129,13 @@ namespace GorillaLocomotion
             denormalizedVelocityAverage = Vector3.zero;
             wasLeftHandTouching = false;
             wasRightHandTouching = false;
+            HandContactsReset?.Invoke();
+        }
+
+        private void OnDisable()
+        {
+            hasPreviousAudioSample = false;
+            HandContactsReset?.Invoke();
         }
 
         private Vector3 ArmRootPosition()
@@ -203,6 +230,16 @@ namespace GorillaLocomotion
 
         private void Update()
         {
+            // Sample real tracked motion before the solver translates the body or
+            // adds its downward sticking bias. Never use a pinned follower's speed.
+            Vector3 leftAudioPosition = CurrentLeftHandPosition();
+            Vector3 rightAudioPosition = CurrentRightHandPosition();
+            bool leftAudioValid = TryGetHandAudioVelocity(leftAudioPosition,
+                previousLeftAudioPosition, out Vector3 leftAudioVelocity);
+            bool rightAudioValid = TryGetHandAudioVelocity(rightAudioPosition,
+                previousRightAudioPosition, out Vector3 rightAudioVelocity);
+            RaycastHit leftAudioHit = default;
+            RaycastHit rightAudioHit = default;
             Vector3 leftHandSweepStart = lastLeftHandPosition;
             Vector3 rightHandSweepStart = lastRightHandPosition;
             bool leftHandColliding = false;
@@ -235,7 +272,7 @@ namespace GorillaLocomotion
 
             Vector3 distanceTraveled = CurrentLeftHandPosition() - lastLeftHandPosition + Vector3.down * 2f * 9.8f * Time.deltaTime * Time.deltaTime;
 
-            if (!suppressLeftHand && IterativeCollisionSphereCast(lastLeftHandPosition, minimumRaycastDistance, distanceTraveled, defaultPrecision, out finalPosition, true))
+            if (!suppressLeftHand && IterativeCollisionSphereCast(lastLeftHandPosition, minimumRaycastDistance, distanceTraveled, defaultPrecision, out finalPosition, true, out leftAudioHit))
             {
                 //this lets you stick to the position you touch, as long as you keep touching the surface this will be the zero point for that hand
                 if (wasLeftHandTouching)
@@ -255,7 +292,7 @@ namespace GorillaLocomotion
 
             distanceTraveled = CurrentRightHandPosition() - lastRightHandPosition + Vector3.down * 2f * 9.8f * Time.deltaTime * Time.deltaTime;
 
-            if (!suppressRightHand && IterativeCollisionSphereCast(lastRightHandPosition, minimumRaycastDistance, distanceTraveled, defaultPrecision, out finalPosition, true))
+            if (!suppressRightHand && IterativeCollisionSphereCast(lastRightHandPosition, minimumRaycastDistance, distanceTraveled, defaultPrecision, out finalPosition, true, out rightAudioHit))
             {
                 if (wasRightHandTouching)
                 {
@@ -315,8 +352,9 @@ namespace GorillaLocomotion
             {
                 distanceTraveled = CurrentLeftHandPosition() - lastLeftHandPosition;
 
-                if (IterativeCollisionSphereCast(lastLeftHandPosition, minimumRaycastDistance, distanceTraveled, defaultPrecision, out finalPosition, !((leftHandColliding || wasLeftHandTouching) && (rightHandColliding || wasRightHandTouching))))
+                if (IterativeCollisionSphereCast(lastLeftHandPosition, minimumRaycastDistance, distanceTraveled, defaultPrecision, out finalPosition, !((leftHandColliding || wasLeftHandTouching) && (rightHandColliding || wasRightHandTouching)), out RaycastHit finalLeftAudioHit))
                 {
+                    if (leftAudioHit.collider == null) leftAudioHit = finalLeftAudioHit;
                     lastLeftHandPosition = finalPosition;
                     leftHandColliding = true;
                 }
@@ -339,8 +377,9 @@ namespace GorillaLocomotion
             {
                 distanceTraveled = CurrentRightHandPosition() - lastRightHandPosition;
 
-                if (IterativeCollisionSphereCast(lastRightHandPosition, minimumRaycastDistance, distanceTraveled, defaultPrecision, out finalPosition, !((leftHandColliding || wasLeftHandTouching) && (rightHandColliding || wasRightHandTouching))))
+                if (IterativeCollisionSphereCast(lastRightHandPosition, minimumRaycastDistance, distanceTraveled, defaultPrecision, out finalPosition, !((leftHandColliding || wasLeftHandTouching) && (rightHandColliding || wasRightHandTouching)), out RaycastHit finalRightAudioHit))
                 {
+                    if (rightAudioHit.collider == null) rightAudioHit = finalRightAudioHit;
                     lastRightHandPosition = finalPosition;
                     rightHandColliding = true;
                 }
@@ -401,10 +440,55 @@ namespace GorillaLocomotion
 
             wasLeftHandTouching = leftHandColliding;
             wasRightHandTouching = rightHandColliding;
+
+            // Seed after body correction so that correction is not next frame's
+            // impact velocity. Physics-driven falling between frames still counts.
+            previousLeftAudioPosition = CurrentLeftHandPosition();
+            previousRightAudioPosition = CurrentRightHandPosition();
+            hasPreviousAudioSample = true;
+            HandContactUpdated?.Invoke(new HandContactSample
+            {
+                IsLeft = true, IsTouching = leftHandColliding, Hit = leftAudioHit,
+                Velocity = leftAudioVelocity,
+                Suppressed = !leftAudioValid || disableMovement || suppressLeftHand || leftHandBlockedAfterTeleport
+            });
+            HandContactUpdated?.Invoke(new HandContactSample
+            {
+                IsLeft = false, IsTouching = rightHandColliding, Hit = rightAudioHit,
+                Velocity = rightAudioVelocity,
+                Suppressed = !rightAudioValid || disableMovement || suppressRightHand || rightHandBlockedAfterTeleport
+            });
+        }
+
+        private bool TryGetHandAudioVelocity(Vector3 current, Vector3 previous, out Vector3 velocity)
+        {
+            velocity = Vector3.zero;
+            float dt = Time.deltaTime;
+            Vector3 displacement = current - previous;
+            // Long stalls and large tracking/recenter jumps are not authored impacts.
+            if (!hasPreviousAudioSample || dt <= 0f || dt > 0.15f ||
+                !IsFinite(displacement) || displacement.sqrMagnitude > 0.75f * 0.75f)
+                return false;
+            velocity = displacement / dt;
+            return IsFinite(velocity);
+        }
+
+        private static bool IsFinite(Vector3 value)
+        {
+            return !float.IsNaN(value.x) && !float.IsInfinity(value.x) &&
+                   !float.IsNaN(value.y) && !float.IsInfinity(value.y) &&
+                   !float.IsNaN(value.z) && !float.IsInfinity(value.z);
         }
 
         private bool IterativeCollisionSphereCast(Vector3 startPosition, float sphereRadius, Vector3 movementVector, float precision, out Vector3 endPosition, bool singleHand)
         {
+            return IterativeCollisionSphereCast(startPosition, sphereRadius, movementVector,
+                precision, out endPosition, singleHand, out _);
+        }
+
+        private bool IterativeCollisionSphereCast(Vector3 startPosition, float sphereRadius, Vector3 movementVector, float precision, out Vector3 endPosition, bool singleHand, out RaycastHit contactHit)
+        {
+            contactHit = default;
             RaycastHit hitInfo;
             Vector3 movementToProjectedAboveCollisionPlane;
             Surface gorillaSurface;
@@ -412,6 +496,7 @@ namespace GorillaLocomotion
             //first spherecast from the starting position to the final position
             if (CollisionsSphereCast(startPosition, sphereRadius * precision, movementVector, precision, out endPosition, out hitInfo))
             {
+                contactHit = hitInfo; // Retain the incoming contact before slide/correction casts.
                 //if we hit a surface, do a bit of a slide. this makes it so if you grab with two hands you don't stick 100%, and if you're pushing along a surface while braced with your head, your hand will slide a bit
 
                 //take the surface normal that we hit, then along that plane, do a spherecast to a position a small distance away to account for moving perpendicular to that surface
@@ -440,6 +525,7 @@ namespace GorillaLocomotion
             //as kind of a sanity check, try a smaller spherecast. this accounts for times when the original spherecast was already touching a surface so it didn't trigger correctly
             else if (CollisionsSphereCast(startPosition, sphereRadius * precision * 0.66f, movementVector.normalized * (movementVector.magnitude + sphereRadius * precision * 0.34f), precision * 0.66f, out endPosition, out hitInfo))
             {
+                contactHit = hitInfo;
                 endPosition = startPosition;
                 return true;
             }
@@ -504,6 +590,10 @@ namespace GorillaLocomotion
 
         public void Turn(float degrees)
         {
+            Vector3 pivot = headCollider.transform.position;
+            Quaternion rotation = Quaternion.AngleAxis(degrees, transform.up);
+            previousLeftAudioPosition = pivot + rotation * (previousLeftAudioPosition - pivot);
+            previousRightAudioPosition = pivot + rotation * (previousRightAudioPosition - pivot);
             transform.RotateAround(headCollider.transform.position, transform.up, degrees);
             denormalizedVelocityAverage = Quaternion.Euler(0, degrees, 0) * denormalizedVelocityAverage;
             for (int i = 0; i < velocityHistory.Length; i++)
