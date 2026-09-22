@@ -6,9 +6,9 @@ Read [design and lore](design-and-lore.md), [repository improvement plan](reposi
 
 ## Current merged baseline and sequencing
 
-The trial fork is main `9da4a1e46faa16484af9425edb41517a5a931a75`, containing the merged gameplay, authored assets and #60 documentation. Use 2022.3.55f1 only for that baseline comparison; use **2022.3.62f3 (96770f904ca7)** for `compat/unity-2022.3.62f3`. Test the combined implementation without repeating existing merges. All current source contracts and both card fixtures remain required.
+Main now uses **Unity 2022.3.62f3 (96770f904ca7)** through merged PR #61. Use 55f1 only when deliberately comparing a suspected editor regression against the pre-upgrade fork. Test the combined implementation without repeating existing merges. All current source contracts and both card fixtures remain required.
 
-Greg explicitly authorized creation of the 62f3 branch on September 22, lifting the earlier hold. The trial is prepared but not runtime-validated or merged. Follow [the dedicated guide](unity-2022.3.62f3-compatibility.md) with a separate checkout/Library and record results against the actual candidate. #28 remains independent preparation; Unity 6 feasibility stays separate #51.
+Greg approved merging the 62f3 baseline on September 22 after a clean import/playthrough and passing Reliability Regression Check. Remaining Android/Quest/package checks stay open under #27. #63 and #64 track the unrelated baseline defects found during the trial. #28 remains independent preparation; Unity 6 feasibility stays separate #51.
 
 ## One record per tested revision
 
