@@ -49,3 +49,5 @@ Source Integrity is meaningful source/tooling evidence only. It does not prove U
 **Runtime finding:** the restored flat terminal's first 3.90 m world-space placement was too far away and the canvas appeared reversed/mirrored.
 
 **Implemented:** reduce the panel anchor to **2.50 m** and remove the 180-degree local Y rotation from the world-space canvas. Validators now require the front-facing identity rotation and reject the superseded mirrored transform. The 2.50 m distance is pending Greg's visual approval; the multiplayer/session/build hardening remains unchanged.
+
+**Validated source only — September 21 terminal distance/orientation retune:** code/docs head `cdfdfe16e3fb9809339bfad507e18e749a022393` passed Source Integrity run `35676148648`. The run passed Unity 2022.3.55f1 version enforcement, C# syntax/references, repository integrity, Level 1 and PR #15 contracts, front-facing security-boot contracts, local threat-feedback contracts, launch/Quest/Hub-slot/session contracts, Python compilation, merge-marker rejection and whitespace checks. This validates source/tooling only; Unity Play Mode/headset visual approval of the 2.50 m placement remains pending.
