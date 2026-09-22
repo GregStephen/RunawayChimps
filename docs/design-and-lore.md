@@ -848,3 +848,11 @@ This tuning workflow is Editor-only and does not bypass real startup readiness o
 ## September 21 terminal scale approval
 
 **Validated visual tuning:** Greg used the live Play Mode tuning workflow and reported that **Terminal Scale = 0.50 looked awesome**. Record **0.50** as the approved default for the screen-space green security boot. This validates the terminal's visual size in that Play Mode review only; it does not by itself validate the remaining startup audio/static, Photon multi-client, Hub reveal, or Quest/headset checks.
+
+## September 21 PR #21 current-main reconciliation
+
+**Implemented repository reconciliation:** PR #21 was merged forward with current `main` at `6da06331621f3e03a6d4dec9743e68afe393182e` through merge commit `dab4dbce826f19d52842fb3e75bb1b7cb5408140`. Only three paths overlapped: `.github/workflows/source-validation.yml`, `docs/design-and-lore.md`, and `docs/repository-improvement-plan.md`.
+
+**Resolution:** preserve all newer mainline keycard/card-system/VentRoom follow-up documentation and validation steps, then retain PR #21's launch-presentation history, latest screen-space `terminalScale = 0.50` approval, launch validator, Quest splash work, Hub-slot/session hardening, and pending runtime checks. No gameplay/startup C# file required a textual conflict resolution because those paths did not overlap with current main.
+
+**Pending validation:** rerun the combined Source Integrity workflow on the reconciled exact branch head before merge. Unity/Photon/Quest runtime checks remain separate.
