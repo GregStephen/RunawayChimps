@@ -660,3 +660,13 @@ The workstation now clones a referenced Standard material from `Resources/Launch
 **Regression protection:** launch/security validators reject reintroduction of the world-space panel helper, `RenderMode.WorldSpace`, `TerminalDistance`, or `MonitorCanvasRoot`; they require the restored screen-space camera path, original view-relative scale, startup hand-impact suppression, and existing Photon/Quest/reveal contracts.
 
 **Pending validation:** Unity 2022.3.55f1 import/compile and Play Mode/headset retest of screen stability, framing, hand-audio suppression and CRT presentation. Multiplayer Hub-slot/session and Quest-device checks remain pending separately.
+
+## September 21 PR #21 tuning — reduce screen-space terminal footprint
+
+**Runtime finding:** the restored screen-space boot mechanics solve the world-space positioning problem, but the original PR #20 viewport footprint is still too large in current Play Mode.
+
+**Implemented:** add `TerminalViewWidthFraction = 0.54f` and `TerminalViewHeightFraction = 0.63f`, replacing the prior effective 0.72 / 0.84 sizing. This reduces the terminal by 25% in each dimension while preserving centered screen-space-camera presentation, CRT/static treatment, startup hand-impact suppression, Photon readiness, black reveal, Hub-slot/session behavior and Quest splash handling.
+
+**Regression protection:** launch/security validators now require the reduced constants and their use in the scale calculation while continuing to reject any return to world-space `TerminalDistance` presentation.
+
+**Pending validation:** Unity 2022.3.55f1 Play Mode/headset visual approval of the smaller footprint and readability.
