@@ -856,3 +856,11 @@ This tuning workflow is Editor-only and does not bypass real startup readiness o
 **Resolution:** preserve all newer mainline keycard/card-system/VentRoom follow-up documentation and validation steps, then retain PR #21's launch-presentation history, latest screen-space `terminalScale = 0.50` approval, launch validator, Quest splash work, Hub-slot/session hardening, and pending runtime checks. No gameplay/startup C# file required a textual conflict resolution because those paths did not overlap with current main.
 
 **Pending validation:** rerun the combined Source Integrity workflow on the reconciled exact branch head before merge. Unity/Photon/Quest runtime checks remain separate.
+
+## September 21 PR #21 merged launch presentation status
+
+**Merged implementation:** PR #21, **Polish launch security boot, Hub spawn slots, and Quest splash**, merged to `main` on September 21, 2026 at merge commit `6cf7ec9fc5aff7d401d601277dade870f6037c88`. The active cold-start presentation on main is the restored PR #20-style **screen-space green security boot** with visually approved `terminalScale = 0.50`. The rejected physical-workstation and world-space-distance experiments remain historical only.
+
+**Merged reliability scope:** main now also contains the dedicated Loading presentation isolation, real readiness/error/retry flow, restrained CRT/static plus soft crackle, cold-start hand-impact suppression, Meta/Quest system splash configuration and validation, demand-driven ten-slot Photon Hub placement, room-session/reconnect placement hardening, and authored Hub spawn-slot layout. Successful Hub/Level 1/Level 2 travel remains black-only.
+
+**Validation boundary:** Greg visually approved the terminal size at 0.50 in Play Mode. Post-merge Source Integrity and the remaining Unity/Photon/Quest runtime checks are tracked separately; do not infer headset, multi-client, spawn-marker-clearance, or Quest-device validation from the merge itself.
