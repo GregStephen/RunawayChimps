@@ -25,6 +25,8 @@ namespace RunawayChimps.Loading
         private const int StaticHeight = 48;
         private const float StaticRefreshInterval = 0.10f;
         private const float InterferenceSweepDuration = 0.42f;
+        private const float TerminalViewWidthFraction = 0.54f;
+        private const float TerminalViewHeightFraction = 0.63f;
 
         private Canvas hostCanvas;
         private TMP_Text legacyStatus;
@@ -284,9 +286,13 @@ namespace RunawayChimps.Loading
             BindStartupCamera();
             if (terminal == null) return;
 
-            // Original PR #20 framing: stable screen-space sizing independent of XR rig grounding/snap.
+            // Stable screen-space sizing independent of XR rig grounding/snap.
+            // Runtime feedback showed the original PR #20 footprint was too large, so keep the
+            // approved presentation mechanics but use a smaller centered terminal.
             Vector2 size = ((RectTransform)hostCanvas.transform).rect.size;
-            float scale = Mathf.Min(size.x * 0.72f / DesignWidth, size.y * 0.84f / DesignHeight);
+            float scale = Mathf.Min(
+                size.x * TerminalViewWidthFraction / DesignWidth,
+                size.y * TerminalViewHeightFraction / DesignHeight);
             terminal.localScale = Vector3.one * Mathf.Max(0.01f, scale);
 
             if (!fading) terminalGroup.alpha = Mathf.Clamp01((Time.unscaledTime - appearedAt) / 0.3f);
