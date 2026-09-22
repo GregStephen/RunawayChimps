@@ -65,6 +65,8 @@ At that checkpoint the fixture contained 49 pending Unity cases, including defau
 
 ## September 22 validation checkpoint
 
+**Compiler compatibility follow-up:** the user's subsequent screenshot reports CS0246 for `[NonParallelizable]` on both fixture classes. Those two annotations are removed to match the pinned Unity Test Framework 1.1.33 / Unity NUnit 1.0.6 API. All 75 cases remain. Recompile the test assembly before running it; a successful syntax-only source check does not resolve package API compatibility or establish Unity compilation.
+
 The original `CardSystemPlayModeTests` fixture now has **58 cases**, retaining its previous 49 and adding six world-distance/rotation/scale cases, local/ray eligibility, continuing-hold distance, and ten synthesized controller-input release/regrip cycles against a sleeping card. The separate `KeycardHandPhysicsPlayModeTests` fixture adds **17 cases** for actual engine queries, forces, wall preservation, saturated buffers, spherecast overlap sentinels, withdrawal and impulse limits. Run the whole **RunawayChimps.CardSystem.PlayModeTests** assembly to include both fixtures. All 75 Unity cases remain pending execution.
 
 Local validation of this correction passed all source/metadata/scene contracts, C# syntax parsing (139 first-party/editor/test scripts, five enabled scenes), eight negative interaction mutations, fourteen coordinate-math fixtures, and the actual production card-consumption harness (18,015 assertions). The Amber FBX passed geometry checks and independent strict import. These results establish source/managed/asset checks only; exact published revision and CI result are recorded on PR #23.

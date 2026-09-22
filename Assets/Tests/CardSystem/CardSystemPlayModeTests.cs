@@ -15,7 +15,6 @@ namespace RunawayChimps.Tests
     // Production currently lives in Assembly-CSharp. Test assemblies cannot reference
     // a predefined assembly, so reflection is confined to this fixture boundary.
     // No production APIs/assembly layout are changed merely to accommodate tests.
-    [NonParallelizable]
     public sealed class CardSystemPlayModeTests
     {
         private const BindingFlags Members = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;

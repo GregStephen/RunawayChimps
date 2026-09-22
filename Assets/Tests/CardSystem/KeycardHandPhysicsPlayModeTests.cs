@@ -12,7 +12,6 @@ namespace RunawayChimps.Tests
 {
     // Actual production queries and forces run in Unity here. Reflection only
     // bridges the test asmdef to the project's existing Assembly-CSharp layout.
-    [NonParallelizable]
     public sealed class KeycardHandPhysicsPlayModeTests
     {
         readonly List<GameObject> created = new List<GameObject>();
