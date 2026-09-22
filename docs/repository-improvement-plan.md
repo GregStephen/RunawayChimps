@@ -673,8 +673,12 @@ The workstation now clones a referenced Standard material from `Resources/Launch
 
 ## September 21 live Play Mode tuning workflow
 
-**Implemented for visual tuning:** the screen-space terminal now exposes a serialized `terminalScale` slider from **0.40 to 1.00**. `1.00` is the original PR #20 footprint; the current default is **0.75**, which produces the current 25% smaller presentation. The aspect ratio is preserved because one multiplier controls both dimensions.
+**Implemented for visual tuning:** the screen-space terminal now exposes a serialized `terminalScale` slider from **0.40 to 1.00**. `1.00` is the original PR #20 footprint; the visually approved default is **0.50**, which renders the terminal at half the original PR #20 linear scale. The aspect ratio is preserved because one multiplier controls both dimensions.
 
 **Editor workflow:** before Play, enable **Tools > Runaway Chimps > Hold Security Boot For Review**. Start `Bootstrap.unity`; once the boot is visible/ready it stays on screen. Then choose **Tools > Runaway Chimps > Select Active Security Boot Tuning**. Unity selects the runtime Loading canvas object containing `SecurityBootPresentation`; adjust **Terminal Scale** in the Inspector and the terminal resizes live every frame. Play Mode changes do not persist after stopping, so record the preferred value and make it the serialized default afterward.
 
 This tuning workflow is Editor-only and does not bypass real startup readiness or ship in a player build.
+
+## September 21 terminal scale approval
+
+**Validated visual tuning:** Greg used the live Play Mode tuning workflow and reported that **Terminal Scale = 0.50 looked awesome**. Record **0.50** as the approved default for the screen-space green security boot. This validates the terminal's visual size in that Play Mode review only; it does not by itself validate the remaining startup audio/static, Photon multi-client, Hub reveal, or Quest/headset checks.
