@@ -22,6 +22,10 @@ public static class KeycardHandPhysics
     public static bool SphereCastEnvironment(Vector3 origin, float radius, Vector3 direction,
         out RaycastHit hit, float distance, int layers)
     {
+        hit = default;
+        if (!TryNormalizeDirection(direction, out direction))
+            return false;
+
         // Keep the common wall/floor path a single non-allocating query. If its
         // closest hit is a loose card, also find the actual support behind it.
         if (!Physics.SphereCast(origin, radius, direction, out hit, distance, layers, QueryTriggerInteraction.Ignore))
@@ -44,6 +48,10 @@ public static class KeycardHandPhysics
     public static bool RaycastEnvironment(Vector3 origin, Vector3 direction,
         out RaycastHit hit, float distance, int layers)
     {
+        hit = default;
+        if (!TryNormalizeDirection(direction, out direction))
+            return false;
+
         if (!Physics.Raycast(origin, direction, out hit, distance, layers, QueryTriggerInteraction.Ignore))
             return false;
         if (!TryGetLooseCardBody(hit.collider, out _))
@@ -57,6 +65,27 @@ public static class KeycardHandPhysics
             count = candidates.Length;
         }
         return NearestEnvironment(candidates, count, out hit, false);
+    }
+
+    static bool TryNormalizeDirection(Vector3 direction, out Vector3 normalized)
+    {
+        normalized = default;
+        // Unity 2022.3's buffered SphereCast passes direction to native physics
+        // without normalizing it. Gorilla supplies displacement vectors, not
+        // unit directions. Normalize once for all query paths, keeping the
+        // caller's separate cast distance (including its collision skin).
+        // Scale first so tiny finite deltas are not rounded to Vector3.zero by
+        // Vector3.normalized, and large finite components cannot overflow.
+        float scale = Mathf.Max(Mathf.Abs(direction.x),
+            Mathf.Max(Mathf.Abs(direction.y), Mathf.Abs(direction.z)));
+        if (!(scale > 0f) || float.IsInfinity(scale))
+            return false;
+        Vector3 scaled = direction / scale;
+        float magnitude = scaled.magnitude;
+        if (!(magnitude > 0f) || float.IsInfinity(magnitude))
+            return false;
+        normalized = scaled / magnitude;
+        return true;
     }
 
     static bool NearestEnvironment(RaycastHit[] candidates, int count, out RaycastHit hit, bool sphereCast)
@@ -105,7 +134,8 @@ public static class KeycardHandPhysics
     {
         Vector3 movement = end - start;
         float distance = movement.magnitude;
-        if (deltaTime <= 0f || distance <= 0.0001f || distance > MaximumHandStep)
+        if (!(deltaTime > 0f) || float.IsInfinity(deltaTime) ||
+            !(distance > 0.0001f) || distance > MaximumHandStep)
             return;
 
         Vector3 direction = movement / distance;

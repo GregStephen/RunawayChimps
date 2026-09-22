@@ -16,6 +16,26 @@ namespace RunawayChimps.Tests
     {
         readonly List<GameObject> created = new List<GameObject>();
         readonly Vector3 origin = new Vector3(80f, 20f, 80f);
+        static readonly Vector3 castDirectionSeed = new Vector3(0.23f, -0.17f, 0.61f);
+        static readonly Vector3[] finiteCastDirections =
+        {
+            castDirectionSeed * 0.037f,
+            castDirectionSeed * 0.0001f,
+            castDirectionSeed * 0.000001f,
+            castDirectionSeed * 1200f,
+            castDirectionSeed * 1e-30f,
+            castDirectionSeed * 1e30f,
+        };
+        static readonly Vector3[] invalidCastDirections =
+        {
+            Vector3.zero,
+            new Vector3(float.NaN, 0f, 1f),
+            new Vector3(0f, float.NaN, 1f),
+            new Vector3(0f, 1f, float.NaN),
+            new Vector3(float.PositiveInfinity, 0f, 1f),
+            new Vector3(0f, float.NegativeInfinity, 1f),
+            new Vector3(0f, 1f, float.PositiveInfinity),
+        };
         XRInteractionManager manager;
         static Type Production(string name) => Type.GetType(name + ", Assembly-CSharp", true);
         static object Call(string method, params object[] arguments) =>
@@ -68,10 +88,15 @@ namespace RunawayChimps.Tests
 
         bool EnvironmentHit(bool sphere, out RaycastHit hit)
         {
+            return EnvironmentHit(sphere, Vector3.forward, out hit);
+        }
+
+        bool EnvironmentHit(bool sphere, Vector3 direction, out RaycastHit hit)
+        {
             Physics.SyncTransforms();
             object[] args = sphere
-                ? new object[] { origin, 0.025f, Vector3.forward, default(RaycastHit), 1f, 1 }
-                : new object[] { origin, Vector3.forward, default(RaycastHit), 1f, 1 };
+                ? new object[] { origin, 0.025f, direction, default(RaycastHit), 1f, 1 }
+                : new object[] { origin, direction, default(RaycastHit), 1f, 1 };
             bool found = (bool)Call(sphere ? "SphereCastEnvironment" : "RaycastEnvironment", args);
             hit = (RaycastHit)args[sphere ? 3 : 2];
             return found;
@@ -97,6 +122,58 @@ namespace RunawayChimps.Tests
             BoxCollider wall = Solid(Vector3.forward * 0.9f);
             Assert.That(EnvironmentHit(sphere, out RaycastHit hit), Is.True);
             Assert.That(hit.collider, Is.SameAs(wall), "Saturated unordered hits must not hide the wall.");
+        }
+
+        [TestCase(false, false)]
+        [TestCase(true, false)]
+        [TestCase(false, true)]
+        [TestCase(true, true)]
+        public void DirectionScalePreservesTheWallBehindLooseCards(bool sphere, bool saturated)
+        {
+            Vector3 unitDirection = castDirectionSeed.normalized;
+            if (saturated)
+            {
+                for (int index = 0; index < 40; index++)
+                    Card(unitDirection * (0.1f + index * 0.015f), new Vector3(0.02f, 0.02f, 0.003f));
+            }
+            else
+                Card(unitDirection * 0.25f);
+
+            BoxCollider wall = Solid(unitDirection * 0.9f);
+            wall.transform.rotation = Quaternion.LookRotation(unitDirection);
+            Assert.That(EnvironmentHit(sphere, unitDirection, out RaycastHit baseline), Is.True);
+            Assert.That(baseline.collider, Is.SameAs(wall));
+
+            // Direction magnitude is independent of maximum cast distance. In
+            // Gorilla's solver even a tiny movement has a meaningful padded cast.
+            // Include directions above/below Vector3.Normalize's epsilon and
+            // finite values whose squared magnitude would underflow or overflow.
+            foreach (Vector3 direction in finiteCastDirections)
+            {
+                string context = "Direction " + direction.ToString("G9") + ", sphere=" + sphere + ", saturated=" + saturated;
+                Assert.That(EnvironmentHit(sphere, direction, out RaycastHit hit), Is.True, context);
+                Assert.That(hit.collider, Is.SameAs(wall), context);
+                Assert.That(hit.distance, Is.EqualTo(baseline.distance).Within(0.0001f), context);
+                Assert.That(Vector3.Distance(hit.point, baseline.point), Is.LessThan(0.0001f), context);
+            }
+            LogAssert.NoUnexpectedReceived();
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void ZeroAndNonfiniteDirectionsReturnNoHitWithoutPhysicsAssertions(bool sphere)
+        {
+            Card(Vector3.forward * 0.25f);
+            Solid(Vector3.forward * 0.75f);
+            foreach (Vector3 direction in invalidCastDirections)
+            {
+                Assert.That(EnvironmentHit(sphere, direction, out RaycastHit hit), Is.False);
+                Assert.That(hit.collider, Is.Null);
+                Assert.That(hit.distance, Is.Zero);
+                Assert.That(hit.point, Is.EqualTo(Vector3.zero));
+                Assert.That(hit.normal, Is.EqualTo(Vector3.zero));
+            }
+            LogAssert.NoUnexpectedReceived();
         }
 
         [TestCase(false, false)]

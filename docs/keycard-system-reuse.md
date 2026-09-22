@@ -2,11 +2,17 @@
 
 Review date: 2026-09-15 UTC. Implementation branch: `feature/keycard-reader-light-feedback`, PR #23. Review baseline: `17a3253921334733581fae9b361e796ed861a36e`. Unity **2022.3.55f1**, Photon PUN, XR Interaction Toolkit **2.6.4** (both manifest and lock file). The previous 2.5.4 references were documentation errors, not an installed-version change.
 
+## September 22 acceptance and follow-up
+
+Greg reported substantially improved handling after the `991ca18` compiler correction and approved merging [PR #23](https://github.com/GregStephen/RunawayChimps/pull/23). This supersedes the earlier failed basic-handling retest. The local tested SHA and detailed automated/device results were not supplied. [Issue #52](https://github.com/GregStephen/RunawayChimps/issues/52) records nonblocking edge-grip pose and dropped-card impact audio for a later branch.
+
+Greg then reported repeated `IsNormalized(direction)` assertions from `Physics.SphereCastNonAlloc`. The helper now normalizes Gorilla displacement inputs before all environment query paths, preserves cast distance, and rejects zero/nonfinite directions and invalid hand-motion inputs. Six new cases verify direction-scale invariance, wall/contact preservation through normal and saturated fallback, and invalid-input rejection. The suite now has **81 authored Unity cases: 58 card-system and 23 hand-physics**. Unity execution and a quiet-console headset retest of this final correction remain unreported; current source/managed/CI evidence is recorded on PR #23.
+
 ## Supported contract
 
 These are **visit-local, personal, single-use physical objective cards**. Each client owns its scene copy; there is no network card transfer or shared card inventory. A card that has been held by the local rig can be presented to a matching, explicitly bound reader. Successful acceptance commits the card as consumed before notifying progress listeners, increments exactly one lock, disables acquisition, and destroys the card. A rejected attempt remains retryable. Leaving and reloading a level creates fresh cards/progress through the existing scene lifecycle.
 
-For Level 1, the two authored cards remain Amber Triangle, the two-card count and Level 2 travel guards remain unchanged, and the Crawler/capture/zone/networking systems are not rewritten. Reading a card changes the reader's immediate feedback; the separate panel owns persistent accepted progress. Prior 0/2 -> 1/2 runtime success is historical and narrow. The reported stuck hands/forcefield/repeated-pickup failures remain unclosed until retested on the reviewed code.
+For Level 1, the two authored cards remain Amber Triangle, the two-card count and Level 2 travel guards remain unchanged, and the Crawler/capture/zone/networking systems are not rewritten. Reading a card changes the reader's immediate feedback; the separate panel owns persistent accepted progress. Prior 0/2 -> 1/2 runtime success is historical and narrow. Greg's latest basic-handling retest is accepted as recorded above; it does not claim the full reuse/device matrix below has passed.
 
 A lock can have multiple explicitly bound readers. It currently counts **accepted distinct physical cards**, not a per-credential checklist. Two Amber submissions do not mean one Amber plus one Cyan. Per-credential quotas, reusable/non-consumed passes, cross-level saved reward cards, object pooling of consumed cards, shared multiplayer cards, and network-authoritative inventory are **not implemented or approved by this review**. Do not repurpose these visit-local instances for those contracts without a separate design and lifecycle change.
 
@@ -14,7 +20,7 @@ A lock can have multiple explicitly bound readers. It currently counts **accepte
 
 ### September 22 interaction correction
 
-Greg's branch retest reports excessive attraction distance, failed repeat pickup, immovable loose cards and a grip-edge rendering defect. These remain open headset acceptance items. Bootstrap now configures both direct interactors with an **8 cm sphere**, **Improve Accuracy With Sphere Collider enabled**, Default-layer overlap queries and **Physics Trigger Interaction = Collide**. XRI 2.6.4 requires one SphereCollider and no Rigidbody on that same interactor GameObject to use this query path; copying only the enable flag onto a different hierarchy may fall back to trigger events. This explicit query can detect a stationary/sleeping acquisition trigger without waiting for a new trigger callback. The previous 60 cm spheres are superseded.
+Greg's earlier branch retest reported excessive attraction distance, failed repeat pickup, immovable loose cards and a grip-edge rendering defect; the later positive handling report supersedes that basic-usability failure status. Bootstrap now configures both direct interactors with an **8 cm sphere**, **Improve Accuracy With Sphere Collider enabled**, Default-layer overlap queries and **Physics Trigger Interaction = Collide**. XRI 2.6.4 requires one SphereCollider and no Rigidbody on that same interactor GameObject to use this query path; copying only the enable flag onto a different hierarchy may fall back to trigger events. This explicit query can detect a stationary/sleeping acquisition trigger without waiting for a new trigger callback. The previous 60 cm spheres are superseded.
 
 `KeyCard` also filters new selection/hover to a **local XRDirectInteractor within 10 cm of the solid card surface**, measured from its palm attach point. Oversized or swept volumes and ray interaction cannot acquire a distant card. Already-selected holders remain valid beyond that distance so physical wall resistance does not cause an unintended drop. These are initial tuning values requiring real hand/Quest validation. The smaller Bootstrap direct-hand volume also affects other directly grabbed props; retest those interaction points when changing the shared rig.
 
@@ -63,7 +69,7 @@ Exercise 0/2 -> 1/2 -> 2/2, exactly-once consumption, normal and failed-travel r
 
 At that checkpoint the fixture contained 49 pending Unity cases, including default reader protection before Awake, immediate consumed-collider shutdown, reentrant reader reactivation, duplicate lamp wiring, disabled safety behaviour, ten consecutive programmatic XRI release/re-grab cycles and cross-additive-scene rejection. Rotation fixtures tilt on all three axes. The programmatic XRI loop validates selection lifecycle only when run in Unity; it is not a controller-input or headset test. Run the complete fixture and practical acceptance checks above before reusing this system in production.
 
-## September 22 validation checkpoint
+## Earlier September 22 validation checkpoint (before the final query correction)
 
 **Compiler compatibility follow-up:** the user's subsequent screenshot reports CS0246 for `[NonParallelizable]` on both fixture classes. Those two annotations are removed to match the pinned Unity Test Framework 1.1.33 / Unity NUnit 1.0.6 API. All 75 cases remain. Recompile the test assembly before running it; a successful syntax-only source check does not resolve package API compatibility or establish Unity compilation.
 
