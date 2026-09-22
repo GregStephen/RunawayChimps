@@ -43,3 +43,9 @@ The terminal canvas retains its prior physical scale and uses `TerminalDistance 
 Source Integrity is meaningful source/tooling evidence only. It does not prove Unity runtime, Photon sessions, XR comfort or Quest device behavior.
 
 **Validated source only — restored distant green terminal:** clean head `cdf6b87a55d429351acf0d6b96a632fda4847893` passed Source Integrity run `34917902460` on 2026-09-14. The run passed Unity 2022.3.55f1 version enforcement, first-party C# syntax/reference and enabled-scene checks, Unity metadata/GUID integrity, Level 1 and PR #15 contracts, the restored distant security-boot contracts, local threat-feedback contracts, launch/Quest/Hub-slot/session contracts, Python compilation, merge-marker rejection and human-authored whitespace. This validates source/tooling only; Unity import/compile, Play Mode, Photon multi-client behavior and Quest/headset behavior remain pending.
+
+## September 21 visual regression correction
+
+**Runtime finding:** the restored flat terminal's first 3.90 m world-space placement was too far away and the canvas appeared reversed/mirrored.
+
+**Implemented:** reduce the panel anchor to **2.50 m** and remove the 180-degree local Y rotation from the world-space canvas. Validators now require the front-facing identity rotation and reject the superseded mirrored transform. The 2.50 m distance is pending Greg's visual approval; the multiplayer/session/build hardening remains unchanged.
