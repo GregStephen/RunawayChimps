@@ -51,3 +51,11 @@ Source Integrity is meaningful source/tooling evidence only. It does not prove U
 **Implemented:** reduce the panel anchor to **2.50 m** and remove the 180-degree local Y rotation from the world-space canvas. Validators now require the front-facing identity rotation and reject the superseded mirrored transform. The 2.50 m distance is pending Greg's visual approval; the multiplayer/session/build hardening remains unchanged.
 
 **Validated source only — September 21 terminal distance/orientation retune:** code/docs head `cdfdfe16e3fb9809339bfad507e18e749a022393` passed Source Integrity run `35676148648`. The run passed Unity 2022.3.55f1 version enforcement, C# syntax/references, repository integrity, Level 1 and PR #15 contracts, front-facing security-boot contracts, local threat-feedback contracts, launch/Quest/Hub-slot/session contracts, Python compilation, merge-marker rejection and whitespace checks. This validates source/tooling only; Unity Play Mode/headset visual approval of the 2.50 m placement remains pending.
+
+## September 21 final visual correction — original screen-space boot
+
+The 2.50 m world-space retune also failed runtime review: the boot/perceived view moved with XR-rig settling, hidden hand-floor impacts were audible, and the effect no longer felt like the earlier approved loading screen. The active direction is now the **original PR #20 screen-space green terminal**, not a world-space panel at any distance.
+
+**Implemented:** build the 1080 × 820 terminal directly on the Loading canvas; bind the canvas with `RenderMode.ScreenSpaceCamera`; restore the original view-relative 72% width / 84% height scaling and camera-plane placement; remove the world-space panel helper; suppress `HandImpactAudio` for the duration of cold-start Loading; retain visual CRT noise/scanlines/interference; and add a very soft initial/periodic static crackle. All Photon Hub-slot/session, retry/reveal, black-travel and Quest-splash hardening remains in place.
+
+**Pending validation:** confirm in Unity 2022.3.55f1 that the boot once again looks like the earlier approved green screen, does not visibly fall with the rig, startup hand impacts are silent, CRT/static reads clearly but comfortably, and Hub reveal remains clean.
