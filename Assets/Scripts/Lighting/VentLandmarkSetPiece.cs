@@ -9,7 +9,7 @@ public sealed class VentLandmarkSetPiece : MonoBehaviour
     private const string LevelOneScene = "Level1_Containment";
     private const string RuntimeRootName = "Level1_VentLandmarks";
     private const int LandmarkCount = 4;
-    private const float FixtureHeight = 0.38f;
+    private const float FixtureHeight = 0.38f;\n    private const float ExistingLandmarkExclusionRadius = 2.25f;
 
     private readonly List<Light> pulseLights = new List<Light>();
     private readonly List<float> pulseSeeds = new List<float>();
@@ -46,6 +46,15 @@ public sealed class VentLandmarkSetPiece : MonoBehaviour
         {
             if (point != null && point.gameObject.scene == scene)
                 candidates.Add(point);
+        }
+
+        // VentRoom already has the approved blower/red-light identity. Do not stack another
+        // generated landmark on top of that authored set piece.
+        Transform ventRoom = FindNamedTransform(scene, "VentRoom");
+        if (ventRoom != null)
+        {
+            candidates.RemoveAll(point =>
+                HorizontalDistance(point.position, ventRoom.position) < ExistingLandmarkExclusionRadius);
         }
 
         List<Transform> selected = SelectSpreadPoints(candidates, LandmarkCount);
