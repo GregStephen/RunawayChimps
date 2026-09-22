@@ -1,6 +1,6 @@
 # Hand impacts and reusable surface audio
 
-Recorded 2026-09-22. **Implemented on `fix/hand-impact-surface-audio`, based on main `9da4a1e`; pending Unity and headset acceptance.** This branch retains Unity 2022.3.55f1, Photon PUN, the current locomotion solver, and the existing two Bootstrap hand components. It does not change the separate 62f3 compatibility trial.
+Recorded 2026-09-22. **Implemented on `fix/hand-impact-surface-audio`, originally based on main `9da4a1e` and reconciled onto adopted main `a8c3fd8`; pending Unity and headset acceptance.** The active project baseline is Unity **2022.3.62f3 (`96770f904ca7`)** with Photon PUN.
 
 ## Confirmed requirement
 
@@ -67,7 +67,7 @@ The existing Listener/noise-event design remains a separate gameplay consumer. A
 
 **Executed on 2026-09-22:** the production `HandImpactGate` harness passed **10,758 assertions**; the existing `CardConsumptionState` harness passed **18,015 assertions**. C# 9 compilation of the actual Player/contact/profile/emitter classes against temporary external Unity/travel/keycard API stubs passed with zero errors (only the preexisting unused `jumpHandIsLeft` warning), and **30 supplemental assertions** exercised the actual contact-to-voice methods, including persistent pause/focus suppression and recovery. The repository source/serialization/feature contracts, Python compilation, deterministic audio check and whitespace checks passed. The temporary stub harness is supplemental evidence; the durable managed gate regression is committed under `Tools/HandImpactHarness` and runs in CI. Dedicated Unity fixture execution is still pending.
 
-**Pending acceptance:** Unity 2022.3.55f1 import/compilation and Test Runner execution; actual spatial sound and clip quality; headset contact timing; two-client isolation; target Quest performance. Source parsing and a managed compiler with Unity stubs do not execute Unity physics or an audio device.
+**Pending acceptance:** Unity 2022.3.62f3 (`96770f904ca7`) import/compilation and Test Runner execution; actual spatial sound and clip quality; headset contact timing; two-client isolation; target Quest performance. Source parsing and a managed compiler with Unity stubs do not execute Unity physics or an audio device.
 
 Start from Bootstrap on this branch and test:
 

@@ -1,16 +1,16 @@
 # Unity runtime security and baseline review
 
-Reviewed: 2026-09-21. Tracker: [MVP-02, issue #27](https://github.com/GregStephen/RunawayChimps/issues/27). Status: **Unity 2022.3.62f3 compatibility candidate approved by Greg; implementation and runtime validation pending.**
+Reviewed: 2026-09-21. Tracker: [MVP-02, issue #27](https://github.com/GregStephen/RunawayChimps/issues/27). Status: **62f3 branch and editor/CI declaration prepared after Greg's September 22 go-ahead; compatibility/build/headset validation pending.**
 
 Read [design and lore](design-and-lore.md), [repository improvement plan](repository-improvement-plan.md), and [MVP roadmap](mvp-roadmap.md) before changing project behavior. This is a technical review, not a new release-scope decision.
 
-**September 22 documentation reconciliation:** current main is `d12b403fd17b1792c585d3612a7c77a12caf690f`, with PRs #21/#23/#24/#54/#58 already merged. The September 21 advisory/package investigation below is preserved as dated evidence, not a newly performed security or platform-certification review. The 62f3 trial still awaits Greg's confirmation of the finished tests/merges and exact starting baseline. This cleanup starts no upgrade. Current ProjectVersion and Source Integrity still declare 2022.3.55f1; no Unity/Android/headset validation is supplied here.
+**Earlier September 22 documentation reconciliation (historical):** that docs-only task preserved the September 21 security investigation and did not lift the hold. Greg later explicitly requested creation of the compatibility branch. The new trial starts from `9da4a1e46faa16484af9425edb41517a5a931a75`, declares 62f3 and follows [the trial guide](unity-2022.3.62f3-compatibility.md). This supersedes the old branch-creation wait; it does not supply runtime results or a new comprehensive advisory/store-certification review.
 
-## Current project and authority boundary
+## Historical investigation baseline and authority boundary
 
 Historical September 21 source reviewed on main `f9edea67af08ff7c35d043e05ad66a5615a9aeb2`; confirmed release decisions read from `docs/solo-mvp-roadmap` at `cf284ee6674a328fae75942f8a9530e6bc29001c` / PR #49 (historical documentation source). The target is standalone Quest 2 and Quest 3; the Windows second-client harness remains development-only.
 
-`ProjectSettings/ProjectVersion.txt` still pins `2022.3.55f1 (9f374180d209)`. `.github/workflows/source-validation.yml` independently enforces `2022.3.55f1`. No editor pin, package, scene, renderer, networking implementation, or CI enforcement is changed by this review. Greg explicitly approved the **2022.3.62f3 (`96770f904ca7`)** isolated compatibility candidate on September 21. Actual compatibility evidence is still required before adopting it as the tested build baseline.
+At the September 21 investigation, `ProjectSettings/ProjectVersion.txt` pinned `2022.3.55f1 (9f374180d209)`. The workflow at that baseline independently enforced `2022.3.55f1`. No editor pin, package, scene, renderer, networking implementation, or CI enforcement is changed by this review. Greg explicitly approved the **2022.3.62f3 (`96770f904ca7`)** isolated compatibility candidate on September 21. Actual compatibility evidence is still required before adopting it as the tested build baseline.
 
 ## Security applicability correction
 
@@ -42,7 +42,7 @@ Unity's versioned [XRI 2.6 documentation](https://docs.unity3d.com/Packages/com.
 
 ## Controlled implementation plan after version approval
 
-1. After Greg confirms his chosen tests/merges are complete and agrees the exact baseline, recheck main and create the isolated 62f3 trial from that SHA. Version approval is not public-release certification and does not lift the sequencing hold. PRs #21/#23/#24 are already merged; preserve their combined implementation and pending acceptance instead of merging them again.
+1. **Branch preparation implemented, September 22:** Greg's explicit go-ahead lifts the hold. `compat/unity-2022.3.62f3` starts at `9da4a1e46faa16484af9425edb41517a5a931a75`, with both editor declaration lines and the exact CI guard updated. Preserve merged implementations. Remaining steps require actual local evidence; preparation is not adoption or release certification.
 2. Keep the original working checkout/editor installation intact. Use a separate checkout with its own Library/output directory. Save/commit local work first; do not hard-reset, clean away assets, or reuse an upgraded Library with the old editor.
 3. Install 62f3 alongside 55f1, including Android Build Support, Android SDK & NDK Tools, and OpenJDK. Unity's [2022.3 dependency reference](https://docs.unity3d.com/2022.3/Documentation/Manual/android-supported-dependency-versions.html) lists NDK r23b (23.1.7779620) and JDK 11. Use the Hub-provided tools, and record actual SDK/build-tools/JDK/NDK/Gradle versions from the installed editor/build log. Do not infer Greg's installed toolchain from this reference or confuse SDK build-tools versions with the store target-API requirement.
 4. Update both ProjectVersion lines coherently to `2022.3.62f3 (96770f904ca7)` and intentionally update the exact CI version guard. Update current AGENTS/README/build instructions and both maintained overviews while preserving historical test-version evidence. Inspect other validators/version references rather than globally rewriting history or accepting arbitrary editor versions.
@@ -55,4 +55,4 @@ Unity's versioned [XRI 2.6 documentation](https://docs.unity3d.com/Packages/com.
 
 Completed here: live repository/configuration inspection, official advisory/release/package-document review, candidate selection recommendation, and a documented implementation/rollback plan.
 
-Not completed: installation/license verification, the editor/CI pin change, Unity compilation, package compatibility validation, Android build/signing, headset testing, performance measurement, artifact replacement, or any public submission. Issue #27 remains open.
+Not completed: installation/license verification, Unity compilation, installed-package compatibility, Android build/signing, headset testing, performance measurement, artifact replacement or public submission. The editor/CI pin is now changed only on the isolated trial branch, not on main. Issue #27 remains open until its runtime and support checks are satisfied.

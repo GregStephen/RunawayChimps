@@ -1,12 +1,19 @@
 # Runaway Chimps
 
-A Photon PUN VR horror game about escaping a laboratory. Open this project with **Unity 2022.3.55f1**. Cheeky Chimps is a separate Unity 6 project.
+A Photon PUN VR horror game about escaping a laboratory. Open this project with **Unity 2022.3.62f3 (96770f904ca7)**. Cheeky Chimps is a separate Unity 6 project.
+
+## Unity 62f3 baseline
+PR #61 was merged on September 22 after a clean Unity 2022.3.62f3 import/playthrough and a passing **Run Reliability Regression Checks** result. Main now declares **2022.3.62f3 (96770f904ca7)**. The upgrade did not intentionally change packages, gameplay, scenes, authored assets, Photon PUN, rendering or XR settings. Remaining Android/Quest/package acceptance stays open in #27.
+
+Two pre-existing problems surfaced during the trial and are tracked separately: #63 for the Crawler threat-vignette `_MainTex` error and #64 for Sector Travel missing-script/fingertip-button wiring failures. The regression suite's temporary `Could not create room: Room name exists` message is intentional test coverage and not a defect.
+
+The older project-layout/audit sections below describe earlier development snapshots and must not override the maintained [design](docs/design-and-lore.md) or [improvement plan](docs/repository-improvement-plan.md). Full historical README reconciliation remains #28; do not reinterpret old 55f1 test results as 62f3 results.
 
 ## Project documentation
 
 - [Design and lore](docs/design-and-lore.md): maintained game rules, level concepts, images, proposals, and decision corrections.
 - [Repository improvement plan](docs/repository-improvement-plan.md): review evidence, implementation status, priorities, and acceptance checks.
-- [Hand impacts and surface audio](docs/hand-impact-audio.md): reusable Inspector profiles, urgent hand-contact fix and headset acceptance checks.
+- [Hand impacts and surface audio](docs/hand-impact-audio.md): reusable Inspector profiles, hand-contact reliability fix, and headset acceptance checks.
 - [Automated source validation](docs/ci-validation.md): what the GitHub `Source integrity` check verifies, first-run findings, and what remains manual.
 - [Codebase audit — September 10, 2026](docs/codebase-audit-2026-09-10.md): reliability findings, fixes, and remaining test scope for PR #5.
 - [AGENTS.md](AGENTS.md): instructions to read and update the relevant documents when decisions, implementation, or test results meaningfully change.
@@ -62,7 +69,7 @@ PR #11 adds `.github/workflows/source-validation.yml`, a read-only **Source inte
 
 The check pins its C# parser dependencies and verifies:
 
-- `ProjectSettings/ProjectVersion.txt` still declares Unity **2022.3.55f1**;
+- `ProjectSettings/ProjectVersion.txt` declares Unity **2022.3.62f3 (96770f904ca7)**, and both version lines must match;
 - `python Tools/validate_source.py --syntax` passes for first-party component/class names, Unity script metadata/GUIDs, enabled scene registration, scene metadata, local object IDs/references, and C# syntax;
 - tracked Python tools compile with `python -m compileall -q Tools`; and
 - `git diff --check` passes for the full PR or pushed range.
@@ -73,7 +80,8 @@ A green Source integrity check is **not Unity validation**. It does not import o
 
 ## Audio and proximity fixes
 
-The September 22 hand-impact correction on `fix/hand-impact-surface-audio` uses actual Gorilla hand contacts, shared configurable surface profiles, bounded spatial voices with Doppler disabled, and a cleaned single-transient default tap. See [configuration and validation](docs/hand-impact-audio.md). Unity/headset acceptance remains pending; vent-metal content (#57), keycard drop/grip polish (#52) and blower audio (#56) retain their scope.
+The September 22 hand-impact correction on `fix/hand-impact-surface-audio` uses actual Gorilla hand contacts, shared configurable surface profiles, bounded spatial voices with Doppler disabled, and a cleaned single-transient default tap. It is reconciled to the adopted Unity **2022.3.62f3 (96770f904ca7)** baseline. See [configuration and validation](docs/hand-impact-audio.md). Unity/headset acceptance remains pending; vent-metal content (#57), keycard drop/grip polish (#52), and blower audio (#56) retain their scope.
+
 
 - `AudioScaler` stops its source when vent, patrol/chase, or distance filters exclude playback. Disabling the scaler also stops its source. Mute-change logging respects `debugLogs`.
 - `PlayerVentState.LocalPlayerInVent` uses `ZoneStateService.LocalZone` when available in a Photon room. Older scenes without the service retain their fallback.
@@ -158,4 +166,8 @@ Only the local hand/fingertip should activate it. A remote hand, local head/body
 
 **Source validated on PR #11, 2026-09-12:** both push and pull-request Source integrity runs passed after the check first exposed and prompted fixes for the broken Level 2 floorplan drawing script and whitespace in three new Unity metadata files. This automated evidence covers source/serialization/tool syntax and whitespace only.
 
-**Pending on the current branches:** Unity 2022.3.55f1 compile/import; both Editor validators; startup/live-service tests; Hub entrance button Play Mode/headset behavior; Level 1/2 routes; two-client Photon; capture/controller handover/reconnect; voice; headset pause/resume; repeated travel; Quest performance and comfort.
+**Pending on the current branches:** Unity 2022.3.55f1 compile/import; both Editor validators; startup/live-service tests; Hub entrance button Play Mode/headset behavior; Level 1/2 routes; two-client Photon; capture/controller handover/reconnect; voice; headset pause/resume; repeated travel; Quest performance and comfort.## Current Unity baseline
+
+**Unity 2022.3.62f3 (`96770f904ca7`) is now adopted on main through PR #61 (`a8c3fd8`).** Greg completed the compatibility import/playthrough without new errors or warnings and approved the merge. Photon PUN, packages, built-in rendering and XR/OpenXR settings were not intentionally changed by that editor update. Remaining Android/Quest/package checks and unrelated gameplay defects stay separate.
+
+

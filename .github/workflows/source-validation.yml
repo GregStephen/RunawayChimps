@@ -59,15 +59,16 @@ jobs:
           from pathlib import Path
           import re
           import sys
-
-          expected = '2022.3.55f1'
+          expected = '2022.3.62f3'
+          expected_revision = '96770f904ca7'
           text = Path('ProjectSettings/ProjectVersion.txt').read_text(encoding='utf-8-sig')
-          match = re.search(r'^m_EditorVersion:\s*(\S+)\s*$', text, re.MULTILINE)
-          actual = match.group(1) if match else None
-          if actual != expected:
-              print(f'ERROR: expected Unity {expected}, found {actual!r}.')
+          versions = re.findall(r'^m_EditorVersion:[ \t]*(\S+)[ \t]*$', text, re.MULTILINE)
+          revisions = re.findall(r'^m_EditorVersionWithRevision:[ \t]*(.+?)[ \t]*$', text, re.MULTILINE)
+          wanted_revision = f'{expected} ({expected_revision})'
+          if versions != [expected] or revisions != [wanted_revision]:
+              print(f'ERROR: expected exactly one {expected} / {wanted_revision}; found {versions!r} / {revisions!r}.')
               sys.exit(1)
-          print(f'PASS: Unity editor version is {actual}.')
+          print(f'PASS: Unity editor version and revision are {wanted_revision}.')
 
       - name: Validate first-party source and enabled scenes
         run: python Tools/validate_source.py --syntax
