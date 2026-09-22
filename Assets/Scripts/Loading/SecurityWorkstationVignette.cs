@@ -10,9 +10,9 @@ namespace RunawayChimps.Loading
     /// </summary>
     public sealed class SecurityWorkstationVignette : MonoBehaviour
     {
-        // Keep the same physical terminal size as the previous monitor canvas, but place it at
-        // twice the former 1.95 m workstation distance so it reads as a calmer, farther panel.
-        private const float TerminalDistance = 3.90f;
+        // Keep the approved physical terminal size, but place it only modestly farther away
+        // than the original presentation after the 3.90 m runtime test proved much too distant.
+        private const float TerminalDistance = 2.50f;
         private const float MonitorCanvasScale = 0.00082f;
 
         private Camera startupCamera;
@@ -69,7 +69,7 @@ namespace RunawayChimps.Loading
             var rect = obj.GetComponent<RectTransform>();
             rect.SetParent(transform, false);
             rect.localPosition = Vector3.zero;
-            rect.localRotation = Quaternion.Euler(0f, 180f, 0f);
+            rect.localRotation = Quaternion.identity;
             rect.localScale = Vector3.one * MonitorCanvasScale;
             rect.sizeDelta = new Vector2(1080f, 820f);
             rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(0.5f, 0.5f);
