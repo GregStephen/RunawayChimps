@@ -9,6 +9,7 @@ using UnityEngine.XR;
 
 public class LoadingFlow : MonoBehaviour
 {
+    public static bool IsColdStartupPresentationActive { get; private set; }
     [SerializeField] private string hubSceneName = "Hub_Base";
     [SerializeField] private TMP_Text statusText;
     [Min(10f)] [SerializeField] private float startupTimeout = 90f;
@@ -33,6 +34,7 @@ public class LoadingFlow : MonoBehaviour
     {
         startup = !(RunawayChimps.Travel.SectorTravelService.I != null &&
             RunawayChimps.Travel.SectorTravelService.I.IsBusy);
+        if (startup) IsColdStartupPresentationActive = true;
     }
 
     private void Start()
@@ -171,6 +173,11 @@ public class LoadingFlow : MonoBehaviour
         presentation?.SetBackdropOpacity(0f);
         presentation?.RestoreCameraForReveal();
         yield return SceneManager.UnloadSceneAsync(gameObject.scene);
+    }
+
+    private void OnDestroy()
+    {
+        if (startup) IsColdStartupPresentationActive = false;
     }
 
     private void AbortEntry()
