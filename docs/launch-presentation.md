@@ -6,13 +6,15 @@ Last updated: 2026-09-14. Branch: `feature/launch-presentation-polish`. Runaway 
 
 **Confirmed:** the game launch presentation uses the approved **facility security-system boot**. Normal successful Hub/level travel remains **black-only** with no boot terminal, logo, tips or loading text unless measured transition times later justify revisiting that rule. Real travel failures still surface recovery feedback.
 
-**Superseding September 14 correction:** Greg rejected the physical security workstation/desk presentation and explicitly asked for the **old green screen back**, positioned roughly **twice as far away**. The workstation/desk version is no longer the selected visual direction.
+**Superseding September 14 correction:** Greg rejected the physical security workstation/desk presentation and explicitly asked for the **old green screen back**. The workstation/desk version is no longer the selected visual direction.
+
+**September 21 runtime correction:** the first world-space tuning at **3.9 m** was visually rejected as **way too far away**, and the terminal rendered reversed/mirrored. The 3.9 m target is superseded. The mirrored presentation was a source bug caused by a 180-degree local Y rotation on the world-space canvas.
 
 The selected Unity-rendered launch sequence is now:
 
 1. Black startup isolation.
 2. One flat green facility security terminal in black space.
-3. The terminal sits about **3.9 m** ahead of the initial horizontal player view, twice the previous 1.95 m workstation distance.
+3. The current retune places the terminal about **2.5 m** ahead of the initial horizontal player view. This is an implemented tuning candidate, not yet visually approved.
 4. Real readiness rows update from Photon/Hub/rig/avatar state; no fake percentage or simulated progress.
 5. `ACCESS GRANTED` holds briefly.
 6. Black fully covers and retires the terminal before the Hub is revealed.
@@ -24,7 +26,7 @@ The player/head camera is never artificially translated or rotated. The terminal
 
 **Implemented visual correction, pending Unity validation:** `SecurityWorkstationVignette` remains the legacy source-file/class name, but it no longer builds a workstation. It now creates only the world-space green terminal canvas. The previous runtime desk, monitor shell, keyboard, mug, badge, clipboard and note props have been removed from the active presentation.
 
-The 1080 × 820 terminal keeps the prior monitor-canvas physical scale (`0.00082`) and is placed **3.90 m** from the initial horizontal camera heading at eye height. This preserves the approved terminal design while making it feel substantially farther away and less intrusive.
+The 1080 × 820 terminal keeps the prior monitor-canvas physical scale (`0.00082`) and is now placed **2.50 m** from the initial horizontal camera heading at eye height. The previous 3.90 m test is rejected. The canvas now uses an identity local rotation so the player sees the front face rather than the mirrored back face.
 
 **Implemented render isolation:** the startup terminal and authored black Loading cover use the dedicated `LoadingPresentation` layer. During startup the persistent camera sees only that layer against a black clear, preventing additively loaded Hub UI/world content from leaking through. During the final reveal it temporarily renders the saved Hub mask plus `LoadingPresentation`, fades black away, then restores the exact original camera culling mask, clear flags and background. Interrupted entry reapplies startup isolation and may rebuild the terminal/error presentation.
 
@@ -55,9 +57,9 @@ Unity 2022's built-in splash remains a pending license/build detail. Do not clai
 ## Pending validation
 
 - Unity **2022.3.55f1** import/compile.
-- Play Mode: confirm the flat green terminal appears about **3.9 m** ahead and is centered at a comfortable eye-height presentation.
-- Verify the increased distance produces the intended smaller/farther appearance while keeping all startup text readable.
-- Verify ordinary head turning does not move/head-lock the terminal and hidden XR-origin relocation does not leave it behind.
+- Play Mode: confirm the flat green terminal appears about **2.5 m** ahead and is centered at a comfortable eye-height presentation.
+- Verify the 2.5 m retune feels modestly farther than the original without becoming distant, and that all startup text remains readable.
+- Verify text is no longer mirrored/reversed. Verify ordinary head turning does not move/head-lock the terminal and hidden XR-origin relocation does not leave it behind.
 - Verify the subtle CRT/static treatment is still comfortable/readable at the longer distance.
 - Verify `ACCESS GRANTED` -> full black -> terminal absent -> Hub reveal has no terminal reconstruction, gray flash, world/UI leakage or permanent black.
 - Force a startup interruption/retry and confirm the terminal/error presentation restores correctly.
@@ -73,3 +75,9 @@ Earlier PR #21 source runs validated the workstation-era source state only and d
 See [Launch vignette — restored flat security terminal](launch-workstation-vignette.md) for the focused implementation and acceptance checklist.
 
 **Validated source only — restored distant green terminal:** clean head `cdf6b87a55d429351acf0d6b96a632fda4847893` passed Source Integrity run `34917902460` on 2026-09-14. The run passed Unity 2022.3.55f1 version enforcement, first-party C# syntax/reference and enabled-scene checks, Unity metadata/GUID integrity, Level 1 and PR #15 contracts, the restored distant security-boot contracts, local threat-feedback contracts, launch/Quest/Hub-slot/session contracts, Python compilation, merge-marker rejection and human-authored whitespace. This validates source/tooling only; Unity import/compile, Play Mode, Photon multi-client behavior and Quest/headset behavior remain pending.
+
+## September 21 runtime retune — distance and orientation
+
+**Failed visual validation:** the 3.90 m world-space terminal was far too distant in Play Mode and the text appeared reversed/mirrored.
+
+**Implemented correction, pending retest:** terminal distance is reduced to **2.50 m** and the world-space canvas local rotation is now identity instead of a 180-degree Y flip. Source validators explicitly reject the mirrored rotation and constrain the current distance to a conservative mid-distance range. The exact 2.50 m value remains tuning until Greg visually approves it.
