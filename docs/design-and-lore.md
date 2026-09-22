@@ -658,3 +658,11 @@ The workstation now clones a referenced Standard material from `Resources/Launch
 **Preserved implementation:** real Photon/Hub/rig/avatar readiness, retry/error feedback, black-only successful sector travel, dedicated Loading render isolation, final Hub reveal safeguards, Meta/Quest system splash validation, ten-slot Photon Hub placement and room-session/reconnect hardening remain unchanged.
 
 **Pending validation:** Unity 2022.3.55f1 Play Mode/headset confirmation that the restored boot matches the earlier approved framing, stays visually stable while the rig settles, hands no longer slap audibly during cold startup, CRT/static is visible/audible but restrained, and the black-to-Hub reveal remains clean.
+
+## September 21 launch terminal size correction — smaller screen-space footprint
+
+**Latest runtime feedback:** after restoring the PR #20-style screen-space presentation, Greg reported the green terminal is still **way too big**. The screen-space approach remains preferred because it avoids the world-space rig-settling/drop problem; the correction is to reduce the terminal's viewport footprint rather than move it in world space.
+
+**Implemented tuning candidate on `feature/launch-presentation-polish` / PR #21:** retain the 1080 × 820 terminal layout and all readiness/CRT/retry behavior, but reduce the view-relative scale from the original approximately **72% width / 84% height** to approximately **54% width / 63% height**. This is a 25% reduction in both dimensions and remains centered. No world-space distance or XR-origin panel is reintroduced.
+
+**Status:** the smaller footprint is implemented but **not yet visually approved**. Pending validation is Play Mode/headset confirmation that the terminal is comfortably sized, text remains readable, CRT/static remains visible, hidden rig settling stays visually/audio isolated, and Hub reveal remains clean.
