@@ -850,3 +850,11 @@ This tuning workflow is Editor-only and does not bypass real startup readiness o
 **Resolution details:** the workflow keeps current-main managed card-state, keycard-reader and interaction-safety checks and adds PR #21's launch-presentation validator. The maintained docs keep all newer mainline card-system/keycard/fan records plus PR #21's complete launch-presentation chronology and latest approved screen-space scale `0.50`. Non-overlapping PR #21 source/assets were retained unchanged.
 
 **Validation boundary:** branch is no longer behind main. Run the combined Source Integrity suite on the final post-reconciliation head; do not treat mergeability alone as Unity/runtime proof.
+
+## September 21 PR #21 merged to main
+
+**Completed repository work:** PR #21 merged to `main` as `6cf7ec9fc5aff7d401d601277dade870f6037c88`. Its pre-merge current-main reconciliation preserved all newer card-system/keycard/VentRoom follow-up work while adding the launch-presentation validator to the expanded Source Integrity workflow.
+
+**Active launch implementation on main:** screen-space green security terminal with approved `terminalScale = 0.50`; no physical desk/workstation and no world-space distance tuning. Retain the Meta/Quest splash, Loading isolation, CRT/static audio/visual treatment, startup hand-impact suppression, ten-slot Photon Hub allocation, room-session/reconnect hardening, and black-only successful sector travel.
+
+**Pending validation after merge:** complete the post-merge Source Integrity run, then keep Unity 2022.3.55f1 import/compile, startup/retry/reveal behavior, simultaneous two-client slot claims, room switch/reconnect, slot reuse/Master handoff, authored Hub-slot clearance, and Quest build/headset behavior open until actually observed.
