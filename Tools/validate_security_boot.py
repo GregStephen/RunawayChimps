@@ -62,7 +62,7 @@ def main() -> int:
 
     require(panel, ["Security Boot Panel Vignette", "GetComponentInParent<XROrigin>", "DontDestroyOnLoad(root)",
                     "RenderMode.WorldSpace", "Security Boot World Canvas", "TerminalDistance = 2.50f",
-                    "rect.localRotation = Quaternion.identity;", 
+                    "rect.localRotation = Quaternion.identity;",
                     "camera.transform.position + forward * TerminalDistance",
                     "root.transform.SetParent(origin.transform, true)"],
             "startup security panel")
