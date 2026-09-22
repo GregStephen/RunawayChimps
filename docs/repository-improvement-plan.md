@@ -1,6 +1,6 @@
 # Runaway Chimps repository improvement plan
 
-Last updated: 2026-09-14. Maintained repository edition, migrated from `Runaway_Chimps_Repository_Review_and_Plan.docx`, Revision 2. The original review examined `main` at `4f6894141aa2b132d744cb2423c1ee227e0fc5be`; its evidence links remain pinned to that baseline. The Word document is a historical downloadable snapshot.
+Last updated: 2026-09-21. Maintained repository edition, migrated from `Runaway_Chimps_Repository_Review_and_Plan.docx`, Revision 2. The original review examined `main` at `4f6894141aa2b132d744cb2423c1ee227e0fc5be`; its evidence links remain pinned to that baseline. The Word document is a historical downloadable snapshot.
 
 Read the [design and lore](design-and-lore.md) for intended behavior and [AGENTS.md](../AGENTS.md) for update rules. A confirmed finding describes source evidence; it does not mean its fix is implemented or tested.
 
@@ -638,3 +638,13 @@ The workstation now clones a referenced Standard material from `Resources/Launch
 **Validation boundary:** rerun Source Integrity on the corrected head, then validate Unity **2022.3.55f1** import/compile and Play Mode presentation before merge. Runtime acceptance now focuses on the 3.9 m flat terminal's readability/comfort, no head-locking, clean black cover and reveal, retry recovery, plus the existing two-client Photon room/slot/reconnect and Quest/headset checks. Do not carry forward workstation-prop or note-readability tests; those presentation elements are intentionally removed.
 
 **Validated source only — restored distant green terminal:** clean head `cdf6b87a55d429351acf0d6b96a632fda4847893` passed Source Integrity run `34917902460` on 2026-09-14. The run passed Unity 2022.3.55f1 version enforcement, first-party C# syntax/reference and enabled-scene checks, Unity metadata/GUID integrity, Level 1 and PR #15 contracts, the restored distant security-boot contracts, local threat-feedback contracts, launch/Quest/Hub-slot/session contracts, Python compilation, merge-marker rejection and human-authored whitespace. This validates source/tooling only; Unity import/compile, Play Mode, Photon multi-client behavior and Quest/headset behavior remain pending.
+
+## September 21 PR #21 runtime visual correction — distance and mirroring
+
+**Runtime finding:** the first restored-terminal world-space tuning failed visual review: **3.90 m is too far**, and the terminal appeared reversed/mirrored.
+
+**Implemented correction on `feature/launch-presentation-polish`:** reduce `TerminalDistance` from 3.90 m to **2.50 m** and replace the world-space canvas's 180-degree Y rotation with identity rotation so the front face is presented to the player. Launch validators now enforce the corrected mid-distance range and reject the mirrored transform.
+
+**Preserved work:** this retune does not remove PR #21's render isolation, real startup readiness/error/retry behavior, CRT/static treatment, final reveal guard, Meta/Quest splash validation, demand-driven ten-slot Photon Hub placement, room-session resnap/reconnect handling, authored spawn markers, or black-only successful sector travel.
+
+**Pending validation:** Unity 2022.3.55f1 import/compile and Play Mode visual approval of the 2.50 m placement/orientation remain required. Two-client Photon and Quest/headset checks remain pending separately.
