@@ -59,3 +59,5 @@ Source validation is not Unity/headset proof.
 **Failed runtime result:** 3.90 m is rejected as too far. The 180-degree world-canvas rotation is rejected because it presented the back face and mirrored the terminal.
 
 **Implemented tuning candidate:** 2.50 m with identity canvas rotation. Keep all other startup, black-cover, Photon slot/session, retry and Quest-splash behavior unchanged. Runtime visual approval remains pending.
+
+**Validated source only — September 21 terminal distance/orientation retune:** code/docs head `cdfdfe16e3fb9809339bfad507e18e749a022393` passed Source Integrity run `35676148648`. The run passed Unity 2022.3.55f1 version enforcement, C# syntax/references, repository integrity, Level 1 and PR #15 contracts, front-facing security-boot contracts, local threat-feedback contracts, launch/Quest/Hub-slot/session contracts, Python compilation, merge-marker rejection and whitespace checks. This validates source/tooling only; Unity Play Mode/headset visual approval of the 2.50 m placement remains pending.
