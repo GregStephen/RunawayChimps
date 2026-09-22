@@ -500,6 +500,9 @@ namespace RunawayChimps.Loading
             bootAudio.spatialBlend = 0f;
             bootAudio.volume = 0.045f;
             bootAudio.dopplerLevel = 0f;
+            // A short, restrained startup crackle ensures the CRT treatment has an audible
+            // cue even when real startup completes before the first periodic interference sweep.
+            bootAudio.PlayOneShot(staticCrackle, 0.35f);
         }
 
         private void OnDisable()
