@@ -5,7 +5,7 @@ HandTap_Dry.wav is the conservative edit of the project's existing Walk2b
 recording and remains available as a production-candidate reference.
 
 HandImpact_DiagnosticTick.wav is intentionally synthetic and temporary. It is a
-single ~20 ms damped tone with fixed timing and no material character so headset
+single ~20 ms file containing one short integer-generated biphasic click so headset
 testing can distinguish contact-trigger behavior from a misleading Foley sample.
 
 Run from any directory. --check compares exact bytes without writing anything.
@@ -32,11 +32,7 @@ FADE_OUT_SECONDS = 0.024
 
 DIAGNOSTIC_RATE = 48000
 DIAGNOSTIC_SECONDS = 0.020
-DIAGNOSTIC_FREQUENCY = 1800.0
-DIAGNOSTIC_DECAY_SECONDS = 0.0038
-DIAGNOSTIC_ATTACK_SECONDS = 0.0005
-DIAGNOSTIC_FADE_OUT_SECONDS = 0.003
-DIAGNOSTIC_AMPLITUDE = 0.52
+DIAGNOSTIC_SAMPLE_COUNT = 960
 
 
 def render_dry():
@@ -70,26 +66,19 @@ def render_dry():
 
 def render_diagnostic():
     rate = DIAGNOSTIC_RATE
-    count = round(DIAGNOSTIC_SECONDS * rate)
-    attack = round(DIAGNOSTIC_ATTACK_SECONDS * rate)
-    fade_out = round(DIAGNOSTIC_FADE_OUT_SECONDS * rate)
     samples = []
-    for index in range(count):
-        time_seconds = index / rate
-        gain = math.exp(-time_seconds / DIAGNOSTIC_DECAY_SECONDS)
-        if index < attack:
-            gain *= 0.5 - 0.5 * math.cos(math.pi * index / max(1, attack - 1))
-        remaining = count - 1 - index
-        if remaining < fade_out:
-            gain *= 0.5 - 0.5 * math.cos(math.pi * remaining / max(1, fade_out - 1))
-        sample = (
-            DIAGNOSTIC_AMPLITUDE
-            * math.sin(2.0 * math.pi * DIAGNOSTIC_FREQUENCY * time_seconds)
-            * gain
-        )
-        samples.append(max(-32768, min(32767, round(sample * 32767))))
-    samples[0] = 0
-    samples[-1] = 0
+    for index in range(DIAGNOSTIC_SAMPLE_COUNT):
+        if index < 16:
+            sample = index * 1024
+        elif index < 32:
+            sample = (31 - index) * 1024
+        elif index < 48:
+            sample = -(index - 32) * 768
+        elif index < 64:
+            sample = -(63 - index) * 768
+        else:
+            sample = 0
+        samples.append(sample)
     return encode_pcm16(samples, rate), samples, rate
 
 
