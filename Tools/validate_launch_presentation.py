@@ -77,7 +77,7 @@ def main() -> int:
         "hostCanvas.planeDistance = Mathf.Max(1.5f",
         "BaseTerminalViewWidthFraction = 0.72f",
         "BaseTerminalViewHeightFraction = 0.84f",
-        "[SerializeField, Range(0.40f, 1.00f)] private float terminalScale = 0.75f",
+        "[SerializeField, Range(0.40f, 1.00f)] private float terminalScale = 0.50f",
         "size.x * BaseTerminalViewWidthFraction * terminalScale / DesignWidth",
         "size.y * BaseTerminalViewHeightFraction * terminalScale / DesignHeight",
         "PresentationLayerName = \"LoadingPresentation\"",
