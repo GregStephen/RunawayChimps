@@ -12,6 +12,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Reader_Amber_Triangle
       objectReference: {fileID: 0}
+    - target: {fileID: 114500, guid: a498e13c10f95ce9a185ae620a75318f, type: 3}
+      propertyPath: expectedCredential
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 330300, guid: a498e13c10f95ce9a185ae620a75318f, type: 3}
       propertyPath: m_Mesh
       value: 

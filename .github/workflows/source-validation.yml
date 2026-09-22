@@ -33,6 +33,14 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Set up managed card-state test runtime
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Execute production card-consumption state tests
+        run: dotnet run --project Tools/CardSystemHarness/CardSystemHarness.csproj --configuration Release
+
       - name: Install syntax-parser dependencies
         run: |
           python -m pip install --disable-pip-version-check \
@@ -63,6 +71,12 @@ jobs:
 
       - name: Validate Level 1 source contracts
         run: python Tools/validate_level1_contracts.py
+
+      - name: Validate keycard reader source contracts
+        run: python Tools/validate_keycard_reader_contracts.py
+
+      - name: Validate interaction safety boundaries
+        run: python Tools/validate_interaction_safety.py
 
       - name: Validate PR15 review hardening
         run: python Tools/validate_pr15_review_hardening.py
