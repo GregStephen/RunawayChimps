@@ -99,3 +99,11 @@ The 2.50 m world-space retune also failed runtime review: the boot/perceived vie
 **Implemented tuning candidate:** reduce the centered terminal footprint by 25%, from approximately 72% / 84% of the view to **54% width / 63% height**. The screen remains `ScreenSpaceCamera`; no world-space distance is used. All CRT/static, startup-audio suppression, readiness, retry/reveal, Photon Hub-slot/session and Quest-splash behavior remains unchanged.
 
 **Pending validation:** visual approval of size/readability in Unity 2022.3.55f1 Play Mode/headset.
+
+## September 21 live Play Mode tuning workflow
+
+**Implemented for visual tuning:** the screen-space terminal now exposes a serialized `terminalScale` slider from **0.40 to 1.00**. `1.00` is the original PR #20 footprint; the current default is **0.75**, which produces the current 25% smaller presentation. The aspect ratio is preserved because one multiplier controls both dimensions.
+
+**Editor workflow:** before Play, enable **Tools > Runaway Chimps > Hold Security Boot For Review**. Start `Bootstrap.unity`; once the boot is visible/ready it stays on screen. Then choose **Tools > Runaway Chimps > Select Active Security Boot Tuning**. Unity selects the runtime Loading canvas object containing `SecurityBootPresentation`; adjust **Terminal Scale** in the Inspector and the terminal resizes live every frame. Play Mode changes do not persist after stopping, so record the preferred value and make it the serialized default afterward.
+
+This tuning workflow is Editor-only and does not bypass real startup readiness or ship in a player build.
