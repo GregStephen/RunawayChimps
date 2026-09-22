@@ -78,6 +78,41 @@ def main():
     if lamp.get("innerSpotAngle", 0) >= lamp.get("outerSpotAngle", 999):
         errors.append(f"{rel(headlamp_path)}: innerSpotAngle must be smaller than outerSpotAngle.")
 
+    runtime_landmark_path = ROOT / "Assets/Scripts/Lighting/VentLandmarkSetPiece.cs"
+    if runtime_landmark_path.exists():
+        errors.append(f"{rel(runtime_landmark_path)}: runtime vent landmark generation is superseded; landmarks must remain authored scene/prefab objects.")
+
+    landmark_pulse_path = ROOT / "Assets/Scripts/Lighting/VentLandmarkPulse.cs"
+    landmark_pulse = require(errors, landmark_pulse_path, [
+        "public sealed class VentLandmarkPulse : MonoBehaviour",
+        "[RequireComponent(typeof(Light))]",
+        "baseIntensity * wave",
+        "Configure(float newAmplitude, float newFrequency, float newPhase)",
+    ])
+    if re.search(r"^using\\s+Photon\\.", landmark_pulse, re.M):
+        errors.append(f"{rel(landmark_pulse_path)}: decorative landmark pulse must not depend on Photon.")
+
+    landmark_authoring_path = ROOT / "Assets/Scripts/Editor/VentLandmarkSceneAuthoring.cs"
+    landmark_authoring = require(errors, landmark_authoring_path, [
+        'LevelOneScenePath = "Assets/Scenes/Level1_Containment.unity"',
+        'RootName = "Level1_VentLandmarks"',
+        'VentRoomName = "VentRoom"',
+        'PrefabFolder = "Assets/RunawayChimps/Environment/VentLandmarks/Prefabs"',
+        "Author Vent Landmarks",
+        "loadedScene.isDirty",
+        "FindMonsterNavigation(scene)",
+        "ExistingLandmarkExclusionRadius = 2.25f",
+        "PrefabUtility.SaveAsPrefabAsset",
+        "PrefabUtility.InstantiatePrefab",
+        "EditorSceneManager.MarkSceneDirty(scene)",
+        "EditorSceneManager.SaveScene(scene)",
+        "Existing scene objects were preserved",
+    ])
+    if "RuntimeInitializeOnLoadMethod" in landmark_authoring:
+        errors.append(f"{rel(landmark_authoring_path)}: vent landmark authoring must be an explicit editor action, never an automatic runtime/editor initializer.")
+    if "DestroyImmediate(existingRoot" in landmark_authoring:
+        errors.append(f"{rel(landmark_authoring_path)}: authoring must not overwrite Greg's existing manual landmark placement.")
+
     blower_path = ROOT / "Assets/Scripts/Lighting/VentBlowerSetPiece.cs"
     blower = require(errors, blower_path, [
         'LevelOneScene = "Level1_Containment"',
