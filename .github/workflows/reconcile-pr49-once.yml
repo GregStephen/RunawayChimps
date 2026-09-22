@@ -1,0 +1,232 @@
+name: Reconcile PR49 documentation once
+
+on:
+  push:
+    branches: ['docs/mvp-roadmap-current-main']
+    paths: ['.github/workflows/reconcile-pr49-once.yml']
+
+permissions:
+  contents: write
+
+jobs:
+  reconcile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: Fetch exact reviewed documentation revisions
+        run: |
+          git fetch --no-tags --depth=1 origin main:refs/remotes/origin/main
+          git fetch --no-tags --depth=1 origin f9edea67af08ff7c35d043e05ad66a5615a9aeb2 57dd862cf7c8c848bcb9954d8c0c97e8c93e48cd
+      - name: Reconcile and verify documentation preservation
+        shell: python
+        run: |
+          from pathlib import Path
+          import difflib
+          import re
+          import subprocess
+
+          BASE = 'd12b403fd17b1792c585d3612a7c77a12caf690f'
+          OLD_BASE = 'f9edea67af08ff7c35d043e05ad66a5615a9aeb2'
+          SOURCE = '57dd862cf7c8c848bcb9954d8c0c97e8c93e48cd'
+          HELPER = '.github/workflows/reconcile-pr49-once.yml'
+          OVERVIEWS = ['docs/design-and-lore.md', 'docs/repository-improvement-plan.md']
+          NEW = ['docs/mvp-roadmap.md', 'docs/branch-testing-and-build-evidence.md', 'docs/unity-runtime-security-review.md', 'docs/templates/test-build-record.md', 'docs/templates/defect-report.md', 'docs/templates/accepted-minor-issues.md']
+
+          def git(*args):
+              return subprocess.check_output(['git', *args], text=True)
+
+          def show(ref, path):
+              return git('show', f'{ref}:{path}')
+
+          def replace(text, old, new, records=None):
+              if not old or text.count(old) != 1:
+                  raise RuntimeError(f'Expected one unchanged anchor, found {text.count(old)}: {old[:220]!r}')
+              if records is not None:
+                  records.append((new, old))
+              return text.replace(old, new, 1)
+
+          def section(text, start, end, new, records=None):
+              first = text.index(start)
+              last = text.index(end, first + len(start))
+              return replace(text, text[first:last], new.rstrip() + '\n\n', records)
+
+          assert git('rev-parse', 'origin/main').strip() == BASE, 'Main moved; reread and reconcile before continuing.'
+          assert git('diff', '--name-only', BASE, 'HEAD').splitlines() == [HELPER], 'Unexpected branch edits.'
+          assert not list(Path('docs').rglob('AGENTS.md')), 'Read nested docs guidance before continuing.'
+          assert 'm_EditorVersion: 2022.3.55f1' in show(BASE, 'ProjectSettings/ProjectVersion.txt')
+          assert "expected = '2022.3.55f1'" in show(BASE, '.github/workflows/source-validation.yml')
+
+          snapshot = '''## September 22 MVP documentation reconciliation
+
+          **Confirmed documentation decision:** Greg approved replacing the outdated documentation PR #49 with a clean change based on main `d12b403fd17b1792c585d3612a7c77a12caf690f`. Preserve the newer design, implementation and test records; carry forward the September 21 release decisions without treating proposed or untested work as complete. [Issue #25](https://github.com/GregStephen/RunawayChimps/issues/25) is authoritative for live roadmap status and dependencies; [the repository roadmap](mvp-roadmap.md) is the higher-level release plan and navigation index, not a second status checklist.
+
+          **Merged implementation at that baseline:** launch/Hub slots [PR #21](https://github.com/GregStephen/RunawayChimps/pull/21) (`6cf7ec9`), keycards [PR #23](https://github.com/GregStephen/RunawayChimps/pull/23) (`b3487a6`), startup floor/reconnect [PR #24](https://github.com/GregStephen/RunawayChimps/pull/24) (`0382960`), VentRoom fan [PR #54](https://github.com/GregStephen/RunawayChimps/pull/54) (`e6b024e`) and vent landmarks [PR #58](https://github.com/GregStephen/RunawayChimps/pull/58) (`d12b403`) are already on main. Do not recreate or merge them again. Earlier branch/draft descriptions below are dated implementation history, not current merge instructions.
+
+          **Acceptance remains separate:** retain Greg's positive basic-card-handling report and accepted fan rotation/trim/textures. The final card-query correction still needs a quiet-console runtime confirmation; startup, full Unity card-suite, Photon and target-device acceptance remain pending where not explicitly reported. Blower audio is still an open follow-up in #56; keycard grip/impact polish is #52. Merged vent landmarks do not establish a new headset pass. No runtime gate is closed by this documentation reconciliation.
+
+          **Engine sequencing:** the named gameplay PRs above are no longer waiting to merge. The separate 2022.3.62f3 trial in #27 still awaits Greg's confirmation that his chosen tests/merges are finished and approval of the exact starting baseline. Approval of this docs replacement is not that confirmation. No compatibility branch or editor/package/networking/rendering change is made here; current Unity remains 2022.3.55f1 with Photon PUN. #51 is a separate bounded Unity 6 feasibility study, not a production migration.
+
+          **Release behavior versus current code:** the confirmed Chapter 1 ending returns only the completing player to Security, but implementing that ending and gating unfinished Level 2 routes remains #38. Older Level 1-to-Level 2 descriptions record the existing/future-level implementation, not the approved MVP ending. The small Coconut shop remains planned work in #50. The [testing guide](branch-testing-and-build-evidence.md) and unfilled templates are preparation for #28, not a completed build runner or executed tests.
+
+          '''
+
+          for path in OVERVIEWS:
+              original = show(BASE, path)
+              assert Path(path).read_text() == original
+              old = show(OLD_BASE, path).splitlines(keepends=True)
+              proposed = show(SOURCE, path).splitlines(keepends=True)
+              text = original
+              reversals = []
+              applied = 0
+              for op, i1, i2, j1, j2 in difflib.SequenceMatcher(None, old, proposed, autojunk=False).get_opcodes():
+                  if op == 'equal':
+                      continue
+                  before = ''.join(old[i1:i2])
+                  after = ''.join(proposed[j1:j2])
+                  if before.startswith('Last updated: ') and after.startswith('Last updated: '):
+                      continue
+                  if before:
+                      text = replace(text, before, after, reversals)
+                  else:
+                      anchor = None
+                      for count in range(1, 12):
+                          candidate = ''.join(old[i1:i1 + count])
+                          if candidate and candidate.strip() and text.count(candidate) == 1:
+                              anchor = candidate
+                              break
+                      if anchor is None:
+                          raise RuntimeError(f'No unique insertion anchor for {path}:{i1}')
+                      text = replace(text, anchor, after + anchor, reversals)
+                  applied += 1
+              text = replace(text, '**Status boundary:** this update records planning and confirmed staffing only.', '**Status boundary:** the September 21 material records confirmed decisions and planned release work, not completed implementation.', reversals)
+              text = replace(text, 'See [solo MVP roadmap](mvp-roadmap.md) for the execution index once included in this documentation change.', 'See [solo MVP roadmap](mvp-roadmap.md) for the release plan; issue #25 owns live ticket status.', reversals)
+              if path.endswith('design-and-lore.md'):
+                  text = replace(text, '### Latest flow change\n\n', '### Latest flow change\n\n**Confirmed MVP design; implementation pending in #38.** The merged code still has the older forward-to-Level-2 route until that ticket changes it.\n\n', reversals)
+                  table = '| Recorded | Decision or correction | Status |\n| --- | --- | --- |\n'
+                  row = '| 2026-09-22 | Greg approved salvaging PR #49 onto current main while preserving newer documentation. Issue #25 owns live roadmap status. PRs #21/#23/#24/#54/#58 are merged; that does not close runtime acceptance. The earlier hold on creating the 62f3 trial remains until Greg confirms his chosen testing/merges are finished and the starting baseline is agreed. | Confirmed documentation reconciliation; no editor migration or new runtime pass |\n'
+                  text = replace(text, table, table + row, reversals)
+                  text = replace(text, 'This update targets main `02867749634e0d54e8d751ef4b0e2d0a9c939459`; it does not mark PR #24 merged or the intermittent runtime defect resolved.', 'This historical pre-merge update targeted main `02867749634e0d54e8d751ef4b0e2d0a9c939459`. PR #24 subsequently merged as `0382960`; the intermittent runtime defect still requires its acceptance checks.', reversals)
+              else:
+                  text = replace(text, '**Confirmed engine-investigation direction, September 21:** #27 may proceed with an isolated 2022.3.62f3 compatibility trial.', '**Confirmed engine-investigation direction, September 21, subject to the later sequencing hold:** #27 has approval for the 2022.3.62f3 candidate, but branch creation still awaits Greg\'s baseline confirmation.', reversals)
+                  text = replace(text, 'PR #24 remains a draft with runtime acceptance pending; this update is not a merge decision.', 'This was the pre-merge evidence boundary. PR #24 subsequently merged as `0382960`; runtime acceptance remains pending and is not supplied by that merge.', reversals)
+                  anchor = 'Use small reviewable changes, each ending with a playable checkpoint.'
+                  note = '**Historical implementation sequence:** the sequence below predates the confirmed solo MVP contract. Use issue #25 for the active work order. Playable Level 2/Listener is deferred from the first release; validate already-merged work instead of following old instructions to merge it again. The approved return-to-Security ending belongs to #38.\n\n'
+                  text = replace(text, anchor, note + anchor, reversals)
+              heading = re.search(r'^## ', text, re.MULTILINE)
+              assert heading
+              anchor = text[heading.start():text.index('\n', heading.start()) + 1]
+              text = replace(text, anchor, snapshot + anchor, reversals)
+              restored = text
+              for after, before in reversed(reversals):
+                  restored = replace(restored, after, before)
+              assert restored == original, f'Preservation check failed for {path}'
+              images = r'!\[[^\]]*\]\([^\n]+?\)'
+              assert re.findall(images, text) == re.findall(images, original), 'Design references changed.'
+              Path(path).write_text(text)
+              print(f'PASS: {path}: {applied} selected PR49 edits, newer date retained, reverse-preservation and image references verified.')
+
+          for path in NEW:
+              assert not Path(path).exists(), f'New document already exists: {path}'
+              Path(path).parent.mkdir(parents=True, exist_ok=True)
+              Path(path).write_text(show(SOURCE, path))
+
+          path = Path('docs/mvp-roadmap.md')
+          text = path.read_text().replace('Last updated: 2026-09-21.', 'Last updated: 2026-09-22.', 1)
+          text = replace(text, '## Confirmed constraints and decision boundaries', '**Authority:** issue #25 and its linked work issues own live ticket status, acceptance and dependencies. This document keeps the confirmed release contract and high-level phase navigation; it is not a second completion checklist.\n\n## Confirmed constraints and decision boundaries')
+          text = section(text, '## Latest sequencing correction and work available now', '## Working method', '''## Current merged baseline and sequencing
+
+          Reviewed main: `d12b403fd17b1792c585d3612a7c77a12caf690f`, September 22. PRs #21 (launch/Hub slots), #23 (keycards), #24 (startup floor/reconnect), #54 (fan rotation/materials) and #58 (vent landmarks) are merged. Preserve these implementations; no repeat integration is needed. See the maintained overviews for their dated evidence and pending runtime checks. Greg accepted basic card handling and the fan visuals; the final card-query quiet-console retest and broader startup/card/Photon/headset acceptance are not automatically passed. Fan audio remains #56 and card grip/impact polish remains #52.
+
+          **Engine hold remains:** Greg's September 21 instruction was to finish his chosen tests/merges before creating the isolated 62f3 branch. Those named PRs are no longer merge prerequisites, but Greg has not yet confirmed that all his chosen work is finished or agreed the trial's exact baseline. Approval of the September 22 docs replacement is not approval to start the editor trial. Keep the 55f1 pin and do not create an upgrade branch in this task.
+
+          **Preparation available for #28:** the [testing guide](branch-testing-and-build-evidence.md), [test/build record](templates/test-build-record.md), [defect report](templates/defect-report.md) and [minor-issue register](templates/accepted-minor-issues.md) are maintained here after reconciliation of PR #49. These are copyable, unfilled documentation, not an executable build pipeline, diagnostics feature or executed test results.
+
+          After Greg confirms the baseline, #27 owns the isolated editor trial and #28 the proven local procedure/build identity. Gather remaining startup/card evidence in #29/#30/#31; #32 owns exact-combined-build regression, not re-merging existing PRs. #33 covers travel/capture/interruption acceptance before safe private distribution in #34. Shop art and Unity 6 are not prerequisites to the first safe tester build. The approved Chapter 1-to-Security ending is still implementation work in #38.
+          ''')
+          text = section(text, '## Ordered work index', '## Testing adapted to available people', '''## Phase navigation
+
+          These are release-planning groups, not GitHub milestone/Project objects or duplicated live status. The original 23 work issues plus #50 and #51 form the 25-item roadmap; consult issue #25 and each linked ticket for current state and full acceptance criteria.
+
+          | Phase | Intended outcome | Work tickets |
+          | --- | --- | --- |
+          | A - baseline | Confirm scope; approve the isolated editor baseline; make local builds/tests repeatable. | [#26](https://github.com/GregStephen/RunawayChimps/issues/26), [#27](https://github.com/GregStephen/RunawayChimps/issues/27), [#28](https://github.com/GregStephen/RunawayChimps/issues/28) |
+          | B - safe tester build | Validate merged startup/cards, combined behavior, travel and safe volunteer delivery. | [#29](https://github.com/GregStephen/RunawayChimps/issues/29), [#30](https://github.com/GregStephen/RunawayChimps/issues/30), [#31](https://github.com/GregStephen/RunawayChimps/issues/31), [#32](https://github.com/GregStephen/RunawayChimps/issues/32), [#33](https://github.com/GregStephen/RunawayChimps/issues/33), [#34](https://github.com/GregStephen/RunawayChimps/issues/34) |
+          | C - complete chapter | Optional local-client harness; Crawler/vent/pursuit acceptance; approved chapter ending. | [#35](https://github.com/GregStephen/RunawayChimps/issues/35), [#36](https://github.com/GregStephen/RunawayChimps/issues/36), [#37](https://github.com/GregStephen/RunawayChimps/issues/37), [#38](https://github.com/GregStephen/RunawayChimps/issues/38) |
+          | D - player quality | Multiplayer, target-device performance, onboarding, bounded art/audio and the small Coconut shop. | [#39](https://github.com/GregStephen/RunawayChimps/issues/39), [#40](https://github.com/GregStephen/RunawayChimps/issues/40), [#41](https://github.com/GregStephen/RunawayChimps/issues/41), [#42](https://github.com/GregStephen/RunawayChimps/issues/42), [#50](https://github.com/GregStephen/RunawayChimps/issues/50) |
+          | E - release readiness | Public-session safety, settings/accounts, rights/privacy/store readiness and supported capacity evidence. | [#43](https://github.com/GregStephen/RunawayChimps/issues/43), [#44](https://github.com/GregStephen/RunawayChimps/issues/44), [#46](https://github.com/GregStephen/RunawayChimps/issues/46), [#45](https://github.com/GregStephen/RunawayChimps/issues/45) |
+          | F - release | Small closed beta, exact-candidate acceptance and explicitly approved publication/hotfix procedure. | [#47](https://github.com/GregStephen/RunawayChimps/issues/47), [#48](https://github.com/GregStephen/RunawayChimps/issues/48) |
+          | Separate investigation | Bounded Unity 6 feasibility after the known 2022.3 baseline; not a production migration commitment. | [#51](https://github.com/GregStephen/RunawayChimps/issues/51) |
+
+          #29 and #30 can run sequentially in either practical order; both precede #31. #32 retains combined-candidate regression responsibility. #35 does not block #34. Prepare distribution and rights/account work early, without sharing an unsafe build. #50 follows the repeatable build/test baseline and must pass ownership/release checks before #47. #51 is non-blocking unless #27 identifies a concrete release blocker.
+          ''')
+          text = replace(text, 'Repository baseline read: main `f9edea67af08ff7c35d043e05ad66a5615a9aeb2`.', 'Historical September 21 baseline: main `f9edea67af08ff7c35d043e05ad66a5615a9aeb2`. The September 22 merged snapshot above supersedes these PR-state observations, not the underlying test evidence.')
+          path.write_text(text)
+
+          path = Path('docs/branch-testing-and-build-evidence.md')
+          text = path.read_text().replace('Prepared: 2026-09-21.', 'Prepared: 2026-09-21; reconciled: 2026-09-22.', 1)
+          text = section(text, '## Current sequencing instruction', '## One record per tested revision', '''## Current merged baseline and sequencing
+
+          Main `d12b403fd17b1792c585d3612a7c77a12caf690f` includes PRs #21/#23/#24/#54/#58. Test their combined implementation; do not wait for or repeat those merges. Use the exact candidate's 2022.3.55f1 editor declaration and current Source Integrity workflow, including the merged startup-floor and card/interaction checks.
+
+          The separate 2022.3.62f3 trial remains on hold until Greg confirms his chosen tests/merges are finished and agrees the starting baseline. This docs replacement does not create an upgrade branch or change editor/package pins. #28 preparation may proceed; Unity 6 feasibility remains separate #51, not a prerequisite to the first safe tester build.
+          ''')
+          text = replace(text, 'In particular, PR #23 adds managed/card checks and PR #24 adds startup-floor contracts.', 'Current main includes PR #23\'s managed/card/interaction checks and PR #24\'s startup-floor contracts; all remain required where applicable.')
+          text = replace(text, '4. On a candidate containing the card suite, use **Window > General > Test Runner > PlayMode**, filter `RunawayChimps.Tests.CardSystemPlayModeTests`, and run in the PR\'s supported empty test context. Preserve the result XML and Editor log. If the suite is required but absent or undiscovered, stop that acceptance path and record the blocker. Do not invent zero-test success or claim these tests exist on an older main.', '4. Use **Window > General > Test Runner > PlayMode** and run the complete `RunawayChimps.CardSystem.PlayModeTests` assembly in its supported empty test context, including both `CardSystemPlayModeTests` and `KeycardHandPhysicsPlayModeTests`. Do not filter only the first class and omit hand physics. The merged PR #23 records 81 authored cases (58 + 23); verify actual discovery/execution counts on the tested revision rather than assuming that count forever. Preserve XML and the Editor log. Missing required tests, skipped required cases, absent XML or zero-test discovery are blockers, not passes.')
+          text = replace(text, '## Focused branch sessions', '## Focused checks on the merged candidate')
+          text = replace(text, '| Candidate / owner |', '| Merged implementation / acceptance owner |')
+          text = replace(text, '## After the merges and compatibility trial', '## Remaining baseline and integrated acceptance')
+          text = replace(text, '**Stop on unsafe physics or severe discomfort.**', '**Additional merged follow-ups:** preserve Greg\'s accepted fan rotation/trim/textures from #54, record blower audio failure in #56, and keep #52 card-grip/impact polish separate. Check the #58 vent landmarks on the actual headset revision; a merge is not visual/comfort acceptance. Run the authored `VentBlowerPlayModeTests` when validating the fan, separately from the card assembly; execution is not established by source inspection.\n\n**Stop on unsafe physics or severe discomfort.**')
+          path.write_text(text)
+
+          path = Path('docs/unity-runtime-security-review.md')
+          text = path.read_text()
+          intro = ('**September 22 documentation reconciliation:** current main is `' + BASE + '`, with PRs #21/#23/#24/#54/#58 already merged. The September 21 advisory/package investigation below is preserved as dated evidence, not a newly performed security or platform-certification review. The 62f3 trial still awaits Greg\'s confirmation of the finished tests/merges and exact starting baseline. This cleanup starts no upgrade. Current ProjectVersion and Source Integrity still declare 2022.3.55f1; no Unity/Android/headset validation is supplied here.\n\n')
+          text = replace(text, '## Current project and authority boundary', intro + '## Current project and authority boundary')
+          text = replace(text, 'Source reviewed on main', 'Historical September 21 source reviewed on main')
+          text = replace(text, '/ open PR #49.', '/ PR #49 (the original documentation source, now being superseded).')
+          text = replace(text, 'The main manifest currently pins', 'The September 21 reviewed manifest pins')
+          text = replace(text, '1. Greg approved 62f3 as a compatibility candidate, not a public-release certification. Recheck main and open PR heads; create a separate upgrade branch from the then-agreed code baseline. Do not mix PRs #21/#23/#24 into the editor-only change or discard their pending fixes.', '1. After Greg confirms his chosen tests/merges are complete and agrees the exact baseline, recheck main and create the isolated 62f3 trial from that SHA. Version approval is not public-release certification and does not lift the sequencing hold. PRs #21/#23/#24 are already merged; preserve their combined implementation and pending acceptance instead of merging them again.')
+          text = replace(text, 'Do not pretend PR #23\'s tests exist on main until that candidate is integrated.', 'PR #23\'s card tests are now on main. Run the full `RunawayChimps.CardSystem.PlayModeTests` assembly, including card-state and hand-physics fixtures; absent or undiscovered required tests are blockers.')
+          manifest = git('rev-parse', f'{BASE}:Packages/manifest.json').strip()
+          lock = git('rev-parse', f'{BASE}:Packages/packages-lock.json').strip()
+          anchor = '## Controlled implementation plan after version approval'
+          text = replace(text, anchor, f'**September 22 source identity:** the reconciled main manifest blob is `{manifest}` and lockfile blob is `{lock}`. This records source identity only; the exact installed Meta/XR configuration still requires the compatibility and runtime checks below.\n\n' + anchor)
+          path.write_text(text)
+
+          for name in NEW:
+              if '/templates/' in name:
+                  assert Path(name).read_text() == show(SOURCE, name)
+
+          links = 0
+          for name in NEW:
+              for target in re.findall(r'\]\(([^)]+)\)', Path(name).read_text()):
+                  if re.match(r'^[a-zA-Z][a-zA-Z0-9+.-]*:', target) or target.startswith('#'):
+                      continue
+                  target = target.split('#', 1)[0]
+                  assert (Path(name).parent / target).exists(), f'Broken relative link: {name} -> {target}'
+                  links += 1
+          for name in OVERVIEWS + NEW:
+              text = Path(name).read_text()
+              assert not re.search(r'^(<<<<<<< |>>>>>>> |=======$)', text, re.MULTILINE)
+              assert text.endswith('\n')
+          git('add', '--', *(OVERVIEWS + NEW))
+          changed = set(git('diff', '--cached', '--name-only', BASE).splitlines())
+          assert changed == set(OVERVIEWS + NEW + [HELPER]), sorted(changed)
+          git('diff', '--cached', '--check', BASE, '--', 'docs')
+          print(f'PASS: exactly eight Markdown documents changed; three templates byte-identical; {links} relative links resolve; no conflict markers; whitespace clean.')
+          print('PASS: all non-document production/configuration paths unchanged; temporary helper is excluded from the final PR before merge.')
+          print('NOT RUN: Unity import/compile/tests, Android build, Photon, headset, performance, public release.')
+      - name: Commit documentation without changing other branch work
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch='docs/mvp-roadmap-current-main'
+          remote=$(git ls-remote origin "refs/heads/$branch" | cut -f1)
+          test "$remote" = "$GITHUB_SHA"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'docs: reconcile MVP decisions and testing guidance onto current main'
+          git push origin "HEAD:refs/heads/$branch"
