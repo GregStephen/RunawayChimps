@@ -1,10 +1,10 @@
 # Unity runtime security and baseline review
 
-Reviewed: 2026-09-21. Tracker: [MVP-02, issue #27](https://github.com/GregStephen/RunawayChimps/issues/27). Status: **62f3 branch and editor/CI declaration prepared after Greg's September 22 go-ahead; compatibility/build/headset validation pending.**
+Reviewed: 2026-09-21. Tracker: [MVP-02, issue #27](https://github.com/GregStephen/RunawayChimps/issues/27). Status: **Unity 2022.3.62f3 merged to main after Greg's September 22 acceptance; Android/Quest/package compatibility validation remains pending.**
 
 Read [design and lore](design-and-lore.md), [repository improvement plan](repository-improvement-plan.md), and [MVP roadmap](mvp-roadmap.md) before changing project behavior. This is a technical review, not a new release-scope decision.
 
-**Earlier September 22 documentation reconciliation (historical):** that docs-only task preserved the September 21 security investigation and did not lift the hold. Greg later explicitly requested creation of the compatibility branch. The new trial starts from `9da4a1e46faa16484af9425edb41517a5a931a75`, declares 62f3 and follows [the trial guide](unity-2022.3.62f3-compatibility.md). This supersedes the old branch-creation wait; it does not supply runtime results or a new comprehensive advisory/store-certification review.
+**Earlier September 22 documentation reconciliation (historical):** that docs-only task preserved the September 21 security investigation and did not lift the hold. Greg later explicitly requested creation of the compatibility branch. The isolated trial started from `9da4a1e46faa16484af9425edb41517a5a931a75` and was later merged as `a8c3fd8d60466184c7c0f80b943a11501a766f7f` after a clean import/playthrough and passing Reliability Regression Check. This establishes the adopted editor baseline, not full Android/Quest/store certification.
 
 ## Historical investigation baseline and authority boundary
 
@@ -55,4 +55,4 @@ Unity's versioned [XRI 2.6 documentation](https://docs.unity3d.com/Packages/com.
 
 Completed here: live repository/configuration inspection, official advisory/release/package-document review, candidate selection recommendation, and a documented implementation/rollback plan.
 
-Not completed: installation/license verification, Unity compilation, installed-package compatibility, Android build/signing, headset testing, performance measurement, artifact replacement or public submission. The editor/CI pin is now changed only on the isolated trial branch, not on main. Issue #27 remains open until its runtime and support checks are satisfied.
+Not completed: installation/license verification, Unity compilation, installed-package compatibility, Android build/signing, headset testing, performance measurement, artifact replacement or public submission. The editor/CI pin is now adopted on main through PR #61. Issue #27 remains open until its runtime and support checks are satisfied.

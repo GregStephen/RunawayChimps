@@ -1,9 +1,9 @@
 # Automated source validation
 
-Last updated: 2026-09-22 (isolated 62f3 guard; historical results retained).
+Last updated: 2026-09-22 (62f3 baseline adopted; historical results retained).
 
-## Compatibility-branch boundary
-The 62f3 trial starts at main `9da4a1e`. Only the editor guard changes; the managed card harness and all existing source/scene/metadata/feature checks remain enabled. The guard also checks the official revision. Historical source results below are not 62f3 import/build results. Follow [the trial guide](unity-2022.3.62f3-compatibility.md); no licensed Unity runner is added.
+## Unity 62f3 baseline boundary
+Main now declares Unity **2022.3.62f3 (96770f904ca7)** through merged PR #61. The managed card harness and all existing source/scene/metadata/feature checks remain enabled, and the guard checks the official revision. Historical 55f1 source results remain historical. No licensed Unity runner is added; Android/Quest/runtime evidence remains separate.
 
 ## Implemented check
 
@@ -21,7 +21,7 @@ The workflow uses read-only repository permissions and a 10-minute timeout. It r
 
 ## What Source integrity checks
 
-1. On this compatibility branch, `ProjectSettings/ProjectVersion.txt` contains exactly one `m_EditorVersion: 2022.3.62f3` and one `m_EditorVersionWithRevision: 2022.3.62f3 (96770f904ca7)`. Missing, duplicate, mismatched or different-version declarations fail. Main at the fork retains its 55f1 declaration.
+1. `ProjectSettings/ProjectVersion.txt` contains exactly one `m_EditorVersion: 2022.3.62f3` and one `m_EditorVersionWithRevision: 2022.3.62f3 (96770f904ca7)`. Missing, duplicate, mismatched or different-version declarations fail.
 2. `python Tools/validate_source.py --syntax` checks the first-party C# trees under `Assets/Scripts` and `Assets/Resources/PhotonVR/Scripts` for component filename/class matching, script `.meta` presence and duplicate script GUIDs, and tree-sitter C# syntax. It also checks enabled Build Settings scenes for missing files, scene-GUID mismatches, duplicate local object IDs, and unresolved local references.
 3. `python Tools/validate_repository_integrity.py` scans the full `Assets` tree for missing/orphaned `.meta` files and duplicate Unity asset GUIDs, checks case-insensitive path collisions, and parses the Unity package manifests, asmdef/asmref files, and tracked tool JSON.
 4. `python Tools/validate_level1_contracts.py` protects the active Level 1 implementation from source-level regression: local-only vent headlamp gating/equip behavior, Crawler visual anchor/path-following and no-root-motion assumptions, head-authoritative safe boundaries, guarded capture/drop behavior, XR startup settling, and the bounded non-allocating floor-penetration guard. It also checks the Level 1 scene still serializes at least two safe-boundary zone triggers, a vent zone trigger, and the Crawler capture component.
@@ -47,7 +47,7 @@ After the original corrections, both **push** and **pull_request** Source integr
 
 A green Source integrity check does **not** mean Unity successfully imports or compiles the project. It also does not run the two Unity Editor validators, Play Mode, Photon PUN sessions, XR interaction, actual Crawler animation deformation/corner appearance, actual headlamp illumination, scene travel, Quest builds, headset comfort, or target-hardware performance.
 
-Before merging gameplay changes, run the candidate's declared editor (2022.3.62f3 for this trial) and the project-specific Editor/runtime/headset checks recorded in `README.md` and `docs/repository-improvement-plan.md`.
+Before merging gameplay changes, run the repository's declared editor (2022.3.62f3) and the project-specific Editor/runtime/headset checks recorded in `README.md` and `docs/repository-improvement-plan.md`.
 
 ## Possible second CI tier
 

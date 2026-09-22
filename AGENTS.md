@@ -1,11 +1,11 @@
 # Runaway Chimps repository guidance
 
-## Isolated editor trial - September 22, 2026
-Greg explicitly requested creation of the compatibility branch now, superseding the earlier branch-creation hold. `compat/unity-2022.3.62f3` starts from main `9da4a1e46faa16484af9425edb41517a5a931a75`; main at that fork remains Unity 2022.3.55f1. This is trial configuration, not validated adoption. Read [the trial guide](docs/unity-2022.3.62f3-compatibility.md). Preserve packages, Photon PUN, built-in rendering, XR settings, gameplay and authored assets. Historical 55f1 evidence remains historical; all candidate acceptance must identify the actual editor/commit. Keep the trial separate until import/build/headset results support a later merge decision.
+## Unity 2022.3.62f3 baseline - September 22, 2026
+Greg approved merging PR #61 after a clean 62f3 import/playthrough and a passing Reliability Regression Check. Unity **2022.3.62f3 (96770f904ca7)** is now the repository editor baseline on `main`. Preserve Photon PUN, built-in rendering, XR settings, gameplay and authored assets unless a separate decision changes them. Historical 55f1 evidence remains historical. Android/Quest/package acceptance that was not run remains pending under #27; the merge itself does not turn those checks into passes. Pre-existing defects discovered during the trial are tracked separately in #63 and #64.
 
 ## Project scope
 
-This repository is Runaway Chimps, a VR horror game using **Unity 2022.3.62f3 (96770f904ca7)** on the isolated compatibility branch and **Photon PUN**. Cheeky Chimps is a separate non-horror Unity 6 project. Keep its code, design decisions, and editor guidance separate.
+This repository is Runaway Chimps, a VR horror game using **Unity 2022.3.62f3 (96770f904ca7)** and **Photon PUN**. Cheeky Chimps is a separate non-horror Unity 6 project. Keep its code, design decisions, and editor guidance separate.
 
 ## Read before proposing or implementing changes
 
