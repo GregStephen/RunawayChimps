@@ -66,8 +66,11 @@ def main() -> int:
     boot = read("Assets/Scripts/Loading/SecurityBootPresentation.cs")
     for token in [
         "Security Boot Terminal",
-        "SecurityWorkstationVignette.Create",
-        "MonitorCanvasRoot",
+        "BuildTerminal(hostCanvas.transform)",
+        "RenderMode.ScreenSpaceCamera",
+        "hostCanvas.planeDistance = Mathf.Max(1.5f",
+        "size.x * 0.72f / DesignWidth",
+        "size.y * 0.84f / DesignHeight",
         "PresentationLayerName = \"LoadingPresentation\"",
         "LayerMask.NameToLayer(PresentationLayerName)",
         "SetLayerRecursively(hostCanvas.gameObject, presentationLayer)",
@@ -89,56 +92,29 @@ def main() -> int:
         if token not in boot:
             errors.append(f"Security boot terminal/CRT treatment missing {token!r}.")
 
-    panel = read("Assets/Scripts/Loading/SecurityWorkstationVignette.cs")
-    panel_tokens = [
-        "Security Boot Panel Vignette",
-        "Security Boot World Canvas",
-        "RenderMode.WorldSpace",
-        "TerminalDistance = 2.50f",
-        "camera.transform.position + forward * TerminalDistance",
-        "root.transform.SetParent(origin.transform, true)",
-    ]
-    for token in panel_tokens:
-        if token not in panel:
-            errors.append(f"Distant security boot panel missing {token!r}.")
-
-    scale = re.search(r"MonitorCanvasScale\s*=\s*([0-9.]+)f", panel)
-    if not scale or not (0.0006 <= float(scale.group(1)) <= 0.0011):
-        errors.append("Security boot panel scale must remain within the reviewed VR-readable range.")
-
-    distance = re.search(r"TerminalDistance\s*=\s*([0-9.]+)f", panel)
-    if not distance or not (2.3 <= float(distance.group(1)) <= 2.7):
-        errors.append("Security boot panel should remain in the corrected comfortable mid-distance range.")
-
-    if "rect.localRotation = Quaternion.identity;" not in panel:
-        errors.append("Security boot world canvas must face the player without a mirrored 180-degree flip.")
-    if "Quaternion.Euler(0f, 180f, 0f)" in panel:
-        errors.append("Security boot world canvas must not restore the mirrored 180-degree Y rotation.")
+    panel_path = ROOT / "Assets/Scripts/Loading/SecurityWorkstationVignette.cs"
+    if panel_path.exists():
+        errors.append("Superseded world-space launch panel helper must remain removed.")
 
     for forbidden in [
-        "GameObject.CreatePrimitive",
-        "BaseMaterialResourcePath",
-        "CAM 04\\nSTILL DEAD",
-        "VENT B\\nAGAIN?",
-        "IF THEY GET OUT\\nI QUIT.",
-        "Desk top",
-        "Keyboard",
-        "Night shift mug",
+        "SecurityWorkstationVignette",
+        "RenderMode.WorldSpace",
+        "TerminalDistance",
+        "MonitorCanvasRoot",
     ]:
-        if forbidden in panel:
-            errors.append(f"Superseded physical workstation dressing returned: {forbidden!r}.")
+        if forbidden in boot:
+            errors.append(f"Security boot must remain on the restored PR #20 screen-space path: {forbidden!r} found.")
 
     tag_manager = read("ProjectSettings/TagManager.asset")
     if "- LoadingPresentation" not in tag_manager:
         errors.append("LoadingPresentation layer is not reserved in TagManager.asset.")
 
-    for text, name in ((boot, "SecurityBootPresentation"), (panel, "SecurityWorkstationVignette")):
-        for forbidden in ["UnityEngine.Random.Range", "Random.Range(", "new RenderTexture",
-                          "PhotonNetwork.Join", "PhotonNetwork.Instantiate", "MarkRigSnapped(", "TryMarkReady("]:
-            if forbidden in text:
-                errors.append(f"{name} must stay local, presentation-only and allocation-light: {forbidden!r} found.")
-        if re.search(r"(?:camera|startupCamera|boundCamera)\.transform\.(?:position|rotation|localPosition|localRotation)\s*=", text):
-            errors.append(f"{name} must not write the tracked camera transform.")
+    for forbidden in ["UnityEngine.Random.Range", "Random.Range(", "new RenderTexture",
+                      "PhotonNetwork.Join", "PhotonNetwork.Instantiate", "MarkRigSnapped(", "TryMarkReady("]:
+        if forbidden in boot:
+            errors.append(f"SecurityBootPresentation must stay local, presentation-only and allocation-light: {forbidden!r} found.")
+    if re.search(r"(?:camera|startupCamera|boundCamera)\.transform\.(?:position|rotation|localPosition|localRotation)\s*=", boot):
+        errors.append("SecurityBootPresentation must not write the tracked camera transform.")
 
     if "0.065f" not in boot or "0.045f" not in boot:
         errors.append("Security boot CRT treatment no longer exposes the reviewed low-alpha interference/static caps.")
@@ -212,8 +188,8 @@ def main() -> int:
 
     vignette_doc = read("docs/launch-workstation-vignette.md")
     for token in [
-        "Superseding correction",
-        "2.5 m",
+        "screen-space",
+        "original PR #20",
         "flat green security terminal",
         "black-only",
         "Pending validation",
@@ -227,7 +203,7 @@ def main() -> int:
             print(" -", error)
         return 1
 
-    print("PASS: launch presentation source contracts (OpenXR path, Meta system splash, corrected front-facing green terminal, bounded CRT treatment, safe Hub reveal).")
+    print("PASS: launch presentation source contracts (OpenXR path, Meta system splash, restored PR #20 screen-space green terminal, bounded CRT/audio treatment, safe Hub reveal).")
     print("Unity import/compile, Play Mode appearance, APK build, compositor splash, headset handoff, Photon and Quest performance remain separate checks.")
     return 0
 
