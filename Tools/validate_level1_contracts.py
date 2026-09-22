@@ -85,6 +85,26 @@ def main():
         'RuntimeRootName = "Level1_VentRoom_Blower"',
         'BlowerResourcePath = "RunawayChimps_VentBlower"',
         'RotorName = "FanRotor"',
+        'RotorHubName = "FanHub"',
+        'RotorPivotName = "FanRotor_CenteredPivot"',
+        "RotorSpinAxis = Vector3.up",
+        "ConfigureRotor(importedRotor)",
+        "FindDescendant(importedRotor, RotorHubName)",
+        "importedRotor.InverseTransformPoint(hub.position)",
+        "rotorPivot.SetParent(importedRotor.parent, false)",
+        "rotorPivot.localPosition = importedRotor.localPosition",
+        "importedRotor.localRotation * Vector3.Scale(importedRotor.localScale, hubLocalPosition)",
+        "rotorPivot.localRotation = importedRotor.localRotation",
+        "rotorPivot.localScale = importedRotor.localScale",
+        "importedRotor.SetParent(rotorPivot, false)",
+        "importedRotor.localPosition = -hubLocalPosition",
+        "importedRotor.localRotation = Quaternion.identity",
+        "importedRotor.localScale = Vector3.one",
+        "rotorRestRotation = rotorPivot.localRotation",
+        "rotorAngle = 0f",
+        "AnimateRotor(Time.deltaTime)",
+        "Mathf.Repeat(rotorAngle - FanDegreesPerSecond * deltaTime, 360f)",
+        "rotorPivot.localRotation = rotorRestRotation * Quaternion.AngleAxis(rotorAngle, RotorSpinAxis)",
         'RedLensName = "RedLightLens"',
         "BlowerLocalPosition = new Vector3(-0.25f, 0.72f, 22.46f)",
         "Resources.Load<GameObject>(BlowerResourcePath)",
@@ -109,6 +129,8 @@ def main():
         errors.append(f"{rel(blower_path)}: blower must not dynamically assign URP/Lit while the project uses the built-in render pipeline.")
     if "CreateRuntimeMaterial(" in blower:
         errors.append(f"{rel(blower_path)}: blower materials must stay serialized/import-mapped rather than dynamically created.")
+    if re.search(r"\.(?:Rotate|RotateAround)\s*\(", blower):
+        errors.append(f"{rel(blower_path)}: fan must use its centered pivot and bounded rest-relative rotation, not incremental/orbital rotation.")
     positive_defaults(errors, blower_path, blower, ["FanDegreesPerSecond", "BaseRedLightIntensity"])
 
     graphics_path = ROOT / "ProjectSettings/GraphicsSettings.asset"
@@ -122,7 +144,7 @@ def main():
         errors.append(f"{rel(blower_asset)}: approved Blender FBX resource is missing.")
     elif blower_asset.stat().st_size < 10000:
         errors.append(f"{rel(blower_asset)}: approved Blender FBX resource is unexpectedly small.")
-    meta = require(errors, blower_meta, ["ModelImporter:", "addColliders: 0", "importCameras: 0", "importLights: 0", "preserveHierarchy: 1"])
+    meta = require(errors, blower_meta, ["ModelImporter:", "addColliders: 0", "importCameras: 0", "importLights: 0", "preserveHierarchy: 1", "bakeAxisConversion: 0"])
     if meta:
         guid(blower_meta, errors)
 

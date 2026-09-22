@@ -10,6 +10,8 @@ public sealed class VentBlowerSetPiece : MonoBehaviour
     private const string RuntimeRootName = "Level1_VentRoom_Blower";
     private const string BlowerResourcePath = "RunawayChimps_VentBlower";
     private const string RotorName = "FanRotor";
+    private const string RotorHubName = "FanHub";
+    private const string RotorPivotName = "FanRotor_CenteredPivot";
     private const string RedLensName = "RedLightLens";
     private const float FanDegreesPerSecond = 230f;
     private const float BaseRedLightIntensity = 0.85f;
@@ -18,10 +20,15 @@ public sealed class VentBlowerSetPiece : MonoBehaviour
     // VentRoom's authored +Z wall (22.5) instead of using the old generated-housing center.
     // The tunnel route and VentRoom geometry remain untouched.
     private static readonly Vector3 BlowerLocalPosition = new Vector3(-0.25f, 0.72f, 22.46f);
+    // The FBX's six blades are arranged around FanRotor's local Y axis. The imported
+    // root supplies the Blender/Unity axis conversion; visual-root Z is not rotor Z.
+    private static readonly Vector3 RotorSpinAxis = Vector3.up;
 
     private static AudioClip blowerLoop;
 
-    private Transform rotor;
+    private Transform rotorPivot;
+    private Quaternion rotorRestRotation;
+    private float rotorAngle;
     private Light maintenanceLight;
     private AudioSource humSource;
     private GameObject visualInstance;
@@ -98,8 +105,7 @@ public sealed class VentBlowerSetPiece : MonoBehaviour
 
     private void Update()
     {
-        if (rotor != null)
-            rotor.Rotate(0f, 0f, -FanDegreesPerSecond * Time.deltaTime, Space.Self);
+        AnimateRotor(Time.deltaTime);
 
         if (maintenanceLight != null)
         {
@@ -132,9 +138,11 @@ public sealed class VentBlowerSetPiece : MonoBehaviour
         OrientVisualIntoVentRoom(visualInstance.transform);
         ConfigureImportedVisual(visualInstance);
 
-        rotor = FindDescendant(visualInstance.transform, RotorName);
-        if (rotor == null)
+        Transform importedRotor = FindDescendant(visualInstance.transform, RotorName);
+        if (importedRotor == null)
             Debug.LogError($"[VentBlowerSetPiece] Imported blower is missing required '{RotorName}' transform; fan will not rotate.");
+        else
+            ConfigureRotor(importedRotor);
 
         Transform redLens = FindDescendant(visualInstance.transform, RedLensName);
         if (redLens == null)
@@ -142,6 +150,46 @@ public sealed class VentBlowerSetPiece : MonoBehaviour
 
         CreateMaintenanceLight(redLens != null ? redLens : visualInstance.transform);
         CreateMotorAudio();
+    }
+
+    private void ConfigureRotor(Transform importedRotor)
+    {
+        Transform hub = FindDescendant(importedRotor, RotorHubName);
+        if (hub == null)
+        {
+            Debug.LogError($"[VentBlowerSetPiece] Imported rotor is missing required '{RotorHubName}' transform; fan will not rotate.");
+            return;
+        }
+
+        // FanRotor's origin is on the wall plane, while FanHub is on the spindle.
+        // Insert a centered wrapper in the SAME imported coordinate frame. Copying
+        // local TRS and cancelling the hub offset keeps every rotor mesh in place,
+        // including the FBX's import scale/orientation, without touching its siblings.
+        Vector3 hubLocalPosition = importedRotor.InverseTransformPoint(hub.position);
+        rotorPivot = new GameObject(RotorPivotName).transform;
+        rotorPivot.SetParent(importedRotor.parent, false);
+        rotorPivot.localPosition = importedRotor.localPosition
+            + importedRotor.localRotation * Vector3.Scale(importedRotor.localScale, hubLocalPosition);
+        rotorPivot.localRotation = importedRotor.localRotation;
+        rotorPivot.localScale = importedRotor.localScale;
+        rotorRestRotation = rotorPivot.localRotation;
+        rotorAngle = 0f;
+
+        importedRotor.SetParent(rotorPivot, false);
+        importedRotor.localPosition = -hubLocalPosition;
+        importedRotor.localRotation = Quaternion.identity;
+        importedRotor.localScale = Vector3.one;
+    }
+
+    private void AnimateRotor(float deltaTime)
+    {
+        if (rotorPivot == null)
+            return;
+
+        // Rebuild a bounded rotation from the rest pose; never integrate positions
+        // or compound quaternions, so repeated turns cannot drift away from the hub.
+        rotorAngle = Mathf.Repeat(rotorAngle - FanDegreesPerSecond * deltaTime, 360f);
+        rotorPivot.localRotation = rotorRestRotation * Quaternion.AngleAxis(rotorAngle, RotorSpinAxis);
     }
 
     private void OrientVisualIntoVentRoom(Transform visualRoot)
