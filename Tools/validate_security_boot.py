@@ -61,7 +61,8 @@ def main() -> int:
         errors.append("Travel must return before startup camera/panel/audio construction.")
 
     require(panel, ["Security Boot Panel Vignette", "GetComponentInParent<XROrigin>", "DontDestroyOnLoad(root)",
-                    "RenderMode.WorldSpace", "Security Boot World Canvas", "TerminalDistance = 3.90f",
+                    "RenderMode.WorldSpace", "Security Boot World Canvas", "TerminalDistance = 2.50f",
+                    "rect.localRotation = Quaternion.identity;", 
                     "camera.transform.position + forward * TerminalDistance",
                     "root.transform.SetParent(origin.transform, true)"],
             "startup security panel")
@@ -72,8 +73,10 @@ def main() -> int:
             errors.append(f"Superseded workstation presentation returned: {forbidden!r}")
 
     distance = re.search(r"TerminalDistance\s*=\s*([0-9.]+)f", panel)
-    if not distance or not (3.6 <= float(distance.group(1)) <= 4.2):
-        errors.append("Restored green terminal must remain roughly twice the former 1.95 m workstation distance.")
+    if not distance or not (2.3 <= float(distance.group(1)) <= 2.7):
+        errors.append("Restored green terminal must remain in the corrected comfortable mid-distance range.")
+    if "Quaternion.Euler(0f, 180f, 0f)" in panel:
+        errors.append("Restored green terminal must not render from the mirrored back face.")
 
     require(travel, ["origin.Camera.backgroundColor = Color.black", "debug.debugText.text = \"\"",
                      "ShowLoadingScene", "RestoreCamera()"], "existing black travel and recovery")
@@ -101,7 +104,7 @@ def main() -> int:
         for error in errors:
             print(" -", error)
         return 1
-    print("PASS: security boot source contracts (readiness, retry, isolated distant green terminal, black travel, editor hold, safe Hub reveal).")
+    print("PASS: security boot source contracts (readiness, retry, isolated front-facing green terminal, black travel, editor hold, safe Hub reveal).")
     print("Unity compilation, runtime, Photon and headset validation remain separate.")
     return 0
 
