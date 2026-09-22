@@ -59,3 +59,11 @@ The 2.50 m world-space retune also failed runtime review: the boot/perceived vie
 **Implemented:** build the 1080 × 820 terminal directly on the Loading canvas; bind the canvas with `RenderMode.ScreenSpaceCamera`; restore the original view-relative 72% width / 84% height scaling and camera-plane placement; remove the world-space panel helper; suppress `HandImpactAudio` for the duration of cold-start Loading; retain visual CRT noise/scanlines/interference; and add a very soft initial/periodic static crackle. All Photon Hub-slot/session, retry/reveal, black-travel and Quest-splash hardening remains in place.
 
 **Pending validation:** confirm in Unity 2022.3.55f1 that the boot once again looks like the earlier approved green screen, does not visibly fall with the rig, startup hand impacts are silent, CRT/static reads clearly but comfortably, and Hub reveal remains clean.
+
+## September 21 screen-space size retune
+
+**Runtime feedback:** the restored screen-space green terminal is stable but still too large.
+
+**Implemented tuning candidate:** reduce the centered terminal footprint by 25%, from approximately 72% / 84% of the view to **54% width / 63% height**. The screen remains `ScreenSpaceCamera`; no world-space distance is used. All CRT/static, startup-audio suppression, readiness, retry/reveal, Photon Hub-slot/session and Quest-splash behavior remains unchanged.
+
+**Pending validation:** visual approval of size/readability in Unity 2022.3.55f1 Play Mode/headset.
