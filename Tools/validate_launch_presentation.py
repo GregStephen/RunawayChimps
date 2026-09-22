@@ -84,6 +84,8 @@ def main() -> int:
         "CRT interference sweep",
         "NextNoise01",
         "staticBurstUntil",
+        "staticCrackle",
+        "PlayOneShot(staticCrackle",
         "SetBackdropOpacity(1f - alpha)",
         "workstationRetiredForReveal",
         "workstationRetiredForReveal = true",
@@ -162,9 +164,14 @@ def main() -> int:
         errors.append("Player visual readiness must reuse a shared-material list instead of allocating arrays each frame.")
 
     flow = read("Assets/Scripts/Bootstrap/LoadingFlow.cs")
-    for token in ["PrepareCameraForHubReveal()", "SetBackdropOpacity(0f)", "RestoreCameraForReveal()"]:
+    hand_audio = read("Assets/Scripts/PlayerScripts/HandImpactAudio.cs")
+    for token in ["PrepareCameraForHubReveal()", "SetBackdropOpacity(0f)", "RestoreCameraForReveal()",
+                  "IsColdStartupPresentationActive"]:
         if token not in flow:
-            errors.append(f"LoadingFlow safe terminal-to-Hub reveal missing {token!r}.")
+            errors.append(f"LoadingFlow safe terminal-to-Hub reveal/startup-audio gate missing {token!r}.")
+    if "LoadingFlow.IsColdStartupPresentationActive" not in hand_audio:
+        errors.append("HandImpactAudio must suppress synthetic hand impacts while cold-start presentation is active.")
+
     if "Security boot prototype" in flow or "Security Boot Prototype" in boot:
         errors.append("Production launch presentation still contains prototype-only runtime/Inspector naming.")
 
