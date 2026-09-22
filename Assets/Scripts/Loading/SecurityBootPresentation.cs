@@ -29,8 +29,8 @@ namespace RunawayChimps.Loading
         private const float BaseTerminalViewHeightFraction = 0.84f;
 
         [Header("Live Terminal Tuning")]
-        [Tooltip("Play Mode tuning multiplier. 1.0 is the original PR #20 size; 0.75 is the current 25% smaller default.")]
-        [SerializeField, Range(0.40f, 1.00f)] private float terminalScale = 0.75f;
+        [Tooltip("Play Mode tuning multiplier. 1.0 is the original PR #20 size; 0.50 is the approved default from Play Mode review.")]
+        [SerializeField, Range(0.40f, 1.00f)] private float terminalScale = 0.50f;
 
         private Canvas hostCanvas;
         private TMP_Text legacyStatus;
