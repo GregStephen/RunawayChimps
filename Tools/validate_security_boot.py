@@ -37,10 +37,11 @@ def main() -> int:
         errors.append("Hub reveal must combine the Hub mask with the black presentation layer before fading black away.")
 
     require(ui, ["BuildTerminal(hostCanvas.transform)", "RenderMode.ScreenSpaceCamera",
-                 "hostCanvas.planeDistance = Mathf.Max(1.5f", "TerminalViewWidthFraction = 0.54f",
-                 "TerminalViewHeightFraction = 0.63f",
-                 "size.x * TerminalViewWidthFraction / DesignWidth",
-                 "size.y * TerminalViewHeightFraction / DesignHeight",
+                 "hostCanvas.planeDistance = Mathf.Max(1.5f", "BaseTerminalViewWidthFraction = 0.72f",
+                 "BaseTerminalViewHeightFraction = 0.84f",
+                 "[SerializeField, Range(0.40f, 1.00f)] private float terminalScale = 0.75f",
+                 "size.x * BaseTerminalViewWidthFraction * terminalScale / DesignWidth",
+                 "size.y * BaseTerminalViewHeightFraction * terminalScale / DesignHeight",
                  "PresentationLayerName = \"LoadingPresentation\"", "LayerMask.NameToLayer(PresentationLayerName)",
                  "SetLayerRecursively(hostCanvas.gameObject, presentationLayer)",
                  "boundCamera.cullingMask = 1 << presentationLayer",
@@ -77,7 +78,9 @@ def main() -> int:
 
     require(travel, ["origin.Camera.backgroundColor = Color.black", "debug.debugText.text = \"\"",
                      "ShowLoadingScene", "RestoreCamera()"], "existing black travel and recovery")
-    require(menu, ["Hold Security Boot For Review", "SessionState.SetBool", "Menu.SetChecked"], "editor review")
+    require(menu, ["Hold Security Boot For Review", "Select Active Security Boot Tuning",
+                   "FindObjectOfType<SecurityBootPresentation>", "Selection.activeGameObject",
+                   "SessionState.SetBool", "Menu.SetChecked"], "editor review/live tuning")
 
     for forbidden in ("PhotonNetwork.Join", "PhotonNetwork.Instantiate", "MarkRigSnapped(", "TryMarkReady(",
                       "SceneManager.LoadScene", "new RenderTexture", "allowSceneActivation", "Random.Range"):
