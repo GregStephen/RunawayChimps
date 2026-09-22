@@ -1,0 +1,56 @@
+# Branch testing and build evidence
+
+Prepared: 2026-09-21. Tracker: [#28](https://github.com/GregStephen/RunawayChimps/issues/28). Status: documentation/templates prepared; end-to-end local build workflow and runtime acceptance pending.
+
+Read [design and lore](design-and-lore.md), [repository improvement plan](repository-improvement-plan.md), [roadmap](mvp-roadmap.md), [source validation](ci-validation.md), and the candidate PR before testing. This guide organizes existing acceptance requirements; it neither changes gameplay nor replaces individual ticket gates.
+
+## Current sequencing instruction
+
+Greg will test and merge his chosen existing branches first. **Do not create the 2022.3.62f3 compatibility branch yet.** After Greg confirms those merges, re-read live main/PR state and branch from that agreed merged SHA. No automatic merge or background branch creation is authorized. Preserve the current editor/package pins until the separate #27 change. Test each existing branch with its declared editor; current reviewed candidates declare 2022.3.55f1.
+
+Preparation for #28 can proceed now because it changes no gameplay, assets, packages, project settings or CI policy. Unity 6 feasibility remains separate #51, not a prerequisite for the first tester build.
+
+## One record per tested revision
+
+Copy [the test/build record](templates/test-build-record.md) into a local notes file or the relevant issue/PR comment. Record full commit SHA, branch/PR, actual editor, local modifications, device/runtime, artifact version/checksum when applicable, actor count, scenario and outcome. A branch name is not a stable build identifier. Record authored scene/prefab changes made during import/validation; do not silently test an uncommitted tree and attribute it to the clean commit.
+
+Use **Not run**, **Blocked**, **Pass**, **Fail**, or **Not applicable with reason** per check. Empty fields and undiscovered tests are not passes. Record expected test discovery separately from executed/passed/failed/skipped counts. No single green summary may imply Unity or headset acceptance from source-only results.
+
+A short pre-merge result is useful even on 55f1. It is historical branch evidence, not acceptance of the later merged/62f3 candidate. A PR merge also does not close #29-#33 automatically.
+
+## Before a headset session
+
+1. Save local work and identify the exact candidate. Use its own appropriate checkout/Library when changing editors. Do not discard uncommitted work or downgrade an upgraded working copy.
+2. Read that revision's `.github/workflows/source-validation.yml`. Verify Source Integrity on the candidate SHA, including all branch-specific checks. The older `docs/ci-validation.md` overview is not a substitute for the actual workflow. In particular, PR #23 adds managed/card checks and PR #24 adds startup-floor contracts.
+3. Import/compile in the declared Unity version. Record errors and run **Tools > Runaway Chimps > Run Reliability Regression Checks** and **Validate Sector Travel** as applicable. Start from saved scenes and inspect any resulting asset diffs; do not assume every Editor validator is read-only.
+4. On a candidate containing the card suite, use **Window > General > Test Runner > PlayMode**, filter `RunawayChimps.Tests.CardSystemPlayModeTests`, and run in the PR's supported empty test context. Preserve the result XML and Editor log. If the suite is required but absent or undiscovered, stop that acceptance path and record the blocker. Do not invent zero-test success or claim these tests exist on an older main.
+5. Start gameplay from `Assets/Scenes/Bootstrap.unity`. If import, compilation, required tests or safety checks fail, fix/report the failure before spending a headset session on dependent scenarios.
+
+## Focused branch sessions
+
+These are starting checklists, not replacements for each PR's full acceptance criteria. Numerical samples come from the roadmap tickets and do not guarantee absence of defects.
+
+| Candidate / owner | First focused session | Failures to record immediately |
+| --- | --- | --- |
+| Startup floor, PR #24 / #29 | Initial 20 cold starts over at least two sessions: standing, crouched, hands low, recenter and ordinary idle. Then one Hub-Level 1 round trip and capture respawn. | Body-floor penetration, pinned hands/rig, unsafe launch, repeated floor-guard recovery, stabilization failure or unusable retry. |
+| Card framework, PR #23 / #30 | Compile/discover/run the actual card suite and required Editor/source checks. Read the current PR's declared coverage; record observed counts, not a permanently hard-coded case count. | Missing tests, failed assertions, broken references, undiscovered assembly or exceptions. |
+| Physical cards, PR #23 / #31 | After prerequisite safety/test checks, perform the ticket's 20 pickup/drop/re-grab cycles per hand; flat/rotated, hand switching, floor/wall/body proximity. Check 0/2 -> 1/2 -> 2/2, rejection, loss recovery, capture and re-entry. | Invisible barrier, shove/sticky grip, duplicate credit, wrong-lock credit, lost required card or a consumed card becoming usable again. |
+| Launch/Hub slots, PR #21 / #32 | Use the current PR checklist for flat terminal readability, full black handoff, safe Hub reveal, room changes/rejoin and one avatar. Record concurrent slot/role tests separately when two actors are available. | Old terminal resurfacing, scene leakage, stale placement, duplicate avatar or unrecoverable loading. |
+
+**Stop on unsafe physics or severe discomfort.** Do not keep repeating a hazardous reproduction to satisfy a numeric sample. Record the observed failure count and use [the defect template](templates/defect-report.md). An Editor-only run is not a headset run; two desktop actors are not two Quest devices.
+
+## After the merges and compatibility trial
+
+#27 validates the editor change against the agreed merged baseline. #28 then completes a repeatable local import/test/build procedure and real build-identification support. #29/#30/#31 collect or repeat applicable startup/card evidence; #32 owns regression on the exact combined candidate even when the underlying PRs are already merged. Do not integrate them a second time or erase useful isolated results.
+
+#33 checks safe travel, capture and interruptions. Its starting matrix includes ten Hub-Level 1-Hub round trips and ten capture cycles, plus pause/network failure cases, stopping on safety failures. #34 then delivers an identifiable private build to the Quest 2 tester after its safe-build prerequisites. Do not wait for final shop art or Unity 6. #34 can prepare distribution instructions now, but delivery is not authorized by this document.
+
+The approved new Chapter 1 ending belongs to #38. Until that change is actually present, the older completion route to Level 2 is an implementation gap, not automatically an editor-upgrade regression. Likewise, color changing is user-reported non-working; Coconut balances/daily updates are user-reported working and must not be reset to make tests convenient. The completion-earned cosmetic is desired future work, not a requirement for these checks.
+
+## Build record and remaining #28 work
+
+For every shared artifact, retain build/version, source SHA and dirty state, actual Unity revision, package manifest/lock hashes, Android toolchain versions, build target/options, artifact checksum and dated test results. Keep raw logs and signing/account details private; public reports use sanitized excerpts. Never commit tokens, player identifiers, private room codes, signing material, local usernames/paths or raw personal recordings. The template is a checklist, not automatic collection or an in-game diagnostics feature.
+
+Still pending: executable local orchestration or an end-to-end proven menu procedure; a diagnostics-accessible build identifier; review of current README implementation/merge claims; actual Unity result/XML handling; a failing-run demonstration; and two complete fresh-output runs on the approved baseline. #28 remains open until those checks are performed. No Unity import, test, build, headset session or gameplay acceptance was executed when this packet was prepared.
+
+Track only explicitly accepted low-impact defects in [the minor-issue register](templates/accepted-minor-issues.md). A safety, objective-loss, currency/ownership-loss, security or unrecoverable-session failure must not be relabeled minor to meet a release date.
