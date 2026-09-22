@@ -86,10 +86,7 @@ def main() -> int:
         "staticBurstUntil",
         "staticCrackle",
         "PlayOneShot(staticCrackle",
-        "SetBackdropOpacity(1f - alpha)",
-        "workstationRetiredForReveal",
-        "workstationRetiredForReveal = true",
-        "workstationRetiredForReveal = false",
+        "SetBackdropOpacity(1f)",
     ]:
         if token not in boot:
             errors.append(f"Security boot terminal/CRT treatment missing {token!r}.")
