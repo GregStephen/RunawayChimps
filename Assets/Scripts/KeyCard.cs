@@ -1,11 +1,12 @@
 using UnityEngine;
 using UnityEngine.XR.Interaction.Toolkit;
+using UnityEngine.XR.Interaction.Toolkit.Filtering;
 
 [RequireComponent(typeof(BoxCollider), typeof(Rigidbody), typeof(XRGrabInteractable))]
 [RequireComponent(typeof(HeldItemCollisionMode))]
 [DefaultExecutionOrder(-200)]
 [DisallowMultipleComponent]
-public class KeyCard : MonoBehaviour
+public class KeyCard : MonoBehaviour, IXRHoverFilter, IXRSelectFilter
 {
     private const string GrabAffordanceObjectName = "Keycard_GrabAffordance";
 
@@ -26,6 +27,8 @@ public class KeyCard : MonoBehaviour
     [SerializeField, Min(0f)] private float grabPaddingMeters = 0.035f;
     [Tooltip("Minimum world-space thickness of the trigger-only grab volume so a dropped flat card remains easy to acquire with a Gorilla hand.")]
     [SerializeField, Min(0.01f)] private float minimumGrabThicknessMeters = 0.06f;
+    [Tooltip("Maximum palm-to-solid-card distance for a new pickup. This also limits oversized or swept interactor volumes; an existing hold is retained.")]
+    [SerializeField, Range(0.02f, 0.15f)] private float maximumPickupDistanceMeters = 0.10f;
 
     private readonly CardConsumptionState consumption = new CardConsumptionState();
     private XRGrabInteractable grab;
@@ -37,6 +40,7 @@ public class KeyCard : MonoBehaviour
     public KeycardCredential Credential => credential;
     public Collider PhysicalCollider => physicalCollider;
     public Collider GrabAffordanceCollider => grabAffordanceCollider;
+    public bool canProcess => true;
 
     private void Awake()
     {
@@ -58,6 +62,8 @@ public class KeyCard : MonoBehaviour
 
         if (grab != null)
         {
+            grab.hoverFilters.Add(this);
+            grab.selectFilters.Add(this);
             grab.selectEntered.AddListener(Selected);
             // Re-enabling KeyCard while already held must not require another pickup.
             foreach (IXRSelectInteractor interactor in grab.interactorsSelecting)
@@ -236,6 +242,38 @@ public class KeyCard : MonoBehaviour
         RecordLocalHolder(args != null ? args.interactorObject : null);
     }
 
+    public bool Process(IXRHoverInteractor interactor, IXRHoverInteractable interactable)
+    {
+        return CanReachForPickup(interactor);
+    }
+
+    public bool Process(IXRSelectInteractor interactor, IXRSelectInteractable interactable)
+    {
+        // Selection filters are also evaluated while holding. A wall resisting a held
+        // card must not make it drop merely because the tracked hand moved farther away.
+        return CanReachForPickup(interactor);
+    }
+
+    private bool CanReachForPickup(IXRInteractor interactor)
+    {
+        if (!isActiveAndEnabled || IsInserted || grab == null || physicalCollider == null ||
+            !physicalCollider.enabled || !(interactor is XRDirectInteractor hand) ||
+            hand.GetComponentInParent<LocalRigMarker>() == null)
+            return false;
+
+        if (interactor is IXRSelectInteractor holder && grab.interactorsSelecting.Contains(holder))
+            return true;
+
+        // Use the real palm attach point, never a ray's distant hit or a swept contact
+        // from an earlier hand pose. Test the solid card, not its padded grab trigger.
+        Transform palm = hand.GetAttachTransform(null);
+        Vector3 point = palm != null ? palm.position : hand.transform.position;
+        Vector3 closest = Physics.ClosestPoint(point, physicalCollider,
+            physicalCollider.transform.position, physicalCollider.transform.rotation);
+        float reach = Mathf.Clamp(maximumPickupDistanceMeters, 0.02f, 0.15f);
+        return (closest - point).sqrMagnitude <= reach * reach;
+    }
+
     private void RecordLocalHolder(IXRSelectInteractor interactor)
     {
         if (interactor != null && interactor.transform != null &&
@@ -246,7 +284,11 @@ public class KeyCard : MonoBehaviour
     private void OnDisable()
     {
         if (grab != null)
+        {
             grab.selectEntered.RemoveListener(Selected);
+            grab.hoverFilters.Remove(this);
+            grab.selectFilters.Remove(this);
+        }
     }
 
     /// <summary>

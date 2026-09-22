@@ -12,6 +12,7 @@ import re
 ROOT = Path(__file__).resolve().parents[1]
 PATHS = {
     "player": "Assets/Scripts/NewGorillaLocomotionScripts/Player.cs",
+    "hand_physics": "Assets/Scripts/KeycardHandPhysics.cs",
     "held": "Assets/Scripts/HeldItemCollisionMode.cs",
     "card": "Assets/Scripts/KeyCard.cs",
     "reader": "Assets/Scripts/KeycardReaderLightController.cs",
@@ -42,12 +43,31 @@ def method(source: str, name: str) -> str:
 
 
 def validate(sources: dict[str, str]) -> None:
-    player, held, card, reader, box, panel = (sources[k] for k in PATHS)
+    player, hand_physics, held, card, reader, box, panel = (sources[k] for k in PATHS)
     calls = [line for line in player.splitlines()
-             if re.search(r"\bPhysics\.(?:SphereCast|Raycast)\(", line)]
+             if re.search(r"\bKeycardHandPhysics\.(?:SphereCastEnvironment|RaycastEnvironment)\(", line)]
     require(len(calls) >= 7, "Missing Gorilla movement/clearance queries")
-    require(all("QueryTriggerInteraction.Ignore" in call for call in calls),
-            "Every Gorilla movement, anti-clip and unsticking query must ignore triggers")
+    require(not re.search(r"\bPhysics\.(?:SphereCast|Raycast)\(", player),
+            "All Gorilla support queries must distinguish loose cards from world geometry")
+    physics_calls = [line for line in hand_physics.splitlines()
+                     if re.search(r"\bPhysics\.(?:SphereCast|Raycast|OverlapSphere)(?:NonAlloc|All)?\(", line)]
+    require(physics_calls and all("QueryTriggerInteraction.Ignore" in call for call in physics_calls),
+            "Every Gorilla support and card-nudge query must ignore triggers")
+    require("Physics.SphereCastAll(" in hand_physics and "Physics.RaycastAll(" in hand_physics and
+            "count == hits.Length" in hand_physics,
+            "A saturated unordered query buffer must never hide the world surface behind loose cards")
+    eligibility = method(hand_physics, "TryGetLooseCardBody")
+    require(all(token in eligibility for token in (
+        "body.isKinematic", "body.constraints != RigidbodyConstraints.None", "!card.isActiveAndEnabled",
+        "card.IsInserted", "card.PhysicalCollider != collider", "!grab.isSelected")),
+        "Only the root solid of an active unheld freely moving card is excluded from locomotion")
+    push = method(hand_physics, "PushLooseCards")
+    require("distance > MaximumHandStep" in push and "SphereCastEnvironment(" in push and
+            "pushedBodies.Clear();" in push and "ForceMode.Impulse" in hand_physics and
+            "Mathf.Clamp(closingSpeed, 0f, MaximumVelocityChange)" in hand_physics,
+            "Hand nudges must reject teleport jumps, respect walls and use bounded contact impulses")
+    require(player.count("KeycardHandPhysics.PushLooseCards(") == 2 and "if (!disableMovement)" in player,
+            "Apply one optional loose-card sweep for each resolved hand, not for each collision iteration")
     cast = method(player, "CollisionsSphereCast")
     require("Mathf.Max(0, innerHit.distance" in cast and
             "Mathf.Max(0, hitInfo.distance" not in cast,
@@ -126,7 +146,7 @@ def validate(sources: dict[str, str]) -> None:
 
 def check_negative_fixtures(sources: dict[str, str]) -> int:
     mutations = (
-        ("player", "QueryTriggerInteraction.Ignore", "QueryTriggerInteraction.UseGlobal"),
+        ("hand_physics", "QueryTriggerInteraction.Ignore", "QueryTriggerInteraction.UseGlobal"),
         ("player", "Mathf.Max(0, innerHit.distance", "Mathf.Max(0, hitInfo.distance"),
         ("card", "renderer.localBounds", "renderer.bounds"),
         ("held", "localRigContactPairs.Add(", "ignoredLocalRigPairs.Add("),

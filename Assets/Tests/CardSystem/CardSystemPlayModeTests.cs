@@ -6,6 +6,7 @@ using System.Text.RegularExpressions;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
+using UnityEngine.XR;
 using UnityEngine.XR.Interaction.Toolkit;
 using Object = UnityEngine.Object;
 
@@ -411,6 +412,218 @@ namespace RunawayChimps.Tests
             rig.SetActive(true);
             manager.SelectEnter((IXRSelectInteractor)interactor, (IXRSelectInteractable)card.GetComponent<XRGrabInteractable>());
             return interactor;
+        }
+
+        private static XRController InputController(GameObject hand)
+        {
+            var controller = hand.AddComponent<XRController>();
+            controller.enableInputTracking = false;
+            controller.enableInputActions = false;
+            // Feed only button state. Keeping pose tracking None lets the fixture
+            // place the palm explicitly without XRController overwriting its pose.
+            controller.currentControllerState = new XRControllerState
+            {
+                inputTrackingState = InputTrackingState.None,
+                isTracked = true,
+                rotation = Quaternion.identity,
+            };
+            return controller;
+        }
+
+        private XRDirectInteractor InputHand(Vector3 position, out XRController controller, bool local = true)
+        {
+            GameObject rig = Root(local ? "FixtureLocalInputRig" : "FixtureNonlocalInputRig");
+            if (local) rig.AddComponent(Production("LocalRigMarker"));
+            GameObject hand = new GameObject("FixtureInputHand");
+            hand.transform.SetParent(rig.transform, false);
+            hand.transform.position = position;
+            var sensor = hand.AddComponent<SphereCollider>();
+            sensor.isTrigger = true;
+            sensor.radius = 0.08f;
+            controller = InputController(hand);
+            var interactor = hand.AddComponent<XRDirectInteractor>();
+            interactor.interactionManager = manager;
+            interactor.attachTransform = hand.transform;
+            interactor.selectActionTrigger = XRBaseControllerInteractor.InputTriggerType.StateChange;
+            interactor.improveAccuracyWithSphereCollider = true;
+            interactor.physicsLayerMask = 1; // Default, where the separate acquisition trigger stays.
+            interactor.physicsTriggerInteraction = QueryTriggerInteraction.Collide;
+            // This setting is read in Awake, so all configuration must precede activation.
+            // A Rigidbody on this GameObject would silently force the trigger-event path.
+            rig.SetActive(true);
+            Assert.That(hand.GetComponent<Rigidbody>(), Is.Null);
+            Assert.That(interactor.usingSphereColliderAccuracyImprovement, Is.True);
+            Assert.That(sensor.enabled, Is.False, "The accuracy path should query, not receive trigger callbacks.");
+            return interactor;
+        }
+
+        private static void SetGrip(XRController controller, bool pressed)
+        {
+            controller.currentControllerState.selectInteractionState.SetFrameState(pressed);
+        }
+
+        private static Vector3 AboveSolidFace(BoxCollider solid, float distance)
+        {
+            Vector3 face = solid.transform.TransformPoint(solid.center + Vector3.up * solid.size.y * 0.5f);
+            return face + solid.transform.up * distance;
+        }
+
+        private static readonly Vector2[] PickupFilterPoses =
+        {
+            new Vector2(1f, 0f), new Vector2(1f, 45f), new Vector2(1f, 137f),
+            new Vector2(2f, 0f), new Vector2(2f, 45f), new Vector2(2f, 137f),
+        };
+
+        [UnityTest]
+        public IEnumerator PickupFiltersMeasureWorldDistanceToTheSolidCard(
+            [ValueSource(nameof(PickupFilterPoses))] Vector2 scaleAndYaw)
+        {
+            Component card = Card(1, false, scaleAndYaw.x, scaleAndYaw.y);
+            var grab = card.GetComponent<XRGrabInteractable>();
+            var solid = (BoxCollider)Property<Collider>(card, "PhysicalCollider");
+            XRDirectInteractor hand = InputHand(AboveSolidFace(solid, 0.105f), out XRController controller);
+            SetGrip(controller, true);
+            Physics.SyncTransforms();
+            yield return new WaitForFixedUpdate();
+            yield return null;
+
+            var targets = new List<IXRInteractable>();
+            hand.GetValidTargets(targets);
+            Assert.That(targets, Does.Contain(grab), "The padded trigger should be detected before pickup filtering.");
+            Assert.That(hand.isSelectActive, Is.True, "Selection rejection must not be caused by missing grip input.");
+            Assert.That(manager.CanHover((IXRHoverInteractor)hand, (IXRHoverInteractable)grab), Is.False);
+            Assert.That(manager.CanSelect((IXRSelectInteractor)hand, (IXRSelectInteractable)grab), Is.False);
+            Assert.That(grab.isSelected, Is.False, "A palm 10.5 cm from the solid card is outside pickup reach.");
+
+            hand.transform.position = AboveSolidFace(solid, 0.6f);
+            Assert.That(manager.CanHover((IXRHoverInteractor)hand, (IXRHoverInteractable)grab), Is.False);
+            Assert.That(manager.CanSelect((IXRSelectInteractor)hand, (IXRSelectInteractable)grab), Is.False);
+
+            hand.transform.position = AboveSolidFace(solid, 0.095f);
+            Assert.That(manager.CanHover((IXRHoverInteractor)hand, (IXRHoverInteractable)grab), Is.True);
+            Assert.That(manager.CanSelect((IXRSelectInteractor)hand, (IXRSelectInteractable)grab), Is.True,
+                "A palm 9.5 cm from the solid card must remain eligible at every tested scale and rotation.");
+        }
+
+        [UnityTest]
+        public IEnumerator NonlocalDirectAndLocalRayInteractorsCannotAcquireAPersonalCard()
+        {
+            Component card = Card(1, false);
+            var grab = card.GetComponent<XRGrabInteractable>();
+            XRDirectInteractor remoteHand = InputHand(origin, out XRController remoteController, false);
+            GameObject rayRoot = Root("FixtureLocalRayRig");
+            rayRoot.AddComponent(Production("LocalRigMarker"));
+            XRController rayController = InputController(rayRoot);
+            var ray = rayRoot.AddComponent<XRRayInteractor>();
+            ray.interactionManager = manager;
+            ray.enableUIInteraction = false;
+            ray.selectActionTrigger = XRBaseControllerInteractor.InputTriggerType.StateChange;
+            rayRoot.SetActive(true);
+            SetGrip(remoteController, true);
+            SetGrip(rayController, true);
+            Physics.SyncTransforms();
+            yield return new WaitForFixedUpdate();
+            yield return null;
+
+            Assert.That(remoteHand.isSelectActive, Is.True);
+            Assert.That(ray.isSelectActive, Is.True);
+            Assert.That(manager.CanHover((IXRHoverInteractor)remoteHand, (IXRHoverInteractable)grab), Is.False);
+            Assert.That(manager.CanSelect((IXRSelectInteractor)remoteHand, (IXRSelectInteractable)grab), Is.False);
+            Assert.That(manager.CanHover((IXRHoverInteractor)ray, (IXRHoverInteractable)grab), Is.False);
+            Assert.That(manager.CanSelect((IXRSelectInteractor)ray, (IXRSelectInteractable)grab), Is.False);
+            Assert.That(grab.isSelected, Is.False);
+            Assert.That(Property<bool>(card, "WasHeldByLocalPlayer"), Is.False);
+        }
+
+        [UnityTest]
+        public IEnumerator ExistingHoldSurvivesDistantPalmButNewPickupDoesNot()
+        {
+            Component card = Card(1, false);
+            var grab = card.GetComponent<XRGrabInteractable>();
+            // Isolate selection from pose following: a resisting wall can leave a
+            // held card behind its tracked hand without constituting a new pickup.
+            grab.trackPosition = false;
+            grab.trackRotation = false;
+            XRDirectInteractor hand = InputHand(origin, out XRController controller);
+            Physics.SyncTransforms();
+            yield return new WaitForFixedUpdate();
+            yield return null;
+            SetGrip(controller, true);
+            yield return null;
+            Assert.That(grab.isSelected, Is.True);
+            Assert.That(grab.interactorsSelecting, Does.Contain(hand));
+
+            SetGrip(controller, true); // Hold, with no fresh press edge.
+            hand.transform.position = origin + Vector3.right;
+            yield return null;
+            yield return null; // Let the old sphere sweep clear as well.
+            Assert.That(Vector3.Distance(hand.transform.position, card.transform.position), Is.GreaterThan(0.9f));
+            Assert.That(grab.isSelected, Is.True, "Distance filtering must not drop an existing local hold.");
+            Assert.That(manager.CanHover((IXRHoverInteractor)hand, (IXRHoverInteractable)grab), Is.True);
+            Assert.That(manager.CanSelect((IXRSelectInteractor)hand, (IXRSelectInteractable)grab), Is.True);
+
+            SetGrip(controller, false);
+            yield return null;
+            Assert.That(grab.isSelected, Is.False);
+            SetGrip(controller, true);
+            yield return null;
+            Assert.That(hand.isSelectActive, Is.True);
+            Assert.That(manager.CanHover((IXRHoverInteractor)hand, (IXRHoverInteractable)grab), Is.False);
+            Assert.That(manager.CanSelect((IXRSelectInteractor)hand, (IXRSelectInteractable)grab), Is.False);
+            Assert.That(grab.isSelected, Is.False, "A former holder must meet the distance limit for its next pickup.");
+        }
+
+        [UnityTest]
+        public IEnumerator ControllerGripReacquiresASleepingCardForTenCyclesWithoutHandReentry()
+        {
+            Component card = Card(1, false);
+            var grab = card.GetComponent<XRGrabInteractable>();
+            Rigidbody body = card.GetComponent<Rigidbody>();
+            Collider affordance = Property<Collider>(card, "GrabAffordanceCollider");
+            XRDirectInteractor hand = InputHand(origin, out XRController controller);
+            var targets = new List<IXRInteractable>();
+            Physics.SyncTransforms();
+            yield return new WaitForFixedUpdate();
+            yield return null;
+            SetGrip(controller, true);
+            yield return null;
+            Assert.That(grab.isSelected, Is.True, "The first pickup must be detected by the manager from controller input.");
+
+            for (int iteration = 0; iteration < 10; iteration++)
+            {
+                SetGrip(controller, false);
+                yield return null;
+                Assert.That(grab.isSelected, Is.False, "Grip release failed on cycle " + iteration);
+                yield return new WaitForFixedUpdate();
+                yield return null; // Complete XRI's deferred detach before putting the loose body to sleep.
+                body.velocity = Vector3.zero;
+                body.angularVelocity = Vector3.zero;
+                body.Sleep();
+                Physics.SyncTransforms();
+                yield return new WaitForFixedUpdate();
+                yield return null;
+
+                Assert.That(body.IsSleeping(), Is.True, "The regression requires a sleeping dropped card.");
+                Assert.That(hand.transform.position, Is.EqualTo(origin), "Re-grab must not require leaving and re-entering the sensor.");
+                Assert.That(affordance.isTrigger && affordance.enabled, Is.True);
+                Assert.That(affordance.gameObject.layer, Is.Zero, "The pickup trigger must stay on Default after release.");
+                Assert.That(grab.colliders, Is.EqualTo(new[] { affordance }));
+                Assert.That(manager.TryGetInteractableForCollider(affordance, out IXRInteractable mapped), Is.True);
+                Assert.That(mapped, Is.SameAs(grab));
+                hand.GetValidTargets(targets);
+                Assert.That(targets, Does.Contain(grab), "Sleeping-card query lost the acquisition trigger on cycle " + iteration);
+                Assert.That(manager.CanHover((IXRHoverInteractor)hand, (IXRHoverInteractable)grab), Is.True);
+
+                // Deliberately never call SelectEnter: that would bypass the actual
+                // target detection and input processing whose regression is under test.
+                SetGrip(controller, true);
+                yield return null;
+                Assert.That(grab.isSelected, Is.True, "Controller re-grip failed on cycle " + iteration);
+                Assert.That(hand.interactablesSelected, Does.Contain(grab));
+                Assert.That(Property<bool>(card, "WasHeldByLocalPlayer"), Is.True);
+                SetGrip(controller, true); // Keep holding without repeating the press edge.
+                yield return null;
+            }
         }
 
         [UnityTest]

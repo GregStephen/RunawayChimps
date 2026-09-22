@@ -44,7 +44,34 @@ def block_game_object_id(block: str) -> int | None:
     return int(match.group(1)) if match else None
 
 
+def validate_bootstrap_pickup() -> None:
+    blocks = unity_blocks(read("Assets/Scenes/Bootstrap.unity"))
+    hands = [block for block in blocks
+             if "guid: 4253f32900bcc4d499d675566142ded0" in block]
+    require(len(hands) == 2, "Bootstrap must retain its two direct hand interactors.")
+    for hand in hands:
+        owner = block_game_object_id(hand)
+        colliders = [block for block in blocks
+                     if block_game_object_id(block) == owner
+                     and re.match(r"--- !u!(?:65|135|136|64) ", block)]
+        require(len(colliders) == 1 and block_file_id(colliders[0], 135) is not None,
+                "Accurate direct-hand detection requires one same-object SphereCollider.")
+        radius = float(re.search(r"m_Radius:\s*([\d.]+)", colliders[0]).group(1))
+        require(0.02 <= radius <= 0.10,
+                "Direct-hand acquisition must stay close to the hand, not use the old 0.60 m sphere.")
+        require(not any(block_game_object_id(block) == owner and block_file_id(block, 54) is not None
+                        for block in blocks),
+                "A same-object Rigidbody silently disables XRI's accurate sphere-query mode.")
+        require("m_ImproveAccuracyWithSphereCollider: 1" in hand
+                and "m_PhysicsTriggerInteraction: 2" in hand,
+                "Direct-hand queries must include trigger-only card acquisition colliders.")
+        mask = re.search(r"m_PhysicsLayerMask:\s*serializedVersion:\s*\d+\s*m_Bits:\s*(\d+)", hand)
+        require(mask is not None and int(mask.group(1)) & 1,
+                "Direct-hand queries must include the card affordance's Default layer.")
+
+
 def main() -> int:
+    validate_bootstrap_pickup()
     credential_path = "Assets/Scripts/KeycardCredential.cs"
     credential_source = read(credential_path)
     expected_credentials = {
