@@ -1,6 +1,6 @@
 # Runaway Chimps design and lore
 
-Last updated: 2026-09-14. Maintained repository edition, migrated from `Runaway_Chimps_Design_and_Lore.docx` version 0.9. The existing Word document is a downloadable snapshot; future edits belong here. See [AGENTS.md](../AGENTS.md) for the documentation workflow and the [repository improvement plan](repository-improvement-plan.md) for implementation evidence.
+Last updated: 2026-09-21. Maintained repository edition, migrated from `Runaway_Chimps_Design_and_Lore.docx` version 0.9. The existing Word document is a downloadable snapshot; future edits belong here. See [AGENTS.md](../AGENTS.md) for the documentation workflow and the [repository improvement plan](repository-improvement-plan.md) for implementation evidence.
 
 We are building a social VR horror game about gorillas escaping a laboratory that experiments on animals. This document records the current game rules, Level 1, the proposed Listener level, the story, and the scene architecture so future work can build on the same decisions.
 
@@ -636,3 +636,11 @@ The workstation now clones a referenced Standard material from `Resources/Launch
 **Pending validation:** Unity **2022.3.55f1** import/compile; Play Mode distance/readability/eye-height review; head-turn and hidden-origin-relocation behavior; retry/error restoration; `ACCESS GRANTED` -> full black -> terminal absent -> Hub reveal; two-client Photon slot/session/reconnect behavior; authored Hub-slot clearance; and Quest compositor splash, stereo/peripheral coverage, recenter/pause-resume, comfort and performance. Source checks do not establish those runtime/device results.
 
 **Validated source only — restored distant green terminal:** clean head `cdf6b87a55d429351acf0d6b96a632fda4847893` passed Source Integrity run `34917902460` on 2026-09-14. The run passed Unity 2022.3.55f1 version enforcement, first-party C# syntax/reference and enabled-scene checks, Unity metadata/GUID integrity, Level 1 and PR #15 contracts, the restored distant security-boot contracts, local threat-feedback contracts, launch/Quest/Hub-slot/session contracts, Python compilation, merge-marker rejection and human-authored whitespace. This validates source/tooling only; Unity import/compile, Play Mode, Photon multi-client behavior and Quest/headset behavior remain pending.
+
+## September 21 launch terminal runtime correction — closer and front-facing
+
+**Failed runtime validation / latest explicit correction:** Greg tested the restored flat green security terminal and reported that the **3.90 m** placement was way too far away and that the display looked reversed/mirrored. This supersedes the September 14 3.9 m placement target; do not treat that distance as approved.
+
+**Source cause and implemented correction:** the world-space canvas had a 180-degree local Y rotation, presenting the terminal from its back side and mirroring the text. On `feature/launch-presentation-polish` / PR #21 the canvas now uses identity local rotation and the terminal anchor is reduced to **2.50 m**. The terminal's physical canvas scale, real readiness rows, CRT treatment, retry behavior, black-only sector travel, Hub-slot/session hardening and Quest splash behavior are otherwise unchanged.
+
+**Status:** 2.50 m is an implemented tuning candidate, **not yet visually approved**. Pending validation is Unity 2022.3.55f1 Play Mode/headset confirmation that the terminal is front-facing, comfortably distant rather than intrusive, readable, not head-locked, and still hands off cleanly through black into the assigned Hub spawn.
