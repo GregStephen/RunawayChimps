@@ -72,6 +72,9 @@ jobs:
       - name: Validate Level 1 source contracts
         run: python Tools/validate_level1_contracts.py
 
+      - name: Validate startup floor safety contracts
+        run: python Tools/validate_spawn_floor_contracts.py
+
       - name: Validate keycard reader source contracts
         run: python Tools/validate_keycard_reader_contracts.py
 
