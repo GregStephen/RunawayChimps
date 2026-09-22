@@ -64,6 +64,10 @@ The 2.50 m world-space retune also failed runtime review: the boot/perceived vie
 
 **Runtime feedback:** the restored screen-space green terminal is stable but still too large.
 
-**Implemented tuning candidate:** reduce the centered terminal footprint by 25%, from approximately 72% / 84% of the view to **54% width / 63% height**. The screen remains `ScreenSpaceCamera`; no world-space distance is used. All CRT/static, startup-audio suppression, readiness, retry/reveal, Photon Hub-slot/session and Quest-splash behavior remains unchanged.
+**Implemented tuning candidate:** use the approved `terminalScale = 0.50`, producing roughly **36% width / 42% height** from the 72% / 84% PR #20 baseline. The screen remains `ScreenSpaceCamera`; no world-space distance is used. All CRT/static, startup-audio suppression, readiness, retry/reveal, Photon Hub-slot/session and Quest-splash behavior remains unchanged.
 
 **Pending validation:** visual approval of size/readability in Unity 2022.3.55f1 Play Mode/headset.
+
+## September 21 terminal scale approval
+
+**Validated visual tuning:** Greg used the live Play Mode tuning workflow and reported that **Terminal Scale = 0.50 looked awesome**. Record **0.50** as the approved default for the screen-space green security boot. This validates the terminal's visual size in that Play Mode review only; it does not by itself validate the remaining startup audio/static, Photon multi-client, Hub reveal, or Quest/headset checks.
