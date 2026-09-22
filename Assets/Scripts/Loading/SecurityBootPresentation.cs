@@ -40,13 +40,13 @@ namespace RunawayChimps.Loading
         private Image interferenceLine;
         private Texture2D staticTexture;
         private Color32[] staticPixels;
-        private SecurityWorkstationVignette workstation;
         private readonly TMP_Text[] stageLabels = new TMP_Text[5];
         private readonly Image[] stageLights = new Image[5];
         private readonly bool[] stages = new bool[5];
         private readonly float[] stageReachedAt = { -1f, -1f, -1f, -1f, -1f };
         private AudioSource bootAudio;
         private AudioClip tick;
+        private AudioClip staticCrackle;
         private Camera boundCamera;
         private bool cameraMasked;
         private int presentationLayer = -1;
@@ -55,7 +55,6 @@ namespace RunawayChimps.Loading
         private Color savedBackground;
         private bool startupMode;
         private bool fading;
-        private bool workstationRetiredForReveal;
         private bool readyLogged;
         private float appearedAt;
         private float nextSoundAt;
@@ -126,25 +125,12 @@ namespace RunawayChimps.Loading
                 scaler.matchWidthOrHeight = 0.5f;
             }
 
+            // Preserve the original approved PR #20 presentation mechanics: build the terminal
+            // directly on the Loading canvas, then bind that canvas to the tracked XR camera.
+            DisableLoadingSceneText();
+            BuildTerminal(hostCanvas.transform);
             BindStartupCamera();
             if (sounds) BuildAudio();
-        }
-
-        private void EnsureWorkstation()
-        {
-            if (!startupMode || workstationRetiredForReveal || workstation != null || boundCamera == null || presentationLayer < 0) return;
-
-            workstation = SecurityWorkstationVignette.Create(boundCamera, font, presentationLayer);
-            if (workstation == null || workstation.MonitorCanvasRoot == null)
-            {
-                if (legacyStatus != null) legacyStatus.enabled = true;
-                return;
-            }
-
-            BuildTerminal(workstation.MonitorCanvasRoot);
-            DisableLoadingSceneText();
-            // Camera clear is black and only the dedicated presentation layer is visible, so the desk floats in safe darkness.
-            SetBackdropOpacity(0f);
         }
 
         private void BuildTerminal(Transform parent)
@@ -298,6 +284,11 @@ namespace RunawayChimps.Loading
             BindStartupCamera();
             if (terminal == null) return;
 
+            // Original PR #20 framing: stable screen-space sizing independent of XR rig grounding/snap.
+            Vector2 size = ((RectTransform)hostCanvas.transform).rect.size;
+            float scale = Mathf.Min(size.x * 0.72f / DesignWidth, size.y * 0.84f / DesignHeight);
+            terminal.localScale = Vector3.one * Mathf.Max(0.01f, scale);
+
             if (!fading) terminalGroup.alpha = Mathf.Clamp01((Time.unscaledTime - appearedAt) / 0.3f);
 
             Color c = string.IsNullOrEmpty(previousError) ? Phosphor : Amber;
@@ -344,6 +335,8 @@ namespace RunawayChimps.Loading
             {
                 interferenceStartedAt = now;
                 staticBurstUntil = Mathf.Max(staticBurstUntil, now + 0.10f);
+                if (bootAudio != null && staticCrackle != null)
+                    bootAudio.PlayOneShot(staticCrackle, 0.55f);
             }
         }
 
@@ -371,11 +364,7 @@ namespace RunawayChimps.Loading
 
         private void BindStartupCamera()
         {
-            if (boundCamera != null && boundCamera.isActiveAndEnabled)
-            {
-                EnsureWorkstation();
-                return;
-            }
+            if (boundCamera != null && boundCamera.isActiveAndEnabled) return;
 
             var player = GorillaLocomotion.Player.Instance;
             var origin = player != null ? player.GetComponentInParent<XROrigin>() : null;
@@ -396,7 +385,6 @@ namespace RunawayChimps.Loading
             hostCanvas.worldCamera = boundCamera;
             hostCanvas.planeDistance = Mathf.Max(1.5f, boundCamera.nearClipPlane + 0.1f);
             MaskStartupCamera();
-            EnsureWorkstation();
 
             foreach (GameObject root in gameObject.scene.GetRootGameObjects())
                 foreach (LoadingFallbackCamera fallback in root.GetComponentsInChildren<LoadingFallbackCamera>(true))
@@ -447,17 +435,7 @@ namespace RunawayChimps.Loading
         public void SetTerminalOpacity(float alpha)
         {
             fading = true;
-            alpha = Mathf.Clamp01(alpha);
-            if (terminalGroup != null) terminalGroup.alpha = alpha;
-            if (alpha <= 0.001f) workstationRetiredForReveal = true;
-
-            if (workstation != null)
-            {
-                // Let the authored black full-FOV backdrop cover the entire 3D vignette before it is hidden.
-                SetBackdropOpacity(1f - alpha);
-                if (workstationRetiredForReveal) DestroyWorkstationForReveal();
-                else if (!workstation.gameObject.activeSelf) workstation.gameObject.SetActive(true);
-            }
+            if (terminalGroup != null) terminalGroup.alpha = Mathf.Clamp01(alpha);
         }
 
         public void SetBackdropOpacity(float alpha)
@@ -468,18 +446,7 @@ namespace RunawayChimps.Loading
         public void RestoreAfterInterruptedEntry()
         {
             fading = false;
-            workstationRetiredForReveal = false;
-            if (workstation == null) EnsureWorkstation();
-            if (workstation != null)
-            {
-                workstation.gameObject.SetActive(true);
-                SetBackdropOpacity(0f);
-            }
-            else
-            {
-                SetBackdropOpacity(1f);
-            }
-
+            SetBackdropOpacity(1f);
             MaskStartupCamera();
             if (terminalGroup != null) terminalGroup.alpha = 1f;
         }
@@ -515,6 +482,18 @@ namespace RunawayChimps.Loading
             }
             tick = AudioClip.Create("Security boot soft relay", count, 1, rate, false);
             tick.SetData(samples, 0);
+
+            const int staticCount = 882;
+            var staticSamples = new float[staticCount];
+            for (int i = 0; i < staticCount; i++)
+            {
+                float phase = i / (float)(staticCount - 1);
+                float envelope = Mathf.Sin(Mathf.PI * phase);
+                staticSamples[i] = (NextNoise01() * 2f - 1f) * envelope * 0.55f;
+            }
+            staticCrackle = AudioClip.Create("Security boot soft static", staticCount, 1, rate, false);
+            staticCrackle.SetData(staticSamples, 0);
+
             bootAudio = gameObject.AddComponent<AudioSource>();
             bootAudio.playOnAwake = false;
             bootAudio.loop = false;
@@ -533,27 +512,8 @@ namespace RunawayChimps.Loading
             RestoreCameraForReveal();
             if (bootAudio != null) bootAudio.Stop();
             if (tick != null) Destroy(tick);
-            DestroyWorkstationForReveal();
-        }
-
-        private void DestroyWorkstationForReveal()
-        {
-            if (workstation != null) Destroy(workstation.gameObject);
-            workstation = null;
-            terminal = null;
-            terminalGroup = null;
-            headline = detail = instruction = null;
-            cursor = null;
-            staticNoise = null;
-            interferenceLine = null;
+            if (staticCrackle != null) Destroy(staticCrackle);
             if (staticTexture != null) Destroy(staticTexture);
-            staticTexture = null;
-            staticPixels = null;
-            for (int i = 0; i < stageLabels.Length; i++)
-            {
-                stageLabels[i] = null;
-                stageLights[i] = null;
-            }
         }
 
         private void DisableLoadingSceneText()
