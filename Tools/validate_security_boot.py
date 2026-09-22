@@ -37,8 +37,10 @@ def main() -> int:
         errors.append("Hub reveal must combine the Hub mask with the black presentation layer before fading black away.")
 
     require(ui, ["BuildTerminal(hostCanvas.transform)", "RenderMode.ScreenSpaceCamera",
-                 "hostCanvas.planeDistance = Mathf.Max(1.5f", "size.x * 0.72f / DesignWidth",
-                 "size.y * 0.84f / DesignHeight",
+                 "hostCanvas.planeDistance = Mathf.Max(1.5f", "TerminalViewWidthFraction = 0.54f",
+                 "TerminalViewHeightFraction = 0.63f",
+                 "size.x * TerminalViewWidthFraction / DesignWidth",
+                 "size.y * TerminalViewHeightFraction / DesignHeight",
                  "PresentationLayerName = \"LoadingPresentation\"", "LayerMask.NameToLayer(PresentationLayerName)",
                  "SetLayerRecursively(hostCanvas.gameObject, presentationLayer)",
                  "boundCamera.cullingMask = 1 << presentationLayer",
