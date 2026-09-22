@@ -42,6 +42,12 @@ def main() -> int:
         if token not in oculus:
             errors.append(f"OculusProjectConfig missing {token!r}.")
 
+    review_menu = read("Assets/Scripts/Editor/SecurityBootReviewMenu.cs")
+    for token in ["Hold Security Boot For Review", "Select Active Security Boot Tuning",
+                  "FindObjectOfType<SecurityBootPresentation>", "Selection.activeGameObject"]:
+        if token not in review_menu:
+            errors.append(f"Security boot live-tuning menu missing {token!r}.")
+
     setup = read("Assets/Scripts/Editor/LaunchPresentationSettings.cs")
     preprocess = setup.split("internal sealed class LaunchPresentationBuildPreprocessor", 1)[-1]
     if "Apply(saveAssets:" in preprocess:
@@ -69,10 +75,11 @@ def main() -> int:
         "BuildTerminal(hostCanvas.transform)",
         "RenderMode.ScreenSpaceCamera",
         "hostCanvas.planeDistance = Mathf.Max(1.5f",
-        "TerminalViewWidthFraction = 0.54f",
-        "TerminalViewHeightFraction = 0.63f",
-        "size.x * TerminalViewWidthFraction / DesignWidth",
-        "size.y * TerminalViewHeightFraction / DesignHeight",
+        "BaseTerminalViewWidthFraction = 0.72f",
+        "BaseTerminalViewHeightFraction = 0.84f",
+        "[SerializeField, Range(0.40f, 1.00f)] private float terminalScale = 0.75f",
+        "size.x * BaseTerminalViewWidthFraction * terminalScale / DesignWidth",
+        "size.y * BaseTerminalViewHeightFraction * terminalScale / DesignHeight",
         "PresentationLayerName = \"LoadingPresentation\"",
         "LayerMask.NameToLayer(PresentationLayerName)",
         "SetLayerRecursively(hostCanvas.gameObject, presentationLayer)",
