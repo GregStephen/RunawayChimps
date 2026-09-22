@@ -1,6 +1,9 @@
 # Automated source validation
 
-Last updated: 2026-09-12.
+Last updated: 2026-09-22 (isolated 62f3 guard; historical results retained).
+
+## Compatibility-branch boundary
+The 62f3 trial starts at main `9da4a1e`. Only the editor guard changes; the managed card harness and all existing source/scene/metadata/feature checks remain enabled. The guard also checks the official revision. Historical source results below are not 62f3 import/build results. Follow [the trial guide](unity-2022.3.62f3-compatibility.md); no licensed Unity runner is added.
 
 ## Implemented check
 
@@ -18,7 +21,7 @@ The workflow uses read-only repository permissions and a 10-minute timeout. It r
 
 ## What Source integrity checks
 
-1. `ProjectSettings/ProjectVersion.txt` still declares **Unity 2022.3.55f1**.
+1. On this compatibility branch, `ProjectSettings/ProjectVersion.txt` contains exactly one `m_EditorVersion: 2022.3.62f3` and one `m_EditorVersionWithRevision: 2022.3.62f3 (96770f904ca7)`. Missing, duplicate, mismatched or different-version declarations fail. Main at the fork retains its 55f1 declaration.
 2. `python Tools/validate_source.py --syntax` checks the first-party C# trees under `Assets/Scripts` and `Assets/Resources/PhotonVR/Scripts` for component filename/class matching, script `.meta` presence and duplicate script GUIDs, and tree-sitter C# syntax. It also checks enabled Build Settings scenes for missing files, scene-GUID mismatches, duplicate local object IDs, and unresolved local references.
 3. `python Tools/validate_repository_integrity.py` scans the full `Assets` tree for missing/orphaned `.meta` files and duplicate Unity asset GUIDs, checks case-insensitive path collisions, and parses the Unity package manifests, asmdef/asmref files, and tracked tool JSON.
 4. `python Tools/validate_level1_contracts.py` protects the active Level 1 implementation from source-level regression: local-only vent headlamp gating/equip behavior, Crawler visual anchor/path-following and no-root-motion assumptions, head-authoritative safe boundaries, guarded capture/drop behavior, XR startup settling, and the bounded non-allocating floor-penetration guard. It also checks the Level 1 scene still serializes at least two safe-boundary zone triggers, a vent zone trigger, and the Crawler capture component.
@@ -44,10 +47,10 @@ After the original corrections, both **push** and **pull_request** Source integr
 
 A green Source integrity check does **not** mean Unity successfully imports or compiles the project. It also does not run the two Unity Editor validators, Play Mode, Photon PUN sessions, XR interaction, actual Crawler animation deformation/corner appearance, actual headlamp illumination, scene travel, Quest builds, headset comfort, or target-hardware performance.
 
-Before merging gameplay changes, continue to run Unity 2022.3.55f1 and the project-specific Editor/runtime/headset checks recorded in `README.md` and `docs/repository-improvement-plan.md`.
+Before merging gameplay changes, run the candidate's declared editor (2022.3.62f3 for this trial) and the project-specific Editor/runtime/headset checks recorded in `README.md` and `docs/repository-improvement-plan.md`.
 
 ## Possible second CI tier
 
-A future Unity-aware CI tier could open the project in Unity 2022.3.55f1 and run EditMode/PlayMode tests or a compile/import smoke test. That is deliberately **not implemented yet**: hosted Unity CI adds substantially more setup, runtime, and licensing/activation concerns, and it still cannot replace Photon multi-client or Quest-headset validation. Add that tier only when its maintenance cost is justified.
+A future Unity-aware CI tier could open the project in its explicitly selected editor and run EditMode/PlayMode tests or a compile/import smoke test. That is deliberately **not implemented yet**: hosted Unity CI adds substantially more setup, runtime, and licensing/activation concerns, and it still cannot replace Photon multi-client or Quest-headset validation. Add that tier only when its maintenance cost is justified.
 
 Once `Source integrity` is merged to `main` and has proven stable, it is a good candidate to make a required pull-request status check in repository branch/ruleset settings.
