@@ -1,6 +1,6 @@
 # Launch presentation
 
-Last updated: 2026-09-14. Branch: `feature/launch-presentation-polish`. Runaway Chimps uses Unity **2022.3.55f1**, Photon PUN, Meta XR SDK 83.0.1 and OpenXR 1.13.2.
+Last updated: 2026-09-21. Branch: `feature/launch-presentation-polish`. Runaway Chimps uses Unity **2022.3.55f1**, Photon PUN, Meta XR SDK 83.0.1 and OpenXR 1.13.2.
 
 ## Confirmed direction
 
@@ -83,3 +83,11 @@ See [Launch vignette — restored flat security terminal](launch-workstation-vig
 **Implemented correction, pending retest:** terminal distance is reduced to **2.50 m** and the world-space canvas local rotation is now identity instead of a 180-degree Y flip. Source validators explicitly reject the mirrored rotation and constrain the current distance to a conservative mid-distance range. The exact 2.50 m value remains tuning until Greg visually approves it.
 
 **Validated source only — September 21 terminal distance/orientation retune:** code/docs head `cdfdfe16e3fb9809339bfad507e18e749a022393` passed Source Integrity run `35676148648`. The run passed Unity 2022.3.55f1 version enforcement, C# syntax/references, repository integrity, Level 1 and PR #15 contracts, front-facing security-boot contracts, local threat-feedback contracts, launch/Quest/Hub-slot/session contracts, Python compilation, merge-marker rejection and whitespace checks. This validates source/tooling only; Unity Play Mode/headset visual approval of the 2.50 m placement remains pending.
+
+## September 21 final visual correction — original screen-space boot
+
+The 2.50 m world-space retune also failed runtime review: the boot/perceived view moved with XR-rig settling, hidden hand-floor impacts were audible, and the effect no longer felt like the earlier approved loading screen. The active direction is now the **original PR #20 screen-space green terminal**, not a world-space panel at any distance.
+
+**Implemented:** build the 1080 × 820 terminal directly on the Loading canvas; bind the canvas with `RenderMode.ScreenSpaceCamera`; restore the original view-relative 72% width / 84% height scaling and camera-plane placement; remove the world-space panel helper; suppress `HandImpactAudio` for the duration of cold-start Loading; retain visual CRT noise/scanlines/interference; and add a very soft initial/periodic static crackle. All Photon Hub-slot/session, retry/reveal, black-travel and Quest-splash hardening remains in place.
+
+**Pending validation:** confirm in Unity 2022.3.55f1 that the boot once again looks like the earlier approved green screen, does not visibly fall with the rig, startup hand impacts are silent, CRT/static reads clearly but comfortably, and Hub reveal remains clean.
