@@ -62,6 +62,8 @@ Read the [design and lore](design-and-lore.md) for intended behavior and [AGENTS
 
 **Regression protection:** the Level 1 contract protects the centered pivot/axis, lip correction, textured material references/import settings and motor source/frequency contract. The focused `VentBlowerPlayModeTests` cover imported pose preservation, ten simulated minutes of centered spin, missing-hub behavior, idempotent side-lip separation, non-lens material textures, minimum motor clip/source levels and duplicate creation/unload/re-entry. Source/asset checks remain separate from Unity native import/audio/rendering.
 
+**Validated source result, 2026-09-22:** GitHub Source Integrity [run #587](https://github.com/GregStephen/RunawayChimps/actions/runs/35734663230) passed every step on reconciled head `3a88d1d39ebce77fb12c7c328b9ce87c92884e98`. The run includes current-main startup-floor safety plus the expanded blower source/material/audio contracts and existing repository feature gates. This is source/tooling/managed-state evidence only; Unity rendering/audio and headset behavior remain separate.
+
 **Pending runtime acceptance:** in Unity 2022.3.55f1/headset, preserve the already-passing centered rotation and verify no side z-fighting/clipping, readable restrained industrial texture breakup, clearly audible local motor/air sound near the fan with natural attenuation, unchanged red maintenance light and route clearance, and one stable blower after repeated Level 1 re-entry. Issue #53 should close only after these presentation checks pass.
 
 ## September 13 Level 1 keycard-room environment and regeneration lore
