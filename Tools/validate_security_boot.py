@@ -13,6 +13,7 @@ def main() -> int:
     travel = (ROOT / "Assets/Scripts/Travel/SectorTravelService.cs").read_text(encoding="utf-8")
     menu = (ROOT / "Assets/Scripts/Editor/SecurityBootReviewMenu.cs").read_text(encoding="utf-8")
     tags = (ROOT / "ProjectSettings/TagManager.asset").read_text(encoding="utf-8-sig")
+    hand_audio = (ROOT / "Assets/Scripts/PlayerScripts/HandImpactAudio.cs").read_text(encoding="utf-8")
 
     def require(text: str, tokens: list[str], name: str) -> None:
         for token in tokens:
@@ -23,7 +24,7 @@ def main() -> int:
     require(gate, ["state.IsReady", "state.HubActive", "state.RigSnapped", "state.PhotonPlayerSpawned",
                    "state.PlayerVisualsReady", "PhotonNetwork.InRoom", "isLoaded",
                    "string.IsNullOrEmpty(state.LastError)", "string.IsNullOrEmpty(loadError)"], "readiness")
-    require(flow, ["SectorTravelService.I.IsBusy", "if (!startup) return;", "SecurityBootPresentation.Install",
+    require(flow, ["SectorTravelService.I.IsBusy", "IsColdStartupPresentationActive", "if (!startup) return;", "SecurityBootPresentation.Install",
                    "hubLoad != null && !hubLoad.isDone", "LoadSceneMode.Additive", "GameBootstrap.I.RetryStartup()",
                    "Keyboard.current.rKey.wasPressedThisFrame", "XRNode.LeftHand", "XRNode.RightHand",
                    "if (!ready && Time.realtimeSinceStartup >= deadline", "if (!startup || entering) return;",
@@ -69,6 +70,9 @@ def main() -> int:
     for forbidden in ["SecurityWorkstationVignette", "RenderMode.WorldSpace", "TerminalDistance", "MonitorCanvasRoot"]:
         if forbidden in ui:
             errors.append(f"Restored security boot must remain screen-space: {forbidden!r} found.")
+
+    if "LoadingFlow.IsColdStartupPresentationActive" not in hand_audio:
+        errors.append("Cold startup must suppress hidden rig-settle hand impact audio.")
 
     require(travel, ["origin.Camera.backgroundColor = Color.black", "debug.debugText.text = \"\"",
                      "ShowLoadingScene", "RestoreCamera()"], "existing black travel and recovery")
