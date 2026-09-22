@@ -1,11 +1,13 @@
 # Runaway Chimps
 
-A Photon PUN VR horror game about escaping a laboratory. Open this compatibility branch with **Unity 2022.3.62f3 (96770f904ca7)**. Cheeky Chimps is a separate Unity 6 project.
+A Photon PUN VR horror game about escaping a laboratory. Open this project with **Unity 2022.3.62f3 (96770f904ca7)**. Cheeky Chimps is a separate Unity 6 project.
 
-## Unity 62f3 compatibility trial
-Branch: `compat/unity-2022.3.62f3`. Fork: main `9da4a1e46faa16484af9425edb41517a5a931a75` (55f1). Greg authorized this isolated trial on September 22, lifting the earlier hold. Follow [setup, acceptance and rollback](docs/unity-2022.3.62f3-compatibility.md) using a separate checkout/Library. Editor declaration and exact CI guard are updated; no package, gameplay, scene, asset, Photon or XR-settings change is included. Unity import/compilation, package compatibility, Android build and Quest validation remain pending. Do not merge just because Source Integrity is green.
+## Unity 62f3 baseline
+PR #61 was merged on September 22 after a clean Unity 2022.3.62f3 import/playthrough and a passing **Run Reliability Regression Checks** result. Main now declares **2022.3.62f3 (96770f904ca7)**. The upgrade did not intentionally change packages, gameplay, scenes, authored assets, Photon PUN, rendering or XR settings. Remaining Android/Quest/package acceptance stays open in #27.
 
-The older project-layout/audit sections below describe earlier development snapshots and must not override the maintained [design](docs/design-and-lore.md), [improvement plan](docs/repository-improvement-plan.md) or trial guide. Full historical README reconciliation remains #28; do not reinterpret old 55f1 test results as 62f3 results.
+Two pre-existing problems surfaced during the trial and are tracked separately: #63 for the Crawler threat-vignette `_MainTex` error and #64 for Sector Travel missing-script/fingertip-button wiring failures. The regression suite's temporary `Could not create room: Room name exists` message is intentional test coverage and not a defect.
+
+The older project-layout/audit sections below describe earlier development snapshots and must not override the maintained [design](docs/design-and-lore.md) or [improvement plan](docs/repository-improvement-plan.md). Full historical README reconciliation remains #28; do not reinterpret old 55f1 test results as 62f3 results.
 
 ## Project documentation
 
@@ -66,7 +68,7 @@ PR #11 adds `.github/workflows/source-validation.yml`, a read-only **Source inte
 
 The check pins its C# parser dependencies and verifies:
 
-- `ProjectSettings/ProjectVersion.txt` declares Unity **2022.3.62f3 (96770f904ca7)** on this trial branch, and both version lines must match;
+- `ProjectSettings/ProjectVersion.txt` declares Unity **2022.3.62f3 (96770f904ca7)**, and both version lines must match;
 - `python Tools/validate_source.py --syntax` passes for first-party component/class names, Unity script metadata/GUIDs, enabled scene registration, scene metadata, local object IDs/references, and C# syntax;
 - tracked Python tools compile with `python -m compileall -q Tools`; and
 - `git diff --check` passes for the full PR or pushed range.
