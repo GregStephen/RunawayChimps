@@ -1,6 +1,6 @@
-# Unity 2022.3.62f3 compatibility trial
+# Unity 2022.3.62f3 compatibility and adoption record
 
-Prepared: 2026-09-22. Tracker: [#27](https://github.com/GregStephen/RunawayChimps/issues/27). Branch: `compat/unity-2022.3.62f3`. Status: branch/editor/CI preparation implemented; Unity, Android and Quest acceptance pending. Not merged.
+Prepared: 2026-09-22. Tracker: [#27](https://github.com/GregStephen/RunawayChimps/issues/27). Branch: `compat/unity-2022.3.62f3`. Status: **merged to main as the editor baseline** after clean import/playthrough and passing Reliability Regression Checks; Android/Quest/package acceptance remains pending.
 
 ## Exact comparison baseline
 
@@ -47,4 +47,4 @@ Compare a suspected regression to the same fork in 55f1, using a separate baseli
 
 Copy [the test/build record](templates/test-build-record.md) per tested revision. Record blocked/unrun checks honestly. The [security review](unity-runtime-security-review.md) retains dated advisory/support limitations; this trial is not a claim that 62f3 is the newest supported editor, vendor-certified for this configuration or a public-release certification. Recheck applicable requirements before distribution.
 
-If import/build/runtime fails, stop and retain the trial logs/diffs privately. Close the trial editor and return to the untouched 55f1 baseline checkout. Do not open the upgraded trial Library with 55f1, hard-reset away changes, or apply a downgrade in place. No main rollback is needed while this branch is unmerged. Capture evidence for any proposed fix before expanding scope. #27 stays open and the PR stays a draft until the applicable acceptance is reviewed; merging or public distribution requires a later decision.
+If a new regression is suspected, retain logs/diffs and compare against the preserved 55f1 pre-upgrade fork in a separate checkout rather than downgrading an upgraded Library in place. Because 62f3 is now on main, any rollback must be an explicit repository decision supported by evidence. #27 stays open for remaining Android/Quest/package acceptance; public distribution still requires the later release gates.
