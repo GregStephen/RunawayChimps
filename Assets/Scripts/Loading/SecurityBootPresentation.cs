@@ -25,8 +25,12 @@ namespace RunawayChimps.Loading
         private const int StaticHeight = 48;
         private const float StaticRefreshInterval = 0.10f;
         private const float InterferenceSweepDuration = 0.42f;
-        private const float TerminalViewWidthFraction = 0.54f;
-        private const float TerminalViewHeightFraction = 0.63f;
+        private const float BaseTerminalViewWidthFraction = 0.72f;
+        private const float BaseTerminalViewHeightFraction = 0.84f;
+
+        [Header("Live Terminal Tuning")]
+        [Tooltip("Play Mode tuning multiplier. 1.0 is the original PR #20 size; 0.75 is the current 25% smaller default.")]
+        [SerializeField, Range(0.40f, 1.00f)] private float terminalScale = 0.75f;
 
         private Canvas hostCanvas;
         private TMP_Text legacyStatus;
@@ -291,8 +295,8 @@ namespace RunawayChimps.Loading
             // approved presentation mechanics but use a smaller centered terminal.
             Vector2 size = ((RectTransform)hostCanvas.transform).rect.size;
             float scale = Mathf.Min(
-                size.x * TerminalViewWidthFraction / DesignWidth,
-                size.y * TerminalViewHeightFraction / DesignHeight);
+                size.x * BaseTerminalViewWidthFraction * terminalScale / DesignWidth,
+                size.y * BaseTerminalViewHeightFraction * terminalScale / DesignHeight);
             terminal.localScale = Vector3.one * Mathf.Max(0.01f, scale);
 
             if (!fading) terminalGroup.alpha = Mathf.Clamp01((Time.unscaledTime - appearedAt) / 0.3f);
