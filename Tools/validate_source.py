@@ -17,6 +17,7 @@ def validate(root, syntax=False):
     errors = []
     scripts = sorted((root / 'Assets/Scripts').rglob('*.cs'))
     scripts += sorted((root / 'Assets/Resources/PhotonVR/Scripts').rglob('*.cs'))
+    scripts += sorted((root / 'Assets/Tests').rglob('*.cs'))
     if not scripts:
         errors.append('No first-party scripts found.')
     guids = {}
@@ -41,6 +42,10 @@ def validate(root, syntax=False):
             guids[match[1]] = name
         if parser and parser.parse(path.read_bytes()).root_node.has_error:
             errors.append(f'{name}: C# syntax parse failed.')
+    if parser:
+        for path in sorted((root / 'Tools/CardSystemHarness').glob('*.cs')):
+            if parser.parse(path.read_bytes()).root_node.has_error:
+                errors.append(f'{path.relative_to(root)}: C# harness syntax parse failed.')
     build = (root / 'ProjectSettings/EditorBuildSettings.asset').read_text()
     scenes = re.findall(r'- enabled: 1\s+path: (.+)\s+guid: (\w+)', build)
     for path, count in Counter(path for path, _ in scenes).items():
