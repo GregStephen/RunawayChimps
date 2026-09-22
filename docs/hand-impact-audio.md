@@ -61,13 +61,21 @@ That adapter still owns collision/contact detection, object-specific impact stre
 
 The existing Listener/noise-event design remains a separate gameplay consumer. Audible playback alone must not silently change AI hearing, reveal a quiet player or send raw collisions over Photon.
 
+## Temporary diagnostic tick
+
+Greg's first headset retest still sounded off, and the sample quality made it difficult to decide whether the trigger behavior itself was correct. Runtime acceptance therefore remains pending.
+
+For the next pass, `Default_HandsTap` intentionally uses `HandImpact_DiagnosticTick.wav`: a deterministic **20 ms**, mono PCM16 synthetic tick. The active profile is fixed to pitch **1.0** and a constant accepted-impact volume so pitch/strength variation cannot imitate duplicate or inconsistent triggers. The previous 93 ms `HandTap_Dry.wav` edit is retained but inactive.
+
+This is **test instrumentation, not final game audio**. Do not judge material realism from this sound. Judge only event count and timing: one intentional contact = one tick; resting pressure, sliding, withdrawal, proximity without contact, startup/travel suppression and a single-frame contact gap should not create extra ticks. After trigger behavior is accepted, replace the diagnostic profile clip with final surface-appropriate recordings and restore tasteful pitch/strength variation.
+
 ## Validation and first headset retest
 
 **Automated source/managed checks** cover source syntax/metadata, maintained feature contracts, the actual production gate's contact transitions, and deterministic audio-file processing. Dedicated `Assets/Tests/HandImpactAudio` fixtures exercise production code through reflection from a Unity test assembly. A test file's presence does not mean it was executed.
 
 **Executed on 2026-09-22:** the production `HandImpactGate` harness passed **10,758 assertions**; the existing `CardConsumptionState` harness passed **18,015 assertions**. C# 9 compilation of the actual Player/contact/profile/emitter classes against temporary external Unity/travel/keycard API stubs passed with zero errors (only the preexisting unused `jumpHandIsLeft` warning), and **30 supplemental assertions** exercised the actual contact-to-voice methods, including persistent pause/focus suppression and recovery. The repository source/serialization/feature contracts, Python compilation, deterministic audio check and whitespace checks passed. The temporary stub harness is supplemental evidence; the durable managed gate regression is committed under `Tools/HandImpactHarness` and runs in CI. Dedicated Unity fixture execution is still pending.
 
-**Pending acceptance:** Unity 2022.3.62f3 (`96770f904ca7`) import/compilation and Test Runner execution; actual spatial sound and clip quality; headset contact timing; two-client isolation; target Quest performance. Source parsing and a managed compiler with Unity stubs do not execute Unity physics or an audio device.
+**Pending acceptance:** Unity 2022.3.62f3 (`96770f904ca7`) import/compilation and Test Runner execution; diagnostic-tick headset trigger count/timing; later final spatial Foley quality; two-client isolation; target Quest performance. Source parsing and a managed compiler with Unity stubs do not execute Unity physics or an audio device.
 
 Start from Bootstrap on this branch and test:
 

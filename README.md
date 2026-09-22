@@ -80,7 +80,7 @@ A green Source integrity check is **not Unity validation**. It does not import o
 
 ## Audio and proximity fixes
 
-The September 22 hand-impact correction on `fix/hand-impact-surface-audio` uses actual Gorilla hand contacts, shared configurable surface profiles, bounded spatial voices with Doppler disabled, and a cleaned single-transient default tap. It is reconciled to the adopted Unity **2022.3.62f3 (96770f904ca7)** baseline. See [configuration and validation](docs/hand-impact-audio.md). Unity/headset acceptance remains pending; vent-metal content (#57), keycard drop/grip polish (#52), and blower audio (#56) retain their scope.
+The September 22 hand-impact correction on `fix/hand-impact-surface-audio` uses actual Gorilla hand contacts, shared configurable surface profiles, and bounded spatial voices with Doppler disabled. The active default is temporarily a deterministic 20 ms diagnostic tick at fixed pitch/volume so headset testing can isolate trigger timing from Foley quality; the earlier dry edit remains in the repository as a non-active candidate. It is reconciled to the adopted Unity **2022.3.62f3 (96770f904ca7)** baseline. See [configuration and validation](docs/hand-impact-audio.md). Unity/headset acceptance remains pending; vent-metal content (#57), keycard drop/grip polish (#52), and blower audio (#56) retain their scope.
 
 
 - `AudioScaler` stops its source when vent, patrol/chase, or distance filters exclude playback. Disabling the scaler also stops its source. Mute-change logging respects `debugLogs`.
