@@ -718,3 +718,135 @@ The recommendations preserve the agreed direction: open level access, individual
 **Validation gate:** the full source suite and actual production CardConsumptionState managed harness must pass before this follow-up is published. The final exact-head CI outcome is recorded on PR #23. Unity 2022.3.55f1 compilation, these Play Mode cases, actual controller pickup/drop/re-grab and held-world collision, complete travel/recovery, two-client Photon and Quest/headset comfort remain required. No package, scene geometry, global physics setting, input binding or network architecture changes are included.
 
 **Validated source/managed result, 2026-09-15 UTC:** Apply card lifecycle polish run `34932597114` passed the full source suite and production CardConsumptionState harness on this patched worktree based on `ac37699eeed27fd73334874ece476e5892455ccb`. The 49 Unity fixture cases, actual XRI/PhysX/controller input, Photon and headset tests remain unexecuted by this runner. Final published revision and read-only exact-head CI are recorded on PR #23.
+
+## September 13 launch-presentation production pass
+
+**Confirmed product decision:** the facility security-system boot approved after PR #20 is the selected launch presentation. The floating/void concept is inactive. Normal Hub/level travel stays black-only unless measured transition duration later justifies a separate review; real errors retain recovery feedback.
+
+**Implemented source on `feature/launch-presentation-polish` / PR #21:** add a lightweight branded Quest system-splash texture, serialize it into `OculusProjectConfig` with a black background, and add Editor/build-time tooling that assigns and validates the same texture on the active Android `MetaXRFeature` while preserving the existing OpenXR loader. The Android build preprocessor fails closed when the splash asset/feature assignment is unavailable. `Tools/validate_launch_presentation.py` protects the OpenXR loader contract, splash GUID/reference, black background, build guard and empty Unity VR splash-image slot. The existing security boot, Photon readiness gates and black-only travel are not replaced.
+
+**Risk/ownership boundary:** this work owns presentation before and during app startup only. It must not create a second XR rig, move the tracked camera, invent progress, change Photon/session state, or expose partially initialized Hub geometry. Unity's built-in splash is deliberately not disabled in source until the active Unity 2022 license/build behavior is verified.
+
+**Pending validation:** PR #21 Source Integrity; Unity 2022.3.55f1 import/compile; Quest Android build/install; compositor system splash -> first app frame -> security boot -> Hub handoff; both-eye/full-FOV readability; pause/resume/recenter/repeated cold launch; Photon startup/retry/two-client checks; black-only Hub/level transitions; and Quest frame-time/memory impact. Record device/build/commit before marking any runtime item validated. See `docs/launch-presentation.md`.
+
+## September 13 launch presentation source-validation result
+
+**Validated source only:** Source Integrity run `34798289632` passed on `feature/launch-presentation-polish` commit `75104bd7051a772385636cab61f75e4e0b4e86ac`, including the launch-presentation validator alongside the existing security-boot, threat-feedback, Level 1 and PR #15 contract checks. Repository integrity, C# syntax/reference checks, Python compilation, merge-marker checks and human-authored whitespace also passed.
+
+**Validation boundary:** this does not establish Unity compilation, Android build success, Meta compositor splash behavior, first-frame handoff, headset comfort, Photon runtime behavior or Quest performance. Those remain pending and must be recorded from actual Unity/device tests.
+
+## September 13 launch-terminal CRT/static production polish
+
+**Confirmed UX correction:** PR #21 must improve the Unity-rendered green security terminal itself, not only add native Quest splash plumbing. The terminal treatment is intended to be directly reviewable from `Bootstrap.unity` in Play Mode. The Meta system splash remains a separate pre-first-frame Quest compositor layer and therefore cannot be validated from Editor Play Mode.
+
+**Implemented source on `feature/launch-presentation-polish`:** `SecurityBootPresentation` now owns one reusable 64 × 48 `Texture2D`/`Color32[]` noise buffer refreshed at a low rate, faint static scanlines, and one bounded horizontal interference sweep. Real readiness changes can briefly increase the panel-only static alpha. The implementation is local UI only, avoids RenderTexture allocation and `UnityEngine.Random`, does not change Photon/readiness authority, does not move the XR camera, and preserves black-only normal sector travel. `Tools/validate_launch_presentation.py` now protects the CRT treatment and rejects reintroduction of prototype-only runtime labels.
+
+**Pending validation:** Unity 2022.3.55f1 import/compile and Play Mode visual review; text readability and flicker comfort; headset stereo/peripheral review; Quest frame/memory cost; native system-splash handoff; Photon startup/retry and normal black-travel regression. Keep these runtime/device items open even when Source Integrity is green.
+
+## September 13 launch-terminal CRT/static source-validation result
+
+**Validated source only:** final clean CRT-polish head `9f3e827c6004af395735cba98cf86d030323bc6a` passed Source Integrity run `34799347329`, including the launch-presentation validator's bounded CRT/static rules together with the repository's existing security-boot, threat-feedback, Level 1 and PR #15 contracts. **Still pending:** Unity 2022.3.55f1 import/compile, Play Mode appearance/readability/flicker review, headset stereo/comfort, Photon regression, native Quest compositor splash behavior and Quest performance. Do not promote those runtime/device items to validated from this source result.
+
+## September 13 physical launch workstation production pass
+
+**Confirmed UX direction:** PR #21 now treats the green security boot as a physical, startup-only security workstation vignette. The workstation is not gameplay geometry, is not an explorable room, never moves the tracked camera, and must not appear during ordinary Hub/level travel. The first-pass notes are optional flavor only and must not become hidden progression requirements without a separate design decision.
+
+**Implemented source:** `SecurityWorkstationVignette` builds visual-only low-poly desk/monitor props with primitive colliders disabled/removed, places the set once from the initial horizontal XR-camera heading, and exposes a world-space monitor canvas to `SecurityBootPresentation`. The monitor UI is fitted inside its physical inset with a dark border, while two small notes are fitted to the bezel and one rests on the desk. `SecurityBootPresentation` preserves the existing real readiness/error/retry/CRT behavior and coordinates an opaque-black handoff before the workstation is hidden.
+
+**Render-ownership hardening:** `ProjectSettings/TagManager.asset` reserves `LoadingPresentation`. Cold startup moves the Loading canvas hierarchy and workstation to that isolated layer and masks the persistent camera to it, so additively loaded Hub UI cannot bleed through. Hub reveal temporarily combines the saved camera mask with `LoadingPresentation` while the black overlay fades, then restores the camera exactly. Travel still returns before workstation/boot construction and remains black-only.
+
+**Validated source only:** commit `2b2bf1a41c637e0108c8b5b4ff8054070543f43f` passed Source Integrity run `34803476268` on the current-main reconciliation. The security-boot and launch validators now protect startup-only construction, dedicated-layer isolation, world-space monitor ownership, fitted canvas/bezel composition, collider removal, no tracked-camera writes, no Photon/readiness writes, and unchanged black travel. **Still pending:** Unity 2022.3.55f1 import/compile and Play Mode visual review; failure/retry/reveal behavior; headset stereo/comfort; Photon startup/travel regression; native Quest system-splash handoff and Quest performance.
+
+## September 14 launch-vignette / Hub-spawn follow-up
+
+**Code-review finding / confirmed UX correction:** `SecurityWorkstationVignette` currently fixes its world pose as soon as the XR camera is available, while `RigSpawnSnapper` can later translate/rotate the whole `XROrigin`. That can move the player away from the desk during startup. The approved behavior is instead a local loading presentation that follows hidden XR-origin/root relocation (without following normal head look), then is fully blacked out and destroyed/unloaded before the Hub is revealed. Do not make the launch desk a persistent Hub object.
+
+**Multiplayer spawn gap:** current `RigSpawnSnapper` and the Photon player-spawn path ultimately use one `HubSpawn`, which is not acceptable for simultaneous cold starts in a room capped at 10 players. Add an authored Hub cold-start spawn-slot set and a synchronized allocation rule before reveal. Recommended direction: up to 10 clearly separated markers, allocate a free slot after Photon room join, publish/track the assignment so concurrent clients cannot choose the same slot, and release/reuse slots as players leave. Keep level-return/terminal arrival markers independent.
+
+**Implementation status:** decision confirmed; spawn-slot allocator and presentation-anchor correction are pending. The existing PR #21 source-validation success predates this correction and must not be treated as validation of the corrected behavior.
+
+## September 14 implementation — review findings and multiplayer Hub slots
+
+**Implemented on `feature/launch-presentation-polish` / PR #21:** the temporary security workstation is now parented to the persistent `XROrigin` root, so hidden startup rig relocation carries the local vignette while ordinary head/room-scale motion does not. The vignette is fully covered by black and destroyed before Hub reveal; interrupted entry can rebuild it. Legacy Loading status/error text stays available until the physical monitor terminal is successfully constructed.
+
+Cold-start multiplayer now uses ten Photon room-owned Hub spawn slots. Public/private room creation initializes slot-owner properties; clients claim free slots with room-property compare-and-swap, the Master Client releases/reconciles orphan claims, `RigSpawnSnapper` waits for the local slot before grounding, and the network avatar waits for `RigSnapped`. The slot poses are compact offsets from the existing authored `HubSpawn`; their exact spacing/clearance remains a Unity/headset validation item. Level-return arrival markers are unchanged.
+
+The workstation now clones a referenced Standard material from `Resources/LaunchPresentation/WorkstationBase` instead of using runtime `Shader.Find`. The Meta Android OpenXR `systemSplashScreen` assignment is committed in project settings, and Android build preprocessing validates rather than mutates that configuration. Source validators protect these architecture contracts without locking exact sticky-note coordinates or one exact monitor scale.
+
+**Pending validation:** Unity 2022.3.55f1 import/compile; one- and multi-client cold starts; ten-slot spacing/floor clearance; simultaneous claim races and slot reuse after leave/master handoff; failure/retry fallback readability; workstation destruction/rebuild across interrupted reveal; Play Mode visual tuning; Photon avatar placement; and later Quest splash/material/headset behavior.
+
+## September 14 PR #21 post-review hardening
+
+**Implemented:** final reveal now retires the temporary security workstation until an explicit interrupted-entry recovery, preventing the presentation update loop from reconstructing the desk after it was intentionally removed under black. New Photon-room sessions invalidate Hub placement only while the Hub is actually loaded, then require a fresh slot snap before local avatar instantiation. Slot acquisition is demand-driven; there is no allocator `Update` poll while players are in non-Hub sectors. Existing ownership is recovered before a new claim, stale claim state becomes retryable, and the carried player slot property is cleared for each room session.
+
+**Implemented level-authoring boundary:** `HubSpawnSlotAllocator` no longer owns ten Vector3 offsets. `Assets/Resources/HubSpawn/HubSpawnSlots.prefab` is the editable source for the ten ordered Hub-relative marker transforms, while Photon room properties remain the synchronized ownership source. This separates level-layout tuning from network allocation logic.
+
+**Implemented platform/performance hardening:** Android build preprocessing validates the enabled Meta Android OpenXR feature, configured OpenXR loader, committed system splash and black compositor background without mutating project settings. Startup avatar visual settling now calls `Renderer.GetSharedMaterials(List<Material>)` with a reused list instead of allocating material arrays every frame.
+
+**Source validation required after this change:** rerun the full Source Integrity suite on the clean final PR head. **Runtime validation remains pending:** Unity import/compile, startup/retry/reveal, room switch/reconnect, simultaneous two-client slot claims, slot reuse/Master handoff, authored marker clearance, black-only sector travel, and Quest build/headset behavior.
+
+**Validated source only — PR #21 launch/session hardening:** clean durable head `594a1ba3082e3ab98c0171a245b3902b5ee1644b` passed Source Integrity run `34885765274` on 2026-09-14. The run passed Unity 2022.3.55f1 version enforcement, first-party C# syntax/reference and enabled-scene checks, Unity metadata/GUID integrity, Level 1 and PR #15 contracts, security-boot contracts, local threat-feedback contracts, launch/workstation plus demand-driven Hub-slot/session/build contracts, Python compilation, merge-marker rejection and human-authored whitespace. This is source/tooling evidence only; Unity import/compile, Play Mode, two-client Photon, authored marker clearance and Quest/headset behavior remain pending.
+
+## September 14 PR #21 visual correction — restore distant green terminal
+
+**Confirmed correction:** the physical workstation/desk vignette previously implemented on PR #21 is no longer the selected launch presentation. Greg explicitly asked to restore the **old flat green security terminal** and move it roughly twice as far away. Treat the workstation-specific sections above as superseded design history, not the active target.
+
+**Implemented source on `feature/launch-presentation-polish`:** `SecurityWorkstationVignette` remains the legacy class/file name but now owns only a world-space terminal anchor. It creates no primitive desk/monitor/keyboard/mug/badge/clipboard geometry and no flavor notes. The existing 1080 x 820 terminal canvas keeps its prior physical scale and is placed **3.90 m** from the initial horizontal camera heading, twice the former 1.95 m workstation distance. The obsolete `Resources/LaunchPresentation/WorkstationBase` material dependency was removed.
+
+**Preserved implementation:** PR #21 still keeps the dedicated `LoadingPresentation` isolation layer, real startup readiness/error/retry behavior, bounded CRT treatment, final-reveal retirement guard, Meta/Quest system-splash validation, demand-driven 10-slot Photon Hub allocation, room-switch/reconnect resnap behavior, authored `HubSpawnSlots.prefab`, and the startup material-allocation cleanup. Successful sector travel remains black-only.
+
+**Validation boundary:** rerun Source Integrity on the corrected head, then validate Unity **2022.3.55f1** import/compile and Play Mode presentation before merge. Runtime acceptance now focuses on the 3.9 m flat terminal's readability/comfort, no head-locking, clean black cover and reveal, retry recovery, plus the existing two-client Photon room/slot/reconnect and Quest/headset checks. Do not carry forward workstation-prop or note-readability tests; those presentation elements are intentionally removed.
+
+**Validated source only — restored distant green terminal:** clean head `cdf6b87a55d429351acf0d6b96a632fda4847893` passed Source Integrity run `34917902460` on 2026-09-14. The run passed Unity 2022.3.55f1 version enforcement, first-party C# syntax/reference and enabled-scene checks, Unity metadata/GUID integrity, Level 1 and PR #15 contracts, the restored distant security-boot contracts, local threat-feedback contracts, launch/Quest/Hub-slot/session contracts, Python compilation, merge-marker rejection and human-authored whitespace. This validates source/tooling only; Unity import/compile, Play Mode, Photon multi-client behavior and Quest/headset behavior remain pending.
+
+## September 21 PR #21 runtime visual correction — distance and mirroring
+
+**Runtime finding:** the first restored-terminal world-space tuning failed visual review: **3.90 m is too far**, and the terminal appeared reversed/mirrored.
+
+**Implemented correction on `feature/launch-presentation-polish`:** reduce `TerminalDistance` from 3.90 m to **2.50 m** and replace the world-space canvas's 180-degree Y rotation with identity rotation so the front face is presented to the player. Launch validators now enforce the corrected mid-distance range and reject the mirrored transform.
+
+**Preserved work:** this retune does not remove PR #21's render isolation, real startup readiness/error/retry behavior, CRT/static treatment, final reveal guard, Meta/Quest splash validation, demand-driven ten-slot Photon Hub placement, room-session resnap/reconnect handling, authored spawn markers, or black-only successful sector travel.
+
+**Pending validation:** Unity 2022.3.55f1 import/compile and Play Mode visual approval of the 2.50 m placement/orientation remain required. Two-client Photon and Quest/headset checks remain pending separately.
+
+**Validated source only — September 21 terminal distance/orientation retune:** code/docs head `cdfdfe16e3fb9809339bfad507e18e749a022393` passed Source Integrity run `35676148648`. The run passed Unity 2022.3.55f1 version enforcement, C# syntax/references, repository integrity, Level 1 and PR #15 contracts, front-facing security-boot contracts, local threat-feedback contracts, launch/Quest/Hub-slot/session contracts, Python compilation, merge-marker rejection and whitespace checks. This validates source/tooling only; Unity Play Mode/headset visual approval of the 2.50 m placement remains pending.
+
+## September 21 PR #21 correction — restore PR #20 screen-space loading boot
+
+**Runtime finding:** the world-space launch-panel approach is now rejected. Even after reducing the panel from 3.90 m to 2.50 m and correcting mirroring, Greg observed the panel/perceived view drop with startup rig settling, heard hand-floor impacts behind loading, and did not get the intended static presentation.
+
+**Implemented correction:** remove `SecurityWorkstationVignette.cs` and return the green terminal to the Loading canvas using `ScreenSpaceCamera`, the original PR #20 view-relative scale calculation, and the original camera plane distance. There is no `TerminalDistance` or world-space launch canvas to tune. Cold startup now exposes `LoadingFlow.IsColdStartupPresentationActive`; `HandImpactAudio` uses it to suppress hidden grounding/teleport impacts and re-arms after Loading unload. The CRT treatment retains visual noise/scanlines/interference and now has a soft initial/periodic static crackle.
+
+**Regression protection:** launch/security validators reject reintroduction of the world-space panel helper, `RenderMode.WorldSpace`, `TerminalDistance`, or `MonitorCanvasRoot`; they require the restored screen-space camera path, original view-relative scale, startup hand-impact suppression, and existing Photon/Quest/reveal contracts.
+
+**Pending validation:** Unity 2022.3.55f1 import/compile and Play Mode/headset retest of screen stability, framing, hand-audio suppression and CRT presentation. Multiplayer Hub-slot/session and Quest-device checks remain pending separately.
+
+## September 21 PR #21 tuning — reduce screen-space terminal footprint
+
+**Runtime finding:** the restored screen-space boot mechanics solve the world-space positioning problem, but the original PR #20 viewport footprint is still too large in current Play Mode.
+
+**Implemented:** add `TerminalViewWidthFraction = 0.54f` and `TerminalViewHeightFraction = 0.63f`, replacing the prior effective 0.72 / 0.84 sizing. This reduces the terminal by 25% in each dimension while preserving centered screen-space-camera presentation, CRT/static treatment, startup hand-impact suppression, Photon readiness, black reveal, Hub-slot/session behavior and Quest splash handling.
+
+**Regression protection:** launch/security validators now require the reduced constants and their use in the scale calculation while continuing to reject any return to world-space `TerminalDistance` presentation.
+
+**Pending validation:** Unity 2022.3.55f1 Play Mode/headset visual approval of the smaller footprint and readability.
+
+## September 21 live Play Mode tuning workflow
+
+**Implemented for visual tuning:** the screen-space terminal now exposes a serialized `terminalScale` slider from **0.40 to 1.00**. `1.00` is the original PR #20 footprint; the visually approved default is **0.50**, which renders the terminal at half the original PR #20 linear scale. The aspect ratio is preserved because one multiplier controls both dimensions.
+
+**Editor workflow:** before Play, enable **Tools > Runaway Chimps > Hold Security Boot For Review**. Start `Bootstrap.unity`; once the boot is visible/ready it stays on screen. Then choose **Tools > Runaway Chimps > Select Active Security Boot Tuning**. Unity selects the runtime Loading canvas object containing `SecurityBootPresentation`; adjust **Terminal Scale** in the Inspector and the terminal resizes live every frame. Play Mode changes do not persist after stopping, so record the preferred value and make it the serialized default afterward.
+
+This tuning workflow is Editor-only and does not bypass real startup readiness or ship in a player build.
+
+## September 21 terminal scale approval
+
+**Validated visual tuning:** Greg used the live Play Mode tuning workflow and reported that **Terminal Scale = 0.50 looked awesome**. Record **0.50** as the approved default for the screen-space green security boot. This validates the terminal's visual size in that Play Mode review only; it does not by itself validate the remaining startup audio/static, Photon multi-client, Hub reveal, or Quest/headset checks.
+
+## September 21 PR #21 current-main merge resolution
+
+**Completed:** reconciled `feature/launch-presentation-polish` with current `main` `6da06331621f3e03a6d4dec9743e68afe393182e` in merge commit `dab4dbce826f19d52842fb3e75bb1b7cb5408140`. The only overlapping files were the Source Integrity workflow and the two maintained project docs.
+
+**Resolution details:** the workflow keeps current-main managed card-state, keycard-reader and interaction-safety checks and adds PR #21's launch-presentation validator. The maintained docs keep all newer mainline card-system/keycard/fan records plus PR #21's complete launch-presentation chronology and latest approved screen-space scale `0.50`. Non-overlapping PR #21 source/assets were retained unchanged.
+
+**Validation boundary:** branch is no longer behind main. Run the combined Source Integrity suite on the final post-reconciliation head; do not treat mergeability alone as Unity/runtime proof.
