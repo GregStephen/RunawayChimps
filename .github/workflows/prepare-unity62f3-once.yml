@@ -13,219 +13,57 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 2
-      - name: Apply bounded editor and documentation changes
+          fetch-depth: 4
+      - name: Apply guarded non-workflow preparation
         shell: python
         run: |
           from pathlib import Path
-          import os, re, subprocess, sys, tempfile, textwrap
-          BASE = '9da4a1e46faa16484af9425edb41517a5a931a75'
-          BRANCH = 'compat/unity-2022.3.62f3'
-          HELPER = '.github/workflows/prepare-unity62f3-once.yml'
-          GUIDE = 'docs/unity-2022.3.62f3-compatibility.md'
+          import subprocess, textwrap
           def git(*args):
               return subprocess.check_output(['git', *args], text=True)
-          assert os.environ['GITHUB_REF'] == 'refs/heads/' + BRANCH
-          assert git('rev-parse', 'HEAD^').strip() == BASE, 'Unexpected parent; re-review branch.'
-          assert git('diff', '--name-only', BASE, 'HEAD').splitlines() == [HELPER]
-          assert git('ls-remote', 'origin', 'refs/heads/main').split()[0] == BASE, 'Main moved; re-review before proceeding.'
-          nested = [p for p in git('ls-files').splitlines() if p.endswith('/AGENTS.md') and not p.startswith('Assets/')]
-          assert not nested, 'Read nested guidance first: ' + str(nested)
-          edits = {}
-          originals = {}
-          reversals = {}
-          def load(path):
-              text = Path(path).read_text(encoding='utf-8')
-              assert text == git('show', BASE + ':' + path), path
-              originals[path] = text
-              edits[path] = text
-              reversals[path] = []
-          def replace(path, old, new):
-              assert old and edits[path].count(old) == 1, 'Ambiguous/missing anchor in ' + path + ': ' + old[:120]
-              edits[path] = edits[path].replace(old, new, 1)
-              reversals[path].append((new, old))
-          def paragraph(path, prefix, new):
-              matches = [p for p in edits[path].split('\n\n') if p.startswith(prefix)]
-              assert len(matches) == 1, (path, prefix, len(matches))
-              replace(path, matches[0], new)
-          def insert_section(path, content):
-              match = re.search(r'^## .+$', edits[path], re.MULTILINE)
-              assert match, path
-              replace(path, match.group(), content.rstrip() + '\n\n' + match.group())
-          files = ['ProjectSettings/ProjectVersion.txt', '.github/workflows/source-validation.yml', 'AGENTS.md', 'README.md', 'docs/design-and-lore.md', 'docs/repository-improvement-plan.md', 'docs/mvp-roadmap.md', 'docs/branch-testing-and-build-evidence.md', 'docs/unity-runtime-security-review.md', 'docs/ci-validation.md']
-          for path in files:
-              load(path)
-          version_path = files[0]
-          good = 'm_EditorVersion: 2022.3.62f3\nm_EditorVersionWithRevision: 2022.3.62f3 (96770f904ca7)\n'
-          replace(version_path, originals[version_path], good)
-          guard = '''from pathlib import Path
-          import re
-          import sys
-          expected = '2022.3.62f3'
-          expected_revision = '96770f904ca7'
-          text = Path('ProjectSettings/ProjectVersion.txt').read_text(encoding='utf-8-sig')
-          versions = re.findall(r'^m_EditorVersion:[ \t]*(\S+)[ \t]*$', text, re.MULTILINE)
-          revisions = re.findall(r'^m_EditorVersionWithRevision:[ \t]*(.+?)[ \t]*$', text, re.MULTILINE)
-          wanted_revision = f'{expected} ({expected_revision})'
-          if versions != [expected] or revisions != [wanted_revision]:
-              print(f'ERROR: expected exactly one {expected} / {wanted_revision}; found {versions!r} / {revisions!r}.')
-              sys.exit(1)
-          print(f'PASS: Unity editor version and revision are {wanted_revision}.')
-          '''
-          workflow = files[1]
-          start = edits[workflow].index('          from pathlib import Path\n')
-          end = edits[workflow].index('\n      - name: Validate first-party source', start)
-          replace(workflow, edits[workflow][start:end], textwrap.indent(guard.rstrip(), '          ') + '\n')
-          # Execute the actual guard text intended for the workflow, not a duplicate implementation.
-          start = edits[workflow].index('          from pathlib import Path\n')
-          end = edits[workflow].index('\n      - name: Validate first-party source', start)
-          actual_guard = textwrap.dedent(edits[workflow][start:end])
-          compile(actual_guard, 'source-validation-version-guard', 'exec')
-          cases = [('approved', good, True), ('old editor', originals[version_path], False), ('wrong revision', good.replace('96770f904ca7', '9f374180d209'), False), ('missing revision', good.splitlines()[0] + '\n', False), ('duplicate version', good + good.splitlines()[0] + '\n', False), ('duplicate revision', good + good.splitlines()[1] + '\n', False), ('62f2', good.replace('62f3', '62f2'), False), ('Unity 6', good.replace('2022.3.62f3', '6000.0.1f1'), False), ('empty', '', False)]
-          for label, content, expected in cases:
-              with tempfile.TemporaryDirectory() as root:
-                  p = Path(root) / version_path
-                  p.parent.mkdir(parents=True)
-                  p.write_text(content)
-                  result = subprocess.run([sys.executable, '-c', actual_guard], cwd=root, capture_output=True, text=True)
-                  assert (result.returncode == 0) == expected, (label, result.stdout, result.stderr)
-          print('PASS: actual CI editor guard accepted the approved pair and rejected eight invalid/mismatched cases.')
-          replace('AGENTS.md', 'using **Unity 2022.3.55f1** and **Photon PUN**.', 'using **Unity 2022.3.62f3 (96770f904ca7)** on the isolated compatibility branch and **Photon PUN**.')
-          insert_section('AGENTS.md', '''## Isolated editor trial - September 22, 2026
-          Greg explicitly requested creation of the compatibility branch now, superseding the earlier branch-creation hold. `compat/unity-2022.3.62f3` starts from main `9da4a1e46faa16484af9425edb41517a5a931a75`; main at that fork remains Unity 2022.3.55f1. This is trial configuration, not validated adoption. Read [the trial guide](docs/unity-2022.3.62f3-compatibility.md). Preserve packages, Photon PUN, built-in rendering, XR settings, gameplay and authored assets. Historical 55f1 evidence remains historical; all candidate acceptance must identify the actual editor/commit. Keep the trial separate until import/build/headset results support a later merge decision.''')
-          replace('README.md', 'Open this project with **Unity 2022.3.55f1**.', 'Open this compatibility branch with **Unity 2022.3.62f3 (96770f904ca7)**.')
-          insert_section('README.md', '''## Unity 62f3 compatibility trial
-          Branch: `compat/unity-2022.3.62f3`. Fork: main `9da4a1e46faa16484af9425edb41517a5a931a75` (55f1). Greg authorized this isolated trial on September 22, lifting the earlier hold. Follow [setup, acceptance and rollback](docs/unity-2022.3.62f3-compatibility.md) using a separate checkout/Library. Editor declaration and exact CI guard are updated; no package, gameplay, scene, asset, Photon or XR-settings change is included. Unity import/compilation, package compatibility, Android build and Quest validation remain pending. Do not merge just because Source Integrity is green.
-
-          The older project-layout/audit sections below describe earlier development snapshots and must not override the maintained [design](docs/design-and-lore.md), [improvement plan](docs/repository-improvement-plan.md) or trial guide. Full historical README reconciliation remains #28; do not reinterpret old 55f1 test results as 62f3 results.''')
-          replace('README.md', '`ProjectSettings/ProjectVersion.txt` still declares Unity **2022.3.55f1**;', '`ProjectSettings/ProjectVersion.txt` declares Unity **2022.3.62f3 (96770f904ca7)** on this trial branch, and both version lines must match;')
-          shared = '''## September 22 isolated Unity 62f3 compatibility trial
-
-          **Confirmed correction:** Greg explicitly requested creation of the compatibility branch now. This supersedes the earlier instruction to wait for further tests/merges confirmation; it does not assert that unreported runtime tests passed. The selected starting point is live main `9da4a1e46faa16484af9425edb41517a5a931a75`, including the documentation replacement and all assets already merged there. Unmerged work is not imported into this trial.
-
-          **Implemented on `compat/unity-2022.3.62f3`, not adopted on main:** both ProjectVersion lines declare `2022.3.62f3 (96770f904ca7)`. Source Integrity requires the exact version and revision, rejecting mismatches rather than accepting an arbitrary editor. The rest of the source checks remain enabled. Packages, gameplay, scenes, authored vent landmarks, Photon PUN, built-in rendering and XR/OpenXR settings are unchanged. Main at the fork remains 55f1.
-
-          **Pending validation:** actual Unity import/compilation, installed Meta/XR compatibility, Android toolchain/build, Quest 3 smoke and safe Quest 2 follow-up. Source/managed checks do not establish these results. Preserve existing card/fan approvals and unresolved startup, quiet-console, audio and performance checks; do not attribute pre-existing defects to the editor without comparison. The new chapter ending remains #38, the launch shop #50 and Unity 6 feasibility #51.
-
-          Use [the 62f3 trial guide](unity-2022.3.62f3-compatibility.md) for separate-checkout setup, evidence and rollback. Issue #27 remains open. Branch creation does not authorize merging the trial or distributing a release.
-          '''
-          for path in ['docs/design-and-lore.md', 'docs/repository-improvement-plan.md']:
-              insert_section(path, shared)
-              paragraph(path, '**Engine sequencing:**', '**Historical engine sequencing at the docs-only reconciliation:** the trial was then on hold and main remained 55f1. Greg\'s later explicit go-ahead supersedes that hold; the isolated 62f3 branch and pending validation are recorded above. #51 remains a bounded Unity 6 feasibility study, not a production migration.')
-              prefix = '**Existing contracts remain active:**'
-              old_para = next(p for p in edits[path].split('\n\n') if p.startswith(prefix))
-              paragraph(path, prefix, old_para.replace(prefix, '**September 21 baseline contract (historical; trial version is recorded above):**', 1).replace('remain the recorded current baseline', 'were the recorded baseline before the isolated trial', 1))
-          design = 'docs/design-and-lore.md'
-          table = '| Recorded | Decision or correction | Status |\n| --- | --- | --- |\n'
-          row = '| 2026-09-22 | Greg explicitly requested the 62f3 compatibility branch now, lifting the prior hold. Create the isolated trial from main `9da4a1e`; pin `2022.3.62f3 (96770f904ca7)` without changing packages, Photon, rendering, XR settings, gameplay or assets. | Confirmed go-ahead; branch/configuration implemented; Unity/Android/Quest acceptance pending; not merged |\n'
-          replace(design, table, table + row)
-          replace(design, 'The earlier hold on creating the 62f3 trial remains until Greg confirms his chosen testing/merges are finished and the starting baseline is agreed.', 'The hold recorded at that moment was subsequently lifted by Greg\'s explicit request to create the compatibility branch; see the later correction above.')
-          plan = 'docs/repository-improvement-plan.md'
-          paragraph(plan, '**Confirmed engine-investigation direction, September 21, subject to the later sequencing hold:**', '**Confirmed engine-investigation direction, updated September 22:** Greg\'s explicit go-ahead lifts the branch-creation hold. The isolated 62f3 trial starts at `9da4a1e`; compilation/build/headset acceptance remains pending. #51 still measures Unity 6 feasibility separately after a known 2022.3 baseline and does not authorize production migration.')
-          roadmap = 'docs/mvp-roadmap.md'
-          paragraph(roadmap, '**Current technology and rules:**', '**Current technology and rules:** this isolated branch declares Unity 2022.3.62f3 (96770f904ca7), with Photon PUN and built-in rendering unchanged. Main at the trial fork `9da4a1e` remains 55f1. This is not a validated baseline or a Unity 6 migration. Preserve the two personal Amber cards, visit-local consumption and ten-player target; #45 still owns capacity evidence.')
-          paragraph(roadmap, '**Engine hold remains:**', '**Engine hold lifted, September 22:** Greg explicitly requested the compatibility branch now. `compat/unity-2022.3.62f3` starts from live main `9da4a1e46faa16484af9425edb41517a5a931a75`, with the editor/CI declaration updated and runtime acceptance pending. This supersedes the earlier wait instruction, not the missing test evidence. Use [the trial guide](unity-2022.3.62f3-compatibility.md); no merge or public distribution is authorized by branch creation.')
-          replace(roadmap, 'Main and its CI remain pinned to 2022.3.55f1; the isolated branch will intentionally change its own pin when created.', 'Main at the fork remains pinned to 2022.3.55f1; the isolated branch now declares 62f3 in both ProjectVersion and CI.')
-          replace(roadmap, 'After Greg confirms the baseline, #27 owns the isolated editor trial and #28 the proven local procedure/build identity.', 'With the isolated trial authorized from `9da4a1e`, #27 owns editor compatibility acceptance and #28 the proven local procedure/build identity.')
-          guide = 'docs/branch-testing-and-build-evidence.md'
-          paragraph(guide, 'Main `d12b403', 'The trial fork is main `9da4a1e46faa16484af9425edb41517a5a931a75`, containing the merged gameplay, authored assets and #60 documentation. Use 2022.3.55f1 only for that baseline comparison; use **2022.3.62f3 (96770f904ca7)** for `compat/unity-2022.3.62f3`. Test the combined implementation without repeating existing merges. All current source contracts and both card fixtures remain required.')
-          paragraph(guide, 'The separate 2022.3.62f3 trial remains on hold', 'Greg explicitly authorized creation of the 62f3 branch on September 22, lifting the earlier hold. The trial is prepared but not runtime-validated or merged. Follow [the dedicated guide](unity-2022.3.62f3-compatibility.md) with a separate checkout/Library and record results against the actual candidate. #28 remains independent preparation; Unity 6 feasibility stays separate #51.')
-          security = 'docs/unity-runtime-security-review.md'
-          replace(security, 'Status: **Unity 2022.3.62f3 compatibility candidate approved by Greg; implementation and runtime validation pending.**', 'Status: **62f3 branch and editor/CI declaration prepared after Greg\'s September 22 go-ahead; compatibility/build/headset validation pending.**')
-          paragraph(security, '**September 22 documentation reconciliation:**', '**Earlier September 22 documentation reconciliation (historical):** that docs-only task preserved the September 21 security investigation and did not lift the hold. Greg later explicitly requested creation of the compatibility branch. The new trial starts from `9da4a1e46faa16484af9425edb41517a5a931a75`, declares 62f3 and follows [the trial guide](unity-2022.3.62f3-compatibility.md). This supersedes the old branch-creation wait; it does not supply runtime results or a new comprehensive advisory/store-certification review.')
-          replace(security, '## Current project and authority boundary', '## Historical investigation baseline and authority boundary')
-          replace(security, '`ProjectSettings/ProjectVersion.txt` still pins', 'At the September 21 investigation, `ProjectSettings/ProjectVersion.txt` pinned')
-          replace(security, '`.github/workflows/source-validation.yml` independently enforces', 'The workflow at that baseline independently enforced')
-          paragraph(security, '1. After Greg confirms his chosen tests/merges', '1. **Branch preparation implemented, September 22:** Greg\'s explicit go-ahead lifts the hold. `compat/unity-2022.3.62f3` starts at `9da4a1e46faa16484af9425edb41517a5a931a75`, with both editor declaration lines and the exact CI guard updated. Preserve merged implementations. Remaining steps require actual local evidence; preparation is not adoption or release certification.')
-          paragraph(security, 'Not completed: installation/license verification', 'Not completed: installation/license verification, Unity compilation, installed-package compatibility, Android build/signing, headset testing, performance measurement, artifact replacement or public submission. The editor/CI pin is now changed only on the isolated trial branch, not on main. Issue #27 remains open until its runtime and support checks are satisfied.')
-          ci = 'docs/ci-validation.md'
-          replace(ci, 'Last updated: 2026-09-12.', 'Last updated: 2026-09-22 (isolated 62f3 guard; historical results retained).')
-          replace(ci, '1. `ProjectSettings/ProjectVersion.txt` still declares **Unity 2022.3.55f1**.', '1. On this compatibility branch, `ProjectSettings/ProjectVersion.txt` contains exactly one `m_EditorVersion: 2022.3.62f3` and one `m_EditorVersionWithRevision: 2022.3.62f3 (96770f904ca7)`. Missing, duplicate, mismatched or different-version declarations fail. Main at the fork retains its 55f1 declaration.')
-          replace(ci, 'continue to run Unity 2022.3.55f1 and the project-specific', 'run the candidate\'s declared editor (2022.3.62f3 for this trial) and the project-specific')
-          replace(ci, 'open the project in Unity 2022.3.55f1 and run', 'open the project in its explicitly selected editor and run')
-          insert_section(ci, '''## Compatibility-branch boundary
-          The 62f3 trial starts at main `9da4a1e`. Only the editor guard changes; the managed card harness and all existing source/scene/metadata/feature checks remain enabled. The guard also checks the official revision. Historical source results below are not 62f3 import/build results. Follow [the trial guide](unity-2022.3.62f3-compatibility.md); no licensed Unity runner is added.''')
-          assert not Path(GUIDE).exists()
-          trial = '''# Unity 2022.3.62f3 compatibility trial
-
-          Prepared: 2026-09-22. Tracker: [#27](https://github.com/GregStephen/RunawayChimps/issues/27). Branch: `compat/unity-2022.3.62f3`. Status: branch/editor/CI preparation implemented; Unity, Android and Quest acceptance pending. Not merged.
-
-          ## Exact comparison baseline
-
-          Fork: `9da4a1e46faa16484af9425edb41517a5a931a75`, the live main checked after Greg explicitly requested creation now. This lifts the earlier hold without claiming his unreported tests passed. The baseline declares `2022.3.55f1 (9f374180d209)`; the trial declares `2022.3.62f3 (96770f904ca7)`. Record the actual trial head with `git rev-parse HEAD` in every result; the fork SHA is not the candidate head.
-
-          Only ProjectVersion, its exact CI guard and documentation change. Packages, source gameplay, scenes/prefabs, authored vent landmarks, Photon PUN, built-in rendering and XR/OpenXR settings remain unchanged. Manifest blob: `79ca59345ce898b890eaaea0cfd56153008ed651`; lockfile blob: `c05494792ba89477f794e1f4315aead8fb48b239`. Preserve both, and review unexpected package/importer changes rather than accepting them automatically.
-
-          ## Safe local setup
-
-          Close Unity and save/commit local work. Keep the original 55f1 checkout and editor intact. Use a new worktree with a separate Library/output directory, or a fresh clone; do not reuse the old Library or copy generated caches.
-
-          From the existing repository, when the example local branch and destination do not already exist:
-
-          ```sh
-          git fetch origin
-          git worktree add --track -b trial/unity-62f3 ../RunawayChimps-62f3 origin/compat/unity-2022.3.62f3
-          ```
-
-          If Git reports an existing destination/branch, choose another unused name; do not delete local work or force checkout to clear it. Add the new folder in Unity Hub and select 2022.3.62f3 explicitly.
-
-          The [official 62f3 release page](https://unity.com/releases/editor/whats-new/2022.3.62f3) confirms revision `96770f904ca7` and provides installers. Install Android Build Support with Android SDK & NDK Tools and OpenJDK. Use that editor's installed tools initially and check their actual locations/versions before building. Unity's [2022.3 dependency reference](https://docs.unity3d.com/2022.3/Documentation/Manual/android-supported-dependency-versions.html) lists NDK r23b (23.1.7779620) and JDK 11; do not substitute Unity 6's tools. Record actual SDK/build-tools, NDK, JDK and Gradle versions from the installation/build log. Module download or missing-tool failures are blockers to report, not reasons to silently alter packages/settings.
-
-          ## Import, tests and build
-
-          1. Record clean/dirty state and exact source SHA. Import in 62f3; save the Editor log and all compile errors/warnings. Inspect `git status` and `git diff`, especially manifests, scenes, prefabs and XR settings. Do not blindly commit a full reserialization or allow importer changes to hide in the trial.
-          2. Confirm Source Integrity is green on the candidate SHA. Run the existing Reliability Regression and Sector Travel Editor checks from saved scenes. Record any intentional authoring changes. Run the complete `RunawayChimps.CardSystem.PlayModeTests` assembly, including card-system and hand-physics fixtures, and applicable fan tests. The baseline has 81 authored card cases, not 81 proved passes. Preserve XML/logs and actual discovered/executed/pass/fail/skip counts; missing required tests are not success.
-          3. Inspect installed Meta XR/OpenXR package metadata and actual project validation results. Do not auto-apply package upgrades, render-pipeline conversions or XR-setting fixes. The exact existing Meta XR 83.0.1/OpenXR 1.13.2 combination still needs evidence; declaration changes alone do not prove support.
-          4. Build an identifiable standalone Quest Android player using the existing project settings. Record build version, full source SHA, editor revision, package/toolchain identities and APK SHA-256. Keep signing material, user paths and raw personal/account logs private. This is a manual acceptance checklist, not completed #28 build automation.
-
-          ## Headset acceptance still to run
-
-          | Check | Required observation | Current evidence |
-          | --- | --- | --- |
-          | Quest 3 cold start | Repeated standing/crouching/low-hand/recenter starts, stable floor/locomotion, quiet loading, readable terminal, one correctly placed avatar. Stop on unsafe physics. | Not run on 62f3 |
-          | Both hands and keycards | Close pickup/drop/re-grab/nudges, floor/wall contact, no direction-normalization assertion, personal 0/2 -> 1/2 -> 2/2 consumption and recovery. | Not run on 62f3 |
-          | Crawler and environment | Animation/materials, vent fit, safe rooms, capture/respawn, accepted fan visuals and authored landmarks retained. | Not run on 62f3 |
-          | Travel/session lifecycle | Hub-Level 1 round trip, capture, pause/resume, interruption/rejoin and no duplicate rig or unrecoverable loading. | Not run on 62f3 |
-          | Economy regression | Existing Coconut balance/display/daily behavior retained; do not reset accounts or grants for convenience. | Not run on 62f3 |
-          | Quest 2 follow-up | Safe build installs/starts and completes the same basic smoke with the available tester. Full multiplayer/performance/capacity stays #39/#40/#45. | Not run on 62f3 |
-
-          Compare a suspected regression to the same fork in 55f1, using a separate baseline checkout. Existing unresolved startup/quiet-console findings, #52 grip/impact polish and #56 inaudible fan audio remain recorded; an editor change does not fix them by declaration. The old Level 1-to-Level 2 route remains until #38 implements the approved return-to-Security ending. The shop remains #50. Preserve those distinctions.
-
-          ## Evidence and rollback
-
-          Copy [the test/build record](templates/test-build-record.md) per tested revision. Record blocked/unrun checks honestly. The [security review](unity-runtime-security-review.md) retains dated advisory/support limitations; this trial is not a claim that 62f3 is the newest supported editor, vendor-certified for this configuration or a public-release certification. Recheck applicable requirements before distribution.
-
-          If import/build/runtime fails, stop and retain the trial logs/diffs privately. Close the trial editor and return to the untouched 55f1 baseline checkout. Do not open the upgraded trial Library with 55f1, hard-reset away changes, or apply a downgrade in place. No main rollback is needed while this branch is unmerged. Capture evidence for any proposed fix before expanding scope. #27 stays open and the PR stays a draft until the applicable acceptance is reviewed; merging or public distribution requires a later decision.
-          '''
-          trial = textwrap.dedent(trial)
-          for path in files:
-              restored = edits[path]
-              for new, old in reversed(reversals[path]):
-                  assert restored.count(new) == 1, 'Reverse anchor: ' + path
-                  restored = restored.replace(new, old, 1)
-              assert restored == originals[path], 'Preservation failure: ' + path
-              assert re.findall(r'!\[[^\]]*\]\([^\n]+?\)', edits[path]) == re.findall(r'!\[[^\]]*\]\([^\n]+?\)', originals[path]), path
-              Path(path).write_text(edits[path], encoding='utf-8')
-          Path(GUIDE).write_text(trial, encoding='utf-8')
-          assert git('hash-object', 'Packages/manifest.json').strip() == '79ca59345ce898b890eaaea0cfd56153008ed651'
-          assert git('hash-object', 'Packages/packages-lock.json').strip() == 'c05494792ba89477f794e1f4315aead8fb48b239'
-          for path in files + [GUIDE]:
-              text = Path(path).read_text()
-              assert not re.search(r'^(<<<<<<< |>>>>>>> |=======$)', text, re.MULTILINE), path
-          for path in [GUIDE, 'AGENTS.md', 'docs/mvp-roadmap.md', 'docs/branch-testing-and-build-evidence.md', 'docs/ci-validation.md']:
-              for link in re.findall(r'\]\(([^)]+)\)', Path(path).read_text()):
-                  if re.match(r'^[a-zA-Z][a-zA-Z0-9+.-]*:', link) or link.startswith('#'):
-                      continue
-                  assert (Path(path).parent / link.split('#')[0]).exists(), (path, link)
-          git('add', '--', *files, GUIDE)
-          changed = set(git('diff', '--cached', '--name-only', BASE).splitlines())
-          assert changed == set(files + [GUIDE, HELPER]), sorted(changed)
-          git('diff', '--cached', '--check', BASE)
-          print('PASS: eleven intended files; reversible targeted edits; image references/relative links/whitespace preserved; package blobs unchanged.')
-          print('PASS: gameplay, authored assets, all other ProjectSettings and permanent source gates unchanged outside the editor guard.')
-          refs = subprocess.run(['git', 'grep', '-n', '2022.3.55f1', '--', 'Tools/*.py', 'Assets/Scripts/*.cs', 'Assets/Resources/PhotonVR/Scripts/*.cs'], capture_output=True, text=True)
-          print('Remaining first-party code version references (inspect; no global historical rewrite):\n' + refs.stdout)
-          print('NOT RUN: Unity import/compile/test execution, Android build, installed SDK compatibility, Photon/Quest runtime or release acceptance.')
+          base = '9da4a1e46faa16484af9425edb41517a5a931a75'
+          source = '685e4a7cacd216f3eac560923c0e7deee398968a'
+          ci_commit = '0ca5e0a89e2e2a7d9f82d962777c73c29aefc0fe'
+          helper = '.github/workflows/prepare-unity62f3-once.yml'
+          workflow = '.github/workflows/source-validation.yml'
+          assert git('rev-parse', 'HEAD^').strip() == ci_commit
+          assert set(git('diff', '--name-only', base, 'HEAD').splitlines()) == {helper, workflow}
+          approved_ci = Path(workflow).read_bytes()
+          assert git('hash-object', workflow).strip() == 'cb9253bd92d77499d073384fb38ebc97967dbba1'
+          original = git('show', source + ':' + helper)
+          begin = original.index('        run: |\n') + len('        run: |\n')
+          end = original.index('      - name: Commit to the isolated branch only', begin)
+          code = textwrap.dedent(original[begin:end])
+          def patch(old, new):
+              global code
+              assert code.count(old) == 1, old
+              code = code.replace(old, new, 1)
+          patch("assert git('rev-parse', 'HEAD^').strip() == BASE, 'Unexpected parent; re-review branch.'", "assert git('rev-parse', 'HEAD^').strip() == '0ca5e0a89e2e2a7d9f82d962777c73c29aefc0fe', 'Unexpected authorized CI parent.'")
+          patch("assert git('diff', '--name-only', BASE, 'HEAD').splitlines() == [HELPER]", "assert set(git('diff', '--name-only', BASE, 'HEAD').splitlines()) == {HELPER, '.github/workflows/source-validation.yml'}")
+          patch("guard = '''from pathlib import Path", "guard = r'''from pathlib import Path")
+          # Replace only the first numbered step, not the complete contiguous eight-step plan.
+          start = code.index('def paragraph(')
+          finish = code.index('def insert_section(', start)
+          replacement = '\n'.join([
+              'def paragraph(path, prefix, new):',
+              "    units = edits[path].splitlines() if prefix.startswith('1. ') else edits[path].split(chr(10) * 2)",
+              '    matches = [p for p in units if p.startswith(prefix)]',
+              '    assert len(matches) == 1, (path, prefix, len(matches))',
+              '    replace(path, matches[0], new)',
+              ''
+          ])
+          code = code[:start] + replacement + code[finish:]
+          # Reproduce the reviewed edits from the baseline in this disposable checkout.
+          # The connector has already published the workflow edit with its own authorization.
+          Path(workflow).write_bytes(subprocess.check_output(['git', 'show', base + ':' + workflow]))
+          compile(code, 'reviewed-unity62f3-preparation', 'exec')
+          exec(compile(code, 'reviewed-unity62f3-preparation', 'exec'), {})
+          assert Path(workflow).read_bytes() == approved_ci, 'Generated guard differs from the authorized workflow edit.'
+          assert workflow not in git('diff', '--cached', '--name-only', 'HEAD').splitlines(), 'Runner must not publish workflow edits.'
+          security = Path('docs/unity-runtime-security-review.md').read_text()
+          for step in ['2. Keep the original working checkout', '3. Install 62f3 alongside', '4. Update both ProjectVersion', '5. Import in the selected editor', '6. Build an identifiable standalone Quest', '7. Have the available Quest 2 tester', '8. Record commit, editor revision']:
+              assert step in security, 'Historical implementation step lost: ' + step
+          print('PASS: numbered installation/build/rollback plan preserved; runner changes no workflow file.')
       - name: Commit to the isolated branch only
         shell: bash
         run: |
@@ -234,5 +72,5 @@ jobs:
           test "$(git ls-remote origin "refs/heads/$BRANCH" | cut -f1)" = "$GITHUB_SHA"
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git commit -m 'build: prepare isolated Unity 2022.3.62f3 compatibility trial' -m 'Refs #27. Update exact editor/revision and CI guard; record Greg go-ahead and pending Unity/Android/Quest acceptance. Preserve packages, gameplay, assets, XR settings and historical evidence.'
+          git commit -m 'build: prepare isolated Unity 2022.3.62f3 compatibility trial' -m 'Refs #27. Pin both editor declaration lines; record Greg go-ahead and pending Unity/Android/Quest acceptance. Preserve packages, gameplay, authored assets, XR settings and historical evidence. CI was updated separately through the authorized repository connection.'
           git push origin "HEAD:refs/heads/$BRANCH"
