@@ -67,6 +67,9 @@ jobs:
       - name: Validate first-party source and enabled scenes
         run: python Tools/validate_source.py --syntax
 
+      - name: Validate sector travel scene wiring
+        run: python Tools/validate_sector_travel_wiring.py
+
       - name: Validate Unity repository integrity
         run: python Tools/validate_repository_integrity.py
 

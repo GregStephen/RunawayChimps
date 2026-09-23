@@ -32,12 +32,12 @@ TagManager:
   - 
   - 
   - 
+  - 
   - Left Hand
   - Right Hand
   - NonCollidable
   - Trigger
   - FingerTip
-  - 
   - 
   m_SortingLayers:
   - name: Default
