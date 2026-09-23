@@ -158,8 +158,9 @@ def validate():
     layer_lines = re.search(r"^  layers:\n((?:  -.*\n)+)", tag_text, re.MULTILINE)
     require(layer_lines is not None, "TagManager layers block not found.")
     layers = [line[4:] for line in layer_lines.group(1).splitlines()]
-    require(len(layers) > 29 and layers[29] == "FingerTip",
-            "Layer 29 must remain FingerTip for the authored hand/button masks.")
+    require(len(layers) > 29 and layers[25:30] == [
+                "Left Hand", "Right Hand", "NonCollidable", "Trigger", "FingerTip"],
+            "Layers 25-29 must remain Left Hand, Right Hand, NonCollidable, Trigger, FingerTip.")
 
     for name in ("LeftFingerCollider", "RightFingerCollider"):
         go_id, finger = named_go(boot_objects, name)
