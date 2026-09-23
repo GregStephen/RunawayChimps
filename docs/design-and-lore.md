@@ -12,6 +12,18 @@ Last updated: 2026-09-22. Maintained repository edition, migrated from `Runaway_
 
 **Pre-existing defects separated from the editor change:** #63 tracks the Crawler threat-vignette RawImage/`_MainTex` error. #64 tracks Sector Travel missing-script and fingertip/button wiring failures. A single shallow 0.016 m floor recovery was observed and remains evidence under the existing startup/travel acceptance work; repeated recoveries are not accepted as normal behavior.
 
+## September 22 Sector Travel wiring repair — issue #64
+
+**Implemented on `fix/issue-64-sector-travel-wiring`:** the Unity 2022.3.62f3 migration exposed pre-existing authored-component problems rather than an editor regression. `Bootstrap/ZoneSystem` carried a third fieldless MonoBehaviour whose GUID (`4bf5b5c1f296d6f40b9e1625cbdd493f`) has no tracked script asset; that orphaned component is removed while the real `ZoneStateService` and `ZoneDebugHUD` components are preserved.
+
+**Hub button correction:** the authored `StartLevel1Button/ButtonTrigger` already has the intended `PhysicalButton` wiring: FingerTip layer mask, `HandTag`, local-rig requirement and exactly one persistent `SectorDoor.Travel` target for `Level1_Containment`. Its second fieldless serialized MonoBehaviour used GUID `198b9666da4d3ea41b53fa54c364925f`, with no tracked implementation or serialized state. That GUID is now explicitly bound to the inert `LegacyHubButtonMarker` compatibility component. The marker has no methods or fields and does not participate in interaction; it exists only so the authored object is no longer `Missing (Mono Script)`. The real player-facing rule remains unchanged: Hub -> Level 1 is activated only by physically pressing `StartLevel1Button` with the local monkey hand/fingertip.
+
+**Authored hand wiring verified in source:** both `LeftFingerCollider` and `RightFingerCollider` are enabled trigger colliders on layer 29 (`FingerTip`), tagged `HandTag`, and descend from the persistent local rig marker. No hand, button, travel destination, Photon, startup or keycard behavior is intentionally changed by #64.
+
+**Regression protection:** `Tools/validate_sector_travel_wiring.py` now protects the Bootstrap zone-service set, both fingertip paths, the local-only Level 1 button filters, its `SectorDoor.Travel` destination and the explicit legacy Hub binding. Source Integrity runs this check in addition to the Unity Editor validator; it is serialization evidence, not Play Mode/headset proof.
+
+**Pending validation:** open the branch in Unity 2022.3.62f3 with a clean console, run **Tools > Runaway Chimps > Validate Sector Travel** to its success message, press the Hub Level 1 button with both local hands, confirm nonlocal/remote contacts cannot activate it, complete Hub -> Level 1 travel, and record a Quest 3 smoke. Issue #64 remains pending runtime acceptance until those checks are actually run.
+
 ## September 22 MVP documentation reconciliation
 
 **Confirmed documentation decision:** Greg approved replacing the outdated documentation PR #49 with a clean change based on main `d12b403fd17b1792c585d3612a7c77a12caf690f`. Preserve the newer design, implementation and test records; carry forward the September 21 release decisions without treating proposed or untested work as complete. [Issue #25](https://github.com/GregStephen/RunawayChimps/issues/25) is authoritative for live roadmap status and dependencies; [the repository roadmap](mvp-roadmap.md) is the higher-level release plan and navigation index, not a second status checklist.
