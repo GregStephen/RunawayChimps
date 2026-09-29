@@ -1,0 +1,48 @@
+diff --git a/docs/design-and-lore.md b/docs/design-and-lore.md
+--- a/docs/design-and-lore.md
++++ b/docs/design-and-lore.md
+@@ -1,5 +1,15 @@
+ # Runaway Chimps design and lore
+ 
+-Last updated: 2026-09-22. Maintained repository edition, migrated from `Runaway_Chimps_Design_and_Lore.docx` version 0.9. The existing Word document is a downloadable snapshot; future edits belong here. See [AGENTS.md](../AGENTS.md) for the documentation workflow and the [repository improvement plan](repository-improvement-plan.md) for implementation evidence.
++Last updated: 2026-09-29. Maintained repository edition, migrated from `Runaway_Chimps_Design_and_Lore.docx` version 0.9. The existing Word document is a downloadable snapshot; future edits belong here. See [AGENTS.md](../AGENTS.md) for the documentation workflow and the [repository improvement plan](repository-improvement-plan.md) for implementation evidence.
++
++## September 29 solo-first security-console prototype
++
++**Confirmed direction:** Greg approved a solo-first, co-op-enhanced in-world VR security-console prototype. Every required interaction must work for one player without a second operator, voice communication or simultaneous distant actions. Players can turn away and leave. Different controls can be used concurrently; ownership applies to an individually held control, not the whole station.
++
++**Correction and scope:** do not assume Level 1 introduction or a terminal in every level. This supersedes the earlier co-op-dependent/recurring-terminal brainstorming. Production placement remains **Open**. The optional prototype does not expand the Chapter 1 MVP contract or replace Level 2's confirmed personal fuse/power objective. Shared device changes are not shared completion, reset or travel.
++
++**Planned work:** [parent #67](https://github.com/GregStephen/RunawayChimps/issues/67) tracks #68-#73: networked skeleton, physical controls, two shared camera feeds, solo encounter, multiplayer recovery and Quest/playtest acceptance. See [the focused plan](security-console-prototype-plan.md). One monitor/two fixed cameras, latching required access, a primitive threat proxy and a personal endpoint are **proposed prototype defaults**, not final progression or content.
++
++**Pending validation:** no prototype gameplay implementation, Unity test, Photon session, Android build or headset/performance result is supplied by this planning record. Preserve the existing launch terminal, personal Hub controls, recorded surveillance, level objectives, economy and ten-player target. Greg chooses keep/rework/defer after testing; keep does not automatically place the mechanic in a production level.
+ 
+ ## September 22 Unity 62f3 baseline adoption
+@@ -177,4 +187,5 @@
+ | Recorded | Decision or correction | Status |
+ | --- | --- | --- |
++| 2026-09-29 | Security-console prototype is solo-first/co-op-enhanced: every required action works for one player without voice or a second operator; different controls can be used concurrently with ownership only per held control. Do not assume Level 1 introduction, every-level use or production placement. #67 tracks this optional prototype without expanding MVP scope. | Confirmed direction; #68-#73 planned; encounter defaults proposed; gameplay/runtime acceptance pending |
+ | 2026-09-22 | Greg explicitly requested the 62f3 compatibility branch now, lifting the prior hold. Create the isolated trial from main `9da4a1e`; pin `2022.3.62f3 (96770f904ca7)` without changing packages, Photon, rendering, XR settings, gameplay or assets. | Confirmed go-ahead; branch/configuration implemented; Unity/Android/Quest acceptance pending; not merged |
+ | 2026-09-22 | Greg approved salvaging PR #49 onto current main while preserving newer documentation. Issue #25 owns live roadmap status. PRs #21/#23/#24/#54/#58 are merged; that does not close runtime acceptance. The hold recorded at that moment was subsequently lifted by Greg's explicit request to create the compatibility branch; see the later correction above. | Confirmed documentation reconciliation; no editor migration or new runtime pass |
+diff --git a/docs/repository-improvement-plan.md b/docs/repository-improvement-plan.md
+--- a/docs/repository-improvement-plan.md
++++ b/docs/repository-improvement-plan.md
+@@ -1,7 +1,17 @@
+ # Runaway Chimps repository improvement plan
+ 
+-Last updated: 2026-09-22. Maintained repository edition, migrated from `Runaway_Chimps_Repository_Review_and_Plan.docx`, Revision 2. The original review examined `main` at `4f6894141aa2b132d744cb2423c1ee227e0fc5be`; its evidence links remain pinned to that baseline. The Word document is a historical downloadable snapshot.
++Last updated: 2026-09-29. Maintained repository edition, migrated from `Runaway_Chimps_Repository_Review_and_Plan.docx`, Revision 2. The original review examined `main` at `4f6894141aa2b132d744cb2423c1ee227e0fc5be`; its evidence links remain pinned to that baseline. The Word document is a historical downloadable snapshot.
+ 
+ Read the [design and lore](design-and-lore.md) for intended behavior and [AGENTS.md](../AGENTS.md) for update rules. A confirmed finding describes source evidence; it does not mean its fix is implemented or tested.
++
++## September 29 security-console prototype work plan
++
++**Confirmed planning request:** Greg requested individually actionable issues for a solo-first, co-op-enhanced physical VR security console. Every required action must work for one player without voice communication or a second operator. This optional prototype is separate from the Chapter 1 release queue in #25.
++
++**Planned sequence:** [parent #67](https://github.com/GregStephen/RunawayChimps/issues/67) owns #68 networked walking skeleton, #69 physical controls/per-control ownership, #70 two shared camera feeds, #71 solo encounter/personal completion, #72 multiplayer recovery and #73 solo/two-headset/Quest acceptance. All six are assigned to GregStephen. [The focused plan](security-console-prototype-plan.md) records scope; issues own live acceptance status. Keep one implementation item active and add targeted tests with each slice.
++
++**Integration boundaries:** use a saved development-only graybox scene with the adopted 2022.3.62f3/PUN/Built-in baseline and existing rig/session infrastructure. Inspect/reuse PhysicalButton and loaded-sector authority patterns; #64 owns inherited fingertip/script defects. Do not weaken validators, repurpose the launch terminal, require PR #16's recorded surveillance, change personal progression, or add the console to a production level. One monitor/two cameras, latched required access and a primitive threat proxy are test defaults, not final design commitments.
++
++**Evidence and decision:** planning only; no gameplay, Unity/runtime, Photon, Android or headset/performance test is completed here. #73 requires actual solo usefulness, optional two-headset use and Quest 2/3 measurements before a successful keep decision. Missing devices/tests remain pending; two actors do not certify ten-player operation. Greg chooses keep/rework/defer without expanding MVP scope. Update both maintained documents as actual implementation and evidence arrive.
+ 
+ ## September 22 Unity 62f3 baseline adoption
