@@ -20,8 +20,7 @@ namespace RunawayChimps.SocialSafety
         private Room room;
         private float reportDeadline;
         private int pendingRequest;
-        private int pendingRoom;
-        private string pendingTarget;
+        private ReportTarget pendingTarget;
 
         public sealed class ReportTarget
         {
@@ -31,6 +30,9 @@ namespace RunawayChimps.SocialSafety
             public string Name;
             public string Sector;
             public string RequestId;
+            // Each board owns a separate snapshot, so async feedback cannot retarget
+            // another open form or a newly selected player with the same nickname.
+            internal string Status;
         }
 
         [Serializable]
@@ -67,6 +69,7 @@ namespace RunawayChimps.SocialSafety
             if (!string.Equals(LocalAccountId, id, StringComparison.Ordinal))
             {
                 State.ChangeRoom();
+                pendingTarget = null;
                 LocalAccountId = PlayerSafetyState.ValidAccountId(id) ? id : null;
             }
             PublishIdentity();
@@ -84,6 +87,7 @@ namespace RunawayChimps.SocialSafety
             if (ReferenceEquals(room, current)) return;
             room = current;
             State.ChangeRoom();
+            pendingTarget = null;
             Status = current == null ? "Not in a room." : "Mute only affects what you hear.";
             Changed?.Invoke();
         }
@@ -92,7 +96,7 @@ namespace RunawayChimps.SocialSafety
         {
             SyncRoom();
             if (State.IsSending && Time.realtimeSinceStartup >= reportDeadline)
-                Finish(pendingRequest, pendingRoom, pendingTarget, false,
+                Finish(pendingRequest, pendingTarget, false,
                     "No confirmation received. Wait, then retry; your report may have arrived.");
         }
 
@@ -125,29 +129,43 @@ namespace RunawayChimps.SocialSafety
             };
         }
 
+        public bool IsSendingReport(ReportTarget target) => target != null && State.IsSending &&
+            target.RoomGeneration == State.RoomGeneration && ReferenceEquals(pendingTarget, target);
+
+        public string GetReportStatus(ReportTarget target)
+        {
+            if (target == null) return Status;
+            if (target.RoomGeneration != State.RoomGeneration) return "Room changed. Select the player again.";
+            // Receipts are shared only for the same account in this room, including
+            // when a confirmed player's form is reopened on the other board.
+            if (State.WasReported(target.AccountId)) return "Report submitted. Thank you.";
+            if (State.IsSending && !IsSendingReport(target)) return "Another report is sending. Please wait.";
+            return target.Status ?? "Choose a reason, then SEND REPORT.";
+        }
+
         public void Submit(ReportTarget target, PlayerReportReason reason)
         {
             SyncRoom();
             if (target == null || State.IsSending) return;
-            if (target.RoomGeneration != State.RoomGeneration) { Show("Room changed. Select the player again."); return; }
+            if (target.RoomGeneration != State.RoomGeneration) { ShowReport(target, "Room changed. Select the player again."); return; }
             if (!Enum.IsDefined(typeof(PlayerReportReason), reason)) return;
-            if (!PlayerSafetyState.ValidAccountId(target.AccountId)) { Show("Reporting unavailable for this player. You can still mute them."); return; }
-            if (string.Equals(target.AccountId, LocalAccountId, StringComparison.OrdinalIgnoreCase)) { Show("Cannot report your own account."); return; }
-            if (!PlayFabClientAPI.IsClientLoggedIn()) { Show("Sign-in required to send a report. Please reconnect."); return; }
+            if (!PlayerSafetyState.ValidAccountId(target.AccountId)) { ShowReport(target, "Reporting unavailable for this player. You can still mute them."); return; }
+            if (string.Equals(target.AccountId, LocalAccountId, StringComparison.OrdinalIgnoreCase)) { ShowReport(target, "Cannot report your own account."); return; }
+            if (!PlayFabClientAPI.IsClientLoggedIn()) { ShowReport(target, "Sign-in required to send a report. Please reconnect."); return; }
             // A departed player's frozen target remains reportable; never retarget a recycled row.
             var current = PhotonNetwork.CurrentRoom.GetPlayer(target.Actor);
             if (current != null)
             {
                 current.CustomProperties.TryGetValue(AccountProperty, out object id);
                 if (!string.Equals(id as string, target.AccountId, StringComparison.Ordinal))
-                { Show("Player identity changed. Select the player again."); return; }
+                { ShowReport(target, "Player identity changed. Select the player again."); return; }
             }
-            if (State.WasReported(target.AccountId)) { Show("Already submitted for this player in this room."); return; }
+            if (State.WasReported(target.AccountId)) { ShowReport(target, "Already submitted for this player in this room."); return; }
             int request = State.BeginReport(target.AccountId, target.RoomGeneration, Time.realtimeSinceStartup);
-            if (request == 0) { Show("Please wait a moment before retrying."); return; }
-            pendingRequest = request; pendingRoom = target.RoomGeneration; pendingTarget = target.AccountId;
+            if (request == 0) { ShowReport(target, "Please wait a moment before retrying."); return; }
+            pendingRequest = request; pendingTarget = target;
             reportDeadline = Time.realtimeSinceStartup + 20f;
-            Show("Sending report...");
+            ShowReport(target, "Sending report...");
             try
             {
                 PlayFabClientAPI.ReportPlayer(new ReportPlayerClientRequest
@@ -164,26 +182,30 @@ namespace RunawayChimps.SocialSafety
                     // This SDK exposes no Updated flag. Zero remaining is ambiguous (fifth
                     // accepted report OR a capped request); never turn it into a false success.
                     bool accepted = result != null && result.SubmissionsRemaining > 0;
-                    Finish(request, target.RoomGeneration, target.AccountId, accepted, accepted
+                    Finish(request, target, accepted, accepted
                         ? "Report submitted. Thank you."
                         : "Daily report limit reached. This submission could not be confirmed.");
-                }, error => Finish(request, target.RoomGeneration, target.AccountId, false,
+                }, error => Finish(request, target, false,
                     "Report could not be sent. Check your connection and retry."));
             }
             catch (Exception)
             {
-                Finish(request, target.RoomGeneration, target.AccountId, false, "Report could not be sent. Please retry.");
+                Finish(request, target, false, "Report could not be sent. Please retry.");
             }
         }
 
-        private void Finish(int request, int generation, string target, bool accepted, string message)
+        private void Finish(int request, ReportTarget target, bool accepted, string message)
         {
-            if (this == null) return;
+            if (this == null || target == null) return;
             SyncRoom();
-            if (State.CompleteReport(request, generation, target, accepted)) Show(message);
+            if (State.CompleteReport(request, target.RoomGeneration, target.AccountId, accepted))
+            {
+                pendingTarget = null;
+                ShowReport(target, message);
+            }
         }
 
-        private void Show(string message) { Status = message; Changed?.Invoke(); }
+        private void ShowReport(ReportTarget target, string message) { target.Status = message; Changed?.Invoke(); }
         public override void OnJoinedRoom() { SyncRoom(); PublishIdentity(); }
         public override void OnLeftRoom() => SyncRoom();
         public override void OnDisconnected(DisconnectCause cause) => SyncRoom();

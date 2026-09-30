@@ -63,21 +63,23 @@ namespace RunawayChimps.SocialSafety
             rosterPanel.SetActive(target == null);
             reportPanel.SetActive(target != null);
             close.gameObject.SetActive(portable);
-            status.text = service.Status;
+            status.text = service.GetReportStatus(target);
             heading.text = PhotonNetwork.InRoom ? "PLAYERS  /  " + PhotonNetwork.CurrentRoom.PlayerCount + " IN ROOM" : "PLAYERS  /  OFFLINE";
             if (target != null)
             {
                 reportHeading.text = "REPORT " + target.Name + "  #" + target.Actor;
                 bool validId = PlayerSafetyState.ValidAccountId(target.AccountId);
+                bool reported = service.State.WasReported(target.AccountId);
                 reportHelp.text = validId ? "Choose a reason, then SEND REPORT.\nSends account IDs, reason and session context to game support. No audio." :
                     "This player's reporting identity is unavailable.\nYou can still mute them from the player list.";
                 for (int i = 0; i < reasons.Length; i++)
                 {
                     reasons[i].label.text = (reason == (PlayerReportReason)i ? "[X] " : "[ ] ") + PlayerSafetyState.ReasonLabel((PlayerReportReason)i);
-                    reasons[i].SetAvailable(!service.State.IsSending && validId);
+                    reasons[i].SetAvailable(!service.State.IsSending && validId && !reported);
                 }
-                submit.SetAvailable(reason.HasValue && validId && !service.State.IsSending && !service.State.WasReported(target.AccountId));
-                submit.label.text = service.State.IsSending ? "SENDING..." : "SEND REPORT";
+                submit.SetAvailable(reason.HasValue && validId && !service.State.IsSending && !reported);
+                submit.label.text = reported ? "SUBMITTED" : service.IsSendingReport(target) ? "SENDING..." :
+                    service.State.IsSending ? "WAIT..." : "SEND REPORT";
                 return;
             }
             Player[] players = PhotonNetwork.InRoom ? PhotonNetwork.PlayerList : new Player[0];

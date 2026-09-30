@@ -44,7 +44,7 @@ static class Program
         service.Submit(target,PlayerReportReason.Other);Check(PlayFabClientAPI.Calls==1,"repeated press single flight");
         Check(PlayFabClientAPI.LastRequest.ReporteeId=="BBB"&&PlayFabClientAPI.LastRequest.Comment.Contains("Harassment"),"correct account and reason");
         PlayFabClientAPI.Success(new ReportPlayerClientResult {SubmissionsRemaining=4});
-        Check(service.Status=="Report submitted. Thank you."&&!service.State.IsSending,"service receipt success");
+        Check(service.GetReportStatus(target)=="Report submitted. Thank you."&&!service.State.IsSending,"service receipt success");
         Tick(20);service.Submit(target,PlayerReportReason.Cheating);Check(PlayFabClientAPI.Calls==1,"duplicate success blocked");
         target=service.CaptureTarget(bPlayer);bPlayer.CustomProperties[PlayerSafetyService.AccountProperty]="BAD";
         service.Submit(target,PlayerReportReason.Other);Check(PlayFabClientAPI.Calls==1,"identity mutation rejected");
@@ -54,9 +54,9 @@ static class Program
         service.Submit(target,PlayerReportReason.Other);Check(PlayFabClientAPI.Calls==2,"retry cooldown");
         Tick(24);service.Submit(target,PlayerReportReason.Other);Check(PlayFabClientAPI.Calls==3,"explicit retry");
         PlayFabClientAPI.Success(new ReportPlayerClientResult {SubmissionsRemaining=0});
-        Check(service.Status.Contains("could not be confirmed")&&!service.State.WasReported("CCC"),"cap never becomes false success");
+        Check(service.GetReportStatus(target).Contains("could not be confirmed")&&!service.State.WasReported("CCC"),"cap never becomes false success");
         Tick(30);service.Submit(target,PlayerReportReason.Other);var late=PlayFabClientAPI.Success;
-        Tick(51);Call(service,"Update");Check(!service.State.IsSending&&service.Status.Contains("No confirmation"),"bounded timeout");
+        Tick(51);Call(service,"Update");Check(!service.State.IsSending&&service.GetReportStatus(target).Contains("No confirmation"),"bounded timeout");
         service.Submit(target,PlayerReportReason.Other);late(new ReportPlayerClientResult {SubmissionsRemaining=3});
         Check(service.State.IsSending,"late callback cannot finish newer request");
         var oldCallback=PlayFabClientAPI.Success;PhotonNetwork.CurrentRoom=new Room();service.OnJoinedRoom();
@@ -92,17 +92,7 @@ static class Program
         Check(replacement.mute,"preexisting mute preserved");
         // Exercise the real board controller and local-hand trigger filter.
         for (int i=2;i<=10;i++) PhotonNetwork.CurrentRoom.Players[i]=Person(i,(100+i).ToString("X"));
-        var board=new GameObject().AddComponent<PlayerBoard>();
-        board.heading=Label();board.status=Label();board.pageText=Label();board.reportHeading=Label();board.reportHelp=Label();
-        board.rosterPanel=new GameObject();board.reportPanel=new GameObject();
-        board.previous=Button(board,PlayerBoardAction.Previous);board.next=Button(board,PlayerBoardAction.Next);
-        board.close=Button(board,PlayerBoardAction.Close);board.submit=Button(board,PlayerBoardAction.Submit);
-        board.reasons=new PlayerBoardButton[5];board.rows=new PlayerBoard.Row[5];
-        for(int i=0;i<5;i++)
-        {
-            board.reasons[i]=Button(board,PlayerBoardAction.Reason,i);
-            board.rows[i]=new PlayerBoard.Row {root=new GameObject(),nameText=Label(),detailText=Label(),mute=Button(board,PlayerBoardAction.Mute,i),report=Button(board,PlayerBoardAction.Report,i)};
-        }
+        var board=Board();
         Call(board,"Refresh");Check(board.rows[0].player.IsLocal&&board.rows[4].player.ActorNumber==5,"stable first roster page");
         Check(board.pageText.text=="PAGE 1 / 2"&&board.heading.text.Contains("10 IN ROOM"),"ten players paginated");
         board.Press(PlayerBoardAction.Next,0);Check(board.rows[0].player.ActorNumber==6&&board.rows[4].player.ActorNumber==10,"second roster page");
@@ -123,9 +113,70 @@ static class Program
         Call(muteButton,"OnTriggerExit",hand);Call(muteButton,"OnTriggerEnter",hand);Check(!PlayerSafetyService.IsMuted(board.rows[0].player),"release and repress unmutes");
         board.Press(PlayerBoardAction.Report,0);PhotonNetwork.CurrentRoom=new Room();service.OnJoinedRoom();Call(board,"Refresh");
         Check(board.rosterPanel.activeSelf&&!board.reportPanel.activeSelf&&board.heading.text.Contains("0 IN ROOM"),"room change cancels stale report form");
+        TestReportFeedback(service);
         Console.WriteLine("PASS: "+assertions+" social-safety assertions; production service, state, voice integration compiled with diagnostic doubles.");
     }
     static TMPro.TMP_Text Label()=>new GameObject().AddComponent<TMPro.TMP_Text>();
+    static PlayerBoard Board()
+    {
+        var board=new GameObject().AddComponent<PlayerBoard>();
+        board.heading=Label();board.status=Label();board.pageText=Label();board.reportHeading=Label();board.reportHelp=Label();
+        board.rosterPanel=new GameObject();board.reportPanel=new GameObject();
+        board.previous=Button(board,PlayerBoardAction.Previous);board.next=Button(board,PlayerBoardAction.Next);
+        board.close=Button(board,PlayerBoardAction.Close);board.submit=Button(board,PlayerBoardAction.Submit);
+        board.reasons=new PlayerBoardButton[5];board.rows=new PlayerBoard.Row[5];
+        for(int i=0;i<5;i++)
+        {
+            board.reasons[i]=Button(board,PlayerBoardAction.Reason,i);
+            board.rows[i]=new PlayerBoard.Row {root=new GameObject(),nameText=Label(),detailText=Label(),mute=Button(board,PlayerBoardAction.Mute,i),report=Button(board,PlayerBoardAction.Report,i)};
+        }
+        return board;
+    }
+    static void TestReportFeedback(PlayerSafetyService service)
+    {
+        PhotonNetwork.CurrentRoom=new Room();
+        PhotonNetwork.CurrentRoom.Players[1]=PhotonNetwork.LocalPlayer;
+        for(int i=2;i<=4;i++) PhotonNetwork.CurrentRoom.Players[i]=Person(i,(100+i).ToString("X"));
+        service.OnJoinedRoom();Tick(100);
+        var hub=Board();var portable=Board();portable.portable=true;
+        Call(hub,"Refresh");Call(portable,"Refresh");
+        hub.Press(PlayerBoardAction.Report,1);hub.Press(PlayerBoardAction.Reason,0);hub.Press(PlayerBoardAction.Submit,0);
+        PlayFabClientAPI.Success(new ReportPlayerClientResult {SubmissionsRemaining=4});Call(hub,"Refresh");
+        Check(hub.status.text=="Report submitted. Thank you.","submitted form shows its receipt");
+        int calls=PlayFabClientAPI.Calls;
+        hub.Press(PlayerBoardAction.Cancel,0);hub.Press(PlayerBoardAction.Report,2);
+        Check(hub.reportHeading.text.Contains("#3")&&!service.State.WasReported("67")&&PlayFabClientAPI.Calls==calls,"new target has not been submitted");
+        Check(hub.status.text=="Choose a reason, then SEND REPORT.","switching players clears previous player's receipt");
+
+        portable.Press(PlayerBoardAction.Report,3);portable.Press(PlayerBoardAction.Reason,3);
+        Tick(110);hub.Press(PlayerBoardAction.Reason,1);hub.Press(PlayerBoardAction.Submit,0);Call(portable,"Refresh");
+        Check(hub.submit.label.text=="SENDING..."&&hub.status.text=="Sending report...","request owner shows sending");
+        Check(portable.submit.label.text=="WAIT..."&&portable.status.text=="Another report is sending. Please wait.","other board waits without claiming its own submission");
+        hub.Press(PlayerBoardAction.Cancel,0);
+        PlayFabClientAPI.Success(new ReportPlayerClientResult {SubmissionsRemaining=3});Call(portable,"Refresh");Call(hub,"Refresh");
+        Check(portable.status.text=="Choose a reason, then SEND REPORT."&&!service.State.WasReported("68"),"late receipt cannot attach to the other board's target");
+        Check(hub.status.text=="Mute only affects what you hear.","roster does not show an unqualified report receipt");
+        hub.Press(PlayerBoardAction.Report,2);
+        Check(hub.status.text=="Report submitted. Thank you."&&hub.submit.label.text=="SUBMITTED","reopening a confirmed target shows its room receipt");
+
+        Tick(120);portable.Press(PlayerBoardAction.Submit,0);
+        service.ToggleMute(PhotonNetwork.CurrentRoom.GetPlayer(2));Call(portable,"Refresh");
+        Check(portable.status.text=="Sending report...","mute feedback cannot overwrite pending report feedback");
+        PlayFabClientAPI.Failure(new PlayFabError());Call(portable,"Refresh");Call(hub,"Refresh");
+        Check(portable.status.text.Contains("could not be sent"),"failure appears on originating form");
+        Check(hub.status.text=="Report submitted. Thank you.","another target's failure cannot overwrite a confirmed receipt");
+        portable.Press(PlayerBoardAction.Close,0);portable.gameObject.SetActive(true);Call(portable,"OnEnable");Call(portable,"Refresh");
+        Check(portable.reportHeading.text.Contains("#4")&&portable.status.text.Contains("could not be sent"),"reopened portable form retains only its own feedback");
+
+        Tick(124);portable.Press(PlayerBoardAction.Submit,0);var late=PlayFabClientAPI.Success;
+        Tick(145);Call(service,"Update");Call(portable,"Refresh");
+        Check(portable.status.text.Contains("No confirmation"),"timeout stays with originating form");
+        portable.Press(PlayerBoardAction.Submit,0);late(new ReportPlayerClientResult {SubmissionsRemaining=2});Call(portable,"Refresh");
+        Check(portable.status.text=="Sending report..."&&service.State.IsSending,"stale callback cannot overwrite retry status");
+        var old=PlayFabClientAPI.Success;PhotonNetwork.CurrentRoom=new Room();service.OnJoinedRoom();old(new ReportPlayerClientResult {SubmissionsRemaining=2});
+        Call(hub,"Refresh");Call(portable,"Refresh");
+        Check(hub.rosterPanel.activeSelf&&portable.rosterPanel.activeSelf&&hub.status.text=="Mute only affects what you hear."&&portable.status.text==hub.status.text,"room change clears both forms and late feedback");
+    }
     static void TestHubPresenter()
     {
         var presenter=new GameObject().AddComponent<PlayerBoardHubPresenter>();
