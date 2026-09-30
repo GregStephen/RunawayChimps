@@ -1,0 +1,71 @@
+name: Publish cognitive machine assets
+on:
+  push:
+    branches: [feature/primate-cognitive-test]
+    paths: [.github/workflows/cognitive-assets-publish.yml]
+permissions:
+  contents: write
+jobs:
+  assets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Install asset and source validators
+        run: python -m pip install PyYAML==6.0.2 tree-sitter==0.25.2 tree-sitter-c-sharp==0.23.5
+      - name: Author only the cognitive machine and scoped delivery corrections
+        run: |
+          test "$GITHUB_REF" = refs/heads/feature/primate-cognitive-test
+          python Tools/PrimateCognitive/complete_asset_delivery.py
+          python Tools/PrimateCognitive/build_assets.py --write
+          git add Assets/RunawayChimps/Toys/PrimateCognitive Assets/RunawayChimps/Toys/PrimateCognitive.meta Assets/RunawayChimps/Toys.meta
+          git add Assets/Scripts/Toys/PrimateCognitive/CognitivePad.cs Assets/Scripts/Toys/PrimateCognitive/Editor/CognitiveMachineEditor.cs
+          git add Tools/PrimateCognitive/build_assets.py docs/design-and-lore.md docs/repository-improvement-plan.md
+      - name: Check shipped asset bytes and reject broken wiring
+        run: |
+          python Tools/PrimateCognitive/build_assets.py
+          python Tools/PrimateCognitive/validate_assets.py
+      - name: Execute production managed rules and existing card regression tests
+        run: |
+          dotnet run --project Tools/PrimateCognitiveHarness/PrimateCognitiveHarness.csproj --configuration Release
+          dotnet run --project Tools/CardSystemHarness/CardSystemHarness.csproj --configuration Release
+      - name: Run repository source checks
+        run: |
+          python Tools/validate_source.py --syntax
+          python Tools/validate_repository_integrity.py
+          python Tools/validate_level1_contracts.py
+          python Tools/validate_spawn_floor_contracts.py
+          python Tools/validate_keycard_reader_contracts.py
+          python Tools/validate_interaction_safety.py
+          python Tools/validate_pr15_review_hardening.py
+          python Tools/validate_security_boot.py
+          python Tools/validate_threat_feedback.py
+          python Tools/validate_launch_presentation.py
+          python -m compileall -q Tools
+          git diff --cached --check
+      - name: Commit actual assets and remove one-time delivery helpers
+        run: |
+          test "$GITHUB_REF" = refs/heads/feature/primate-cognitive-test
+          git rm .github/workflows/cognitive-assets-publish.yml Tools/PrimateCognitive/complete_asset_delivery.py
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'feat(cognitive): deliver serialized machine prefab materials and assigned audio'
+          git push origin HEAD:feature/primate-cognitive-test
+      - name: Package exact asset and source evidence
+        if: always()
+        run: |
+          git rev-parse HEAD > /tmp/cognitive-assets-head.txt
+          tar -czf /tmp/cognitive-assets-review.tar.gz Assets/RunawayChimps/Toys Assets/RunawayChimps/Toys.meta Assets/Scripts/Toys/PrimateCognitive Tools/PrimateCognitive docs/design-and-lore.md docs/repository-improvement-plan.md
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cognitive-assets-review
+          path: |
+            /tmp/cognitive-assets-head.txt
+            /tmp/cognitive-assets-review.tar.gz
+          retention-days: 7
