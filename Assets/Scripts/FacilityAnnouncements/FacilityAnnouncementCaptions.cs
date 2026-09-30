@@ -34,6 +34,9 @@ namespace RunawayChimps.FacilityAnnouncements
             if (camera == null || canvas == null || panel == null || label == null || backdrop == null)
                 return false;
             transform.SetParent(camera.transform, false);
+            gameObject.layer = camera.gameObject.layer;
+            panel.gameObject.layer = camera.gameObject.layer;
+            label.gameObject.layer = camera.gameObject.layer;
             canvas.renderMode = RenderMode.ScreenSpaceCamera;
             canvas.worldCamera = camera;
             canvas.planeDistance = Mathf.Max(1.2f, camera.nearClipPlane + 0.2f);
@@ -61,9 +64,9 @@ namespace RunawayChimps.FacilityAnnouncements
             if (panel != null) panel.gameObject.SetActive(visible);
             if (!visible || label == null) return;
             label.text = currentText;
-            label.fontSize = 30 * TextScale;
-            panel.anchorMin = new Vector2(0.19f, VerticalPosition - 0.055f);
-            panel.anchorMax = new Vector2(0.81f, VerticalPosition + 0.055f);
+            label.fontSize = 26 * TextScale;
+            panel.anchorMin = new Vector2(0.19f, VerticalPosition - 0.12f);
+            panel.anchorMax = new Vector2(0.81f, VerticalPosition + 0.12f);
             panel.offsetMin = panel.offsetMax = Vector2.zero;
         }
 

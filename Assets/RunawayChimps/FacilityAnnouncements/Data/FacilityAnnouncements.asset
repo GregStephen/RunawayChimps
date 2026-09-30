@@ -19,32 +19,32 @@ MonoBehaviour:
     enabled: 1
     weight: 1
     speechAvailable: 1
-    speech: {fileID: 8300000, guid: 1f419020338a55f6863f0ae04e0a8ca3, type: 2}
+    speech: {fileID: 8300000, guid: 1f419020338a55f6863f0ae04e0a8ca3, type: 3}
     transcript: "Reminder: enrichment equipment is a privilege, not an escape opportunity."
     provenance: "User-provided prototype wording; offline native eSpeak en-us formant synthesis. See Audio/provenance.json and docs/facility-announcements.md. Listening/headset acceptance pending."
   - id: tissue-movement
     enabled: 1
     weight: 1
     speechAvailable: 1
-    speech: {fileID: 8300000, guid: d9794f5f14fb51b7a0bb38e2650eb060, type: 2}
+    speech: {fileID: 8300000, guid: d9794f5f14fb51b7a0bb38e2650eb060, type: 3}
     transcript: "Please report unexpected tissue movement to your supervisor."
     provenance: "User-provided prototype wording; offline native eSpeak en-us formant synthesis. See Audio/provenance.json and docs/facility-announcements.md. Listening/headset acceptance pending."
   - id: assigned-containment
     enabled: 1
     weight: 1
     speechAvailable: 1
-    speech: {fileID: 8300000, guid: 032cdb60a8e9566e9ce0575f60cc5b59, type: 2}
+    speech: {fileID: 8300000, guid: 032cdb60a8e9566e9ce0575f60cc5b59, type: 3}
     transcript: "Unauthorized subjects must return to their assigned containment area."
     provenance: "User-provided prototype wording; offline native eSpeak en-us formant synthesis. See Audio/provenance.json and docs/facility-announcements.md. Listening/headset acceptance pending."
   - id: cooperation-recorded
     enabled: 1
     weight: 1
     speechAvailable: 1
-    speech: {fileID: 8300000, guid: 12706e1842cf5afb9678f7151342abd8, type: 2}
+    speech: {fileID: 8300000, guid: 12706e1842cf5afb9678f7151342abd8, type: 3}
     transcript: "Your cooperation has been recorded. Your objections have not."
     provenance: "User-provided prototype wording; offline native eSpeak en-us formant synthesis. See Audio/provenance.json and docs/facility-announcements.md. Listening/headset acceptance pending."
-  startCue: {fileID: 8300000, guid: 5f527d1aa6435f43a75b8be95aeda45f, type: 2}
-  endCue: {fileID: 8300000, guid: fe974bc4b8cd5462b2e3467a2140b5fe, type: 2}
+  startCue: {fileID: 8300000, guid: 5f527d1aa6435f43a75b8be95aeda45f, type: 3}
+  endCue: {fileID: 8300000, guid: fe974bc4b8cd5462b2e3467a2140b5fe, type: 3}
   minimumQuietSeconds: 180
   maximumQuietSeconds: 300
   allowSingleLineRepeat: 0

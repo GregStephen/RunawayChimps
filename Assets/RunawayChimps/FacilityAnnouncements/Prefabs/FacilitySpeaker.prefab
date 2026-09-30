@@ -42,7 +42,7 @@ MonoBehaviour:
   sector: 1
   collection: {fileID: 11400000, guid: 9d6afbf7d72a50bfb130fea291dbe0b3, type: 2}
   source: {fileID: 1003}
-  captionPrefab: {fileID: 1013, guid: 1b35112af8b555ab961352df2b11eda0, type: 2}
+  captionPrefab: {fileID: 1013, guid: 1b35112af8b555ab961352df2b11eda0, type: 3}
   volume: 0.38
   minimumDistance: 1.5
   maximumDistance: 14

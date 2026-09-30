@@ -39,7 +39,6 @@ namespace RunawayChimps.FacilityAnnouncements
         private bool focused = true;
         private Camera localCamera;
         private FacilityAnnouncementCollection collection;
-        private FacilitySpeaker configuration;
         private FacilityAnnouncementCaptions captions;
         private FacilityAnnouncementCaptions captionTemplate;
         private Camera captionCamera;
@@ -156,7 +155,6 @@ namespace RunawayChimps.FacilityAnnouncements
             sector = SectorId.None;
             localTicket = channel = null;
             collection = null;
-            configuration = null;
             serial = 0;
             schedule.Cancel();
             Array.Clear(lastReceived, 0, lastReceived.Length);
@@ -216,7 +214,6 @@ namespace RunawayChimps.FacilityAnnouncements
                 serial = 0;
                 PublishReady(sector, localTicket);
             }
-            configuration = chosen;
             collection = chosen.collection;
             peers.Clear();
             Player[] players = PhotonNetwork.PlayerList;
@@ -258,7 +255,6 @@ namespace RunawayChimps.FacilityAnnouncements
             localTicket = channel = null;
             sector = SectorId.None;
             collection = null;
-            configuration = null;
             schedule.Cancel();
             CancelPlayback();
         }
@@ -370,6 +366,8 @@ namespace RunawayChimps.FacilityAnnouncements
             if (output == null || !output.Ready || output.gameObject.scene.handle != sceneHandle || localCamera == null ||
                 !localCamera.isActiveAndEnabled || output.source.mute || output.volume <= 0 || AudioListener.volume <= 0)
             { CancelPlayback(); return; }
+            AudioClip expected = stage == Stage.StartCue ? startCue : stage == Stage.EndCue ? endCue : speech;
+            if (stage != Stage.Waiting && output.source.clip != expected) { CancelPlayback(); return; }
             if (stage == Stage.Waiting)
             {
                 if (PhotonNetwork.Time < startsAt) return;
@@ -392,7 +390,7 @@ namespace RunawayChimps.FacilityAnnouncements
             if (captions != null) captions.Clear();
             float elapsed = Time.unscaledTime - stageStarted;
             if (!observedPlaying && elapsed < 0.3f) return;
-            if (!observedPlaying || elapsed < stageLength - 0.15f) { CancelPlayback(); return; }
+            if ((stage == Stage.Speech && !observedPlaying) || elapsed < stageLength - 0.15f) { CancelPlayback(); return; }
             if (stage == Stage.StartCue) PlayStage(speech, Stage.Speech, false);
             else if (stage == Stage.Speech && endCue != null) PlayStage(endCue, Stage.EndCue, true);
             else CancelPlayback();

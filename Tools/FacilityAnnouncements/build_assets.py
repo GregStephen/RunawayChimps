@@ -35,7 +35,8 @@ def guid(path):
 
 
 def ref(path, file_id=11400000):
-    return '{fileID: %d, guid: %s, type: 2}' % (file_id, guid(path))
+    asset_type = 3 if Path(path).suffix in ('.wav', '.prefab') else 2
+    return '{fileID: %d, guid: %s, type: %d}' % (file_id, guid(path), asset_type)
 
 
 def vector(values, names='xyz'):
@@ -150,7 +151,7 @@ def caption_prefab():
     p.mono(root, '0cd44c1031e13a943bb63640046fad76',
            '  m_UiScaleMode: 1\n  m_ReferencePixelsPerUnit: 100\n  m_ScaleFactor: 1\n  m_ReferenceResolution: {x: 1280, y: 720}\n  m_ScreenMatchMode: 0\n  m_MatchWidthOrHeight: 0.5\n  m_PhysicalUnit: 3\n  m_FallbackScreenDPI: 96\n  m_DefaultSpriteDPI: 96\n  m_DynamicPixelsPerUnit: 1\n  m_PresetInfoIsWorld: 0\n')
     panel = p.node('Caption background', root, rect=True, active=0)
-    panel['layout'] = '  m_AnchorMin: {x: 0.19, y: 0.15}\n  m_AnchorMax: {x: 0.81, y: 0.35}\n  m_AnchoredPosition: {x: 0, y: 0}\n  m_SizeDelta: {x: 0, y: 0}\n  m_Pivot: {x: 0.5, y: 0.5}\n'
+    panel['layout'] = '  m_AnchorMin: {x: 0.19, y: 0.13}\n  m_AnchorMax: {x: 0.81, y: 0.37}\n  m_AnchoredPosition: {x: 0, y: 0}\n  m_SizeDelta: {x: 0, y: 0}\n  m_Pivot: {x: 0.5, y: 0.5}\n'
     p.component(panel, 222, 'CanvasRenderer', '  m_CullTransparentMesh: 1\n')
     image = p.mono(panel, 'fe87c0e1cc204ed48ad3b37840f39efc',
                    '  m_Material: {fileID: 0}\n  m_Color: {r: 0.018, g: 0.025, b: 0.023, a: 0.88}\n  m_RaycastTarget: 0\n  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}\n  m_Maskable: 0\n  m_OnCullStateChanged:\n    m_PersistentCalls:\n      m_Calls: []\n  m_Sprite: {fileID: 0}\n  m_Type: 0\n  m_PreserveAspect: 0\n  m_FillCenter: 1\n  m_FillMethod: 4\n  m_FillAmount: 1\n  m_FillClockwise: 1\n  m_FillOrigin: 0\n  m_UseSpriteMesh: 0\n  m_PixelsPerUnitMultiplier: 1\n')
