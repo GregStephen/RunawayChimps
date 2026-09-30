@@ -1,6 +1,20 @@
 # Runaway Chimps design and lore
 
-Last updated: 2026-09-22. Maintained repository edition, migrated from `Runaway_Chimps_Design_and_Lore.docx` version 0.9. The existing Word document is a downloadable snapshot; future edits belong here. See [AGENTS.md](../AGENTS.md) for the documentation workflow and the [repository improvement plan](repository-improvement-plan.md) for implementation evidence.
+## September 30 approved Hub activity — Primate Strength Test
+
+**Confirmed publication exception:** Greg approved publishing the code/assets with the Hub scene change supplied as `Tools/StrengthTesterHarness/HubScene.patch`, because the connected uploader could not transfer the full scene. The placement described below is authored locally and included in that patch; it is **not yet applied to the published branch's scene**. Scene integration and Unity/headset validation are merge blockers. Apply and commit the patch before treating the feature as present in the Hub.
+
+**Confirmed:** Greg approved the proposed strength tester with “Make it.” Add one fixed lab assessment pad to the Hub: deliberate hand swings produce a 1–999 arcade strength score, a rising meter, a short impact sound, controller haptics and clinical joke assessments. Keep a personal best for the current Hub visit. Saved leaderboards and Coconut rewards are outside this version. This is a social toy, not a change to Crawler hearing, chase rules, progression or the economy.
+
+**Implemented on `feature/hub-strength-tester` (not yet merged):** an editable `PrimateStrengthTester.prefab` is placed under `SpawnRoom` in `Hub_Base`, beside the terminal at `(1.65, 0.005, -3.25)`. Its authored cabinet, pad, display, materials and two original synthesized PCM clips are committed assets, not Play Mode-only generated geometry. The local tracked hands drive a swept front-face contact gate. Rig translation does not contribute to strength; each hand must withdraw before another swing, and a station-wide cooldown prevents alternating-hand chatter. Generic hand-surface audio is blocked on the cabinet so the pad has one dedicated impact response.
+
+**Presentation:** scores below 300 show “Subject requires additional enrichment”; 300–649 show “Handler assistance recommended”; 650–899 show “Restraints no longer considered effective”; 900–999 show “Please notify security” and a short second tone. Nearby Hub clients receive the transient last-hit score, subject number, meter and sound through sector-filtered Photon event 182. Only the striking controller vibrates. Each client's visit-best display remains personal and resets when the station is disabled/unloaded or the Photon room changes. Late joiners do not replay old hits. Shared scores are cosmetic client reports, not authoritative competitive records.
+
+**Validated source/managed checks:** 463 assertions executed against the production contact/scoring class, including resting/jittering palms, withdrawal, back/side misses, swept fast strikes, teleport-sized jumps, invalid poses, frame gaps and 36/72/90/120 FPS sequences. Repository source syntax, scene references, metadata and the existing source contract checks passed. Prefab YAML/local and external asset references were inspected separately.
+
+**Pending validation:** Unity import/compile; actual Hub floor/wall clearance and all ten spawn slots; text readability and reach while seated/standing; left/right-hand feel, sound balance and peak-score tuning; pause/recenter/travel; two-client last-hit presentation, simultaneous swings, independent bests, late arrival and room changes; Quest 2/Quest 3 performance. No Unity, Photon or headset pass is claimed. See [tester setup and acceptance](hub-strength-tester.md).
+
+Last updated: 2026-09-30. Maintained repository edition, migrated from `Runaway_Chimps_Design_and_Lore.docx` version 0.9. The existing Word document is a downloadable snapshot; future edits belong here. See [AGENTS.md](../AGENTS.md) for the documentation workflow and the [repository improvement plan](repository-improvement-plan.md) for implementation evidence.
 
 ## September 22 Unity 62f3 baseline adoption
 

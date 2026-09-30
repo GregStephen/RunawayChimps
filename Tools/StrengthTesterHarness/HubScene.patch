@@ -1,0 +1,62 @@
+diff --git a/Assets/Scenes/Hub_Base.unity b/Assets/Scenes/Hub_Base.unity
+index e9ef3adf3a7de3a62670b1ed357bca5726a644e5..69f9475c947ec7c5967af544bacf43c8dea8fa62 100644
+--- a/Assets/Scenes/Hub_Base.unity
++++ b/Assets/Scenes/Hub_Base.unity
+@@ -223130,6 +223130,7 @@ Transform:
+   m_LocalScale: {x: 1, y: 1, z: 1}
+   m_ConstrainProportionsScale: 0
+   m_Children:
++  - {fileID: 8300930001}
+   - {fileID: 543450652959539022}
+   - {fileID: 252134503}
+   - {fileID: 1227843983}
+@@ -564851,3 +564852,49 @@ SceneRoots:
+   - {fileID: 350236015}
+   - {fileID: 6924115279442504542}
+   - {fileID: 8100000001}
++--- !u!1001 &8300930000
++PrefabInstance:
++  m_ObjectHideFlags: 0
++  serializedVersion: 2
++  m_Modification:
++    serializedVersion: 3
++    m_TransformParent: {fileID: 998899883}
++    m_Modifications:
++    - target: {fileID: 1002, guid: 6dcd259ea6025d359ea50f57ab2f10f1, type: 3}
++      propertyPath: m_LocalPosition.x
++      value: 1.65
++      objectReference: {fileID: 0}
++    - target: {fileID: 1002, guid: 6dcd259ea6025d359ea50f57ab2f10f1, type: 3}
++      propertyPath: m_LocalPosition.y
++      value: 0.005
++      objectReference: {fileID: 0}
++    - target: {fileID: 1002, guid: 6dcd259ea6025d359ea50f57ab2f10f1, type: 3}
++      propertyPath: m_LocalPosition.z
++      value: -3.25
++      objectReference: {fileID: 0}
++    - target: {fileID: 1002, guid: 6dcd259ea6025d359ea50f57ab2f10f1, type: 3}
++      propertyPath: m_LocalRotation.x
++      value: 0
++      objectReference: {fileID: 0}
++    - target: {fileID: 1002, guid: 6dcd259ea6025d359ea50f57ab2f10f1, type: 3}
++      propertyPath: m_LocalRotation.y
++      value: 0
++      objectReference: {fileID: 0}
++    - target: {fileID: 1002, guid: 6dcd259ea6025d359ea50f57ab2f10f1, type: 3}
++      propertyPath: m_LocalRotation.z
++      value: 0
++      objectReference: {fileID: 0}
++    - target: {fileID: 1002, guid: 6dcd259ea6025d359ea50f57ab2f10f1, type: 3}
++      propertyPath: m_LocalRotation.w
++      value: 1
++      objectReference: {fileID: 0}
++    m_RemovedComponents: []
++    m_RemovedGameObjects: []
++    m_AddedGameObjects: []
++    m_AddedComponents: []
++  m_SourcePrefab: {fileID: 100100000, guid: 6dcd259ea6025d359ea50f57ab2f10f1, type: 3}
++--- !u!4 &8300930001 stripped
++Transform:
++  m_CorrespondingSourceObject: {fileID: 1002, guid: 6dcd259ea6025d359ea50f57ab2f10f1, type: 3}
++  m_PrefabInstance: {fileID: 8300930000}
++  m_PrefabAsset: {fileID: 0}
