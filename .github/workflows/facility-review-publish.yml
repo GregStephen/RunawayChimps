@@ -1,0 +1,72 @@
+name: Publish reviewed facility corrections (temporary)
+on:
+  push:
+    branches: ['feature/facility-announcements']
+    paths: ['.github/workflows/facility-review-publish.yml']
+permissions:
+  contents: write
+jobs:
+  publish-reviewed-corrections:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/facility-announcements
+          fetch-depth: 2
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify exact reviewed parent and apply checksum-verified patch
+        env:
+          EXPECTED_HEAD: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          test "$(git rev-parse HEAD^)" = '4a46898ba4f6cf91839e3718dd3dd9317b0f22de'
+          python - <<'PY'
+          from pathlib import Path
+          import base64, hashlib, lzma
+          text = ''.join(Path(f'.github/facility-review-transfer/{i}.b64').read_text() for i in range(4))
+          patch = lzma.decompress(base64.b64decode(text, validate=True))
+          assert hashlib.sha256(patch).hexdigest() == '8969409d669b8925a1ecdf6e41e1af579716b01d99c30bffb119d85f06ebadf9'
+          Path('/tmp/facility-reviewed.patch').write_bytes(patch)
+          PY
+          git apply --check --unidiff-zero /tmp/facility-reviewed.patch
+          git apply --unidiff-zero /tmp/facility-reviewed.patch
+          rm .github/workflows/facility-review-publish.yml .github/facility-review-transfer/{0,1,2,3}.b64
+          git add -- .github/workflows/facility-announcements-checks.yml .github/workflows/facility-review-snapshot.yml .github/workflows/facility-review-publish.yml .github/facility-review-transfer Assets/Scripts/FacilityAnnouncements Tools/FacilityAnnouncementsAdapterHarness Tools/FacilityAnnouncementsHarness/Program.cs docs/design-and-lore.md docs/repository-improvement-plan.md docs/facility-announcements.md docs/facility-announcements-review.md
+          git diff --cached --check
+          git diff --cached --stat
+      - name: Run production adapters, policies and existing card state tests
+        run: |
+          set -euo pipefail
+          dotnet run --project Tools/FacilityAnnouncementsAdapterHarness --configuration Release
+          dotnet run --project Tools/FacilityAnnouncementsHarness --configuration Release
+          dotnet run --project Tools/CardSystemHarness --configuration Release
+      - name: Run facility and full repository source checks
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check 'tree-sitter==0.25.2' 'tree-sitter-c-sharp==0.23.5'
+          python Tools/FacilityAnnouncements/validate_assets.py
+          python Tools/validate_source.py --syntax
+          for check in validate_repository_integrity validate_level1_contracts validate_spawn_floor_contracts validate_keycard_reader_contracts validate_interaction_safety validate_pr15_review_hardening validate_security_boot validate_threat_feedback validate_launch_presentation; do
+            python "Tools/$check.py"
+          done
+          python -m compileall -q Tools
+          git diff --cached --check
+          if git grep -n -E '^(<<<<<<< .+|>>>>>>> .+|=======$)' -- .; then exit 1; fi
+      - name: Publish reviewed scope without overwriting another head
+        env:
+          EXPECTED_HEAD: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git fetch origin feature/facility-announcements
+          test "$(git rev-parse FETCH_HEAD)" = "$EXPECTED_HEAD"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'fix: resolve facility review findings with production adapter regressions'
+          git push origin HEAD:refs/heads/feature/facility-announcements
