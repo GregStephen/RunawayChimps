@@ -1,0 +1,32 @@
+name: Knock-back vent second review workspace
+on:
+  push:
+    branches: [feature/knock-back-vent]
+    paths: [.github/workflows/knock-review2-workspace.yml]
+permissions:
+  contents: read
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 49d42259ad3a405fdba849b0f28fba18912e3d92
+      - name: Export pinned tracked review sources
+        shell: python
+        run: |
+          import pathlib, subprocess, zipfile
+          suffixes = {'.cs', '.meta', '.unity', '.prefab', '.mat', '.asset', '.shader', '.cginc', '.md', '.py', '.yml', '.yaml', '.json', '.asmdef', '.asmref', '.txt', '.csproj', '.props', '.targets', '.xml', '.sh', '.config'}
+          with zipfile.ZipFile('/tmp/knock-review2.zip', 'w', zipfile.ZIP_DEFLATED) as z:
+              for name in subprocess.check_output(['git', 'ls-files', '-z']).decode().split('\0'):
+                  p = pathlib.Path(name)
+                  if name and p.is_file() and (p.suffix in suffixes or name in {'.gitignore', '.gitattributes'} or name.startswith('Assets/RunawayChimps/KnockBackVent/')):
+                      z.write(p, 'repository/' + name)
+              z.writestr('tracked-tree.txt', subprocess.check_output(['git', 'ls-tree', '-r', 'HEAD']))
+              z.writestr('review-head.txt', subprocess.check_output(['git', 'rev-parse', 'HEAD']))
+      - uses: actions/upload-artifact@v4
+        with:
+          name: knock-review2-workspace
+          path: /tmp/knock-review2.zip
+          retention-days: 1
