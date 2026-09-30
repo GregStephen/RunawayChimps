@@ -1,6 +1,20 @@
 # Runaway Chimps repository improvement plan
 
-Last updated: 2026-09-22. Maintained repository edition, migrated from `Runaway_Chimps_Repository_Review_and_Plan.docx`, Revision 2. The original review examined `main` at `4f6894141aa2b132d744cb2423c1ee227e0fc5be`; its evidence links remain pinned to that baseline. The Word document is a historical downloadable snapshot.
+## September 30 bounded Hub activity — strength tester
+
+**Confirmed publication exception:** Greg approved a draft PR with the code/assets plus `Tools/StrengthTesterHarness/HubScene.patch` instead of uploading the roughly 30 MB scene. The runtime implementation and prefab are supplied directly; the scene wiring described below exists in the supplied patch and is **pending application/commit on the published branch**. Do not merge until this integration and the Unity/headset checks are complete.
+
+**Confirmed scope:** Greg approved implementing the Primate Strength Test: one fixed Hub slap pad, score/meter, lab assessments, short audio/haptics and a visit-local personal best. No saved leaderboard, progression rewards, Coconut transactions, monster behavior or wider inventory work is added.
+
+**Implemented on `feature/hub-strength-tester` (not yet merged):** the authored prefab and its scene instance are wired into `Hub_Base/SpawnRoom`. `PrimateStrengthTester` samples only `GorillaLocomotion.Player.Instance`'s tracked hands with the existing palm offsets; `StrengthHitState` implements swept front-face entry, withdrawal hysteresis, speed-based scoring and invalid/discontinuous-sample rejection. A per-station cooldown covers both hands. `BlockHandSurfaceAudio` prevents duplicate general hand impacts on the new prop. Startup, travel, focus/pause and missing XR tracking suppress input; room changes and station disable reset visit state.
+
+**Multiplayer boundary:** reserved transient Photon event 182 carries a version, station ID, bounded score and timestamp only to current Hub recipients. Receivers verify payload types/ranges, current Hub sender/local sector, age, per-sender cooldown and timestamp ordering. No cached event, scene PhotonView, Master Client dependency or account/economy grant is introduced. The shared last-hit display is cosmetic; the local best is not overwritten by another player. No claim of cheat-proof competitive scoring is made.
+
+**Executed verification:** the production contact/scoring harness passed 463 assertions using the .NET 8 compiler/runtime directly (the local SDK CLI wrapper could not read process metadata). CI now runs the same harness via `dotnet run`. C# syntax and all enabled scene references passed; repository metadata pairing/unique GUIDs and existing Level 1, floor, keycard, interaction, PR15, boot, threat and launch source checks passed. The new prefab's YAML, local object references and external asset GUIDs were also checked.
+
+**Pending acceptance:** apply and commit the scene patch, then Unity compilation/import and [the focused tester checklist](hub-strength-tester.md), including authored placement/readability, contact tuning, XR audio/haptics, two-client isolation/order and Quest cost. This feature does not close any existing release acceptance ticket. Merge only after the new Hub prop is integrated and checked in the editor/headset. The earlier publication blocker is handled by the explicit patch-based delivery exception above; do not describe the remote scene as already wired.
+
+Last updated: 2026-09-30. Maintained repository edition, migrated from `Runaway_Chimps_Repository_Review_and_Plan.docx`, Revision 2. The original review examined `main` at `4f6894141aa2b132d744cb2423c1ee227e0fc5be`; its evidence links remain pinned to that baseline. The Word document is a historical downloadable snapshot.
 
 Read the [design and lore](design-and-lore.md) for intended behavior and [AGENTS.md](../AGENTS.md) for update rules. A confirmed finding describes source evidence; it does not mean its fix is implemented or tested.
 

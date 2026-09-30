@@ -41,6 +41,9 @@ jobs:
       - name: Execute production card-consumption state tests
         run: dotnet run --project Tools/CardSystemHarness/CardSystemHarness.csproj --configuration Release
 
+      - name: Execute production strength-tester contact tests
+        run: dotnet run --project Tools/StrengthTesterHarness/StrengthTesterHarness.csproj --configuration Release
+
       - name: Install syntax-parser dependencies
         run: |
           python -m pip install --disable-pip-version-check \
