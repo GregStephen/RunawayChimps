@@ -45,7 +45,8 @@ namespace RunawayChimps.Toys.PrimateCognitive
         private readonly Dictionary<int, int> lastCommand = new Dictionary<int, int>();
         private readonly List<int> recipients = new List<int>(10);
         private Room observedRoom;
-        private int localSerial;
+        // Survive scene/component replacement while another client retains authority.
+        private static int localSerial;
         private string authorityEpoch = "";
         private double nextSync, nextHeartbeat;
         private int renderedRevision = -1, heardCue = -1;
@@ -107,7 +108,6 @@ namespace RunawayChimps.Toys.PrimateCognitive
             game = NewGame();
             authorityEpoch = "";
             lastCommand.Clear();
-            localSerial = 0;
             nextSync = nextHeartbeat = 0;
             renderedRevision = heardCue = -1;
             renderedEpoch = "";
@@ -217,7 +217,7 @@ namespace RunawayChimps.Toys.PrimateCognitive
 
         private void SendCommand(int kind, int button)
         {
-            if (replica.Authority == 0) return;
+            if (replica.Authority == 0 || localSerial == int.MaxValue) return;
             var state = State;
             object[] data = { Protocol, machineId, (int)sector, kind, replica.Epoch,
                 state == null ? 0 : state.Session, state == null ? 0 : state.PhaseToken,
@@ -240,9 +240,13 @@ namespace RunawayChimps.Toys.PrimateCognitive
                 if (nonce.Length == 32) SendSnapshot(sender, nonce);
                 return;
             }
-            if (epoch != authorityEpoch || (lastCommand.TryGetValue(sender, out int previous) && serial <= previous)) return;
-            lastCommand[sender] = serial;
+            if (epoch != authorityEpoch) return;
             TickGame();
+            // A departed/recreated client may have a new serial stream. An idle game
+            // has no accepted operator commands to preserve; Start still checks tokens.
+            if (game.Owner == 0) lastCommand.Clear();
+            if (session != game.Session || (lastCommand.TryGetValue(sender, out int previous) && serial <= previous)) return;
+            lastCommand[sender] = serial;
             int revision = game.Revision;
             switch (kind)
             {
