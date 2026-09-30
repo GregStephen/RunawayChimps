@@ -37,6 +37,12 @@ The production adapter diagnostic passes **63 assertions across six groups**:
 
 Both core and adapter diagnostics compile with C# 9 and warnings treated as errors. Locally they were executed with the .NET 8 runtime/Roslyn compiler from the review runner; CI uses the normal `dotnet run --project ... --configuration Release` commands. Final published SHA and fresh full-repository CI results are recorded on PR #77, not inferred from the older asset-delivery runs.
 
+## Publication and full-repository evidence
+
+The production fixes and maintained-document updates were pushed as `f17a322e20163f5262e7d0f84962fa4b38464e9a`. The [publishing validation run](https://github.com/GregStephen/RunawayChimps/actions/runs/36785732150) checked all 13 reviewed files against their locally tested Git blob hashes, then passed the normal SDK commands: 57,020 core assertions, all 63 adapter assertions and 18,015 existing card assertions. It also passed deterministic asset verification, five prefab and four hand-filter regression mutations, C# syntax and binding checks for 149 first-party scripts/five scenes, all 1,909 metadata pairs, all existing source-contract validators, Python compilation and staged whitespace checks.
+
+The first publishing attempt passed these tests but could not push a workflow edit with the runner's limited permissions. Workflow changes were subsequently made through the authenticated GitHub connection; the successful runner push changed no workflow files. The temporary patch/manifest files and both temporary review workflows are removed from the final branch. The retained cognitive CI workflow is read-only and now runs the adapter diagnostics on pull requests. The final cleanup changes only this evidence text and removes the temporary workflows; it does not change the tested production or asset bytes. Fresh final-head PR checks and the final diff are recorded on PR #77.
+
 ## Validation boundary and next acceptance
 
 The adapter doubles simulate component lookup, translation-only transforms, clock values, identity and explicit message delivery. They do not implement Unity native physics, real callback ordering, TMP/rendering, audible output, Editor APIs, Photon transport or XR. The custom Editor is source-reviewed, not executed by this diagnostic. The asset graph check separately evaluates the actual authored rotations/scales and references, but does not import or render the prefab.
