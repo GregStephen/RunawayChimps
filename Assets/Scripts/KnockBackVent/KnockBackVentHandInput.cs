@@ -50,16 +50,24 @@ namespace RunawayChimps.Toys.KnockBack
             float radius = 0.055f / scale;
             bool withinFace = Mathf.Abs(point.x) <= half.x + radius && Mathf.Abs(point.y) <= half.y + radius;
             bool touching = withinFace && point.z <= half.z + radius && point.z >= -half.z - radius;
-            // Passing through to the rear never rearms a hand. It must come out in front.
-            bool released = point.z > half.z + radius + 0.035f / scale ||
+            Vector3 solved = face.transform.InverseTransformPoint(follower.position) - face.center;
+            valid &= VentModel.Finite(solved.x) && VentModel.Finite(solved.y) && VentModel.Finite(solved.z);
+            // Both the tracked controller and the collision-resolved hand must leave.
+            // Controller-only retraction cannot rearm a hand still resting on the panel.
+            // Passing through to the rear is not a release for either pose.
+            float solvedRadius = Mathf.Max(0.055f, player.minimumRaycastDistance) / scale;
+            bool solvedWithinFace = Mathf.Abs(solved.x) <= half.x + solvedRadius && Mathf.Abs(solved.y) <= half.y + solvedRadius;
+            bool trackedReleased = point.z > half.z + radius + 0.035f / scale ||
                 (!withinFace && point.z >= half.z);
+            bool solvedReleased = solved.z > half.z + solvedRadius + 0.035f / scale ||
+                (!solvedWithinFace && solved.z >= half.z);
+            bool released = trackedReleased && solvedReleased;
             // A tracked controller can pass through a wall or exceed the arm limit while
             // Gorilla's solved virtual hand stays blocked elsewhere. Only the latter can
             // establish contact. The controller still supplies intent/velocity, not the
             // collision-constrained follower's near-zero impact velocity.
             if (touching)
             {
-                Vector3 solved = face.transform.InverseTransformPoint(follower.position) - face.center;
                 Vector3 fromFront = new Vector3(Mathf.Max(0f, Mathf.Abs(solved.x) - half.x),
                     Mathf.Max(0f, Mathf.Abs(solved.y) - half.y), solved.z - half.z);
                 float contactRadius = (Mathf.Max(0.05f, player.minimumRaycastDistance) + 0.015f) / scale;

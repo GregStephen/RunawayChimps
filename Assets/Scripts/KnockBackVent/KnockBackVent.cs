@@ -66,7 +66,7 @@ namespace RunawayChimps.Toys.KnockBack
         private VentPhase playbackPhase;
         private VentReply playingReply;
         private bool replyAudible;
-        private double recordingDeadline, previousClock;
+        private double recordingDeadline, previousClock, replyVisualStart;
         private Vector3 visualRest, previousRigPosition, previousHeadLocal;
         private Quaternion previousRigRotation;
         private Transform sampledRig;
@@ -370,20 +370,31 @@ namespace RunawayChimps.Toys.KnockBack
                 // Drop an excessively late plan as a whole, never compress old knocks into a burst.
                 replyAudible = plan.Start >= now - 0.08d;
                 if (!replyAudible) return;
+                // One DSP anchor preserves the complete rhythm even if the audio clock
+                // advances while scheduling. A tolerably late plan shifts as a whole;
+                // clamping each knock separately would compress its first interval.
+                double lead = Math.Max(0.01d, plan.Start - now);
+                double dspStart = AudioSettings.dspTime + lead;
+                replyVisualStart = now + lead;
                 for (int i = 0; i < plan.Offsets.Length; i++)
-                    Schedule(replyVoices[i], i == plan.HeavyIndex ? bangClip : replyClip,
-                        plan.Start + plan.Offsets[i], i == plan.HeavyIndex ? bangVolume : replyVolume, now);
+                    ScheduleAtDsp(replyVoices[i], i == plan.HeavyIndex ? bangClip : replyClip,
+                        dspStart + plan.Offsets[i], i == plan.HeavyIndex ? bangVolume : replyVolume);
             }
         }
 
         private static void Schedule(AudioSource voice, AudioClip clip, double at, float volume, double now)
         {
             if (at < now - 0.08d) return;
+            ScheduleAtDsp(voice, clip, AudioSettings.dspTime + Math.Max(0.01d, at - now), volume);
+        }
+
+        private static void ScheduleAtDsp(AudioSource voice, AudioClip clip, double at, float volume)
+        {
             voice.Stop();
             voice.clip = clip;
             voice.volume = Mathf.Clamp01(volume);
             voice.pitch = 1f;
-            voice.PlayScheduled(AudioSettings.dspTime + Math.Max(0.01d, at - now));
+            voice.PlayScheduled(at);
         }
 
         private void UpdateVisual(double now)
@@ -391,7 +402,7 @@ namespace RunawayChimps.Toys.KnockBack
             float displacement = 0f;
             for (int i = 0; i < playingReply.Offsets.Length; i++)
             {
-                double elapsed = now - playingReply.Start - playingReply.Offsets[i];
+                double elapsed = now - replyVisualStart - playingReply.Offsets[i];
                 if (elapsed >= 0d && elapsed < 0.18d)
                     displacement += Mathf.Sin((float)(elapsed / 0.18d) * Mathf.PI * 2f) *
                         (1f - (float)(elapsed / 0.18d)) * (i == playingReply.HeavyIndex ? 1.5f : 1f);
@@ -407,12 +418,16 @@ namespace RunawayChimps.Toys.KnockBack
             if (panelVisual != null) panelVisual.localPosition = visualRest;
             playingReply = null;
             replyAudible = false;
+            replyVisualStart = 0d;
             playbackPhase = VentPhase.Idle;
             recordingDeadline = 0d;
         }
         private void ResetHands() { left.Reset(); right.Reset(); rigSeeded = false; sampledRig = null; }
         private void ResetAll(double now, double? retireThrough = null)
         {
+            // Pending diagnostic input belongs to the cancelled run too. Only the
+            // explicit PlayEditorSample command may seed a fresh sample sequence.
+            diagnosticTap = SampleOffsets.Length;
             model?.Cancel();
             delivery.Reset(retireThrough ?? now);
             participants = Array.Empty<int>();

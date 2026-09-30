@@ -96,7 +96,14 @@ namespace UnityEngine
     }
     public static class AudioSettings
     {
-        public static double dspTime;
+        private static double dspClock;
+        public static double ReadAdvance;
+        // Model an audio-clock update between consecutive scheduling calls.
+        public static double dspTime
+        {
+            get { double result = dspClock; dspClock += ReadAdvance; return result; }
+            set { dspClock = value; }
+        }
         public static event Action<bool> OnAudioConfigurationChanged;
         public static void Change() => OnAudioConfigurationChanged?.Invoke(true);
     }

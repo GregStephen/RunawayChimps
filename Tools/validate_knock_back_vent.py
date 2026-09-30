@@ -107,7 +107,9 @@ def validate(root):
                      'isActiveAndEnabled && panelCollider != null && panelCollider.enabled',
                      'ReferenceEquals(PhotonNetwork.CurrentRoom, observedRoom)',
                      'delivery.AcceptsInput(inputTime)', 'VentModel.LatestPlanIssue', 'VentModel.RecordingTimeout',
-                     'ResetAll(now, issued)',
+                     'ResetAll(now, issued)', 'diagnosticTap = SampleOffsets.Length',
+                     'double dspStart = AudioSettings.dspTime + lead', 'dspStart + plan.Offsets[i]',
+                     'replyVisualStart = now + lead',
                      'voice.Stop()', 'voice.PlayScheduled', 'public override void OnDisable()']:
         require(contract in runtime, 'missing runtime safety contract: ' + contract)
     require(runtime.count('PhotonNetwork.RaiseEvent(') == runtime.count('CachingOption = EventCaching.DoNotCache'), 'all event sends must explicitly avoid caching')
@@ -116,7 +118,7 @@ def validate(root):
     for contract in ['CommonUsages.isTracked', 'CommonUsages.trackingState', 'InputTrackingState.Position',
                      'dt <= 0.12d', 'Vector3.Distance(world, previousWorld) <= maximumStep', 'gate.Sample',
                      'player.leftHandFollower', 'player.rightHandFollower', 'fromFront.magnitude <= contactRadius',
-                     '!face.enabled', '0.035f / scale']:
+                     '!face.enabled', '0.035f / scale', 'trackedReleased && solvedReleased']:
         require(contract in hand, 'missing hand safety contract: ' + contract)
     require(not any(c in runtime + hand for c in ['OnTriggerEnter(', 'OnCollisionEnter(', 'OnAudioFilterRead(']), 'do not accept arbitrary collisions or audio as taps')
     for contract in ['Tools/Runaway Chimps/Toys/', 'Place Knock-Back Vent in Hub', 'Undo.RegisterCreatedObjectUndo',

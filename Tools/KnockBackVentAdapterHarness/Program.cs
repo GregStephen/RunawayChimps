@@ -56,6 +56,7 @@ internal static class Program
         public readonly KnockBackVent Vent;
         public Fixture(int local=1, VentSettings settings=null)
         {
+            AudioSettings.ReadAdvance=0;
             Clock(100);
             PhotonNetwork.Sent.Clear();PhotonNetwork.FailNextSend=false;Debug.Errors.Clear();
             GorillaLocomotion.Player.Instance=null;
@@ -439,6 +440,95 @@ internal static class Program
                 v.panelCollider.enabled=true;Call(v,"LateUpdate");
                 Step(v,101.1);Tap(v,2,101.1);
                 Require(v.State==VentPhase.Recording,"fresh enabled panel works again");
+            });
+            Run("slightly late reply preserves the complete rhythm",()=>
+            {
+                foreach(double lateness in new[]{-0.005d,0d,0.04d,0.079d})
+                {
+                    using var f=new Fixture(2);var v=f.Vent;
+                    Step(v,100.1);Receive(v,1,Packet(v,1,100.1,100.1,3,0,100.3d));
+                    Step(v,101.2+lateness);
+                    Receive(v,1,Packet(v,2,100.1,100.8,3,101.2d,104.12d,new float[]{0,0.12f,0.42f},2));
+                    Require(v.replyVoices.Take(3).All(a=>a.scheduled.HasValue),"within-tolerance reply is scheduled once");
+                    Near(v.replyVoices[1].scheduled.Value-v.replyVoices[0].scheduled.Value,0.12,"late first interval must not compress");
+                    Near(v.replyVoices[2].scheduled.Value-v.replyVoices[0].scheduled.Value,0.42,"whole pattern retains relative timing");
+                    Require(v.replyVoices[2].clip==v.bangClip,"late scheduling retains authority-selected variation");
+                    double first=v.replyVoices[0].scheduled.Value-1000;
+                    Clock(first+0.045);Call(v,"LateUpdate");
+                    Near(v.panelVisual.localPosition.z,0.0015,"visual follows actual first reply onset, not stale network start");
+                }
+            });
+            Run("one audio clock anchor schedules every reply voice",()=>
+            {
+                using var f=new Fixture(2);var v=f.Vent;
+                Step(v,100.1);Receive(v,1,Packet(v,1,100.1,100.1,3,0,100.3d));
+                Step(v,100.9);AudioSettings.ReadAdvance=0.005;
+                Receive(v,1,Packet(v,2,100.1,100.8,3,101.55d,104.63d,new float[]{0,0.22f,0.58f},-1));
+                Near(v.replyVoices[1].scheduled.Value-v.replyVoices[0].scheduled.Value,0.22,"audio-thread clock tick cannot change first interval");
+                Near(v.replyVoices[2].scheduled.Value-v.replyVoices[0].scheduled.Value,0.58,"all voices use one DSP epoch");
+            });
+            foreach(string interruption in new[]{"pause","audio reset"})
+            foreach(bool beforeFirst in new[]{true,false})
+                Run("interrupted offline sample stays cancelled: "+interruption+(beforeFirst?" before first tap":" after first tap"),()=>
+                {
+                    using var f=new Fixture();var v=f.Vent;
+                    PhotonNetwork.CurrentRoom=null;v.OnLeftRoom();v.PlayEditorSample();
+                    Step(v,beforeFirst?100.1:100.3);
+                    int before=v.tapVoices.Sum(a=>a.playCalls);
+                    if(interruption=="pause")
+                    {
+                        Call(v,"OnApplicationPause",true);
+                        Clock(PhotonNetwork.Time+0.02);
+                        Call(v,"OnApplicationPause",false);
+                    }
+                    else AudioSettings.Change();
+                    Step(v,102);
+                    Require(v.tapVoices.Sum(a=>a.playCalls)==before,"cancelled sample must not submit its remaining future taps");
+                    Require(v.replyVoices.Sum(a=>a.playCalls)==0&&Scheduled(v)==0&&v.State==VentPhase.Idle,"interrupted diagnostic leaves no tail or partial reply");
+                    v.PlayEditorSample();Step(v,104);
+                    Require(v.replyVoices.Sum(a=>a.playCalls)==3,"only explicit restart begins a fresh complete diagnostic");
+                });
+            Run("resting virtual hand must release before controller can rearm",()=>
+            {
+                foreach(float scale in new[]{0.5f,1f,2f})
+                foreach(XRNode node in new[]{XRNode.LeftHand,XRNode.RightHand})
+                foreach(float handRadius in new[]{0.05f,0.08f,0.1f})
+                {
+                    using var f=new Fixture();var v=f.Vent;
+                    v.transform.localScale=Vector3.one*scale;
+                    var rig=new GameObject();var player=rig.AddComponent<GorillaLocomotion.Player>();
+                    player.minimumRaycastDistance=handRadius;
+                    var head=new GameObject();head.transform.position=new Vector3(0,0,0.7f);
+                    player.headCollider=head.AddComponent<SphereCollider>();
+                    var hand=new GameObject();hand.transform.parent=rig.transform;
+                    var follower=new GameObject();follower.transform.parent=rig.transform;
+                    player.leftHandFollower=player.rightHandFollower=follower.transform;
+                    var sampler=new KnockBackVentHandInput();
+                    float front=0.05f*scale;
+                    for(int i=0;i<4;i++)
+                    {
+                        hand.transform.position=follower.transform.position=new Vector3(0,0,front+0.2f);
+                        sampler.Sample(player,rig.transform,hand.transform,Vector3.zero,node,v.panelCollider,i*0.04,0.3f,7,0.22f,0.07f);
+                    }
+                    hand.transform.position=new Vector3(0,0,front+0.05f);
+                    follower.transform.position=new Vector3(0,0,front+handRadius);
+                    Require(sampler.Sample(player,rig.transform,hand.transform,Vector3.zero,node,v.panelCollider,0.16,0.3f,7,0.22f,0.07f),"first physical contact works");
+                    for(int i=0;i<4;i++)
+                    {
+                        hand.transform.position=new Vector3(0,0,front+0.2f); // virtual hand stays on the panel
+                        sampler.Sample(player,rig.transform,hand.transform,Vector3.zero,node,v.panelCollider,0.2+i*0.04,0.3f,7,0.22f,0.07f);
+                    }
+                    hand.transform.position=new Vector3(0,0,front+0.05f);
+                    Require(!sampler.Sample(player,rig.transform,hand.transform,Vector3.zero,node,v.panelCollider,0.36,0.3f,7,0.22f,0.07f),"controller-only release cannot duplicate resting physical contact");
+                    for(int i=0;i<4;i++)
+                    {
+                        hand.transform.position=follower.transform.position=new Vector3(0,0,front+0.2f);
+                        sampler.Sample(player,rig.transform,hand.transform,Vector3.zero,node,v.panelCollider,0.4+i*0.04,0.3f,7,0.22f,0.07f);
+                    }
+                    hand.transform.position=new Vector3(0,0,front+0.05f);
+                    follower.transform.position=new Vector3(0,0,front+handRadius);
+                    Require(sampler.Sample(player,rig.transform,hand.transform,Vector3.zero,node,v.panelCollider,0.56,0.3f,7,0.22f,0.07f),"releasing both poses allows another physical tap");
+                }
             });
             if (cases == 0) throw new ArgumentException("No adapter cases matched: " + filter);
             Console.WriteLine($"PASS: {cases} managed adapter cases / {assertions} assertions. Production adapter/core/election linked against instrumented doubles; NOT Unity, native physics, Photon or headset validation.");
