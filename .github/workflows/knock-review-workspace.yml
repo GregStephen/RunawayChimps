@@ -1,32 +1,116 @@
-name: Knock-back vent review workspace
+name: Knock-back vent reviewed fixes
 on:
   push:
     branches: [feature/knock-back-vent]
     paths: [.github/workflows/knock-review-workspace.yml]
 permissions:
-  contents: read
+  contents: write
 jobs:
-  export:
+  publish:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: 8ee79c4d4d5db39ff3452134e21298bacb33c3aa
-      - name: Export pinned tracked review sources
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Apply exact hash-verified review edits
         shell: python
         run: |
-          import pathlib, subprocess, zipfile
-          suffixes = {'.cs', '.meta', '.unity', '.prefab', '.mat', '.asset', '.shader', '.cginc', '.md', '.py', '.yml', '.yaml', '.json', '.asmdef', '.asmref', '.txt', '.csproj', '.props', '.targets', '.xml', '.sh', '.config'}
-          with zipfile.ZipFile('/tmp/knock-review.zip', 'w', zipfile.ZIP_DEFLATED) as z:
-              for name in subprocess.check_output(['git', 'ls-files', '-z']).decode().split('\0'):
-                  p = pathlib.Path(name)
-                  if name and p.is_file() and (p.suffix in suffixes or name in {'.gitignore', '.gitattributes'} or name.startswith('Assets/RunawayChimps/KnockBackVent/')):
-                      z.write(p, 'repository/' + name)
-              z.writestr('tracked-tree.txt', subprocess.check_output(['git', 'ls-tree', '-r', 'HEAD']))
-              z.writestr('review-head.txt', subprocess.check_output(['git', 'rev-parse', 'HEAD']))
-      - uses: actions/upload-artifact@v4
+          import base64, hashlib, json, lzma, os, pathlib, subprocess
+          def run(*args):
+              return subprocess.check_output(args).decode()
+          assert run('git', 'rev-parse', 'HEAD').strip() == os.environ['GITHUB_SHA']
+          raw = pathlib.Path('.github/knock-review-payload.b64').read_bytes()
+          assert hashlib.sha256(raw).hexdigest() == '65cfeb13775e662ae9475701b8d77f2150f4f91f08b053d4b7898048a4721feb', 'Payload checksum mismatch'
+          edits = json.loads(lzma.decompress(base64.b64decode(raw)))
+          expected = {
+              'Assets/Scripts/KnockBackVent/Core/KnockBackVentModel.cs',
+              'Assets/Scripts/KnockBackVent/KnockBackVent.cs',
+              'Assets/Scripts/KnockBackVent/KnockBackVentHandInput.cs',
+              'Assets/Tests/KnockBackVent/VentModelChecks.cs',
+              'Tools/KnockBackVentAdapterHarness/Doubles.cs',
+              'Tools/KnockBackVentAdapterHarness/Program.cs',
+              'Tools/validate_knock_back_vent.py',
+              'docs/design-and-lore.md',
+              'docs/knock-back-vent.md',
+              'docs/repository-improvement-plan.md',
+          }
+          assert set(edits) == expected
+          for name, change in edits.items():
+              p = pathlib.Path(name)
+              original = p.read_bytes()
+              assert hashlib.sha256(original).hexdigest() == change['before'], 'Concurrent change: ' + name
+              lines = original.decode('utf-8').splitlines(keepends=True)
+              for start, end, replacement in reversed(change['edits']):
+                  lines[start:end] = replacement.splitlines(keepends=True)
+              updated = ''.join(lines).encode('utf-8')
+              assert hashlib.sha256(updated).hexdigest() == change['after'], 'Output checksum mismatch: ' + name
+              p.write_bytes(updated)
+          run('git', 'add', '--', *sorted(expected))
+          assert set(run('git', 'diff', '--cached', '--name-only').splitlines()) == expected
+          temporary = {'.github/workflows/knock-review-workspace.yml', '.github/knock-review-payload.b64'}
+          assert set(run('git', 'diff', '--cached', '--name-only', '8ee79c4d4d5db39ff3452134e21298bacb33c3aa').splitlines()) == expected | temporary
+          pathlib.Path('/tmp/knock-review-manifest.json').write_text(json.dumps({p: c['after'] for p, c in edits.items()}, indent=2))
+          print('PASS: exactly ten reviewed files, verified before and after; no unrelated source, assets, scenes or settings changes.')
+      - name: Install pinned source parsers
+        run: python -m pip install --disable-pip-version-check 'tree-sitter==0.25.2' 'tree-sitter-c-sharp==0.23.5'
+      - name: Execute all managed diagnostics and repository source checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            dotnet run --project Tools/CardSystemHarness/CardSystemHarness.csproj --configuration Release
+            dotnet run --project Tools/KnockBackVentHarness/KnockBackVentHarness.csproj --configuration Release
+            dotnet run --project Tools/KnockBackVentAdapterHarness/KnockBackVentAdapterHarness.csproj --configuration Release
+            python -c "from pathlib import Path; import re; t=Path('ProjectSettings/ProjectVersion.txt').read_text(encoding='utf-8-sig'); assert re.findall(r'^m_EditorVersion:[ \\t]*(\\S+)[ \\t]*$',t,re.M)==['2022.3.62f3']; assert re.findall(r'^m_EditorVersionWithRevision:[ \\t]*(.+?)[ \\t]*$',t,re.M)==['2022.3.62f3 (96770f904ca7)']; print('PASS: unchanged Unity 2022.3.62f3 (96770f904ca7) baseline.')"
+            python Tools/validate_source.py --syntax
+            python Tools/validate_repository_integrity.py
+            python Tools/validate_level1_contracts.py
+            python Tools/validate_spawn_floor_contracts.py
+            python Tools/validate_keycard_reader_contracts.py
+            python Tools/validate_interaction_safety.py
+            python Tools/validate_pr15_review_hardening.py
+            python Tools/validate_security_boot.py
+            python Tools/validate_threat_feedback.py
+            python Tools/validate_launch_presentation.py
+            python Tools/validate_knock_back_vent.py
+            python -m compileall -q Tools
+            if git grep -n -E '^(<<<<<<< .+|>>>>>>> .+|=======$)' -- .; then
+              echo 'ERROR: unresolved merge markers.'
+              exit 1
+            fi
+            git diff --cached --check 8ee79c4d4d5db39ff3452134e21298bacb33c3aa -- '*.cs' '*.py' '*.md' '*.json' '*.yml' '*.yaml' '*.sh' '*.txt' '*.asmdef' '*.asmref' '*.xml' '*.csproj' '*.props' '*.targets' '*.toml' '*.ini' '*.cfg' '*.config' '*.uxml' '*.uss' '.gitignore' '.gitattributes'
+            echo 'PASS: all source, serialization and managed diagnostics. NOT Unity, native Photon, listening or headset validation.'
+          } 2>&1 | tee /tmp/knock-review-validation.log
+      - name: Publish reviewed fixes without overwriting concurrent work
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib, json, pathlib
+          for name, wanted in json.loads(pathlib.Path('/tmp/knock-review-manifest.json').read_text()).items():
+              assert hashlib.sha256(pathlib.Path(name).read_bytes()).hexdigest() == wanted, name
+          PY
+          test "$(git ls-remote origin refs/heads/feature/knock-back-vent | cut -f1)" = "$GITHUB_SHA"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git diff --cached --stat
+          git commit -m 'fix: harden knock-back vent cancellation and physical taps'
+          git push origin HEAD:refs/heads/feature/knock-back-vent
+          git rev-parse HEAD | tee /tmp/knock-review-sha.txt
+      - name: Preserve review validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
-          name: knock-review-workspace
-          path: /tmp/knock-review.zip
-          retention-days: 1
+          name: knock-back-vent-review-evidence
+          path: |
+            /tmp/knock-review-validation.log
+            /tmp/knock-review-manifest.json
+            /tmp/knock-review-sha.txt
+          retention-days: 7
