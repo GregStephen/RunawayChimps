@@ -264,7 +264,8 @@ def machine_prefab():
             p.box('Fastener', root, (x, y, .016), (.018, .018, .015), 'Trim')
     for i in range(6):
         p.box('SpeakerSlot', root, (-.125 + i * .05, 1.215, .018), (.018, .045, .016), 'Screen')
-    surface = p.node('Controls_AdjustHeightHere', root, (0, .98, -.06), tilt=30)
+    # Keep the upper caps below the display housing throughout their press stroke.
+    surface = p.node('Controls_AdjustHeightHere', root, (0, .95, -.06), tilt=30)
     p.box('ControlDeck', surface, (0, -.04, .06), (.80, .72, .08), 'Housing', True)
     pads = []
     positions = ((-.17, .155), (.17, .155), (-.17, -.105), (.17, -.105), (0, -.285))

@@ -68,7 +68,13 @@ namespace RunawayChimps.Toys.PrimateCognitive
             return true;
         }
 
-        public void RequestSync(string nonce) { RequestNonce = nonce; }
+        public void RequestSync(string nonce)
+        {
+            // Retransmit the outstanding challenge until a reply consumes it.
+            // Replacing it every retry starves peers whose RTT exceeds the retry
+            // interval. Election/room reset still establishes a fresh challenge.
+            if (string.IsNullOrEmpty(RequestNonce)) RequestNonce = nonce;
+        }
 
         public void Reset()
         {

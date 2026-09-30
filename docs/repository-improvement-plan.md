@@ -16,6 +16,14 @@ Read the [design and lore](design-and-lore.md) for intended behavior and [AGENTS
 
 **Pending validation:** Unity 2022.3.62f3 import/compilation, actual TMP layout/material rendering/audio output, placement/Undo, solo Editor play, native hand triggers, seated/standing reach, two-client Photon cue/ownership/authority/sector recovery and Quest acceptance. These are not passed by managed or serialized-data checks. [Feature notes](primate-cognitive-evaluation.md) give the exact setup, dimensions, pacing/recovery controls and short acceptance checklists. The PR remains unmerged.
 
+### September 30 repeated code review - PR #77
+
+**Confirmed / implemented on the unmerged feature branch:** Greg requested repeated self-review and fixes until a pass found no further issues. Pass 1 reproduced a synchronization starvation defect: every retry replaced the outstanding nonce, so replies slower than the retry interval could never establish the replica. Retries now retain the challenge until a reply consumes it; room/election changes still replace it. Pass 2 found an actual intersection between the upper button caps and the display housing in the serialized transforms. The authored control deck moves from Y=0.98 m to Y=0.95 m, preserving dimensions, IDs and all references; an independent parent-transform calculation now requires 5 mm of vertical cap clearance at rest and full press.
+
+**Validated managed/source-data review:** the new delayed-handshake tests failed against the previous code; the clearance check failed against the previous prefab. After correction, 57,020 core assertions, 63 assertions across six production machine/pad adapter diagnostic groups, the five negative prefab mutations and four contact-filter mutations pass. The adapter harness uses explicit Unity/Photon doubles and manually delivered callbacks, not a live Photon session or Unity engine. The third full review found no further actionable issues within this source/managed/asset-data scope. [Review evidence](primate-cognitive-review-2026-09-30.md) records the passes and remaining acceptance; PR #77 records the final published revision and full-repository CI results.
+
+**Pending validation remains unchanged:** Unity 2022.3.62f3 import/compilation, native contact callbacks, Editor placement/Undo, actual rendering/audio, two-client networking and seated/standing headset acceptance still require execution. Do not treat a clean review pass or the new adapter diagnostic compilation as those passes.
+
 ## September 22 Unity 62f3 baseline adoption
 
 **Confirmed decision:** Greg approved merging PR #61 after the isolated Unity 2022.3.62f3 project opened cleanly, a gameplay pass ran, and **Run Reliability Regression Checks** ended with its passing message. The interim `Could not create room: Room name exists` log is intentional regression-test input, not a failed check.

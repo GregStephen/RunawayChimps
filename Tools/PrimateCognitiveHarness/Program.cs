@@ -193,9 +193,34 @@ internal static class Program
         Check(!CognitiveSnapshot.TryRead(packet, out _), "impossible completion");
     }
 
+    private static void DelayedHandshake()
+    {
+        // Retries every .5 seconds must not invalidate a .75+ second reply.
+        var replica = new CognitiveReplica();
+        var idle = new CognitiveGame().Snapshot();
+        replica.Elect(1, "initial-request");
+        string inFlight = replica.RequestNonce;
+        for (int retry = 0; retry < 20; retry++)
+            replica.RequestSync("retry-" + retry);
+        Check(replica.Accept(1, "current-term", inFlight, idle), "delayed initial reply survives retries");
+        Check(replica.RequestNonce == "", "accepted reply consumes outstanding request");
+        replica.RequestSync("restart-request");
+        inFlight = replica.RequestNonce;
+        replica.RequestSync("retry-after-restart");
+        Check(replica.Accept(1, "restarted-term", inFlight, idle), "delayed same-actor recovery survives retries");
+        Check(!replica.Accept(1, "current-term", inFlight, idle), "consumed nonce cannot revive old controller term");
+        replica.RequestSync("same-state");
+        Check(!replica.Accept(1, "restarted-term", "same-state", idle) && replica.RequestNonce == "",
+            "unchanged revision still acknowledges synchronization");
+        replica.RequestSync("before-election");
+        replica.Elect(2, "after-election");
+        Check(!replica.Accept(1, "restarted-term", "before-election", idle), "pending reply from departed controller rejected");
+        Check(replica.Accept(2, "new-controller", "after-election", idle), "new controller gets independent request");
+    }
+
     private static void Main()
     {
-        Sequences(); Recovery(); Contacts(); Protocol();
+        Sequences(); Recovery(); Contacts(); Protocol(); DelayedHandshake();
         Console.WriteLine("PASS: " + assertions + " assertions against production cognitive rules, contact gate and replica protocol.");
         Console.WriteLine("No Unity engine, native physics, live Photon or headset execution is implied.");
     }

@@ -35,8 +35,8 @@ The prefab has 214 serialized objects/components, eight feature-owned built-in S
 | Main caps | 0.18 x 0.16 m, arranged 2 x 2; permanent labels 1-4 |
 | Main pad spacing | 0.34 m between columns; 0.26 m along the tilted face between rows |
 | START / RESTART | Separate 0.24 x 0.10 m labeled cap below the four pads |
-| Control deck | `Controls_AdjustHeightHere`: local Y=0.98 m, X tilt=30 degrees; move this group vertically for reach tuning |
-| Approximate cap-center heights | Main rows 0.91 m and 1.13 m; start 0.75 m above the floor pivot |
+| Control deck | `Controls_AdjustHeightHere`: local Y=0.95 m, X tilt=30 degrees; move this group vertically for reach tuning |
+| Approximate cap-center heights | Main rows 0.87 m and 1.10 m; start 0.72 m above the floor pivot |
 | Cabinet | 0.86 m maximum width, approximately 1.79 m tall; keep root scale at 1 |
 | Assessment display | 0.74 x 0.34 m text area, center height 1.47 m; assigned font size 30 at 0.01 text scale |
 | Cap travel / release | `pressDepth` 0.012 m; `releaseSeconds` 0.08 s after all contacts leave |
@@ -61,13 +61,21 @@ The lowest eligible same-sector actor is the **controller**, not necessarily the
 | `inputIdleTimeout` | 20 s of no input during the input phase, even with valid heartbeats |
 | `resultHoldSeconds` | 10 s before a failure/completion result returns to idle |
 
-Pacing settings are read when a new authority term/model is created; restart Play Mode after tuning them. The controller checks current-sector presence and deadlines. Walking away requests release; travel, disconnect, pause, component disable and missing heartbeats release/reset through the corresponding lifecycle or timeout path. Authority changes create a fresh idle model instead of trying to preserve a half-demonstrated round. Command numbering survives scene/component replacement; idle recovery clears stale command floors, and heartbeat/release commands also require the current session. Old sessions cannot release a newly restarted game. A fresh sync handshake recovers late arrivals or a restarted controller without replaying old audio.
+Pacing settings are read when a new authority term/model is created; restart Play Mode after tuning them. The controller checks current-sector presence and deadlines. Walking away requests release; travel, disconnect, pause, component disable and missing heartbeats release/reset through the corresponding lifecycle or timeout path. Authority changes create a fresh idle model instead of trying to preserve a half-demonstrated round. Command numbering survives scene/component replacement; idle recovery clears stale command floors, and heartbeat/release commands also require the current session. Old sessions cannot release a newly restarted game. A fresh sync handshake recovers late arrivals or a restarted controller without replaying old audio. Retries reuse the outstanding nonce until an acknowledgement consumes it, so a response slower than the retry interval remains valid. Election and room changes create a new challenge.
+
+## Repeated code review, September 30
+
+The [review record](primate-cognitive-review-2026-09-30.md) documents two reproduced defects and their fixes: delayed synchronization reply starvation and upper-cap/display-housing intersection. The control deck is now 3 cm lower. Asset validation requires at least 5 mm of vertical cap clearance at both rest and full depression. This is serialized geometry evidence, not a rendered/headset acceptance result.
+
+A new `Tools/PrimateCognitiveAdapterHarness` compiles the real machine, pad, rules, replica and sector-presence code against managed Unity/Photon doubles. It passes 63 assertions in six groups covering delayed initial/restarted-authority sync, physical/Editor inputs, collider identity and cleanup, room/pause/distance/disable lifecycle, operator/spectator isolation, stale releases, abandonment, authority handoff and malformed/unrelated events. These manually delivered callbacks do not test Unity scheduling, PhysX or actual Photon transport. Run it with `dotnet run --project Tools/PrimateCognitiveAdapterHarness/PrimateCognitiveAdapterHarness.csproj --configuration Release`.
+
+The third review pass found no further actionable issues in the reviewed scope. Native Unity, Photon and headset acceptance remains pending, and the PR remains unmerged.
 
 ## Executed checks and reproducibility
 
 Asset publication run [36777382426](https://github.com/GregStephen/RunawayChimps/actions/runs/36777382426) generated and committed the actual assets, ran both managed harnesses and the repository source suite, and removed its one-time publishing helpers. The published 34 feature asset/metadata files were downloaded and compared byte-for-byte with the locally checked output. The retained workflow is read-only and checks both rules and assets. PR #77 records the final-head CI runs and results.
 
-The production rules/contact/replica harness passes **57,013 assertions** across 128 seeds and all sixteen rounds, including sequence extension, correct/wrong input, held/duplicate contact, state transitions, restart, completion, timeouts and controller-term replay. The existing card harness passes **18,015 assertions**. Asset checks inspect all local references and assigned material/font/clip identities, control dimensions, six bounded PCM waveforms and four distinct pitches; they reject four deliberately broken prefab mutations. Actual Bootstrap contact checks reject four filter mutations and verify both hand-child contacts, excluded grab spheres and the collision matrix. These remain data/managed/source checks, not native Unity tests.
+The production rules/contact/replica harness passes **57,020 assertions** across 128 seeds and all sixteen rounds, including sequence extension, correct/wrong input, held/duplicate contact, state transitions, restart, completion, timeouts and controller-term replay. The existing card harness passes **18,015 assertions**. Asset checks inspect all local references and assigned material/font/clip identities, control dimensions, six bounded PCM waveforms and four distinct pitches; they reject five deliberately broken prefab mutations. Actual Bootstrap contact checks reject four filter mutations and verify both hand-child contacts, excluded grab spheres and the collision matrix. These remain data/managed/source checks, not native Unity tests.
 
 From the repository root:
 

@@ -44,6 +44,39 @@ def references(value):
             yield from references(child)
 
 
+def inspect_cap_clearance(graph):
+    """Check authored cap cubes in full parent TRS, at rest and fully pressed."""
+    transforms = {d['m_GameObject']['fileID']: i for i, (k, d) in graph.items() if k in (4, 224)}
+    housing = next(i for i, (k, d) in graph.items() if k == 1 and d['m_Name'] == 'DisplayHousing')
+
+    def world_point(transform_id, point, moving=0, depth=0):
+        if not transform_id:
+            return point
+        data = graph[transform_id][1]
+        vx, vy, vz = (point[i] * data['m_LocalScale'][a] for i, a in enumerate('xyz'))
+        qx, qy, qz, qw = (data['m_LocalRotation'][a] for a in 'xyzw')
+        # Rotate v by the authored quaternion, then translate through each parent.
+        tx, ty, tz = 2 * (qy * vz - qz * vy), 2 * (qz * vx - qx * vz), 2 * (qx * vy - qy * vx)
+        position = data['m_LocalPosition']
+        point = (vx + qw * tx + qy * tz - qz * ty + position['x'],
+                 vy + qw * ty + qz * tx - qx * tz + position['y'],
+                 vz + qw * tz + qx * ty - qy * tx + position['z'] + (depth if transform_id == moving else 0))
+        return world_point(data['m_Father']['fileID'], point, moving, depth)
+
+    def heights(go, moving=0, depth=0):
+        return [world_point(transforms[go], (x, y, z), moving, depth)[1]
+                for x in (-.5, .5) for y in (-.5, .5) for z in (-.5, .5)]
+
+    bottom = min(heights(housing))
+    for kind, pad in graph.values():
+        if kind != 114 or pad['m_Script']['guid'] != script('CognitivePad'):
+            continue
+        cap = graph[pad['capRenderer']['fileID']][1]['m_GameObject']['fileID']
+        for depth in (0, pad['pressDepth']):
+            top = max(heights(cap, pad['cap']['fileID'], depth))
+            check(top <= bottom - .005, 'Pad ' + str(pad['index'] + 1) + ' cap intersects display housing or lacks 5 mm clearance')
+
+
 def inspect_graph(graph):
     for file_id, (kind, data) in graph.items():
         check(kind not in (20, 81, 223), 'No added camera, listener or overlay Canvas')
@@ -90,6 +123,7 @@ def inspect_graph(graph):
     check(all(str(i) in labels for i in range(1, 5)) and 'START / RESTART' in labels, 'Persistent readable number/start labels')
     check(sum(k == 82 for k, _ in graph.values()) == 1, 'One speaker source')
     check(sum(k == 65 and d['m_IsTrigger'] for k, d in graph.values()) == 5, 'Five separate pad triggers')
+    inspect_cap_clearance(graph)
 
 
 def main():
@@ -153,6 +187,11 @@ def main():
     body = next(d for k, d in broken.values() if k == 54)
     body['m_IsKinematic'] = 0
     mutants.append(broken)
+    broken = copy.deepcopy(graph)
+    deck_go = next(i for i, (k, d) in broken.items() if k == 1 and d['m_Name'] == 'Controls_AdjustHeightHere')
+    deck = next(d for k, d in broken.values() if k == 4 and d['m_GameObject']['fileID'] == deck_go)
+    deck['m_LocalPosition']['y'] = .98  # Original overlap regression.
+    mutants.append(broken)
     for broken in mutants:
         try:
             inspect_graph(broken)
@@ -161,7 +200,7 @@ def main():
         else:
             raise AssertionError('Broken prefab mutation escaped validation')
     print('PASS: ' + str(len(graph)) + ' serialized objects; all local references, five pads, materials and assigned clips.')
-    print('PASS: dimensions/labels; six PCM waveforms and four distinct pitches; four broken-asset mutations rejected.')
+    print('PASS: dimensions/labels; six PCM waveforms and four distinct pitches; rest/pressed cap clearance; five broken-asset mutations rejected.')
     print('SOURCE/ASSET DATA ONLY: Unity import/rendering/physics, Photon and headset acceptance remain pending.')
 
 
