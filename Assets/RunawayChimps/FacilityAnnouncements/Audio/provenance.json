@@ -1,0 +1,55 @@
+{
+  "speech_status": "Recorded native-formant synthetic prototype, human listening acceptance pending",
+  "generator": "eSpeak text-to-speech: 1.48.15  16.Apr.15  Data at: /usr/lib/x86_64-linux-gnu/espeak-data",
+  "voice": "native en-us (not MBROLA, no cloned voice)",
+  "command": "espeak -v en-us -s 145 -p 38 -a 85 -w OUTPUT.wav TEXT",
+  "processing": "First-order 140 Hz high-pass and 4400 Hz low-pass; peak normalized to 0.65; 10 ms endpoint fade",
+  "clips": [
+    {
+      "id": "enrichment-privilege",
+      "transcript": "Reminder: enrichment equipment is a privilege, not an escape opportunity.",
+      "path": "Assets/RunawayChimps/FacilityAnnouncements/Audio/enrichment-privilege.wav",
+      "seconds": 5.649433106575963,
+      "sha256": "543012a973613056fec3e3cd676007fe506d5f72df1d7c40a57091fdbcea25c6",
+      "peak": 0.65
+    },
+    {
+      "id": "tissue-movement",
+      "transcript": "Please report unexpected tissue movement to your supervisor.",
+      "path": "Assets/RunawayChimps/FacilityAnnouncements/Audio/tissue-movement.wav",
+      "seconds": 4.375736961451247,
+      "sha256": "a4eb12f479b8dfaeddaf54f658f93893ffd6d9f6296b0c874e681e7cc3d5b9db",
+      "peak": 0.65
+    },
+    {
+      "id": "assigned-containment",
+      "transcript": "Unauthorized subjects must return to their assigned containment area.",
+      "path": "Assets/RunawayChimps/FacilityAnnouncements/Audio/assigned-containment.wav",
+      "seconds": 4.878775510204082,
+      "sha256": "82fdb2fee2a4656a53eb6a2b005789a97a82973bbbbd4a836f0472fa084f9347",
+      "peak": 0.65
+    },
+    {
+      "id": "cooperation-recorded",
+      "transcript": "Your cooperation has been recorded. Your objections have not.",
+      "path": "Assets/RunawayChimps/FacilityAnnouncements/Audio/cooperation-recorded.wav",
+      "seconds": 4.699909297052154,
+      "sha256": "3d25853526dc238f4809dda932e495e9e77b5f0d324721958140f3c350db89df",
+      "peak": 0.65
+    },
+    {
+      "id": "relay-start",
+      "path": "Assets/RunawayChimps/FacilityAnnouncements/Audio/relay-start.wav",
+      "seconds": 0.22,
+      "sha256": "4a6051b5bc83e77cfcda52ec538fd3923fbe2ed70bf373d20d0d2fa02510fcd4",
+      "kind": "original nonverbal synthesized relay/chime"
+    },
+    {
+      "id": "relay-end",
+      "path": "Assets/RunawayChimps/FacilityAnnouncements/Audio/relay-end.wav",
+      "seconds": 0.22,
+      "sha256": "dd39de1ac135e01c21fca75d3f653121cb28e94ba68e97a27f2aa997a9742b40",
+      "kind": "original nonverbal synthesized relay/chime"
+    }
+  ]
+}
