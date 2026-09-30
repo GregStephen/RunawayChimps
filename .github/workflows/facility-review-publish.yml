@@ -20,13 +20,13 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Verify exact reviewed parent and apply checksum-verified patch
+      - name: Apply reviewed source only; CI changes use the authorized connector separately
         env:
           EXPECTED_HEAD: ${{ github.sha }}
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
-          test "$(git rev-parse HEAD^)" = '4a46898ba4f6cf91839e3718dd3dd9317b0f22de'
+          test "$(git rev-parse HEAD^)" = '7a521241b7dc67fd6f475ece4df41c80e5a1e8cf'
           python - <<'PY'
           from pathlib import Path
           import base64, hashlib, lzma
@@ -35,10 +35,14 @@ jobs:
           assert hashlib.sha256(patch).hexdigest() == '8969409d669b8925a1ecdf6e41e1af579716b01d99c30bffb119d85f06ebadf9'
           Path('/tmp/facility-reviewed.patch').write_bytes(patch)
           PY
-          git apply --check --unidiff-zero /tmp/facility-reviewed.patch
-          git apply --unidiff-zero /tmp/facility-reviewed.patch
-          rm .github/workflows/facility-review-publish.yml .github/facility-review-transfer/{0,1,2,3}.b64
-          git add -- .github/workflows/facility-announcements-checks.yml .github/workflows/facility-review-snapshot.yml .github/workflows/facility-review-publish.yml .github/facility-review-transfer Assets/Scripts/FacilityAnnouncements Tools/FacilityAnnouncementsAdapterHarness Tools/FacilityAnnouncementsHarness/Program.cs docs/design-and-lore.md docs/repository-improvement-plan.md docs/facility-announcements.md docs/facility-announcements-review.md
+          git apply --check --unidiff-zero --exclude='.github/workflows/*' /tmp/facility-reviewed.patch
+          git apply --unidiff-zero --exclude='.github/workflows/*' /tmp/facility-reviewed.patch
+          rm .github/facility-review-transfer/{0,1,2,3}.b64
+          git add -- .github/facility-review-transfer Assets/Scripts/FacilityAnnouncements Tools/FacilityAnnouncementsAdapterHarness Tools/FacilityAnnouncementsHarness/Program.cs docs/design-and-lore.md docs/repository-improvement-plan.md docs/facility-announcements.md docs/facility-announcements-review.md
+          # The repository ignores generated Unity csproj files globally; retain this authored harness project explicitly.
+          git add -f Tools/FacilityAnnouncementsAdapterHarness/FacilityAnnouncementsAdapterHarness.csproj
+          git ls-files --error-unmatch Tools/FacilityAnnouncementsAdapterHarness/FacilityAnnouncementsAdapterHarness.csproj
+          test -z "$(git diff --cached --name-only -- .github/workflows)"
           git diff --cached --check
           git diff --cached --stat
       - name: Run production adapters, policies and existing card state tests
@@ -59,7 +63,7 @@ jobs:
           python -m compileall -q Tools
           git diff --cached --check
           if git grep -n -E '^(<<<<<<< .+|>>>>>>> .+|=======$)' -- .; then exit 1; fi
-      - name: Publish reviewed scope without overwriting another head
+      - name: Publish source without workflow writes or overwriting another head
         env:
           EXPECTED_HEAD: ${{ github.sha }}
         run: |
