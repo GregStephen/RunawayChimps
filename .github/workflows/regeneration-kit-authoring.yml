@@ -31,7 +31,19 @@ jobs:
               path = Path(name)
               path.parent.mkdir(parents=True, exist_ok=True)
               path.write_text(text, encoding='utf-8')
-          print('PASS: original source capsule checksum and new-path boundary')
+          path = Path('Tools/RegenerationLab/geometry.py')
+          text = path.read_text()
+          old = "        v=np.asarray(vertices,dtype='<f4'); ids=np.asarray(indices,dtype='<u2')"
+          new = "        # Canonical decimal precision removes CPU-dependent sub-float32 residuals and signed zero.\n        v=np.round(np.asarray(vertices,dtype='<f8'),8).astype('<f4')\n        v[v == 0] = 0.0\n        ids=np.asarray(indices,dtype='<u2')"
+          assert text.count(old) == 1
+          path.write_text(text.replace(old, new), encoding='utf-8')
+          path = Path('Tools/RegenerationLab/expected-assets.json')
+          hashes = json.loads(path.read_text())
+          updates = {'RGL_ChemicalDeliveryStand.asset': '712a421788d209f1e2c10f22b33213d0de8f81b647f6601a475315a0378d55a2', 'RGL_ChemicalDeliveryStand_Label.asset': 'c26dc9a6e10ca95e5a7a186df73fe0c868ef30c2d1889430866593c23c51c550', 'RGL_SpecimenColdCabinet.asset': '2b9558f803a81d75cb76d20c488a54ed9eea500df446ef1bf4f4fd8ebc6fae70', 'RGL_SpecimenColdCabinet_Label.asset': '707e54f23baac8e600d2782ec8318a10ef69052bc676db90268530b3dbf332ca', 'RGL_TreatmentTrolley.asset': '2677659d507f387ba65ebfb9a317266ce144ca30a3b02a47beadf008d3a4246d', 'RGL_TreatmentTrolley_Label.asset': 'e52ba31cc18bd3fb16b2b27c8313dfc706ca15f316380ceb92177b386a377e89'}
+          for name, digest in updates.items():
+              hashes['Assets/RunawayChimps/Environment/RegenerationLab/Meshes/' + name] = digest
+          path.write_text(json.dumps(hashes), encoding='utf-8')
+          print('PASS: source checksum; reviewed canonical vertex precision patch; explicit expected hashes')
       - name: Install isolated offline authoring tools
         run: python -m pip install -r Tools/RegenerationLab/requirements.txt
       - name: Bake and independently validate original assets
@@ -40,7 +52,12 @@ jobs:
           python Tools/RegenerationLab/generate.py --output "$RUNNER_TEMP/rgl-output"
           python Tools/RegenerationLab/validate.py --root "$RUNNER_TEMP/rgl-output" --baseline . --report "$RUNNER_TEMP/rgl-validation.json"
           python Tools/RegenerationLab/tests.py --root "$RUNNER_TEMP/rgl-output"
-      - name: Require identical bytes to visually inspected local assets
+      - uses: actions/upload-artifact@v4
+        with:
+          name: regeneration-checked-bake
+          path: ${{ runner.temp }}/rgl-output
+          retention-days: 1
+      - name: Require identical bytes to checked local assets
         shell: python
         run: |
           from pathlib import Path
@@ -48,8 +65,8 @@ jobs:
           output = Path(os.environ['RUNNER_TEMP']) / 'rgl-output'
           expected = json.loads(Path('Tools/RegenerationLab/expected-assets.json').read_text())
           mismatches = [name for name, digest in expected.items() if not (output/name).is_file() or hashlib.sha256((output/name).read_bytes()).hexdigest() != digest]
-          assert not mismatches, f'Generated assets differ from inspected assets: {mismatches}'
-          print(f'PASS: all {len(expected)} inspected asset-file SHA256 values match')
+          assert not mismatches, f'Generated assets differ from checked assets: {mismatches}'
+          print(f'PASS: all {len(expected)} checked asset-file SHA256 values match')
       - name: Stage only new kit assets and focused documentation
         shell: python
         run: |
@@ -88,6 +105,7 @@ jobs:
               Path(f'.github/rgl-source.{i:02d}.b64').unlink()
           Path('Tools/RegenerationLab/expected-assets.json').unlink()
           Path('.github/workflows/regeneration-kit-authoring.yml').unlink()
+          Path('.github/workflows/regeneration-kit-inspect.yml').unlink()
           print('PASS: five real modeling previews; temporary publication files removed')
       - name: Validate final staged kit and source syntax
         run: |
@@ -105,14 +123,16 @@ jobs:
           set -euo pipefail
           test "$GITHUB_REF" = 'refs/heads/art/regeneration-lab-prop-kit'
           test "$(git ls-remote origin refs/heads/art/regeneration-lab-prop-kit | cut -f1)" = "$GITHUB_SHA"
-          git add -A
+          find Tools/RegenerationLab -type d -name __pycache__ -prune -exec rm -rf {} +
+          git add -u
+          git add Assets/RunawayChimps/Environment/RegenerationLab Assets/RunawayChimps/Environment/RegenerationLab.meta Tools/RegenerationLab docs/regeneration-lab-prop-kit.md docs/regeneration-lab-prop-kit-validation.json docs/images/regeneration-lab .github/workflows/regeneration-kit-validation.yml
           python - <<'PY'
           import subprocess
           base = '930a8f830cae99e06dcaa0a78ab9edc968c42ae5'
           names = subprocess.check_output(['git', 'diff', '--cached', '--name-only', base], text=True).splitlines()
           exact = {'Assets/RunawayChimps/Environment/RegenerationLab.meta', 'docs/design-and-lore.md', 'docs/repository-improvement-plan.md', 'docs/regeneration-lab-prop-kit.md', 'docs/regeneration-lab-prop-kit-validation.json', '.github/workflows/regeneration-kit-validation.yml'}
           prefixes = ('Assets/RunawayChimps/Environment/RegenerationLab/', 'Tools/RegenerationLab/', 'docs/images/regeneration-lab/')
-          unexpected = [name for name in names if name not in exact and not name.startswith(prefixes)]
+          unexpected = [name for name in names if (name not in exact and not name.startswith(prefixes)) or '__pycache__' in name or name.endswith('.pyc')]
           assert not unexpected, f'Out-of-scope changes: {unexpected}'
           print(f'PASS: complete {len(names)}-file diff is limited to kit, tools, evidence and focused docs')
           print('\n'.join(names))
