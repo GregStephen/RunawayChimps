@@ -1,81 +1,90 @@
-# Primate Cognitive Evaluation - implementation draft
+# Primate Cognitive Evaluation
 
-Date: 2026-09-30. Branch: `feature/primate-cognitive-test`, based on main `930a8f830cae99e06dcaa0a78ab9edc968c42ae5`. Unity **2022.3.62f3 (96770f904ca7)**, Photon PUN and built-in rendering remain unchanged.
+Date: 2026-09-30. Implementation branch: `feature/primate-cognitive-test`, PR #77, based on main `930a8f830cae99e06dcaa0a78ab9edc968c42ae5`. Unity **2022.3.62f3 (96770f904ca7)**, Photon PUN and built-in rendering are unchanged.
 
-## Delivery status: source only, not a playable prefab
+## Status and correction
 
-The game rules, local-contact gate, sector-aware network adapter, Editor inspector controls and source test harness are implemented on this branch. **The required serialized machine prefab, materials and audio assets are NOT delivered.** The asset-generation write was blocked by the authoring tool. Do not mark this feature complete, merge it as a playable toy, or infer an asset/import/runtime pass from source tests.
+**Confirmed:** an optional, self-contained four-pad extending-sequence memory test. One initial step; retain the sequence and append one step after each successful round. Failure produces a dry assessment; a separate physical START / RESTART control starts again. The prototype has no rewards, voice acting, persistent scores or progression.
 
-The Editor placement/validation commands exist but deliberately report a missing prefab rather than generate runtime placeholders or modify shared scenes. The planned prefab path is `Assets/RunawayChimps/Toys/PrimateCognitive/Prefabs/PrimateCognitiveEvaluation.prefab`; this is a target path, NOT an existing asset. No scenes, packages, project version, rendering or XR settings were changed. This work has no strength-tester or other toy branch dependency.
+**Implemented, not merged:** game logic, physical-contact filtering, sector networking, Editor controls, placement command, and the actual serialized machine prefab with assigned display, materials and audio. Asset commit `4f213b9` supersedes the earlier source-only delivery. The earlier rejected write was not evidence of an inability to create these assets.
 
-## Confirmed experience
+**Pending acceptance:** Unity import/compilation, rendering and audio output, physical trigger behavior, Editor placement/Undo, live Photon and headset tests. Source/managed/asset checks do not establish these results.
 
-Four distinct numbered positions and tones demonstrate a sequence. Either hand repeats it. Start at one step and append one step after each successful round. The first prototype defaults to eight rounds with a hard cap of sixteen. Display the round and explicit idle, demonstration, input, success, failure and completed states. Use dry facility assessments rather than voice acting. Failure and completion allow an immediate physical restart; no currency, cosmetics, persistent leaderboard, competitive mode, progression or general minigame framework.
+## Use the delivered prefab
 
-## Source architecture
+Prefab: `Assets/RunawayChimps/Toys/PrimateCognitive/Prefabs/PrimateCognitiveEvaluation.prefab`.
 
-All runtime code is in `Assets/Scripts/Toys/PrimateCognitive/`.
+Open the branch in Unity 2022.3.62f3. Outside Play Mode, choose **Tools > Runaway Chimps > Toys > Validate Cognitive Evaluation Prefab**, then **Tools > Runaway Chimps > Toys > Place Cognitive Evaluation in Hub**. The second command opens Hub additively when necessary, places one prefab instance, selects it and marks Hub dirty. It samples the Hub floor at X=2.4, Z=-1.2; inspect nearby geometry and move the instance as needed. It selects an existing machine, including inactive placements, rather than moving or replacing it. Creation and transform edits support Undo; the command does not force a save. Save the Hub manually only after accepting the placement.
 
-- `CognitiveGame`: pure deterministic sequence/rules model, authority-owned state, session and phase tokens, bounded length, input/heartbeat/result deadlines, assessments and validated snapshot payloads.
-- `CognitiveContactGate`: aggregates all colliders on a pad; requires all contacts to leave for 80 ms. Duplicate enter/stay, a second collider/hand on an already held pad, and state changes do not produce another press. `CognitiveReplica` validates current-controller epochs, revisions and fresh handshake nonces, including A -> B -> A and same-actor component re-enabling.
-- `CognitivePad`: accepts only enabled `HandTag` colliders under the actual local Gorilla rig's `LocalRigMarker`, additionally rejecting non-owned Photon views. Trigger-stay recovers occupancy without inventing a press. Disabled/destroyed contacts are pruned. No shared `PhysicalButton` changes.
-- `CognitiveMachine`: sector controller election via existing `SectorPresence`, explicit Photon event codes **188/189** and protocol tag `rc.cognitive.1`, reliable same-sector targeted snapshots and commands, actor-bound operator, heartbeat and inactivity recovery. No scene PhotonView or global scene synchronization. Room changes, current sector, travel/loading and component lifecycle gate participation.
+The root is movable, unit-scale and floor-pivoted; its front faces **local -Z**. Keep it beneath the sector-owned `SpawnRoom` root when available so existing travel hides/unloads it normally. No runtime installer or automatic scene editing exists. The shipped prefab needs **no generation command, manual component assembly, audio assignment or other toy branch**.
 
-The lowest active actor in the sector arbitrates one machine at a time. Operator identity is separate from authority identity. Spectators cannot restart or submit sequence steps for the operator; the authority uses Photon sender identity and rejects stale session/phase tokens and repeated command serials. Authority changes intentionally reset the test. Fresh nonce handshakes establish a new controller term, so earlier snapshots cannot revive an occupied session. Reconnection uses room-object identity, not only room name.
+For normal VR testing start through **Bootstrap** after saving the chosen Hub placement. Use the existing local rig/camera/listener. Both clients must use the same saved placement and machine ID. A deliberate second machine needs a unique `machineId` shared by all client builds; the Inspector includes an Undo-aware identity button. Duplicate IDs fail closed. The prototype placement command intentionally creates only one test instance.
 
-Only local eligible operators within the configured head-to-anchor radius emit heartbeats. Leaving the radius, pausing or disabling the component requests release; departure/sector change is independently observed by the authority. Missing heartbeats release after four seconds, input inactivity after twenty seconds even while presence continues, and unattended results after ten seconds. Live Photon delivery and the precise pause/disconnect timing remain pending acceptance. This is cooperative prototype networking, not server-authoritative anti-cheat; there are no rewards to secure.
+## Test without a headset
 
-Demonstration cues advance at most once per update rather than bursting several notes after a frame stall. Snapshots include cue serial/time; late snapshots do not replay a past sequence, and repeated snapshots do not double-play notes. Initial/resync snapshots establish state silently. Actual audio output and two-client timing are unverified without the missing audio assets and Unity execution.
+Open Hub directly, enter Play Mode, select the machine and enable **Editor Controls** on its `CognitiveMachine` component. The custom Inspector then exposes **HOLD START / RESTART**, **HOLD PAD 1-4**, and **Release all virtual contacts**. Turn a toggle on to touch and off to release. These enter the actual contact gate, owner checks, command path and game model; they are not a second memory-game implementation. Leave all contacts released for at least 0.08 seconds before pressing again. Selection loss and disabling Editor Controls release virtual contacts.
 
-## Intended asset wiring and reach (not yet authored)
+Keep one pad held throughout a demonstration to test that it does not become player input at the phase transition. Release it and touch again to submit. The Inspector shows the live phase, round and operator. When entering via Bootstrap instead, wait for normal Hub readiness; the fixture does not bypass loading or sector gates. The Editor-only distance bypass is explicit and does not create keyboard/Inspector inputs in a player build. Leave Editor Controls off for headset reach tests.
 
-The intended factory machine is a unit-scale movable prefab with a cabinet, world-space assessment display, two rows of two numbered pads, a separate START / RESTART pad, five trigger colliders and moving cap renderers, six assigned short spatial clips (four notes, one reserved signal, one failure sound), and an operator presence anchor. Use the existing LiberationSans SDF font and built-in materials; no new camera, listener, canvas overlay, XR configuration or runtime asset generator.
+## Authored assets and reach
 
-Reach must be measured against the actual unit-scale Bootstrap Gorilla rig, its 5 cm visual contact proxy and 8 cm direct-hand spheres. Proposed 18 x 16 cm main caps with approximately 34 cm horizontal center spacing and 27 cm vertical spacing keep the two-handed spread compact. Proposed control surface height is about 0.93 m with a 30-degree upward-facing tilt; final seated/standing placement and label sizing remain unvalidated. Treat these as authoring targets, not shipped dimensions.
+The prefab has 214 serialized objects/components, eight feature-owned built-in Standard materials and six original short mono PCM WAV clips. It references the repository's existing LiberationSans SDF font and material; no font file is copied. The 3D assessment display, title, serial plate and permanent high-contrast number labels are authored objects. Four pad notes are 330, 440, 554 and 659 Hz, with a reserved success clip at index 4 and descending failure buzz at index 5. The final correct pad note remains audible on round success; the reserved success clip is not layered over it.
 
-## Editor commands and intended setup
+| Control | Authored prototype value / adjustment |
+| --- | --- |
+| Main caps | 0.18 x 0.16 m, arranged 2 x 2; permanent labels 1-4 |
+| Main pad spacing | 0.34 m between columns; 0.26 m along the tilted face between rows |
+| START / RESTART | Separate 0.24 x 0.10 m labeled cap below the four pads |
+| Control deck | `Controls_AdjustHeightHere`: local Y=0.98 m, X tilt=30 degrees; move this group vertically for reach tuning |
+| Approximate cap-center heights | Main rows 0.91 m and 1.13 m; start 0.75 m above the floor pivot |
+| Cabinet | 0.86 m maximum width, approximately 1.79 m tall; keep root scale at 1 |
+| Assessment display | 0.74 x 0.34 m text area, center height 1.47 m; assigned font size 30 at 0.01 text scale |
+| Cap travel / release | `pressDepth` 0.012 m; `releaseSeconds` 0.08 s after all contacts leave |
+| Operator distance | `operatorRadius` 1.8 m from `OperatorPresenceAnchor`; move this anchor with any substantial deck relocation |
+| Speaker | Volume 0.65; fully spatial, linear attenuation 1-7 m, no looping, play-on-awake or Doppler |
 
-**Not runnable to completion until the prefab is delivered.** Once authored and assigned:
+These are implemented starting dimensions, **not accepted seated/standing reach measurements**. Inspect against the actual Gorilla rig and adjust the deck and anchor, rather than shrinking the whole machine. Five trigger controls have their own kinematic Rigidbodies. The cabinet/deck are static solids; moving caps are not locomotion supports. Illumination and mechanical cap depression are separate, so illuminated idle START is not mechanically held down.
 
-1. Open with Unity 2022.3.62f3, outside Play Mode. Choose **Tools > Runaway Chimps > Toys > Place Cognitive Evaluation in Hub**. It opens Hub additively only on explicit invocation, selects an existing machine rather than replacing/moving it, supports Undo for a new placement, and never saves a scene. Inspect the proposed test position `(2.4, 0.15, -1.2)` for floor, computer, door and startup-slot clearance before keeping it.
-2. Move/rotate the instance as desired, keeping unit scale for the documented contact dimensions. Save Hub manually. Manual duplicates require a unique `machineId` in every client's scene; the Inspector offers an Undoable ID assignment. Duplicate live IDs fail closed.
-3. Run **Tools > Runaway Chimps > Toys > Validate Cognitive Evaluation Prefab**. This is an authored-reference check, not gameplay acceptance.
-4. For desktop-only testing, enter Play Mode directly in Hub, select the machine and enable **Editor Controls**. Inspector HOLD toggles for pads 1-4 and START / RESTART simulate contact enter/exit through the same production gate and command path. Toggle off to release. Keep a toggle on through a phase change to exercise held-contact rejection. Selection loss releases virtual contacts. Editor controls and range bypass are compiled out of player builds; multiplayer Editor tests still obey sector/ownership rules.
+## Contact and multiplayer boundaries
 
-## Inspector controls
+Contacts require `HandTag`, the actual local Gorilla rig marker, a descendant of either tracked hand transform (not the controller root), and no remote-owned PhotonView. This accepts the authored fingertips but rejects the 8 cm controller-root grab spheres that also carry `HandTag`. At the inspected baseline the authored fingertips use numeric layer 29 while the `FingerTip` name is on layer 28; the feature follows the real hierarchy rather than changing shared layer or rig settings. The existing collision matrix permits Default-layer machine triggers against the actual fingertip layer. Each pad aggregates all contact colliders and requires all contacts clear before rearming. Trigger-stay and phase changes never manufacture a fresh press.
 
-| Control | Default | Meaning |
-| --- | --- | --- |
-| `maximumLength` | 8 | Maximum round; hard limit 16. |
-| `demonstrationLead` | 0.7 s | Hands-clear delay before first cue. |
-| `stepSeconds` | 0.65 s | Start-to-start cue spacing, clamped above flash duration. |
-| `flashSeconds` | 0.32 s | Illuminated cue length. |
-| `successSeconds` | 1.1 s | Successful-round assessment before appending/replaying. |
-| `heartbeatTimeout` | 4 s | Missing-operator lease timeout. |
-| `inputIdleTimeout` | 20 s | No sequence input, even with healthy heartbeat. |
-| `resultHoldSeconds` | 10 s | Failure/completion screen before release to idle. |
-| `operatorRadius` | 1.8 m | Actual local head to assigned anchor. |
-| Pad `releaseSeconds` | 0.08 s | All-contact-clear rearm interval. |
-| Pad `pressDepth` | 0.012 m | Cap movement in pad-local forward direction. |
+The lowest eligible same-sector actor is the **controller**, not necessarily the **operator**. A valid start assigns one explicit operator; only that actor can submit/restart during its session. Spectators see the same sequence, round and assessments and receive the same short cues. Events 188/189 use protocol tag `rc.cognitive.1`, machine ID and sector, reliable targeted delivery, controller epochs, nonce handshakes, session/phase tokens and command/cue revisions. No scene PhotonView, new matchmaking or shared minigame framework is introduced. This is stale-message/accidental-input protection, not server-authoritative anti-cheat.
 
-Pacing/recovery values are captured when an authority term starts, not hot-edited into a live session. Move the control surface/anchor to tune reach; do not enlarge the Gorilla rig or global hand colliders. Tune clip volume and 3D attenuation on the assigned AudioSource after actual headset testing.
+| Pacing / recovery field | Default |
+| --- | --- |
+| `maximumLength` | 8; clamped to 1-16, then Complete and easy restart |
+| `demonstrationLead` | 0.7 s before the sequence |
+| `stepSeconds` / `flashSeconds` | 0.65 s / 0.32 s; notes remain separated |
+| `successSeconds` | 1.1 s before appending and demonstrating |
+| `heartbeatTimeout` | 4 s; operator sends a heartbeat every 0.75 s |
+| `inputIdleTimeout` | 20 s of no input during the input phase, even with valid heartbeats |
+| `resultHoldSeconds` | 10 s before a failure/completion result returns to idle |
 
-## Executable source checks
+Pacing settings are read when a new authority term/model is created; restart Play Mode after tuning them. The controller checks current-sector presence and deadlines. Walking away requests release; travel, disconnect, pause, component disable and missing heartbeats release/reset through the corresponding lifecycle or timeout path. Authority changes create a fresh idle model instead of trying to preserve a half-demonstrated round. Command numbering survives scene/component replacement; idle recovery clears stale command floors, and heartbeat/release commands also require the current session. Old sessions cannot release a newly restarted game. A fresh sync handshake recovers late arrivals or a restarted controller without replaying old audio.
+
+## Executed checks and reproducibility
+
+Asset publication run [36777382426](https://github.com/GregStephen/RunawayChimps/actions/runs/36777382426) generated and committed the actual assets, ran both managed harnesses and the repository source suite, and removed its one-time publishing helpers. The published 34 feature asset/metadata files were downloaded and compared byte-for-byte with the locally checked output. The retained workflow is read-only and checks both rules and assets. PR #77 records the final-head CI runs and results.
+
+The production rules/contact/replica harness passes **57,013 assertions** across 128 seeds and all sixteen rounds, including sequence extension, correct/wrong input, held/duplicate contact, state transitions, restart, completion, timeouts and controller-term replay. The existing card harness passes **18,015 assertions**. Asset checks inspect all local references and assigned material/font/clip identities, control dimensions, six bounded PCM waveforms and four distinct pitches; they reject four deliberately broken prefab mutations. Actual Bootstrap contact checks reject four filter mutations and verify both hand-child contacts, excluded grab spheres and the collision matrix. These remain data/managed/source checks, not native Unity tests.
+
+From the repository root:
 
 ```sh
+python -m pip install PyYAML==6.0.2
+python Tools/PrimateCognitive/build_assets.py
+python Tools/PrimateCognitive/validate_assets.py
+python Tools/PrimateCognitive/validate_rig_contract.py
 dotnet run --project Tools/PrimateCognitiveHarness/PrimateCognitiveHarness.csproj --configuration Release
-python Tools/validate_source.py --syntax
-python Tools/validate_repository_integrity.py
 ```
 
-The cognitive harness compiles actual production rules/contact/replica files, not a port. It exercises 128 deterministic seeds through all sixteen rounds, prefix preservation, correct/wrong input, all states, wrong owner, invalid/stale tokens, restart and completion, finite bounds, heartbeat/presence/input/result expiry, contact debounce/duplicate/rest/state transitions, snapshot validation and authority handshakes. It does **not** compile the Unity adapter against Unity assemblies or execute native trigger events or Photon callbacks. The normal repository Source Integrity checks remain separate and unchanged. The PR records the exact executed results and head.
+`build_assets.py` defaults to read-only comparison. `--write` explicitly regenerates the feature assets with deterministic GUIDs; it does not touch scene placements. Do not regenerate over intentional prefab edits without reconciling the generator. No external download or Unity installation is needed to reproduce the asset data, but Unity is required to establish import/runtime acceptance.
 
 ## Pending acceptance checklist
 
-**Assets and Unity first:** deliver and inspect the serialized prefab/materials/audio; verify all references, font layout, no mesh overlap, trigger/cap separation and meaningful note differences. Run clean Unity 62f3 import/compile and the prefab validator. Verify one-instance placement, Undo, preservation of a moved/inactive instance, additive scene behavior and no forced save.
+**Solo / Editor:** clean Unity import/compile; run Validate Cognitive Evaluation Prefab; place, Undo, Redo and place again without duplicating/moving an existing instance. In Play Mode exercise one-step start, successful prefix extension, wrong input, failure restart, held demonstration contact, duplicate colliders and maximum completion. Verify all labels fit and face forward, each note is distinct, and no unexpected Console errors occur.
 
-**Solo desktop:** start, watch one step, repeat, observe preserved prefix plus one step; deliberately fail and immediately restart. Hold any pad during demonstration and through input entry; release and press again to proceed. Hold START through multiple states. Verify max-length completion, no unbounded growth, result release, input abandonment, component disable/re-enable and missing-reference errors.
+**Two clients:** same-sector cue/round agreement; simultaneous start grants one operator; spectator presses never enter/restart the sequence. Test late arrival, operator walking away, input inactivity despite heartbeats, disconnect/reconnect, Hub-sector travel and return, scene/component re-enable, controller departure and A-B-A authority changes. After every release another player must be able to start; stale release/input/cue packets must not alter the new session. Different-sector clients must receive no presentation.
 
-**Two clients:** simultaneous starts choose one operator; either client can own when free; non-operator touches do not add notes. Both see each cue/assessment and hear one note, including repeated same-number steps. Join/re-enter midway without replaying past notes. Test operator walking away, switching sectors, disconnecting, headset pause, and quitting while another actor is controller. Force controller changes and A -> B -> A, re-enable a controller component, and rejoin the same named room. Verify recovery to available state, no stale acceptance, and no other-sector audio or ownership changes.
-
-**Headset:** seated and standing reach with both hands, clear 1-4 labels and display at comfortable distance, no reliance on color alone, clean releases with compound fingertip colliders, no accidental neighboring-pad hits, no resting chatter or locomotion shove, readable success/failure pacing, pleasant spatial volume, and no startup/door route obstruction. These are unexecuted checks, not passes.
+**Headset:** either hand and alternating hands, both main rows and start reachable while seated/standing, no required deep lean, readable display/number labels without relying on color, no grab-volume activation or resting-contact chatter. Check button separation and cabinet collision, comfortable sound level/distance, Quest performance and repeated travel/return. Editor Controls must be off for this check.
