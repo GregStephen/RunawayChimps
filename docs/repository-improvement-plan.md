@@ -4,7 +4,7 @@ Last updated: 2026-09-30. Maintained repository edition, migrated from `Runaway_
 
 Read the [design and lore](design-and-lore.md) for intended behavior and [AGENTS.md](../AGENTS.md) for update rules. A confirmed finding describes source evidence; it does not mean its fix is implemented or tested.
 
-## September 30 regeneration laboratory kit — separate environment-art review
+## September 30 regeneration laboratory kit — separate environment-art review\n\n**Code-review correction (September 30):** placement rollback now rethrows failures after reverting the Undo group, so automated callers and future Editor tests cannot mistake a failed partial placement for success. The source validator includes a rejecting negative control for this contract. No asset geometry, room layout, objective behavior or runtime behavior changed.\n\n
 
 **Confirmed scope:** Greg selected the three-piece first kit: treatment trolley, chemical-delivery stand and specimen cold-storage cabinet. Waste handling and a restrained diagram remain optional/deferred. Other chats' toys, specimen interactions and facility announcements are not dependencies. Preserve the regeneration/tissue-damage room theme and all existing safety/objective rules; exact labels, wear and arrangement are still proposed dressing, not a named subject or Crawler history.
 
