@@ -1,0 +1,1037 @@
+{
+  "schema": 1,
+  "basis": "metres; +Y up; +Z front; floor-contact root; identity transforms",
+  "baseline": "930a8f830cae99e06dcaa0a78ab9edc968c42ae5",
+  "editor": "Unity 2022.3.62f3 (96770f904ca7)",
+  "render_pipeline": "Built-in Standard",
+  "materials": [
+    "RGL_PaintedMetal",
+    "RGL_DullSteel",
+    "RGL_PolymerAndLabels"
+  ],
+  "textures": {
+    "PaintWear.png": [
+      512,
+      512
+    ],
+    "SteelBrush.png": [
+      512,
+      512
+    ],
+    "PolymerLabels.png": [
+      1024,
+      1024
+    ]
+  },
+  "props": [
+    {
+      "name": "RGL_TreatmentTrolley",
+      "triangles": 3754,
+      "vertices": 7816,
+      "bounds_min_m": [
+        -0.37700000405311584,
+        0.0,
+        -0.2590000033378601
+      ],
+      "bounds_max_m": [
+        0.4650000035762787,
+        1.0219999551773071,
+        0.2590000033378601
+      ],
+      "size_xyz_m": [
+        0.8420000076293945,
+        1.0219999551773071,
+        0.5180000066757202
+      ],
+      "material_slots": [
+        "RGL_PaintedMetal",
+        "RGL_DullSteel",
+        "RGL_PolymerAndLabels"
+      ],
+      "parts": [
+        {
+          "name": "Moulded caster tire",
+          "first_triangle": 0,
+          "triangles": 124
+        },
+        {
+          "name": "Steel caster hub",
+          "first_triangle": 124,
+          "triangles": 44
+        },
+        {
+          "name": "Caster fork",
+          "first_triangle": 168,
+          "triangles": 44
+        },
+        {
+          "name": "Caster fork",
+          "first_triangle": 212,
+          "triangles": 44
+        },
+        {
+          "name": "Fork bridge",
+          "first_triangle": 256,
+          "triangles": 44
+        },
+        {
+          "name": "Caster swivel",
+          "first_triangle": 300,
+          "triangles": 44
+        },
+        {
+          "name": "Square tube leg",
+          "first_triangle": 344,
+          "triangles": 44
+        },
+        {
+          "name": "Moulded caster tire",
+          "first_triangle": 388,
+          "triangles": 124
+        },
+        {
+          "name": "Steel caster hub",
+          "first_triangle": 512,
+          "triangles": 44
+        },
+        {
+          "name": "Caster fork",
+          "first_triangle": 556,
+          "triangles": 44
+        },
+        {
+          "name": "Caster fork",
+          "first_triangle": 600,
+          "triangles": 44
+        },
+        {
+          "name": "Fork bridge",
+          "first_triangle": 644,
+          "triangles": 44
+        },
+        {
+          "name": "Caster swivel",
+          "first_triangle": 688,
+          "triangles": 44
+        },
+        {
+          "name": "Square tube leg",
+          "first_triangle": 732,
+          "triangles": 44
+        },
+        {
+          "name": "Moulded caster tire",
+          "first_triangle": 776,
+          "triangles": 124
+        },
+        {
+          "name": "Steel caster hub",
+          "first_triangle": 900,
+          "triangles": 44
+        },
+        {
+          "name": "Caster fork",
+          "first_triangle": 944,
+          "triangles": 44
+        },
+        {
+          "name": "Caster fork",
+          "first_triangle": 988,
+          "triangles": 44
+        },
+        {
+          "name": "Fork bridge",
+          "first_triangle": 1032,
+          "triangles": 44
+        },
+        {
+          "name": "Caster swivel",
+          "first_triangle": 1076,
+          "triangles": 44
+        },
+        {
+          "name": "Square tube leg",
+          "first_triangle": 1120,
+          "triangles": 44
+        },
+        {
+          "name": "Moulded caster tire",
+          "first_triangle": 1164,
+          "triangles": 124
+        },
+        {
+          "name": "Steel caster hub",
+          "first_triangle": 1288,
+          "triangles": 44
+        },
+        {
+          "name": "Caster fork",
+          "first_triangle": 1332,
+          "triangles": 44
+        },
+        {
+          "name": "Caster fork",
+          "first_triangle": 1376,
+          "triangles": 44
+        },
+        {
+          "name": "Fork bridge",
+          "first_triangle": 1420,
+          "triangles": 44
+        },
+        {
+          "name": "Caster swivel",
+          "first_triangle": 1464,
+          "triangles": 44
+        },
+        {
+          "name": "Square tube leg",
+          "first_triangle": 1508,
+          "triangles": 44
+        },
+        {
+          "name": "Formed shelf deck",
+          "first_triangle": 1552,
+          "triangles": 44
+        },
+        {
+          "name": "Shelf rolled edge",
+          "first_triangle": 1596,
+          "triangles": 44
+        },
+        {
+          "name": "Shelf rolled edge",
+          "first_triangle": 1640,
+          "triangles": 44
+        },
+        {
+          "name": "Shelf end lip",
+          "first_triangle": 1684,
+          "triangles": 44
+        },
+        {
+          "name": "Shelf end lip",
+          "first_triangle": 1728,
+          "triangles": 44
+        },
+        {
+          "name": "Formed shelf deck",
+          "first_triangle": 1772,
+          "triangles": 44
+        },
+        {
+          "name": "Shelf rolled edge",
+          "first_triangle": 1816,
+          "triangles": 44
+        },
+        {
+          "name": "Shelf rolled edge",
+          "first_triangle": 1860,
+          "triangles": 44
+        },
+        {
+          "name": "Shelf end lip",
+          "first_triangle": 1904,
+          "triangles": 44
+        },
+        {
+          "name": "Shelf end lip",
+          "first_triangle": 1948,
+          "triangles": 44
+        },
+        {
+          "name": "Upper painted apron",
+          "first_triangle": 1992,
+          "triangles": 44
+        },
+        {
+          "name": "Working tray",
+          "first_triangle": 2036,
+          "triangles": 44
+        },
+        {
+          "name": "Tray rim",
+          "first_triangle": 2080,
+          "triangles": 44
+        },
+        {
+          "name": "Tray rim",
+          "first_triangle": 2124,
+          "triangles": 44
+        },
+        {
+          "name": "Tray rim end",
+          "first_triangle": 2168,
+          "triangles": 44
+        },
+        {
+          "name": "Tray rim end",
+          "first_triangle": 2212,
+          "triangles": 44
+        },
+        {
+          "name": "Bent tubular push handle",
+          "first_triangle": 2256,
+          "triangles": 620
+        },
+        {
+          "name": "Rubber grip",
+          "first_triangle": 2876,
+          "triangles": 44
+        },
+        {
+          "name": "Packaged dressing supplies",
+          "first_triangle": 2920,
+          "triangles": 44
+        },
+        {
+          "name": "Package seam",
+          "first_triangle": 2964,
+          "triangles": 44
+        },
+        {
+          "name": "Packaged dressing supplies",
+          "first_triangle": 3008,
+          "triangles": 44
+        },
+        {
+          "name": "Package seam",
+          "first_triangle": 3052,
+          "triangles": 44
+        },
+        {
+          "name": "Reusable instrument case",
+          "first_triangle": 3096,
+          "triangles": 44
+        },
+        {
+          "name": "Case handle",
+          "first_triangle": 3140,
+          "triangles": 44
+        },
+        {
+          "name": "Top supply tray base",
+          "first_triangle": 3184,
+          "triangles": 44
+        },
+        {
+          "name": "Supply tray rolled lip",
+          "first_triangle": 3228,
+          "triangles": 44
+        },
+        {
+          "name": "Supply tray rolled lip",
+          "first_triangle": 3272,
+          "triangles": 44
+        },
+        {
+          "name": "Supply tray short lip",
+          "first_triangle": 3316,
+          "triangles": 44
+        },
+        {
+          "name": "Supply tray short lip",
+          "first_triangle": 3360,
+          "triangles": 44
+        },
+        {
+          "name": "Sealed dressing packet",
+          "first_triangle": 3404,
+          "triangles": 44
+        },
+        {
+          "name": "Sealed dressing packet",
+          "first_triangle": 3448,
+          "triangles": 44
+        },
+        {
+          "name": "Treatment bottle",
+          "first_triangle": 3492,
+          "triangles": 156
+        },
+        {
+          "name": "Bottle cap",
+          "first_triangle": 3648,
+          "triangles": 60
+        },
+        {
+          "name": "Label backing plate",
+          "first_triangle": 3710,
+          "triangles": 44
+        }
+      ],
+      "label_mesh": {
+        "name": "RGL_TreatmentTrolley_Label",
+        "triangles": 2,
+        "vertices": 4,
+        "bounds_min_m": [
+          -0.26899999380111694,
+          0.7135000228881836,
+          0.23499999940395355
+        ],
+        "bounds_max_m": [
+          0.1589999943971634,
+          0.7705000042915344,
+          0.23499999940395355
+        ],
+        "size_xyz_m": [
+          0.42799997329711914,
+          0.05699998140335083,
+          0.0
+        ],
+        "material_slots": [
+          "RGL_PolymerAndLabels"
+        ],
+        "parts": []
+      },
+      "prefab": "Assets/RunawayChimps/Environment/RegenerationLab/Prefabs/RGL_TreatmentTrolley.prefab",
+      "colliders": [
+        {
+          "center": [
+            0,
+            0.425,
+            0
+          ],
+          "size": [
+            0.758,
+            0.85,
+            0.49
+          ]
+        }
+      ],
+      "total_triangles": 3756
+    },
+    {
+      "name": "RGL_ChemicalDeliveryStand",
+      "triangles": 3200,
+      "vertices": 6870,
+      "bounds_min_m": [
+        -0.2720000147819519,
+        0.0,
+        -0.2720000147819519
+      ],
+      "bounds_max_m": [
+        0.2720000147819519,
+        1.6039999723434448,
+        0.2720000147819519
+      ],
+      "size_xyz_m": [
+        0.5440000295639038,
+        1.6039999723434448,
+        0.5440000295639038
+      ],
+      "material_slots": [
+        "RGL_PaintedMetal",
+        "RGL_DullSteel",
+        "RGL_PolymerAndLabels"
+      ],
+      "parts": [
+        {
+          "name": "Weighted rubber base",
+          "first_triangle": 0,
+          "triangles": 124
+        },
+        {
+          "name": "Weighted cast plinth",
+          "first_triangle": 124,
+          "triangles": 124
+        },
+        {
+          "name": "Upright support",
+          "first_triangle": 248,
+          "triangles": 44
+        },
+        {
+          "name": "Telescopic stainless extension",
+          "first_triangle": 292,
+          "triangles": 44
+        },
+        {
+          "name": "Adjustment collar",
+          "first_triangle": 336,
+          "triangles": 44
+        },
+        {
+          "name": "Cam clamp axle",
+          "first_triangle": 380,
+          "triangles": 44
+        },
+        {
+          "name": "Rounded clamp lever",
+          "first_triangle": 424,
+          "triangles": 44
+        },
+        {
+          "name": "Adjustment collar",
+          "first_triangle": 468,
+          "triangles": 44
+        },
+        {
+          "name": "Cam clamp axle",
+          "first_triangle": 512,
+          "triangles": 44
+        },
+        {
+          "name": "Rounded clamp lever",
+          "first_triangle": 556,
+          "triangles": 44
+        },
+        {
+          "name": "Container support crossbar",
+          "first_triangle": 600,
+          "triangles": 44
+        },
+        {
+          "name": "Container cradle backing",
+          "first_triangle": 644,
+          "triangles": 44
+        },
+        {
+          "name": "Container collar bracket",
+          "first_triangle": 688,
+          "triangles": 44
+        },
+        {
+          "name": "Container collar bracket",
+          "first_triangle": 732,
+          "triangles": 44
+        },
+        {
+          "name": "Treatment reservoir",
+          "first_triangle": 776,
+          "triangles": 156
+        },
+        {
+          "name": "Sealed reservoir lid",
+          "first_triangle": 932,
+          "triangles": 60
+        },
+        {
+          "name": "Delivery nipple",
+          "first_triangle": 992,
+          "triangles": 44
+        },
+        {
+          "name": "Opaque fluid sight strip",
+          "first_triangle": 1036,
+          "triangles": 44
+        },
+        {
+          "name": "Secured supply line",
+          "first_triangle": 1082,
+          "triangles": 252
+        },
+        {
+          "name": "Regulator inlet ferrule",
+          "first_triangle": 1334,
+          "triangles": 44
+        },
+        {
+          "name": "Container cradle backing",
+          "first_triangle": 1378,
+          "triangles": 44
+        },
+        {
+          "name": "Container collar bracket",
+          "first_triangle": 1422,
+          "triangles": 44
+        },
+        {
+          "name": "Container collar bracket",
+          "first_triangle": 1466,
+          "triangles": 44
+        },
+        {
+          "name": "Treatment reservoir",
+          "first_triangle": 1510,
+          "triangles": 156
+        },
+        {
+          "name": "Sealed reservoir lid",
+          "first_triangle": 1666,
+          "triangles": 60
+        },
+        {
+          "name": "Delivery nipple",
+          "first_triangle": 1726,
+          "triangles": 44
+        },
+        {
+          "name": "Opaque fluid sight strip",
+          "first_triangle": 1770,
+          "triangles": 44
+        },
+        {
+          "name": "Secured supply line",
+          "first_triangle": 1816,
+          "triangles": 252
+        },
+        {
+          "name": "Regulator inlet ferrule",
+          "first_triangle": 2068,
+          "triangles": 44
+        },
+        {
+          "name": "Delivery regulator enclosure",
+          "first_triangle": 2112,
+          "triangles": 44
+        },
+        {
+          "name": "Regulator faceplate",
+          "first_triangle": 2156,
+          "triangles": 44
+        },
+        {
+          "name": "Label plate",
+          "first_triangle": 2200,
+          "triangles": 44
+        },
+        {
+          "name": "Mechanical dial",
+          "first_triangle": 2244,
+          "triangles": 60
+        },
+        {
+          "name": "Dial index",
+          "first_triangle": 2304,
+          "triangles": 12
+        },
+        {
+          "name": "Flow control",
+          "first_triangle": 2316,
+          "triangles": 44
+        },
+        {
+          "name": "Control grip",
+          "first_triangle": 2360,
+          "triangles": 44
+        },
+        {
+          "name": "Clipped return loop",
+          "first_triangle": 2404,
+          "triangles": 572
+        },
+        {
+          "name": "Tube retaining clip",
+          "first_triangle": 2976,
+          "triangles": 44
+        },
+        {
+          "name": "Tube retaining clip",
+          "first_triangle": 3020,
+          "triangles": 44
+        },
+        {
+          "name": "Sealed return cartridge",
+          "first_triangle": 3064,
+          "triangles": 92
+        },
+        {
+          "name": "Cartridge collar",
+          "first_triangle": 3156,
+          "triangles": 44
+        }
+      ],
+      "label_mesh": {
+        "name": "RGL_ChemicalDeliveryStand_Label",
+        "triangles": 2,
+        "vertices": 4,
+        "bounds_min_m": [
+          -0.10400000214576721,
+          0.9925000071525574,
+          0.13500000536441803
+        ],
+        "bounds_max_m": [
+          0.10400000214576721,
+          1.037500023841858,
+          0.13500000536441803
+        ],
+        "size_xyz_m": [
+          0.20800000429153442,
+          0.04500001668930054,
+          0.0
+        ],
+        "material_slots": [
+          "RGL_PolymerAndLabels"
+        ],
+        "parts": []
+      },
+      "prefab": "Assets/RunawayChimps/Environment/RegenerationLab/Prefabs/RGL_ChemicalDeliveryStand.prefab",
+      "colliders": [
+        {
+          "center": [
+            0,
+            0.044,
+            0
+          ],
+          "size": [
+            0.544,
+            0.088,
+            0.544
+          ]
+        },
+        {
+          "center": [
+            0,
+            0.841,
+            0.017
+          ],
+          "size": [
+            0.272,
+            1.506,
+            0.204
+          ]
+        }
+      ],
+      "total_triangles": 3202
+    },
+    {
+      "name": "RGL_SpecimenColdCabinet",
+      "triangles": 3588,
+      "vertices": 7534,
+      "bounds_min_m": [
+        -0.41200000047683716,
+        0.0,
+        -0.32199999690055847
+      ],
+      "bounds_max_m": [
+        0.41200000047683716,
+        1.7044999599456787,
+        0.4099999964237213
+      ],
+      "size_xyz_m": [
+        0.8240000009536743,
+        1.7044999599456787,
+        0.7319999933242798
+      ],
+      "material_slots": [
+        "RGL_PaintedMetal",
+        "RGL_DullSteel",
+        "RGL_PolymerAndLabels"
+      ],
+      "parts": [
+        {
+          "name": "Leveling foot",
+          "first_triangle": 0,
+          "triangles": 92
+        },
+        {
+          "name": "Leveling foot",
+          "first_triangle": 92,
+          "triangles": 92
+        },
+        {
+          "name": "Leveling foot",
+          "first_triangle": 184,
+          "triangles": 92
+        },
+        {
+          "name": "Leveling foot",
+          "first_triangle": 276,
+          "triangles": 92
+        },
+        {
+          "name": "Cabinet back",
+          "first_triangle": 368,
+          "triangles": 44
+        },
+        {
+          "name": "Insulated side casing",
+          "first_triangle": 412,
+          "triangles": 44
+        },
+        {
+          "name": "Insulated side casing",
+          "first_triangle": 456,
+          "triangles": 44
+        },
+        {
+          "name": "Top casing",
+          "first_triangle": 500,
+          "triangles": 44
+        },
+        {
+          "name": "Bottom casing",
+          "first_triangle": 544,
+          "triangles": 44
+        },
+        {
+          "name": "Front door gasket",
+          "first_triangle": 588,
+          "triangles": 44
+        },
+        {
+          "name": "Closed storage door",
+          "first_triangle": 632,
+          "triangles": 44
+        },
+        {
+          "name": "Display inner back",
+          "first_triangle": 676,
+          "triangles": 44
+        },
+        {
+          "name": "Display liner side",
+          "first_triangle": 720,
+          "triangles": 44
+        },
+        {
+          "name": "Display liner side",
+          "first_triangle": 764,
+          "triangles": 44
+        },
+        {
+          "name": "Display liner floor",
+          "first_triangle": 808,
+          "triangles": 44
+        },
+        {
+          "name": "Display liner ceiling",
+          "first_triangle": 852,
+          "triangles": 44
+        },
+        {
+          "name": "Display vertical frame",
+          "first_triangle": 896,
+          "triangles": 44
+        },
+        {
+          "name": "Display vertical frame",
+          "first_triangle": 940,
+          "triangles": 44
+        },
+        {
+          "name": "Display horizontal frame",
+          "first_triangle": 984,
+          "triangles": 44
+        },
+        {
+          "name": "Display horizontal frame",
+          "first_triangle": 1028,
+          "triangles": 44
+        },
+        {
+          "name": "Display raised retaining lip",
+          "first_triangle": 1072,
+          "triangles": 44
+        },
+        {
+          "name": "Opaque sealed sample container",
+          "first_triangle": 1116,
+          "triangles": 124
+        },
+        {
+          "name": "Sample container lid",
+          "first_triangle": 1240,
+          "triangles": 60
+        },
+        {
+          "name": "Sample inspection inset",
+          "first_triangle": 1300,
+          "triangles": 44
+        },
+        {
+          "name": "Inert tissue sample",
+          "first_triangle": 1344,
+          "triangles": 104
+        },
+        {
+          "name": "Opaque sealed sample container",
+          "first_triangle": 1450,
+          "triangles": 124
+        },
+        {
+          "name": "Sample container lid",
+          "first_triangle": 1574,
+          "triangles": 60
+        },
+        {
+          "name": "Sample inspection inset",
+          "first_triangle": 1634,
+          "triangles": 44
+        },
+        {
+          "name": "Inert tissue sample",
+          "first_triangle": 1678,
+          "triangles": 104
+        },
+        {
+          "name": "Opaque sealed sample container",
+          "first_triangle": 1784,
+          "triangles": 124
+        },
+        {
+          "name": "Sample container lid",
+          "first_triangle": 1908,
+          "triangles": 60
+        },
+        {
+          "name": "Sample inspection inset",
+          "first_triangle": 1968,
+          "triangles": 44
+        },
+        {
+          "name": "Inert tissue sample",
+          "first_triangle": 2012,
+          "triangles": 104
+        },
+        {
+          "name": "Compressor service panel",
+          "first_triangle": 2118,
+          "triangles": 44
+        },
+        {
+          "name": "Recessed compressor louvre",
+          "first_triangle": 2162,
+          "triangles": 44
+        },
+        {
+          "name": "Louvre drip edge",
+          "first_triangle": 2206,
+          "triangles": 44
+        },
+        {
+          "name": "Recessed compressor louvre",
+          "first_triangle": 2250,
+          "triangles": 44
+        },
+        {
+          "name": "Louvre drip edge",
+          "first_triangle": 2294,
+          "triangles": 44
+        },
+        {
+          "name": "Recessed compressor louvre",
+          "first_triangle": 2338,
+          "triangles": 44
+        },
+        {
+          "name": "Louvre drip edge",
+          "first_triangle": 2382,
+          "triangles": 44
+        },
+        {
+          "name": "Recessed compressor louvre",
+          "first_triangle": 2426,
+          "triangles": 44
+        },
+        {
+          "name": "Louvre drip edge",
+          "first_triangle": 2470,
+          "triangles": 44
+        },
+        {
+          "name": "Recessed compressor louvre",
+          "first_triangle": 2514,
+          "triangles": 44
+        },
+        {
+          "name": "Louvre drip edge",
+          "first_triangle": 2558,
+          "triangles": 44
+        },
+        {
+          "name": "Fixed insulated door handle",
+          "first_triangle": 2602,
+          "triangles": 500
+        },
+        {
+          "name": "Handle rubber grip",
+          "first_triangle": 3102,
+          "triangles": 44
+        },
+        {
+          "name": "Captive hinge cover",
+          "first_triangle": 3146,
+          "triangles": 44
+        },
+        {
+          "name": "Captive hinge cover",
+          "first_triangle": 3190,
+          "triangles": 44
+        },
+        {
+          "name": "Cabinet title backing",
+          "first_triangle": 3234,
+          "triangles": 44
+        },
+        {
+          "name": "Door service badge",
+          "first_triangle": 3280,
+          "triangles": 44
+        },
+        {
+          "name": "Rear compressor service hatch",
+          "first_triangle": 3324,
+          "triangles": 44
+        },
+        {
+          "name": "Rear recessed service vent",
+          "first_triangle": 3368,
+          "triangles": 44
+        },
+        {
+          "name": "Rear recessed service vent",
+          "first_triangle": 3412,
+          "triangles": 44
+        },
+        {
+          "name": "Rear recessed service vent",
+          "first_triangle": 3456,
+          "triangles": 44
+        },
+        {
+          "name": "Rear recessed service vent",
+          "first_triangle": 3500,
+          "triangles": 44
+        },
+        {
+          "name": "Rear recessed service vent",
+          "first_triangle": 3544,
+          "triangles": 44
+        }
+      ],
+      "label_mesh": {
+        "name": "RGL_SpecimenColdCabinet_Label",
+        "triangles": 2,
+        "vertices": 4,
+        "bounds_min_m": [
+          -0.3190000057220459,
+          1.6054999828338623,
+          0.31200000643730164
+        ],
+        "bounds_max_m": [
+          0.3190000057220459,
+          1.6744999885559082,
+          0.31200000643730164
+        ],
+        "size_xyz_m": [
+          0.6380000114440918,
+          0.0690000057220459,
+          0.0
+        ],
+        "material_slots": [
+          "RGL_PolymerAndLabels"
+        ],
+        "parts": []
+      },
+      "prefab": "Assets/RunawayChimps/Environment/RegenerationLab/Prefabs/RGL_SpecimenColdCabinet.prefab",
+      "colliders": [
+        {
+          "center": [
+            0,
+            0.85225,
+            0.017
+          ],
+          "size": [
+            0.824,
+            1.7045,
+            0.646
+          ]
+        }
+      ],
+      "total_triangles": 3590
+    }
+  ],
+  "status": "Baked review assets; Unity and headset acceptance pending; not final room dressing"
+}
