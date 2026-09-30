@@ -138,6 +138,13 @@ def tone(index):
     return stream.getvalue()
 
 
+def audio_curve(value):
+    return dict(serializedVersion=2, m_Curve=[dict(serializedVersion=3, time=0,
+        value=value, inSlope=0, outSlope=0, tangentMode=0, weightedMode=0,
+        inWeight=.33333334, outWeight=.33333334)],
+        m_PreInfinity=2, m_PostInfinity=2, m_RotationOrder=4)
+
+
 class Prefab:
     def __init__(self):
         self.nodes = []
@@ -285,7 +292,9 @@ def machine_prefab():
         OutputAudioMixerGroup=ref(), m_audioClip=ref(), m_PlayOnAwake=0, m_Volume=.65,
         m_Pitch=1, Loop=0, Mute=0, Spatialize=0, SpatializePostEffects=0, Priority=128,
         DopplerLevel=0, MinDistance=1, MaxDistance=7, Pan2D=0, rolloffMode=1,
-        BypassEffects=0, BypassListenerEffects=0, BypassReverbZones=0))
+        BypassEffects=0, BypassListenerEffects=0, BypassReverbZones=0,
+        panLevelCustomCurve=audio_curve(1), spreadCustomCurve=audio_curve(0),
+        reverbZoneMixCustomCurve=audio_curve(1)))
     target.update(machineId='hub-cognitive-01', sector=1, pads=[ref(i) for i in pads], display=ref(display),
         audioSource=ref(sound), clips=[ref(8300000, guid(ASSET + '/Audio/Note' + str(i + 1) + '.wav'), 3) for i in range(6)],
         operatorAnchor=ref(anchor['id'] + 1), maximumLength=8, demonstrationLead=.7,

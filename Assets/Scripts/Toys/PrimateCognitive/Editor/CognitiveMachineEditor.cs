@@ -32,11 +32,13 @@ namespace RunawayChimps.Toys.PrimateCognitive.Editor
             var existing = roots.SelectMany(r => r.GetComponentsInChildren<CognitiveMachine>(true)).FirstOrDefault();
             if (existing != null)
             {
+                if (previous.IsValid() && previous.isLoaded) SceneManager.SetActiveScene(previous);
                 Selection.activeGameObject = existing.gameObject;
                 EditorGUIUtility.PingObject(existing);
                 Debug.Log("Selected the existing cognitive machine; its placement was preserved.", existing);
                 return;
             }
+            Undo.IncrementCurrentGroup();
             int group = Undo.GetCurrentGroup();
             Undo.SetCurrentGroupName("Place Cognitive Evaluation");
             var instance = (GameObject)PrefabUtility.InstantiatePrefab(prefab, hub);
@@ -46,14 +48,28 @@ namespace RunawayChimps.Toys.PrimateCognitive.Editor
             // A deliberate test placement to the right of the computer return, outside Hub slots.
             // Keep the prefab's front (-Z) facing the open room. Do not modify any other root.
             Undo.RecordObject(instance.transform, "Position cognitive machine");
-            instance.transform.SetPositionAndRotation(new Vector3(2.4f, .15f, -1.2f), Quaternion.identity);
+            instance.transform.SetPositionAndRotation(FindTestFloor(hub), Quaternion.identity);
             instance.transform.localScale = Vector3.one;
+            PrefabUtility.RecordPrefabInstancePropertyModifications(instance.transform);
             EditorSceneManager.MarkSceneDirty(hub);
             Undo.CollapseUndoOperations(group);
             if (previous.IsValid() && previous.isLoaded) SceneManager.SetActiveScene(previous);
             Selection.activeGameObject = instance;
             SceneView.lastActiveSceneView?.FrameSelected();
             Debug.Log("Placed cognitive evaluation. Inspect floor/route clearance; move freely. Save Hub manually to keep it.", instance);
+        }
+
+        private static Vector3 FindTestFloor(Scene hub)
+        {
+            Physics.SyncTransforms();
+            var floor = Physics.RaycastAll(new Vector3(2.4f, 2.5f, -1.2f), Vector3.down, 5f,
+                    ~0, QueryTriggerInteraction.Ignore)
+                .Where(h => h.collider != null && h.collider.gameObject.scene == hub &&
+                    h.normal.y > .9f && h.point.y < .5f)
+                .OrderByDescending(h => h.point.y).FirstOrDefault();
+            if (floor.collider != null) return floor.point + Vector3.up * .005f;
+            Debug.LogWarning("No Hub floor found at the cognitive test position. Inspect and adjust the placement before saving.");
+            return new Vector3(2.4f, 0f, -1.2f);
         }
 
         [MenuItem("Tools/Runaway Chimps/Toys/Validate Cognitive Evaluation Prefab")]
@@ -68,10 +84,15 @@ namespace RunawayChimps.Toys.PrimateCognitive.Editor
             {
                 var pad = machine.pads[i];
                 var collider = pad != null ? pad.GetComponent<BoxCollider>() : null;
+                var body = pad != null ? pad.GetComponent<Rigidbody>() : null;
                 if (pad == null || pad.index != i || pad.machine != machine || pad.cap == null || pad.capRenderer == null ||
-                    pad.capRenderer.sharedMaterial == null || collider == null || !collider.isTrigger)
+                    pad.capRenderer.sharedMaterial == null || collider == null || !collider.isTrigger ||
+                    body == null || !body.isKinematic || body.useGravity)
                     throw new InvalidOperationException("Invalid cognitive pad " + i);
             }
+            if (root.transform.localScale != Vector3.one || machine.display.font == null ||
+                machine.audioSource.playOnAwake || machine.audioSource.spatialBlend < .99f)
+                throw new InvalidOperationException("Cognitive root scale, display font or spatial audio authoring is invalid.");
             foreach (var clip in machine.clips)
                 if (clip == null || clip.length <= 0) throw new InvalidOperationException("Missing cognitive audio clip.");
             if (root.GetComponentInChildren<Camera>(true) != null || root.GetComponentInChildren<AudioListener>(true) != null)

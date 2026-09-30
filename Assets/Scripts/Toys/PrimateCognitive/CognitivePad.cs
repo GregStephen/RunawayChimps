@@ -78,7 +78,7 @@ namespace RunawayChimps.Toys.PrimateCognitive
             foreach (var pair in colliders) if (!LocalHand(pair.Value)) expired.Add(pair.Key);
             foreach (int id in expired) { colliders.Remove(id); gate.Exit(id, Clock); }
             gate.Tick(Clock);
-            cap.localPosition = Vector3.Lerp(cap.localPosition, rest + (lit ? Vector3.forward * pressDepth : Vector3.zero),
+            cap.localPosition = Vector3.Lerp(cap.localPosition, rest + (gate.Count > 0 ? Vector3.forward * pressDepth : Vector3.zero),
                 1f - Mathf.Exp(-22f * Time.unscaledDeltaTime));
         }
 
