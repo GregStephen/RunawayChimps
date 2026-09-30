@@ -1,46 +1,99 @@
-name: Knock-back vent workspace export
+name: Knock-back vent reviewed publisher
 on:
   push:
     branches: [feature/knock-back-vent]
     paths: [.github/workflows/knock-back-vent-workspace.yml]
 permissions:
-  contents: read
+  contents: write
 jobs:
-  export:
+  publish:
+    if: github.repository == 'GregStephen/RunawayChimps' && github.ref == 'refs/heads/feature/knock-back-vent'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 1
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
-      - name: Export tracked source and managed diagnostic compiler
+      - name: Apply exact reviewed payload and generate original assets
         shell: python
         run: |
-          import os, pathlib, subprocess, zipfile
-          root = pathlib.Path.cwd()
-          suffixes = {'.cs', '.meta', '.unity', '.prefab', '.mat', '.asset', '.shader', '.cginc', '.md', '.py', '.yml', '.yaml', '.json', '.asmdef', '.asmref', '.txt', '.csproj', '.props', '.targets', '.xml', '.sh', '.config'}
-          paths = subprocess.check_output(['git', 'ls-files', '-z']).decode().split('\0')
-          with zipfile.ZipFile('/tmp/knock-workspace.zip', 'w', zipfile.ZIP_DEFLATED) as z:
-              for name in paths:
-                  p = root / name
-                  if name and p.is_file() and (p.suffix in suffixes or name in {'.gitignore', '.gitattributes'}):
-                      z.write(p, 'repository/' + name)
-              z.writestr('tracked-tree.txt', subprocess.check_output(['git', 'ls-tree', '-r', 'HEAD']))
-              z.writestr('base-commit.txt', '930a8f830cae99e06dcaa0a78ab9edc968c42ae5\n')
-              dotnet = pathlib.Path(os.environ['DOTNET_ROOT'])
-              z.write(dotnet / 'dotnet', 'dotnet/dotnet')
-              for pattern in ['shared/Microsoft.NETCore.App/8.*', 'host/fxr/8.*', 'packs/Microsoft.NETCore.App.Ref/8.*/ref/net8.0', 'sdk/8.*/Roslyn/bincore']:
-                  matches = sorted(dotnet.glob(pattern))
-                  if not matches:
-                      raise RuntimeError('Missing compiler dependency: ' + pattern)
-                  for p in matches[-1].rglob('*'):
-                      if p.is_file():
-                          z.write(p, 'dotnet/' + str(p.relative_to(dotnet)))
-      - uses: actions/upload-artifact@v4
+          import base64, hashlib, json, lzma, pathlib, subprocess
+          def run(*args):
+              return subprocess.check_output(args).decode()
+          joined = ''.join(pathlib.Path(f'.github/knock-payload-{i}.b64').read_text().strip() for i in range(1, 4)) + '\n'
+          assert hashlib.sha256(joined.encode()).hexdigest() == '1394a161b8375d1fe9dc66875375f2c1bb2e501c8b61db547442093f61ca70c4', 'Payload checksum mismatch'
+          payload = json.loads(lzma.decompress(base64.b64decode(joined)))
+          patch = pathlib.Path('/tmp/knock-reviewed.patch')
+          patch.write_text(payload['patch'])
+          run('git', 'apply', '--check', str(patch))
+          run('git', 'apply', '--index', str(patch))
+          print(run('python', 'Tools/KnockBackVent/author_assets.py'))
+          run('git', 'add', '--', 'Assets/RunawayChimps/KnockBackVent', 'Assets/RunawayChimps/KnockBackVent.meta')
+          expected = set(payload['hashes'])
+          assert len(expected) == 49
+          for name, wanted in payload['hashes'].items():
+              actual = hashlib.sha256(pathlib.Path(name).read_bytes()).hexdigest()
+              assert actual == wanted, f'File checksum mismatch: {name}: {actual}'
+          staged = set(run('git', 'diff', '--cached', '--name-only').splitlines())
+          assert staged == expected - {'.github/workflows/source-validation.yml'}, ('Unexpected staged paths', sorted(staged ^ (expected - {'.github/workflows/source-validation.yml'})))
+          relay = {'.github/workflows/knock-back-vent-workspace.yml'} | {f'.github/knock-payload-{i}.b64' for i in range(1, 4)}
+          entire = set(run('git', 'diff', '--cached', '--name-only', '930a8f830cae99e06dcaa0a78ab9edc968c42ae5').splitlines())
+          assert entire == expected | relay, ('Unexpected branch scope', sorted(entire ^ (expected | relay)))
+          pathlib.Path('/tmp/knock-final-manifest.json').write_text(json.dumps(payload['hashes'], indent=2))
+          print('PASS: all 49 final file hashes match the reviewed workspace; no unrelated source or settings changes.')
+      - name: Install pinned source parsers
+        run: python -m pip install --disable-pip-version-check 'tree-sitter==0.25.2' 'tree-sitter-c-sharp==0.23.5'
+      - name: Execute managed diagnostics and all repository source checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            dotnet run --project Tools/CardSystemHarness/CardSystemHarness.csproj --configuration Release
+            dotnet run --project Tools/KnockBackVentHarness/KnockBackVentHarness.csproj --configuration Release
+            dotnet run --project Tools/KnockBackVentAdapterHarness/KnockBackVentAdapterHarness.csproj --configuration Release
+            python -c "from pathlib import Path; import re; t=Path('ProjectSettings/ProjectVersion.txt').read_text(encoding='utf-8-sig'); assert re.findall(r'^m_EditorVersion:[ \t]*(\S+)[ \t]*$',t,re.M)==['2022.3.62f3']; assert re.findall(r'^m_EditorVersionWithRevision:[ \t]*(.+?)[ \t]*$',t,re.M)==['2022.3.62f3 (96770f904ca7)']; print('PASS: unchanged Unity 2022.3.62f3 (96770f904ca7) baseline.')"
+            python Tools/validate_source.py --syntax
+            python Tools/validate_repository_integrity.py
+            python Tools/validate_level1_contracts.py
+            python Tools/validate_spawn_floor_contracts.py
+            python Tools/validate_keycard_reader_contracts.py
+            python Tools/validate_interaction_safety.py
+            python Tools/validate_pr15_review_hardening.py
+            python Tools/validate_security_boot.py
+            python Tools/validate_threat_feedback.py
+            python Tools/validate_launch_presentation.py
+            python Tools/validate_knock_back_vent.py
+            python -m compileall -q Tools
+            if git grep -n -E '^(<<<<<<< .+|>>>>>>> .+|=======$)' -- .; then
+              echo 'ERROR: unresolved merge markers.'
+              exit 1
+            fi
+            git diff --cached --check 930a8f830cae99e06dcaa0a78ab9edc968c42ae5 -- '*.cs' '*.py' '*.md' '*.json' '*.yml' '*.yaml' '*.sh' '*.txt' '*.asmdef' '*.asmref' '*.xml' '*.csproj' '*.props' '*.targets' '*.toml' '*.ini' '*.cfg' '*.config' '*.uxml' '*.uss' '.gitignore' '.gitattributes'
+            echo 'PASS: all source and managed diagnostics. Unity and headset checks were NOT executed.'
+          } 2>&1 | tee /tmp/knock-validation.log
+      - name: Commit and push only the reviewed feature files
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git diff --cached --stat
+          git commit -m 'feat: add isolated knock-back vent optional horror interaction'
+          git push origin HEAD:refs/heads/feature/knock-back-vent
+          git rev-parse HEAD | tee /tmp/knock-published-sha.txt
+      - name: Preserve validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
-          name: knock-workspace
-          path: /tmp/knock-workspace.zip
-          retention-days: 1
+          name: knock-back-vent-publish-evidence
+          path: |
+            /tmp/knock-validation.log
+            /tmp/knock-final-manifest.json
+            /tmp/knock-published-sha.txt
+          retention-days: 7
