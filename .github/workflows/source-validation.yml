@@ -41,6 +41,12 @@ jobs:
       - name: Execute production card-consumption state tests
         run: dotnet run --project Tools/CardSystemHarness/CardSystemHarness.csproj --configuration Release
 
+      - name: Execute production Knock-Back Vent rhythm tests
+        run: dotnet run --project Tools/KnockBackVentHarness/KnockBackVentHarness.csproj --configuration Release
+
+      - name: Execute Knock-Back Vent adapter diagnostics with Unity and Photon doubles
+        run: dotnet run --project Tools/KnockBackVentAdapterHarness/KnockBackVentAdapterHarness.csproj --configuration Release
+
       - name: Install syntax-parser dependencies
         run: |
           python -m pip install --disable-pip-version-check \
@@ -93,6 +99,9 @@ jobs:
 
       - name: Validate launch presentation source contracts
         run: python Tools/validate_launch_presentation.py
+
+      - name: Validate Knock-Back Vent source and serialized assets
+        run: python Tools/validate_knock_back_vent.py
 
       - name: Compile Python validation tools
         run: python -m compileall -q Tools

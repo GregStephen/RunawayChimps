@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <DefineConstants>UNITY_EDITOR</DefineConstants>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../Assets/Scripts/KnockBackVent/Core/KnockBackVentModel.cs" Link="KnockBackVentModel.cs" />
+    <Compile Include="../../Assets/Scripts/KnockBackVent/KnockBackVent.cs" Link="KnockBackVent.cs" />
+    <Compile Include="../../Assets/Scripts/KnockBackVent/KnockBackVentHandInput.cs" Link="KnockBackVentHandInput.cs" />
+    <Compile Include="../../Assets/Scripts/Travel/SectorPresence.cs" Link="SectorPresence.cs" />
+    <Compile Include="Doubles.cs" />
+    <Compile Include="Program.cs" />
+  </ItemGroup>
+</Project>
