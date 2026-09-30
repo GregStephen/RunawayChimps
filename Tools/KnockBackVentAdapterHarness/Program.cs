@@ -13,6 +13,7 @@ using NetPlayer = Photon.Realtime.Player;
 internal static class Program
 {
     private static int assertions, cases;
+    private static string filter;
     private static void Require(bool value, string reason)
     { assertions++; if (!value) throw new InvalidOperationException(reason); }
     private static void Near(double a,double b,string reason) => Require(Math.Abs(a-b)<0.00002,reason);
@@ -53,18 +54,19 @@ internal static class Program
     private sealed class Fixture : IDisposable
     {
         public readonly KnockBackVent Vent;
-        public Fixture(int local=1)
+        public Fixture(int local=1, VentSettings settings=null)
         {
             Clock(100);
             PhotonNetwork.Sent.Clear();PhotonNetwork.FailNextSend=false;Debug.Errors.Clear();
             GorillaLocomotion.Player.Instance=null;
+            InputDevices.Device=new InputDevice {isValid=true,tracked=true};
             LoadingFlow.IsColdStartupPresentationActive=false;
             AppState.I=null;
             SectorTravelService.I=new SectorTravelService();
             PhotonNetwork.CurrentRoom=new Room();
             for(int i=1;i<=3;i++) PhotonNetwork.CurrentRoom.Players[i]=Member(i,i==local,SectorId.Hub);
             PhotonNetwork.LocalPlayer=PhotonNetwork.CurrentRoom.Players[local];
-            Vent=BuildVent();Vent.OnEnable();
+            Vent=BuildVent();if(settings!=null) Vent.rhythm=settings;Vent.OnEnable();
             Require(Debug.Errors.Count==0,"complete fixture references valid");
         }
         public void Dispose() { Vent.OnDisable();GorillaLocomotion.Player.Instance=null; }
@@ -75,10 +77,15 @@ internal static class Program
     private static object[] Packet(KnockBackVent vent,byte kind,double cycle,double issued,int owner,params object[] payload) =>
         new object[] {KnockBackVent.Protocol,1,vent.interactionId,kind,PhotonNetwork.CurrentRoom.Name,cycle,issued,owner,payload};
     private static int Scheduled(KnockBackVent vent) => vent.tapVoices.Concat(vent.replyVoices).Count(v=>v.scheduled.HasValue);
-    private static void Run(string name,Action action) { action();cases++;Console.WriteLine("PASS: adapter " + name); }
-
-    private static int Main()
+    private static void Run(string name,Action action)
     {
+        if (filter != null && !name.Contains(filter, StringComparison.OrdinalIgnoreCase)) return;
+        action(); cases++; Console.WriteLine("PASS: adapter " + name);
+    }
+
+    private static int Main(string[] args)
+    {
+        filter = args.Length > 0 ? args[0] : null;
         try
         {
             Run("authoritative accepted pattern and one plan",()=>
@@ -247,6 +254,7 @@ internal static class Program
                     var player=new GameObject().AddComponent<GorillaLocomotion.Player>();player.transform.parent=rig.transform;
                     var head=new GameObject();head.transform.parent=rig.transform;head.transform.localPosition=new Vector3(0,0.1f,0.1f);player.headCollider=head.AddComponent<SphereCollider>();
                     var hand=new GameObject();hand.transform.parent=rig.transform;
+                    player.leftHandFollower=hand.transform;
                     var sampler=new KnockBackVentHandInput();
                     for(int i=0;i<4;i++)
                     {
@@ -270,6 +278,169 @@ internal static class Program
                     Require(!sampler.Sample(player,rig.transform,hand.transform,Vector3.zero,XRNode.LeftHand,v.panelCollider,0.52,0.3f,7,0.22f,0.07f),"jumped contact cannot rearm in place");
                 }
             });
+            Run("same-tick cancellation cannot revive retired packets",()=>
+            {
+                using var f=new Fixture(2);var v=f.Vent;
+                Step(v,100.1);
+                var old=Packet(v,1,100.1,100.1,1,0,100.3d);
+                Receive(v,1,old);
+                Require(Scheduled(v)==1,"original tap scheduled");
+                Receive(v,1,Packet(v,3,100.1,100.1,1));
+                Receive(v,1,old);
+                Require(Scheduled(v)==0&&v.State==VentPhase.Idle,"same timestamp must stay retired after Cancel");
+                Step(v,100.12);Receive(v,1,Packet(v,1,100.12,100.12,1,0,100.32d));
+                Require(Scheduled(v)==1,"fresh later cycle remains usable");
+            });
+            Run("delayed cancellation preserves a newer live cycle",()=>
+            {
+                using var f=new Fixture(2);var v=f.Vent;
+                Step(v,100.1);Receive(v,1,Packet(v,1,100.1,100.1,1,0,100.3d));
+                Step(v,100.9);Receive(v,1,Packet(v,3,100.1,100.7,1));
+                Require(Scheduled(v)==0,"delayed cancel stops the old cycle");
+                Step(v,100.95);Receive(v,1,Packet(v,1,100.8,100.8,1,0,101d));
+                Require(Scheduled(v)==1&&v.State==VentPhase.Recording,
+                    "new cycle issued after cancel must survive cancellation transport latency");
+            });
+            Run("same-tick authority handoff requires fresh input",()=>
+            {
+                using var f=new Fixture(2);var v=f.Vent;
+                Step(v,100.1);
+                var old=Packet(v,1,100.1,100.1,3,0,100.3d);Receive(v,1,old);
+                var a=PhotonNetwork.CurrentRoom.GetPlayer(1);
+                a.CustomProperties[SectorPresence.PropertyKey]=2;v.OnPlayerPropertiesUpdate(a,new Hashtable());
+                Tap(v,3,100.1);
+                Require(v.State==VentPhase.Idle,"queued input at handoff timestamp cannot start B term");
+                a.CustomProperties[SectorPresence.PropertyKey]=1;v.OnPlayerPropertiesUpdate(a,new Hashtable());
+                Receive(v,1,old);
+                Require(Scheduled(v)==0,"same-tick A-B-A cannot resurrect A's first cycle");
+            });
+            Run("recording deadline tolerates a bounded render hitch",()=>
+            {
+                using var f=new Fixture(1,new VentSettings { maxTaps=8,maximumRecording=5,quietInterval=1.2f,extraKnockChance=0,heavyBangChance=0 });
+                var v=f.Vent;
+                for(int i=0;i<6;i++) { Step(v,100.1+i*0.92);Tap(v,2,PhotonNetwork.Time); }
+                Step(v,105.08); // just before the hard recording deadline of 105.1
+                Clock(105.68);Call(v,"LateUpdate"); // 600 ms hitch: below the existing 750 ms cancellation threshold
+                Require(PhotonNetwork.Sent.Count(p=>(byte)p.data[3]==2)==1,"one bounded reply plan broadcast");
+                Require(v.replyVoices.Count(a=>a.scheduled.HasValue)==6,"legal delayed plan must not reject itself");
+            });
+            Run("receiver watchdog includes permitted processing and transport delay",()=>
+            {
+                using var f=new Fixture(2);var v=f.Vent;
+                Step(v,100.1);Receive(v,1,Packet(v,1,100.1,100.1,3,0,100.3d));
+                Step(v,106.18); // receiver must not retire before a 5s recording + 0.75s frame gap + 0.75s delivery
+                Receive(v,1,Packet(v,2,100.1,105.68,3,106.43d,113.53d,new float[]{0,0.92f,1.84f,2.76f,3.68f,4.60f},-1));
+                Require(v.replyVoices.Count(a=>a.scheduled.HasValue)==6,"valid in-budget plan survives watchdog");
+            });
+            Run("missing reply watchdog remains bounded",()=>
+            {
+                using var f=new Fixture(2);var v=f.Vent;
+                Step(v,100.1);Receive(v,1,Packet(v,1,100.1,100.1,3,0,100.3d));
+                Step(v,107);
+                Require(v.State==VentPhase.Idle&&Scheduled(v)==0,"missing reply eventually cancels");
+            });
+            Run("disconnect before disable never sends into a missing room",()=>
+            {
+                using var f=new Fixture();var v=f.Vent;
+                Step(v,100.1);Tap(v,2,100.1);
+                PhotonNetwork.Sent.Clear();PhotonNetwork.CurrentRoom=null;
+                v.enabled=false;v.OnDisable();
+                Require(PhotonNetwork.Sent.Count==0,"OnDisable must not send old cancellation outside its observed room");
+                Require(Scheduled(v)==0,"disconnected cleanup still stops voices");
+            });
+            Run("room replacement before disable never sends to new session",()=>
+            {
+                using var f=new Fixture();var v=f.Vent;
+                Step(v,100.1);Tap(v,2,100.1);
+                var previous=PhotonNetwork.CurrentRoom;
+                PhotonNetwork.CurrentRoom=new Room {Name=previous.Name,Players=previous.Players};
+                PhotonNetwork.Sent.Clear();v.enabled=false;v.OnDisable();
+                Require(PhotonNetwork.Sent.Count==0,"same-name replacement must not receive prior room cancellation");
+            });
+            Run("disabled adapter ignores already-dispatched callbacks",()=>
+            {
+                using var f=new Fixture();var v=f.Vent;
+                Step(v,100.1);Tap(v,2,100.1);
+                v.enabled=false;v.OnDisable();PhotonNetwork.Sent.Clear();
+                Clock(100.2);Tap(v,2,100.2);
+                Require(!v.IsAuthority&&v.State==VentPhase.Idle&&Scheduled(v)==0&&PhotonNetwork.Sent.Count==0,
+                    "late callbacks cannot re-enable a disabled toy");
+            });
+            Run("tracked controller cannot tap through a blocked virtual hand",()=>
+            {
+                using var f=new Fixture();var v=f.Vent;
+                var rig=new GameObject();var player=rig.AddComponent<GorillaLocomotion.Player>();
+                var head=new GameObject();head.transform.parent=rig.transform;head.transform.position=new Vector3(0,0,0.7f);
+                player.headCollider=head.AddComponent<SphereCollider>();
+                var hand=new GameObject();hand.transform.parent=rig.transform;
+                var follower=new GameObject();follower.transform.parent=rig.transform;follower.transform.position=new Vector3(0,0,0.4f);
+                player.leftHandFollower=follower.transform;
+                var sampler=new KnockBackVentHandInput();
+                for(int i=0;i<4;i++)
+                {
+                    hand.transform.position=new Vector3(0,0,0.3f);
+                    sampler.Sample(player,rig.transform,hand.transform,Vector3.zero,XRNode.LeftHand,v.panelCollider,i*0.04,0.3f,7,0.22f,0.07f);
+                }
+                hand.transform.position=new Vector3(0,0,0.1f);
+                Require(!sampler.Sample(player,rig.transform,hand.transform,Vector3.zero,XRNode.LeftHand,v.panelCollider,0.16,0.3f,7,0.22f,0.07f),
+                    "blocked or reach-clamped Gorilla follower never touched the panel");
+                follower.transform.position=hand.transform.position;
+                Require(!sampler.Sample(player,rig.transform,hand.transform,Vector3.zero,XRNode.LeftHand,v.panelCollider,0.2,0.3f,7,0.22f,0.07f),
+                    "unblocking a resting controller is not a fresh tap");
+                for(int i=0;i<4;i++)
+                {
+                    hand.transform.position=follower.transform.position=new Vector3(0,0,0.3f);
+                    sampler.Sample(player,rig.transform,hand.transform,Vector3.zero,XRNode.LeftHand,v.panelCollider,0.24+i*0.04,0.3f,7,0.22f,0.07f);
+                }
+                hand.transform.position=follower.transform.position=new Vector3(0,0,0.1f);
+                Require(sampler.Sample(player,rig.transform,hand.transform,Vector3.zero,XRNode.LeftHand,v.panelCollider,0.4,0.3f,7,0.22f,0.07f),
+                    "fresh reachable tap still works after release");
+            });
+            Run("uniform scale preserves physical release distance for either hand",()=>
+            {
+                foreach(float scale in new[]{0.5f,1f,2f})
+                foreach(XRNode node in new[]{XRNode.LeftHand,XRNode.RightHand})
+                {
+                    using var f=new Fixture();var v=f.Vent;
+                    v.transform.localScale=Vector3.one*scale;
+                    var rig=new GameObject();var player=rig.AddComponent<GorillaLocomotion.Player>();
+                    var head=new GameObject();head.transform.position=new Vector3(0,0,0.7f);
+                    player.headCollider=head.AddComponent<SphereCollider>();
+                    var hand=new GameObject();hand.transform.parent=rig.transform;
+                    player.leftHandFollower=player.rightHandFollower=hand.transform;
+                    var sampler=new KnockBackVentHandInput();
+                    // 40 mm beyond the 55 mm contact envelope is a release at every scale.
+                    for(int i=0;i<4;i++)
+                    {
+                        hand.transform.position=new Vector3(0,0,0.05f*scale+0.095f);
+                        Require(!sampler.Sample(player,rig.transform,hand.transform,Vector3.zero,node,v.panelCollider,i*0.04,0.3f,7,0.22f,0.07f),"released scaled hand");
+                    }
+                    hand.transform.position=new Vector3(0,0,0.05f*scale+0.05f);
+                    Require(sampler.Sample(player,rig.transform,hand.transform,Vector3.zero,node,v.panelCollider,0.16,0.3f,7,0.22f,0.07f),"tap after physical 35 mm release threshold");
+                    // Moving only 25 mm beyond contact must not rearm even on a half-size toy.
+                    for(int i=0;i<4;i++)
+                    {
+                        hand.transform.position=new Vector3(0,0,0.05f*scale+0.08f);
+                        sampler.Sample(player,rig.transform,hand.transform,Vector3.zero,node,v.panelCollider,0.2+i*0.04,0.3f,7,0.22f,0.07f);
+                    }
+                    hand.transform.position=new Vector3(0,0,0.05f*scale+0.05f);
+                    Require(!sampler.Sample(player,rig.transform,hand.transform,Vector3.zero,node,v.panelCollider,0.36,0.3f,7,0.22f,0.07f),"partial release never rearms at another root scale");
+                }
+            });
+            Run("disabled panel cancels and requires a new cycle",()=>
+            {
+                using var f=new Fixture();var v=f.Vent;
+                Step(v,100.1);Tap(v,2,100.1);Step(v,100.9);
+                Require(Scheduled(v)>0,"reply scheduled before collider disable");
+                v.panelCollider.enabled=false;Call(v,"LateUpdate");
+                Require(Scheduled(v)==0&&!v.IsAuthority,"disabled physical panel cancels");
+                Step(v,101);Tap(v,2,101);
+                Require(v.State==VentPhase.Idle,"disabled panel cannot accept requests");
+                v.panelCollider.enabled=true;Call(v,"LateUpdate");
+                Step(v,101.1);Tap(v,2,101.1);
+                Require(v.State==VentPhase.Recording,"fresh enabled panel works again");
+            });
+            if (cases == 0) throw new ArgumentException("No adapter cases matched: " + filter);
             Console.WriteLine($"PASS: {cases} managed adapter cases / {assertions} assertions. Production adapter/core/election linked against instrumented doubles; NOT Unity, native physics, Photon or headset validation.");
             return 0;
         }

@@ -80,7 +80,7 @@ namespace UnityEngine
         { var r=System.Numerics.Vector3.Transform(new System.Numerics.Vector3(v.x,v.y,v.z),q.Raw); return new Vector3(r.X,r.Y,r.Z); }
         public static float Angle(Quaternion a,Quaternion b) => (float)(Math.Acos(Math.Min(1,Math.Abs(System.Numerics.Quaternion.Dot(a.Raw,b.Raw))))*360/Math.PI);
     }
-    public class Collider : Component { }
+    public class Collider : Component { public bool enabled = true; }
     public class SphereCollider : Collider { }
     public class BoxCollider : Collider { public bool isTrigger; public Vector3 size, center; }
     public class AudioClip : Object { public float length = 0.1f; }
@@ -220,8 +220,9 @@ namespace GorillaLocomotion
         public static Player Instance;
         public bool disableMovement;
         public UnityEngine.SphereCollider headCollider;
-        public UnityEngine.Transform leftHandTransform,rightHandTransform;
+        public UnityEngine.Transform leftHandTransform,rightHandTransform,leftHandFollower,rightHandFollower;
         public UnityEngine.Vector3 leftHandOffset,rightHandOffset;
         public float maxArmLength = 1.5f;
+        public float minimumRaycastDistance = 0.05f;
     }
 }

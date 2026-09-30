@@ -25,7 +25,7 @@ namespace RunawayChimps.Toys.KnockBack
                 maxTaps = Math.Max(1, Math.Min(VentModel.HardTapLimit, maxTaps)),
                 minimumInterval = Clamp(minimumInterval, 0.1f, 0.3f, 0.12f),
                 quietInterval = Clamp(quietInterval, 0.4f, 1.2f, 0.65f),
-                maximumRecording = Clamp(maximumRecording, 1f, 5f, 3.5f),
+                maximumRecording = Clamp(maximumRecording, 1f, VentModel.RecordingLimit, 3.5f),
                 replyDelay = Clamp(replyDelay, 0.4f, 2f, 0.75f),
                 cooldown = Clamp(cooldown, 1f, 8f, 2f),
                 extraKnockChance = Clamp(extraKnockChance, 0f, 0.15f, 0.06f),
@@ -57,6 +57,13 @@ namespace RunawayChimps.Toys.KnockBack
         public const int HardTapLimit = 8;
         public const int ReplyLimit = HardTapLimit + 1;
         public const double AudioTail = 0.5d;
+        public const float RecordingLimit = 5f;
+        public const double MessageMaxAge = 0.75d;
+        public const double FrameGapLimit = 0.75d;
+        // A valid frame may cross the recording deadline before constructing the plan.
+        // Receivers must allow that frame gap AND transport delay before timing out.
+        public const double LatestPlanIssue = RecordingLimit + FrameGapLimit + 0.05d;
+        public const double RecordingTimeout = LatestPlanIssue + MessageMaxAge + 0.1d;
         public VentPhase Phase { get; private set; }
         public int Owner { get; private set; }
         public int Count { get; private set; }
@@ -72,7 +79,7 @@ namespace RunawayChimps.Toys.KnockBack
         public bool TryTap(int actor, double inputTime, double now)
         {
             if (actor <= 0 || !Finite(inputTime) || !Finite(now) || inputTime > now + 0.1d ||
-                now - inputTime > 0.75d) return false;
+                now - inputTime > MessageMaxAge) return false;
             if (Phase == VentPhase.Idle)
             {
                 Phase = VentPhase.Recording;
@@ -168,20 +175,27 @@ namespace RunawayChimps.Toys.KnockBack
         public int LastTap { get; private set; } = -1;
         public bool Sealed { get; private set; }
         private double lastIssued = double.NegativeInfinity;
+        private bool strictFloor = true;
         public void Reset(double now)
         {
             Floor = now;
+            strictFloor = true;
             Cycle = double.NegativeInfinity;
             lastIssued = double.NegativeInfinity;
             Owner = 0;
             LastTap = -1;
             Sealed = false;
         }
+        // Photon timestamps have millisecond resolution. Resetting at the old cycle's
+        // exact timestamp must retire it too, not admit an equal-timestamp replay.
+        public bool AcceptsInput(double time) => VentModel.Finite(time) &&
+            (strictFloor ? time > Floor : time >= Floor);
+
         public bool Header(double cycle, double issued, double now, int owner)
         {
             if (owner <= 0 || !VentModel.Finite(cycle) || !VentModel.Finite(issued) || !VentModel.Finite(now) ||
-                cycle < Floor || cycle > issued || issued > now + 0.1d || now - issued > 0.75d ||
-                cycle < Cycle || issued < lastIssued || issued - cycle > 22d) return false;
+                !AcceptsInput(cycle) || cycle > issued || issued > now + 0.1d || now - issued > VentModel.MessageMaxAge ||
+                cycle < Cycle || issued < lastIssued || issued - cycle > 23d) return false;
             if (cycle > Cycle)
             {
                 Cycle = cycle;
@@ -200,7 +214,13 @@ namespace RunawayChimps.Toys.KnockBack
             return true;
         }
         public bool Seal() { if (Sealed) return false; Sealed = true; return true; }
-        public void Retire(double now) { Reset(now); }
+        public void Retire(double now)
+        {
+            Reset(now);
+            // Normal cooldown completion has an inclusive deadline. Its retired cycle
+            // is already strictly older; a fresh tap exactly at that deadline is valid.
+            strictFloor = false;
+        }
 
         public static bool ValidReply(VentReply reply, double issued)
         {

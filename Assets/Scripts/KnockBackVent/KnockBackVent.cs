@@ -153,7 +153,8 @@ namespace RunawayChimps.Toys.KnockBack
             if (diagnostic && PhotonNetwork.InRoom) diagnostic = false;
             Room room = PhotonNetwork.CurrentRoom;
             var travel = SectorTravelService.I;
-            bool nextEligible = !paused && UniqueIdentity() && gameObject.scene == SceneManager.GetActiveScene() &&
+            bool nextEligible = isActiveAndEnabled && panelCollider != null && panelCollider.enabled &&
+                !paused && UniqueIdentity() && gameObject.scene == SceneManager.GetActiveScene() &&
                 (diagnostic || (PhotonNetwork.InRoom && PhotonNetwork.LocalPlayer != null &&
                     SectorPresence.Get(PhotonNetwork.LocalPlayer) == sector &&
                     (travel == null || !travel.IsBusy) && !LoadingFlow.IsColdStartupPresentationActive &&
@@ -162,7 +163,7 @@ namespace RunawayChimps.Toys.KnockBack
                 ? SectorPresence.ElectController(PhotonNetwork.PlayerList, sector) : 0;
             double now = Clock;
             if (!ReferenceEquals(room, observedRoom) || nextEligible != eligible || elected != controller ||
-                now < previousClock || now - previousClock > 0.75d)
+                now < previousClock || now - previousClock > VentModel.FrameGapLimit)
             {
                 // No replay on room replacement, sector return, authority A -> B -> A or long stalls.
                 if (ReferenceEquals(room, observedRoom) && IsAuthority && model.Count > 0) SendCancellation();
@@ -267,7 +268,7 @@ namespace RunawayChimps.Toys.KnockBack
         {
             if (!IsAuthority) return;
             AdvanceAuthority(now);
-            if (inputTime < delivery.Floor || !model.TryTap(actor, inputTime, now)) return;
+            if (!delivery.AcceptsInput(inputTime) || !model.TryTap(actor, inputTime, now)) return;
             if (model.Count == 1)
             {
                 // Snapshot the original audience. Late sector/room arrivals do not receive even
@@ -299,7 +300,9 @@ namespace RunawayChimps.Toys.KnockBack
 
         private void SendCancellation()
         {
-            if (!diagnostic && observedRoom != null && model != null && model.Count > 0 && participants.Length > 0)
+            if (!diagnostic && PhotonNetwork.InRoom && observedRoom != null &&
+                ReferenceEquals(PhotonNetwork.CurrentRoom, observedRoom) &&
+                model != null && model.Count > 0 && participants.Length > 0)
                 PhotonNetwork.RaiseEvent(EventCode,
                     new object[] { Protocol, (int)sector, interactionId, Cancel, observedRoom.Name,
                         model.Cycle, Clock, model.Owner, Array.Empty<object>() },
@@ -335,7 +338,7 @@ namespace RunawayChimps.Toys.KnockBack
             }
             else if (kind == ReplyPlan)
             {
-                if (issued - cycle > 5.2d || payload.Length != 4 || !(payload[0] is double start) || !(payload[1] is double cooldownEnd) ||
+                if (issued - cycle > VentModel.LatestPlanIssue || payload.Length != 4 || !(payload[0] is double start) || !(payload[1] is double cooldownEnd) ||
                     !(payload[2] is float[] offsets) || !(payload[3] is int heavy)) return;
                 plan = new VentReply(start, cooldownEnd, offsets, heavy);
                 if (!VentDeliveryGate.ValidReply(plan, issued)) return;
@@ -345,13 +348,19 @@ namespace RunawayChimps.Toys.KnockBack
             bool newCycle = cycle > delivery.Cycle;
             if (!delivery.Header(cycle, issued, now, owner)) return;
             if (newCycle) ClearPlayback();
-            if (kind == Cancel) { ResetAll(now); return; }
+            if (kind == Cancel)
+            {
+                // A cancellation retires input through its authority issue time, not
+                // arrival time. Otherwise transit latency also discards a newer live cycle.
+                ResetAll(now, issued);
+                return;
+            }
             if (kind == AcceptedTap)
             {
                 int ordinal = (int)payload[0];
                 if (!delivery.Tap(ordinal)) return;
                 playbackPhase = VentPhase.Recording;
-                recordingDeadline = cycle + 5.8d;
+                recordingDeadline = cycle + VentModel.RecordingTimeout;
                 Schedule(tapVoices[ordinal], tapClip, (double)payload[1], tapVolume, now);
             }
             else if (delivery.Seal())
@@ -402,10 +411,10 @@ namespace RunawayChimps.Toys.KnockBack
             recordingDeadline = 0d;
         }
         private void ResetHands() { left.Reset(); right.Reset(); rigSeeded = false; sampledRig = null; }
-        private void ResetAll(double now)
+        private void ResetAll(double now, double? retireThrough = null)
         {
             model?.Cancel();
-            delivery.Reset(now);
+            delivery.Reset(retireThrough ?? now);
             participants = Array.Empty<int>();
             ClearPlayback();
             ResetHands();

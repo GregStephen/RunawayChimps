@@ -9,7 +9,7 @@ namespace RunawayChimps.Tests.KnockBack
         public static readonly string[] Cases = {
             "Timing", "QuietDeadline", "Bounded", "SimultaneousUsers", "Variations", "Cooldown",
             "CancelEveryPhase", "FreshRelease", "RestingContact", "CompoundContact", "TrackingReset",
-            "DeliveryOrdering", "ContextCancellation", "MalformedReply", "InvalidInput", "Stress"
+            "DeliveryOrdering", "ContextCancellation", "SameTickRetirement", "InclusiveCooldownFloor", "MalformedReply", "InvalidInput", "Stress"
         };
         public static int Assertions { get; private set; }
         private static void Require(bool value, string reason)
@@ -199,6 +199,29 @@ namespace RunawayChimps.Tests.KnockBack
                     Require(!lateArrival.Header(4.1, 5.1, 5.1, 1), "late arrival receives no old cycle");
                     gate.Retire(6);
                     Require(!gate.Header(4.1, 6.1, 6.1, 1), "completed cycle not replayed");
+                    break;
+                }
+                case "SameTickRetirement":
+                {
+                    var gate = new VentDeliveryGate();
+                    gate.Reset(9);
+                    Require(gate.Header(10, 10, 10, 1) && gate.Tap(0), "original live tap");
+                    gate.Reset(10);
+                    Require(!gate.Header(10, 10, 10, 1), "equal-timestamp retired cycle cannot reappear");
+                    Require(!gate.AcceptsInput(10), "queued equal-timestamp request cannot seed another authority term");
+                    Require(gate.AcceptsInput(10.001) && gate.Header(10.001, 10.001, 10.001, 2), "fresh millisecond admits new owner");
+                    Require(!gate.AcceptsInput(double.NaN) && !gate.AcceptsInput(double.PositiveInfinity), "input floor fails closed on nonfinite data");
+                    break;
+                }
+                case "InclusiveCooldownFloor":
+                {
+                    var gate = new VentDeliveryGate();
+                    gate.Reset(9);
+                    Require(gate.Header(10, 10, 10, 1), "original cycle");
+                    gate.Retire(15);
+                    Require(!gate.AcceptsInput(14.999), "cooldown input is discarded");
+                    Require(gate.AcceptsInput(15) && gate.Header(15, 15, 15, 2), "fresh tap at exact cooldown deadline works");
+                    Require(!gate.Header(10, 15, 15, 1), "inclusive deadline does not revive older cycle");
                     break;
                 }
                 case "MalformedReply":
