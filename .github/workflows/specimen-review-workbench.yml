@@ -2,33 +2,34 @@ name: Specimen review workbench
 on:
   push:
     branches: [feature/reactive-specimen-jar]
-    paths: [.github/workflows/specimen-review-workbench.yml, Tools/_specimen_review.py]
+    paths: [Tools/_specimen_review.py]
 permissions:
-  contents: read
+  contents: write
+concurrency:
+  group: specimen-review-publish
+  cancel-in-progress: false
 jobs:
-  export:
+  review:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 1
-          persist-credentials: false
-      - name: Export branch review source
-        shell: python
-        run: |
-          import pathlib, subprocess, zipfile, json
-          names = list(filter(None, subprocess.check_output(['git','ls-files','-z']).decode().split('\0')))
-          text = {'.cs','.meta','.shader','.mat','.prefab','.asset','.unity','.txt','.json','.md','.yml','.yaml','.py','.asmdef','.asmref','.csproj','.props','.targets','.sh','.cginc','.hlsl','.xml'}
-          with zipfile.ZipFile('/tmp/specimen-review-source.zip','w',zipfile.ZIP_DEFLATED) as z:
-              for name in names:
-                  p = pathlib.Path(name)
-                  if p.suffix.lower() in text or name in ['.gitignore','.gitattributes']:
-                      z.write(p, name)
-              z.writestr('_tracked_paths.json', json.dumps(names))
-              z.writestr('_review_base_sha.txt', '9290c257cb62005feddd1dd99116623dc6b4d9c2')
-      - uses: actions/upload-artifact@v4
+      - uses: actions/setup-python@v5
         with:
-          name: specimen-review-source
-          path: /tmp/specimen-review-source.zip
-          retention-days: 1
+          python-version: '3.11'
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Install existing source parser dependencies
+        run: python -m pip install 'tree-sitter==0.25.2' 'tree-sitter-c-sharp==0.23.5'
+      - name: Apply reviewed fixes, validate complete checkout and publish
+        run: python Tools/_specimen_review.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: specimen-review-validation
+          path: /tmp/specimen-review-validation.json
+          if-no-files-found: ignore
+          retention-days: 7
