@@ -1,0 +1,33 @@
+name: Specimen branch workbench
+on:
+  push:
+    branches: [feature/reactive-specimen-jar]
+permissions:
+  contents: read
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Export tracked source for branch implementation
+        shell: python
+        run: |
+          import pathlib, subprocess, zipfile, json
+          names = subprocess.check_output(['git','ls-files','-z']).decode().split('\0')
+          text = {'.cs','.meta','.shader','.mat','.prefab','.asset','.unity','.txt','.json','.md','.yml','.yaml','.py','.asmdef','.asmref','.csproj','.props','.targets','.sh','.cginc','.hlsl','.xml'}
+          with zipfile.ZipFile('/tmp/specimen-source.zip','w',zipfile.ZIP_DEFLATED) as z:
+              for name in filter(None, names):
+                  p = pathlib.Path(name)
+                  if p.suffix.lower() in text or name in ['.gitignore','.gitattributes']:
+                      z.write(p, name)
+              z.writestr('_tracked_paths.json', json.dumps(list(filter(None,names))))
+              z.writestr('_base_sha.txt', subprocess.check_output(['git','rev-parse','HEAD']).decode())
+      - uses: actions/upload-artifact@v4
+        with:
+          name: specimen-source
+          path: /tmp/specimen-source.zip
+          retention-days: 1
