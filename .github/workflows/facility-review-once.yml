@@ -1,0 +1,56 @@
+name: Facility self-review preparation (temporary)
+on:
+  push:
+    branches: ['feature/facility-announcements']
+    paths: ['.github/workflows/facility-review-once.yml']
+permissions:
+  contents: write
+jobs:
+  prepare-reviewed-source:
+    if: github.ref == 'refs/heads/feature/facility-announcements'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Apply bounded review corrections and additive documentation
+        run: python Tools/FacilityAnnouncements/review_once.py
+      - name: Validate corrected assets
+        run: python Tools/FacilityAnnouncements/validate_assets.py
+      - name: Inspect external serialized UI bindings
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+          path = Path('Assets/TextMesh Pro/Resources/Fonts & Materials/LiberationSans SDF.asset')
+          data = path.read_text(encoding='utf-8-sig')
+          print('Existing TMP font material object IDs:', re.findall(r'^--- !u!21 &(\d+)', data, re.M))
+          print('Expected caption font material 2180264 exists:', '--- !u!21 &2180264' in data)
+          assert '--- !u!21 &2180264' in data
+      - name: Commit only reviewed feature and documentation changes
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add Assets/Scripts/FacilityAnnouncements Assets/RunawayChimps/FacilityAnnouncements Tools/FacilityAnnouncements/build_assets.py docs/design-and-lore.md docs/repository-improvement-plan.md
+          git commit -m 'fix: harden facility asset references, interrupted playback and caption layout; record prototype decision'
+          git push origin HEAD:refs/heads/feature/facility-announcements
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: facility-review-source
+          retention-days: 7
+          path: |
+            Assets/Scripts/FacilityAnnouncements
+            Assets/RunawayChimps/FacilityAnnouncements
+            Tools/FacilityAnnouncements
+            Tools/FacilityAnnouncementsHarness
+            docs/design-and-lore.md
+            docs/repository-improvement-plan.md
+            docs/facility-announcements.md
+            Assets/Scripts/PlayerScripts/LocalRigMarker.cs.meta
+            Assets/Scenes/Bootstrap.unity
