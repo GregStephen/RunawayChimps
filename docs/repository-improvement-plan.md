@@ -1,8 +1,28 @@
 # Runaway Chimps repository improvement plan
 
-Last updated: 2026-09-22. Maintained repository edition, migrated from `Runaway_Chimps_Repository_Review_and_Plan.docx`, Revision 2. The original review examined `main` at `4f6894141aa2b132d744cb2423c1ee227e0fc5be`; its evidence links remain pinned to that baseline. The Word document is a historical downloadable snapshot.
+Last updated: 2026-09-30. Maintained repository edition, migrated from `Runaway_Chimps_Repository_Review_and_Plan.docx`, Revision 2. The original review examined `main` at `4f6894141aa2b132d744cb2423c1ee227e0fc5be`; its evidence links remain pinned to that baseline. The Word document is a historical downloadable snapshot.
 
 Read the [design and lore](design-and-lore.md) for intended behavior and [AGENTS.md](../AGENTS.md) for update rules. A confirmed finding describes source evidence; it does not mean its fix is implemented or tested.
+
+## September 30 facility announcement review follow-up
+
+**Implemented on `feature/facility-announcements` / [PR #80](https://github.com/GregStephen/RunawayChimps/pull/80), unmerged:** Greg requested repeated review and correction of the optional announcement prototype. Playback now stops when its reserved slot expires and refuses to begin speech that cannot finish in the remaining slot; an incoming event cannot orphan an existing source or resurrect disabled captions. Failed event sends no longer consume repeat history, send-time authority is refreshed, and a Photon timestamp rollover retires the old visit and rearms a quiet wait rather than retaining an unreachable deadline. Local readiness follows the current active rig/camera; streaming or zero-weight content cannot claim eligibility, and nonfinite audio/subtitle controls receive safe bounds. This is reliability work, not a new gameplay or lore decision.
+
+**Validated managed/source evidence:** the completed adapter harness links the five actual runtime feature files and existing `SectorPresence.cs`. Against the original `b3e508c7f19b93adb9cfd807bbea933cdbe3ba8a` runtime it reproduced 11 failing cases. Against the corrected runtime all **19 cases / 60 assertions pass**, as do **20,064 production-policy assertions** and **974 serialized asset/source assertions**. The initial review found nine failing diagnostic cases; the second found two more; the final review found no further actionable issue within the reviewed scope. These are not native integration passes. See [the review record](facility-announcements-review.md) for exact commands, limitations and publication evidence.
+
+**Preserved / pending:** all four prerecorded synthetic speech WAVs, two original cues, prefab/material references and proposed wording are unchanged. No existing scene, package, Unity 2022.3.62f3, rendering, XR, player voice/reporting or other feature changes. Unity import/compilation, Editor checks, native audio/intelligibility, Photon transport, headset/Quest and real callback/timing acceptance remain pending. This optional atmosphere prototype still adds no launch requirement.
+
+## September 30 optional facility announcement prototype
+
+**Confirmed choice:** Greg approved prototyping occasional prerecorded facility announcements as optional atmosphere, not a launch requirement. This work is independent of the toys, regeneration-lab art kit and security-console branches. It must not change objectives, rewards, monster hearing, player voice/reporting, surveillance-monitor silence or canonical staff/experiment/monster history.
+
+**Proposed wording:** the four editable lines about enrichment privileges, unexpected tissue movement, assigned containment and recorded cooperation are prototypes, not canonical lore commitments. Full wording, stable IDs and content-authoring rules are in [the facility announcement guide](facility-announcements.md).
+
+**Implemented on `feature/facility-announcements` (not a merge or runtime acceptance):** real industrial speaker and local-camera caption prefabs, assigned materials/collection/audio references, long quiet intervals, stable-ID repeat prevention, one eligible sector authority independent of the Master Client's location, uncached sector/visit-filtered announcements, bounded playback, interruption cleanup, local caption preferences, Undo-aware explicit Hub placement, Editor audition and development-only diagnostic timing. No existing scene, Unity 2022.3.62f3 baseline, package, rendering or XR configuration is changed.
+
+**Available audio:** four actually rendered native eSpeak synthetic prototype speech WAVs and two original nonverbal relay/chime cues are committed with transcripts, commands, durations and checksums. Synthetic speech is present; final performance, intelligibility and mix approval are not. Missing/unloaded/pending speech is skipped silently in normal playback. A separately labelled text/cue preview is development-only and does not count as voiced content.
+
+**Validation boundary:** the production policy harness and static asset/source checks are executable separately from Unity. The initial authored-asset check passed 781 assertions. Final revision-specific automated results and self-review fixes are recorded in the PR/guide; source checks do not prove Unity import, Editor execution, actual audio playback, Photon transport, XR rendering or Quest performance. Those solo/two-client/headset checks remain pending in the guide. This prototype adds no release gate and preserves unrelated decisions below.
 
 ## September 22 Unity 62f3 baseline adoption
 
