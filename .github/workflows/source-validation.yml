@@ -41,6 +41,12 @@ jobs:
       - name: Execute production card-consumption state tests
         run: dotnet run --project Tools/CardSystemHarness/CardSystemHarness.csproj --configuration Release
 
+      - name: Execute player safety state and service diagnostics
+        run: dotnet run --project Tools/SocialSafetyHarness/SocialSafetyHarness.csproj --configuration Release
+
+      - name: Validate authored player board
+        run: python Tools/validate_player_board.py
+
       - name: Install syntax-parser dependencies
         run: |
           python -m pip install --disable-pip-version-check \

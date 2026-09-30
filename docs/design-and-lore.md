@@ -1,6 +1,20 @@
 # Runaway Chimps design and lore
 
-Last updated: 2026-09-22. Maintained repository edition, migrated from `Runaway_Chimps_Design_and_Lore.docx` version 0.9. The existing Word document is a downloadable snapshot; future edits belong here. See [AGENTS.md](../AGENTS.md) for the documentation workflow and the [repository improvement plan](repository-improvement-plan.md) for implementation evidence.
+Last updated: 2026-09-30. Maintained repository edition, migrated from `Runaway_Chimps_Design_and_Lore.docx` version 0.9. The existing Word document is a downloadable snapshot; future edits belong here. See [AGENTS.md](../AGENTS.md) for the documentation workflow and the [repository improvement plan](repository-improvement-plan.md) for implementation evidence.
+
+## September 30 player roster, individual mute and report
+
+**Publication decision / implementation correction:** Greg explicitly approved pushing this branch, opening an active ready-for-review PR, and reworking the implementation as needed. The final Hub integration uses an editable `PlayerBoardHub` placement prefab instantiated under the scene's existing `SpawnRoom` root, replacing the initial direct scene edit after the 30 MB scene upload failed. The same Hub board is installed automatically; a manually placed copy takes precedence. Scene unload owns cleanup and room hiding covers it during travel. No manual setup is needed; layout is authored in the placement prefab. Publication permission is granted; merge and Unity/runtime acceptance remain separate.
+
+**Confirmed by Greg:** a Gorilla Tag-style room player list with per-player mute/unmute and reporting is required. Deliver a rough usable concept first; final appearance is undecided. This is a roster rather than a score leaderboard. This new decision extends the public-session safety work in [#43](https://github.com/GregStephen/RunawayChimps/issues/43).
+
+**Implemented on `feature/player-board-safety` (not yet merged):** an editable facility-style PlayerBoard prefab and authored Hub placement beside the computer; five large rows per page covering the ten-player room; actor-bound actions and local-hand-only trigger input; a hold-Y portable copy; a persistent room-session mute service combined with sector voice filtering; and a reason/confirmation flow submitting to PlayFab's native report API. Report failures, missing identity, uncertain quota receipt, timeouts/retries, target departure and stale-room callbacks have explicit handling. No final art approval, automatic punishment or saved block list is implied.
+
+**Source/managed validation:** the final offline source suite and prefab wiring checks pass across 150 scripts, five enabled scenes and 1,897 paired metadata files. The revised harness passes 70 assertions against production safety/controller/voice/Hub-loader code with diagnostic Unity/Photon/PlayFab doubles, including duplicate notifications, hidden and already-loaded Hub roots, manual board precedence, missing assets/anchor, and disabled subscriptions. Direct .NET 8 Roslyn compilation/runtime execution was used because the local SDK CLI cannot inspect its process in this environment. These results are not Unity or live-service acceptance; the published PR records the remote CI result.
+
+**Pending validation / release limitation:** Unity 2022.3.62f3 import/rendering, both-hand input, Quest reach/readability, two/three-client actual voice isolation, and real report receipt/review in Greg's PlayFab title. Current Photon report IDs are client-claimed because trusted PlayFab-to-Photon identity binding is not configured in the existing startup. Reports are advisory; authenticated identity, operator review/privacy/retention and the full #43 close rule remain public-release gates. Mutes survive sector travel but reset when room membership ends. Prototype layout/placement, persistent mute/block semantics and review cadence remain open.
+
+See [player board and reporting](player-board-and-reporting.md) for setup, exact data/destination, the native API daily-limit ambiguity, implementation boundaries and acceptance steps. This work preserves the adopted Unity 62f3 baseline and does not close #43.
 
 ## September 22 Unity 62f3 baseline adoption
 

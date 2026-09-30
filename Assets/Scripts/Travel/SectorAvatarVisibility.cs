@@ -58,16 +58,20 @@ namespace RunawayChimps.Travel
                     if (!hiddenColliders.ContainsKey(collider)) hiddenColliders.Add(collider, collider.enabled);
                     collider.enabled = false;
                 }
-                var speaker = voice != null && voice.SpeakerInUse != null
-                    ? voice.SpeakerInUse.GetComponent<AudioSource>() : null;
-                if (speaker != mutedSpeaker)
-                {
-                    RestoreSpeaker();
-                    mutedSpeaker = speaker;
-                    if (speaker != null) previousMute = speaker.mute;
-                }
-                if (mutedSpeaker != null) mutedSpeaker.mute = true;
             }
+            // One owner combines the sector gate and the local user's explicit mute.
+            // A same-sector refresh must never restore voice over a user mute.
+            var speaker = voice != null && voice.SpeakerInUse != null
+                ? voice.SpeakerInUse.GetComponent<AudioSource>() : null;
+            if (speaker != mutedSpeaker)
+            {
+                RestoreSpeaker();
+                mutedSpeaker = speaker;
+                if (speaker != null) previousMute = speaker.mute;
+            }
+            if (mutedSpeaker != null)
+                mutedSpeaker.mute = RunawayChimps.SocialSafety.PlayerSafetyState.ShouldMute(previousMute,
+                    visible, RunawayChimps.SocialSafety.PlayerSafetyService.IsMuted(view.Owner));
         }
 
         private void RestoreSpeaker()
@@ -82,9 +86,8 @@ namespace RunawayChimps.Travel
             foreach (var pair in hiddenColliders) if (pair.Key != null) pair.Key.enabled = pair.Value;
             hiddenRenderers.Clear();
             hiddenColliders.Clear();
-            RestoreSpeaker();
         }
 
-        private void OnDisable() => Restore();
+        private void OnDisable() { Restore(); RestoreSpeaker(); }
     }
 }
