@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """Validate real serialized board wiring; Unity import/physics/font rendering is separate."""
-from pathlib import Path
+from pathlib import Path, PurePosixPath, PureWindowsPath
+import ast
 import re
 import json
 import struct
+import uuid
 
 ROOT = Path(__file__).resolve().parents[1]
 ASSETS = ROOT / 'Assets'
@@ -56,4 +58,19 @@ assert 'm_Name: SpawnRoom\n' in scene, 'Hub placement anchor must exist'
 # Script/resource lookup must resolve an actual prefab, not an editor-only factory.
 shortcut = (ASSETS / 'Scripts/SocialSafety/PlayerBoardShortcut.cs').read_text()
 assert 'Resources.Load<PlayerBoard>("SocialSafety/PlayerBoard")' in shortcut
-print('PASS: player-board dependencies, local references, 20 controls, 5 rows, trigger physics, and Hub placement prefab.')
+
+# Execute only the pure GUID helper: importing the authoring script would rewrite
+# assets. Rebuilding on Windows must preserve the IDs referenced by the Hub wrapper.
+authoring_path = ROOT / 'Tools/PlayerBoard/build_player_board.py'
+authoring = ast.parse(authoring_path.read_text())
+helper = next(n for n in authoring.body if isinstance(n, ast.FunctionDef) and n.name == 'guid')
+scope = {'uuid': uuid}
+exec(compile(ast.Module(body=[helper], type_ignores=[]), str(authoring_path), 'exec'), scope)
+authored_assets = [path.parent, path, path.with_name('PlayerBoardHub.prefab')]
+authored_assets += [path.with_name(name + '.mat') for name in ('Frame', 'Screen', 'Button', 'Report', 'Row')]
+for asset in authored_assets:
+    relative = asset.relative_to(ROOT).as_posix()
+    expected = re.search(r'^guid: (\w+)', Path(str(asset) + '.meta').read_text(), re.M)[1]
+    for platform_path in (PurePosixPath(relative), PureWindowsPath(relative)):
+        assert scope['guid'](platform_path) == expected, f'rebuilding changes GUID for {platform_path}'
+print('PASS: player-board dependencies, local references, 20 controls, 5 rows, trigger physics, Hub placement prefab, and cross-platform asset GUIDs.')

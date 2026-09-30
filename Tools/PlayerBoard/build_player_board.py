@@ -8,7 +8,11 @@ OUT=ROOT/'Assets/Resources/SocialSafety'
 scene=ROOT/'Assets/Scenes/Hub_Base.unity'
 scene_text=scene.read_text()
 blocks={i:(k,b) for k,i,b in re.findall(r'^--- !u!(\d+) &(\d+)[^\n]*\n(.*?)(?=^--- !u!|\Z)',scene_text,re.M|re.S)}
-def guid(path): return uuid.uuid5(uuid.NAMESPACE_URL,'runawaychimps/player-board/'+str(path)).hex
+def guid(path):
+    # Match the committed asset IDs on every authoring OS. The preserved Hub
+    # placement prefab references these IDs, so native Windows separators would
+    # otherwise break its nested board reference after rebuilding.
+    return uuid.uuid5(uuid.NAMESPACE_URL,'runawaychimps/player-board/'+str(path).replace('\\','/')).hex
 def meta(path, importer=None, folder=False):
     p=ROOT/path
     if importer is None: importer='DefaultImporter:\n  externalObjects: {}\n'

@@ -64,6 +64,8 @@ These checks are configured in Source validation CI; the published PR carries th
 
 **Validated offline, September 30 second self-review:** **89 assertions pass**, including four additional checks for an SDK success arriving after the UI deadline without a retry, duplicate suppression after that confirmation, and protection against a subsequent duplicate callback. The late-confirmation regression failed before the fix. The existing timeout/retry and stale-room guards, source syntax, prefab wiring and repository integrity checks still pass.
 
+**Validated offline, September 30 third self-review:** the prefab rebuild tool now normalizes Windows path separators before generating asset GUIDs. Previously, rebuilding on Windows would change the board prefab ID and break the reference in the preserved Hub placement. The validator executes only the pure GUID helper and checks Windows/POSIX path forms against the committed IDs for all eight generated asset/folder entries. The regression failed before the fix and passes afterward; the 89 managed diagnostics and source/integrity checks also pass. No prefab or material ID was changed. Actual Unity import/rendering on Windows remains untested here.
+
 **Pending Unity 2022.3.62f3 and live-service acceptance:**
 
 1. Import/compile without warnings/errors; inspect the board's font, material, placement, reachable heights and absence of blockers in Hub. Confirm one Hub copy at startup and after repeated travel/rollback; no board reveals during black loading, leaks into another sector, or duplicates a manually authored copy. Exercise all ten rows across two pages, duplicate/long nicknames and inactive/rejoining players.
