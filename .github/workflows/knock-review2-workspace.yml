@@ -1,32 +1,96 @@
-name: Knock-back vent second review workspace
+name: Knock-back vent second reviewed fixes
 on:
   push:
     branches: [feature/knock-back-vent]
     paths: [.github/workflows/knock-review2-workspace.yml]
 permissions:
-  contents: read
+  contents: write
 jobs:
-  export:
+  publish:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: 49d42259ad3a405fdba849b0f28fba18912e3d92
-      - name: Export pinned tracked review sources
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Apply only the exact reviewed corrections
         shell: python
         run: |
-          import pathlib, subprocess, zipfile
-          suffixes = {'.cs', '.meta', '.unity', '.prefab', '.mat', '.asset', '.shader', '.cginc', '.md', '.py', '.yml', '.yaml', '.json', '.asmdef', '.asmref', '.txt', '.csproj', '.props', '.targets', '.xml', '.sh', '.config'}
-          with zipfile.ZipFile('/tmp/knock-review2.zip', 'w', zipfile.ZIP_DEFLATED) as z:
-              for name in subprocess.check_output(['git', 'ls-files', '-z']).decode().split('\0'):
-                  p = pathlib.Path(name)
-                  if name and p.is_file() and (p.suffix in suffixes or name in {'.gitignore', '.gitattributes'} or name.startswith('Assets/RunawayChimps/KnockBackVent/')):
-                      z.write(p, 'repository/' + name)
-              z.writestr('tracked-tree.txt', subprocess.check_output(['git', 'ls-tree', '-r', 'HEAD']))
-              z.writestr('review-head.txt', subprocess.check_output(['git', 'rev-parse', 'HEAD']))
-      - uses: actions/upload-artifact@v4
+          import base64, hashlib, json, lzma, pathlib, subprocess
+          def run(*args):
+              return subprocess.check_output(args).decode()
+          base = '49d42259ad3a405fdba849b0f28fba18912e3d92'
+          relay = {'.github/workflows/knock-review2-workspace.yml', '.github/knock-review2-payload.b64'}
+          assert set(run('git', 'diff', '--name-only', base, 'HEAD').splitlines()) == relay, 'Concurrent branch edits require reconciliation'
+          encoded = pathlib.Path('.github/knock-review2-payload.b64').read_bytes()
+          assert hashlib.sha256(encoded).hexdigest() == '7ffa41af50e5e3dd483e2bd5de4435d2cc9bc28e28e66b73ccb58e70a30a7341', 'Payload checksum mismatch'
+          data = json.loads(lzma.decompress(base64.b64decode(encoded)))
+          assert data['base'] == base
+          expected = {'Assets/Scripts/KnockBackVent/KnockBackVent.cs', 'Assets/Scripts/KnockBackVent/KnockBackVentHandInput.cs', 'Tools/KnockBackVentAdapterHarness/Doubles.cs', 'Tools/KnockBackVentAdapterHarness/Program.cs', 'Tools/validate_knock_back_vent.py', 'docs/design-and-lore.md', 'docs/knock-back-vent.md', 'docs/repository-improvement-plan.md'}
+          assert set(data['hashes']) == expected
+          patch = pathlib.Path('/tmp/knock-review2.patch')
+          patch.write_text(data['patch'])
+          run('git', 'apply', '--check', str(patch))
+          run('git', 'apply', '--index', str(patch))
+          assert set(run('git', 'diff', '--cached', '--name-only').splitlines()) == expected
+          for name, wanted in data['hashes'].items():
+              assert hashlib.sha256(pathlib.Path(name).read_bytes()).hexdigest() == wanted, 'File mismatch: ' + name
+          pathlib.Path('/tmp/knock-review2-manifest.json').write_text(json.dumps(data['hashes'], indent=2))
+          print('PASS: all eight file hashes match the reviewed local workspace; no unrelated modifications.')
+      - name: Install pinned source parsers
+        run: python -m pip install --disable-pip-version-check 'tree-sitter==0.25.2' 'tree-sitter-c-sharp==0.23.5'
+      - name: Execute managed diagnostics and all repository source checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            dotnet run --project Tools/CardSystemHarness/CardSystemHarness.csproj --configuration Release
+            dotnet run --project Tools/KnockBackVentHarness/KnockBackVentHarness.csproj --configuration Release
+            dotnet run --project Tools/KnockBackVentAdapterHarness/KnockBackVentAdapterHarness.csproj --configuration Release
+            python -c "from pathlib import Path; import re; t=Path('ProjectSettings/ProjectVersion.txt').read_text(encoding='utf-8-sig'); assert re.findall(r'^m_EditorVersion:[ \t]*(\S+)[ \t]*$',t,re.M)==['2022.3.62f3']; assert re.findall(r'^m_EditorVersionWithRevision:[ \t]*(.+?)[ \t]*$',t,re.M)==['2022.3.62f3 (96770f904ca7)']; print('PASS: unchanged Unity 2022.3.62f3 baseline.')"
+            python Tools/validate_source.py --syntax
+            python Tools/validate_repository_integrity.py
+            python Tools/validate_level1_contracts.py
+            python Tools/validate_spawn_floor_contracts.py
+            python Tools/validate_keycard_reader_contracts.py
+            python Tools/validate_interaction_safety.py
+            python Tools/validate_pr15_review_hardening.py
+            python Tools/validate_security_boot.py
+            python Tools/validate_threat_feedback.py
+            python Tools/validate_launch_presentation.py
+            python Tools/validate_knock_back_vent.py
+            python -m compileall -q Tools
+            if git grep -n -E '^(<<<<<<< .+|>>>>>>> .+|=======$)' -- .; then
+              echo 'ERROR: unresolved merge markers.'
+              exit 1
+            fi
+            git diff --cached --check 49d42259ad3a405fdba849b0f28fba18912e3d92 -- '*.cs' '*.py' '*.md' '*.json' '*.yml' '*.yaml' '*.sh' '*.txt' '*.asmdef' '*.asmref' '*.xml' '*.csproj' '*.props' '*.targets' '*.toml' '*.ini' '*.cfg' '*.config' '*.uxml' '*.uss' '.gitignore' '.gitattributes'
+            echo 'PASS: full-checkout source and managed diagnostics; Unity, Photon transport and headset tests were NOT executed.'
+          } 2>&1 | tee /tmp/knock-review2-validation.log
+      - name: Publish reviewed fixes without overwriting concurrent work
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git ls-remote origin refs/heads/feature/knock-back-vent | cut -f1)" = "$GITHUB_SHA"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git diff --cached --stat
+          git commit -m 'fix: preserve vent reply rhythm and cancel stale sample input'
+          git push origin HEAD:refs/heads/feature/knock-back-vent
+          git rev-parse HEAD | tee /tmp/knock-review2-sha.txt
+      - name: Preserve review validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
-          name: knock-review2-workspace
-          path: /tmp/knock-review2.zip
-          retention-days: 1
+          name: knock-back-vent-review2-evidence
+          path: |
+            /tmp/knock-review2-validation.log
+            /tmp/knock-review2-manifest.json
+            /tmp/knock-review2-sha.txt
+          retention-days: 7
