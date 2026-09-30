@@ -50,9 +50,9 @@ namespace RunawayChimps.FacilityAnnouncements
             source.spatialBlend = 1;
             source.dopplerLevel = 0;
             source.rolloffMode = AudioRolloffMode.Linear;
-            source.minDistance = Mathf.Max(0.1f, minimumDistance);
-            source.maxDistance = Mathf.Max(source.minDistance + 0.1f, maximumDistance);
-            source.volume = Mathf.Clamp(volume, 0, 0.7f);
+            source.minDistance = (float)FacilityAnnouncementRules.ClampFinite(minimumDistance, 0.1, 100, 1.5);
+            source.maxDistance = (float)FacilityAnnouncementRules.ClampFinite(maximumDistance, source.minDistance + 0.1, 1000, 14);
+            source.volume = (float)FacilityAnnouncementRules.ClampFinite(volume, 0, 0.7, 0.38);
             source.priority = 180;
             source.outputAudioMixerGroup = outputGroup;
             source.ignoreListenerPause = false;

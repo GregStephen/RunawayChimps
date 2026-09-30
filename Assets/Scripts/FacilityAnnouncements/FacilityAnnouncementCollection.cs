@@ -51,11 +51,11 @@ namespace RunawayChimps.FacilityAnnouncements
         public bool Valid => FacilityAnnouncementRules.ValidId(collectionId) && contentRevision > 0 &&
             entries != null && entries.Length <= FacilityAnnouncementRules.MaxEntries;
 
-        public static bool HasSpeech(Entry entry) => entry != null && entry.enabled && entry.speechAvailable &&
+        public static bool HasSpeech(Entry entry) => entry != null && entry.enabled && entry.weight > 0 && entry.speechAvailable &&
             FacilityAnnouncementRules.ValidId(entry.id) && !string.IsNullOrWhiteSpace(entry.transcript) &&
             entry.transcript.Length <= 240 && entry.speech != null && entry.speech.length > 0.05f &&
             entry.speech.length <= FacilityAnnouncementRules.MaxSpeechSeconds &&
-            entry.speech.loadState == AudioDataLoadState.Loaded;
+            entry.speech.loadType != AudioClipLoadType.Streaming && entry.speech.loadState == AudioDataLoadState.Loaded;
 
         public Entry FindPlayable(string id)
         {
@@ -89,7 +89,7 @@ namespace RunawayChimps.FacilityAnnouncements
         }
 
         public static double CueLength(AudioClip cue) => cue != null && cue.length > 0 && cue.length <= 1 &&
-            cue.loadState == AudioDataLoadState.Loaded ? cue.length : 0;
+            cue.loadType != AudioClipLoadType.Streaming && cue.loadState == AudioDataLoadState.Loaded ? cue.length : 0;
 
         public double Duration(Entry entry) => entry.speech.length + CueLength(startCue) + CueLength(endCue) + 0.3;
         public double Quiet(double roll) => FacilityAnnouncementRules.QuietSeconds(

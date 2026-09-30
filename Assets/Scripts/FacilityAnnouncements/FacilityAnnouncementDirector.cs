@@ -34,10 +34,12 @@ namespace RunawayChimps.FacilityAnnouncements
         private int sceneHandle;
         private int serial;
         private double nextRefresh;
+        private double lastNetworkTime = double.NaN;
         private float nextRigLookup;
         private bool paused;
         private bool focused = true;
         private Camera localCamera;
+        private GorillaLocomotion.Player boundRig;
         private FacilityAnnouncementCollection collection;
         private FacilityAnnouncementCaptions captions;
         private FacilityAnnouncementCaptions captionTemplate;
@@ -51,6 +53,7 @@ namespace RunawayChimps.FacilityAnnouncements
         private AudioClip endCue;
         private string transcript;
         private double startsAt;
+        private double playbackUntil;
         private float stageStarted;
         private float stageLength;
         private bool observedPlaying;
@@ -119,7 +122,9 @@ namespace RunawayChimps.FacilityAnnouncements
         private bool LocalReady()
         {
             var travel = SectorTravelService.I;
-            return PhotonNetwork.InRoom && PhotonNetwork.IsMessageQueueRunning && !paused && focused &&
+            var rig = GorillaLocomotion.Player.Instance;
+            return rig != null && rig.isActiveAndEnabled && FacilityAnnouncementRules.Finite(PhotonNetwork.Time) &&
+                PhotonNetwork.InRoom && PhotonNetwork.IsMessageQueueRunning && !paused && focused &&
                 Time.timeScale > 0 && !AudioListener.pause && travel != null && !travel.IsBusy &&
                 (int)travel.CurrentSector >= 1 && (int)travel.CurrentSector <= 3 &&
                 (AppState.I == null || AppState.I.IsReady);
@@ -142,14 +147,26 @@ namespace RunawayChimps.FacilityAnnouncements
             double now = PhotonNetwork.Time;
             if (gate.Owner != roomActor || gate.OwnerTicket != localTicket || collection == null ||
                 !schedule.IsDue(now) || now < gate.BusyUntil || stage != Stage.None) return;
-            SendAnnouncement(now);
+            // Presence is normally polled at 4 Hz, but an event must never be sent
+            // using an election that became stale since that poll.
+            Refresh(true);
+            if (sector == SectorId.None || collection == null) return;
+            gate = gates[(int)sector];
+            now = PhotonNetwork.Time;
+            if (gate.Owner == roomActor && gate.OwnerTicket == localTicket &&
+                schedule.IsDue(now) && now >= gate.BusyUntil && stage == Stage.None)
+                SendAnnouncement(now);
         }
 
         private void RefreshRoom()
         {
             Room nextRoom = PhotonNetwork.InRoom ? PhotonNetwork.CurrentRoom : null;
             int nextActor = PhotonNetwork.LocalPlayer != null ? PhotonNetwork.LocalPlayer.ActorNumber : 0;
-            if (ReferenceEquals(room, nextRoom) && roomActor == nextActor) return;
+            double now = PhotonNetwork.Time;
+            bool newSession = !ReferenceEquals(room, nextRoom) || roomActor != nextActor;
+            bool wrapped = FacilityAnnouncementRules.ClockWrapped(lastNetworkTime, now);
+            lastNetworkTime = now;
+            if (!newSession && !wrapped) return;
             CancelPlayback();
             room = nextRoom;
             roomActor = nextActor;
@@ -158,8 +175,8 @@ namespace RunawayChimps.FacilityAnnouncements
             collection = null;
             serial = 0;
             schedule.Cancel();
-            Array.Clear(lastReceived, 0, lastReceived.Length);
-            foreach (var gate in gates) gate.Reset(PhotonNetwork.Time);
+            if (newSession) Array.Clear(lastReceived, 0, lastReceived.Length);
+            foreach (var gate in gates) gate.Reset(now);
             // PUN can retain local custom properties across rooms. Never reuse that ticket.
             PublishReady(SectorId.None, string.Empty);
             nextRefresh = 0;
@@ -167,16 +184,19 @@ namespace RunawayChimps.FacilityAnnouncements
 
         private void BindLocalCamera()
         {
-            if (localCamera != null && localCamera.isActiveAndEnabled) return;
+            var player = GorillaLocomotion.Player.Instance;
+            if (localCamera != null && localCamera.isActiveAndEnabled && boundRig == player &&
+                player != null && player.isActiveAndEnabled) return;
             localCamera = null;
+            boundRig = null;
             if (Time.unscaledTime < nextRigLookup) return;
             nextRigLookup = Time.unscaledTime + 1;
-            var player = GorillaLocomotion.Player.Instance;
             if (player == null || !player.isActiveAndEnabled || player.GetComponentInParent<LocalRigMarker>() == null) return;
             var view = player.GetComponentInParent<PhotonView>();
             if (view != null && !view.IsMine) return;
             var origin = player.GetComponentInParent<XROrigin>();
-            if (origin != null && origin.Camera != null && origin.Camera.isActiveAndEnabled) localCamera = origin.Camera;
+            if (origin != null && origin.Camera != null && origin.Camera.isActiveAndEnabled)
+            { localCamera = origin.Camera; boundRig = player; }
         }
 
         private void Refresh(bool force)
@@ -288,16 +308,18 @@ namespace RunawayChimps.FacilityAnnouncements
             if (actors.Count == 0) return;
             double duration = collection.Duration(entry);
             if (duration > FacilityAnnouncementRules.MaxSequenceSeconds) return;
+            if (!PhotonNetwork.RaiseEvent(AnnouncementEvent, new object[]
+            {
+                FacilityAnnouncementRules.Protocol, (int)sector, collection.collectionId, collection.contentRevision,
+                localTicket, ++serial, now, entry.id, duration, actors.ToArray(), tickets.ToArray()
+            }, new RaiseEventOptions { TargetActors = actors.ToArray(), CachingOption = EventCaching.DoNotCache }, SendOptions.SendReliable))
+                return;
+            // A rejected send must not consume the only line's repeat history.
             // Only selection history is persisted, never audio, a timer or a backlog.
             room.SetCustomProperties(new Hashtable
             {
                 [LastSelectionKey] = collection.collectionId + "/" + collection.contentRevision + "/" + entry.id
             });
-            PhotonNetwork.RaiseEvent(AnnouncementEvent, new object[]
-            {
-                FacilityAnnouncementRules.Protocol, (int)sector, collection.collectionId, collection.contentRevision,
-                localTicket, ++serial, now, entry.id, duration, actors.ToArray(), tickets.ToArray()
-            }, new RaiseEventOptions { TargetActors = actors.ToArray(), CachingOption = EventCaching.DoNotCache }, SendOptions.SendReliable);
             // The sender also waits for the server event; no fast local duplicate path.
             schedule.Arm(now + FacilityAnnouncementRules.StartLeadSeconds + duration,
                 collection.Quiet(random.NextDouble()));
@@ -305,11 +327,15 @@ namespace RunawayChimps.FacilityAnnouncements
 
         public void OnEvent(EventData message)
         {
-            if (message.Code != AnnouncementEvent || !isActiveAndEnabled || !LocalReady()) return;
-            Refresh(true);
-            if (sector == SectorId.None || collection == null || !(message.CustomData is object[] data) || data.Length != 11 ||
+            if (message == null || message.Code != AnnouncementEvent || !isActiveAndEnabled || !LocalReady()) return;
+            // Reject other sectors/protocols before the bounded content/election refresh.
+            if (!(message.CustomData is object[] data) || data.Length != 11 ||
                 !(data[0] is string protocol) || protocol != FacilityAnnouncementRules.Protocol ||
-                !(data[1] is int eventSector) || eventSector != (int)sector ||
+                !(data[1] is int eventSector) || eventSector != (int)SectorTravelService.I.CurrentSector) return;
+            Refresh(true);
+            ExpirePlayback();
+            if (sector == SectorId.None || collection == null || stage != Stage.None ||
+                eventSector != (int)sector ||
                 !(data[2] is string catalog) || catalog != collection.collectionId ||
                 !(data[3] is int revision) || revision != collection.contentRevision ||
                 !(data[4] is string ticket) || !(data[5] is int incomingSerial) ||
@@ -334,6 +360,7 @@ namespace RunawayChimps.FacilityAnnouncements
             startCue = FacilityAnnouncementCollection.CueLength(collection.startCue) > 0 ? collection.startCue : null;
             endCue = FacilityAnnouncementCollection.CueLength(collection.endCue) > 0 ? collection.endCue : null;
             startsAt = Math.Max(PhotonNetwork.Time, issued + FacilityAnnouncementRules.StartLeadSeconds);
+            playbackUntil = gates[(int)sector].BusyUntil;
             stage = Stage.Waiting;
         }
 
@@ -353,7 +380,12 @@ namespace RunawayChimps.FacilityAnnouncements
 
         private bool PlayStage(AudioClip clip, Stage next, bool cue)
         {
-            if (output == null || !output.PlayClip(clip, cue)) { CancelPlayback(); return false; }
+            double remaining = clip != null ? clip.length : 0;
+            if (next == Stage.StartCue && speech != null) remaining += speech.length;
+            if (next != Stage.EndCue && endCue != null) remaining += endCue.length;
+            // Prefer silence to a sentence that the hard reservation would cut short.
+            if (clip == null || PhotonNetwork.Time + remaining > playbackUntil ||
+                output == null || !output.PlayClip(clip, cue)) { CancelPlayback(); return false; }
             stage = next;
             stageStarted = Time.unscaledTime;
             stageLength = clip.length;
@@ -361,8 +393,16 @@ namespace RunawayChimps.FacilityAnnouncements
             return true;
         }
 
+        private void ExpirePlayback()
+        {
+            // Native audio and render frames do not advance together. Do not start
+            // delayed speech after its reservation, or orphan an old source on receive.
+            if (stage != Stage.None && PhotonNetwork.Time >= playbackUntil) CancelPlayback();
+        }
+
         private void TickPlayback()
         {
+            ExpirePlayback();
             if (stage == Stage.None) return;
             if (output == null || !output.Ready || output.gameObject.scene.handle != sceneHandle || localCamera == null ||
                 !localCamera.isActiveAndEnabled || output.source.mute || output.volume <= 0 || AudioListener.volume <= 0)
@@ -402,7 +442,7 @@ namespace RunawayChimps.FacilityAnnouncements
         {
             if (output.captionPrefab == null || localCamera == null) return false;
             if (captions != null && (captionTemplate != output.captionPrefab || captionCamera != localCamera))
-            { Destroy(captions.gameObject); captions = null; }
+            { captions.Clear(); Destroy(captions.gameObject); captions = null; }
             if (captions == null)
             {
                 captionTemplate = output.captionPrefab;
@@ -421,6 +461,8 @@ namespace RunawayChimps.FacilityAnnouncements
             output = null;
             speech = startCue = endCue = null;
             transcript = null;
+            startsAt = playbackUntil = 0;
+            observedPlaying = false;
         }
     }
 }

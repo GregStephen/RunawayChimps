@@ -35,6 +35,14 @@ namespace RunawayChimps.FacilityAnnouncements
 
         public static bool Finite(double value) => !double.IsNaN(value) && !double.IsInfinity(value);
 
+        public static double ClampFinite(double value, double min, double max, double fallback) =>
+            Math.Max(min, Math.Min(max, Finite(value) ? value : fallback));
+
+        // Photon.Time wraps at the unsigned 32-bit millisecond boundary. Retire the
+        // local visit and rearm quietly; raw deadlines must never survive that wrap.
+        public static bool ClockWrapped(double previous, double current) =>
+            Finite(previous) && Finite(current) && previous - current > 2147483.648;
+
         public static bool ValidId(string id)
         {
             if (string.IsNullOrEmpty(id) || id.Length > 64) return false;

@@ -20,13 +20,13 @@ namespace RunawayChimps.FacilityAnnouncements
         }
         public static float TextScale
         {
-            get => Mathf.Clamp(PlayerPrefs.GetFloat("rc.facility.captionScale", 1), 0.8f, 1.5f);
-            set => PlayerPrefs.SetFloat("rc.facility.captionScale", Mathf.Clamp(value, 0.8f, 1.5f));
+            get => (float)FacilityAnnouncementRules.ClampFinite(PlayerPrefs.GetFloat("rc.facility.captionScale", 1), 0.8, 1.5, 1);
+            set => PlayerPrefs.SetFloat("rc.facility.captionScale", (float)FacilityAnnouncementRules.ClampFinite(value, 0.8, 1.5, 1));
         }
         public static float VerticalPosition
         {
-            get => Mathf.Clamp(PlayerPrefs.GetFloat("rc.facility.captionY", 0.25f), 0.18f, 0.42f);
-            set => PlayerPrefs.SetFloat("rc.facility.captionY", Mathf.Clamp(value, 0.18f, 0.42f));
+            get => (float)FacilityAnnouncementRules.ClampFinite(PlayerPrefs.GetFloat("rc.facility.captionY", 0.25f), 0.18, 0.42, 0.25);
+            set => PlayerPrefs.SetFloat("rc.facility.captionY", (float)FacilityAnnouncementRules.ClampFinite(value, 0.18, 0.42, 0.25));
         }
 
         public bool Bind(Camera camera)
@@ -51,6 +51,7 @@ namespace RunawayChimps.FacilityAnnouncements
 
         public void Show(string transcript)
         {
+            if (!isActiveAndEnabled) { Clear(); return; }
             currentText = transcript;
             Refresh();
         }
@@ -59,8 +60,8 @@ namespace RunawayChimps.FacilityAnnouncements
 
         private void Refresh()
         {
-            bool visible = CaptionsEnabled && !string.IsNullOrEmpty(currentText) &&
-                canvas != null && canvas.worldCamera != null && canvas.worldCamera.isActiveAndEnabled;
+            bool visible = isActiveAndEnabled && CaptionsEnabled && !string.IsNullOrEmpty(currentText) &&
+                canvas != null && canvas.isActiveAndEnabled && canvas.worldCamera != null && canvas.worldCamera.isActiveAndEnabled;
             if (panel != null) panel.gameObject.SetActive(visible);
             if (!visible || label == null) return;
             label.text = currentText;

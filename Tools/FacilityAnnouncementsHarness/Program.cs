@@ -17,6 +17,7 @@ internal static class Program
     {
         Selection();
         Scheduling();
+        ClockAndPresentationBounds();
         PlaybackCompletion();
         AuthorityAndCancellation();
         Console.WriteLine("PASS: " + assertions + " production-policy assertions. Unity, native audio, Photon transport and XR are NOT exercised.");
@@ -91,6 +92,17 @@ internal static class Program
         Check(Rules.QuietSeconds(8, 12, 0, true) == 8 && Rules.QuietSeconds(8, 12, 1, true) == 12, "diagnostic bounds");
         Check(Rules.QuietSeconds(double.NaN, double.NaN, double.NaN, false) == 240, "invalid settings safe defaults");
         Check(Rules.QuietSeconds(300, 180, 0.5, false) == 300, "reversed interval corrected");
+    }
+    private static void ClockAndPresentationBounds()
+    {
+        Check(Rules.ClockWrapped(4294967.295, 0), "Photon unsigned-millisecond rollover");
+        Check(!Rules.ClockWrapped(100, 100.25), "ordinary time advancement");
+        Check(!Rules.ClockWrapped(100, 99.99), "small clock correction is not a rollover");
+        Check(!Rules.ClockWrapped(double.NaN, 0), "first sample is not a rollover");
+        Check(Rules.ClampFinite(double.NaN, 0, 0.7, 0.38) == 0.38, "nonfinite volume default");
+        Check(Rules.ClampFinite(double.PositiveInfinity, 0.8, 1.5, 1) == 1, "nonfinite subtitle default");
+        Check(Rules.ClampFinite(-5, 0.1, 100, 1.5) == 0.1, "distance lower bound");
+        Check(Rules.ClampFinite(5000, 1, 1000, 14) == 1000, "distance upper bound");
     }
     private static void AuthorityAndCancellation()
     {

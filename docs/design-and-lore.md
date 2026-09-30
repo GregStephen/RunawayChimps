@@ -2,6 +2,14 @@
 
 Last updated: 2026-09-30. Maintained repository edition, migrated from `Runaway_Chimps_Design_and_Lore.docx` version 0.9. The existing Word document is a downloadable snapshot; future edits belong here. See [AGENTS.md](../AGENTS.md) for the documentation workflow and the [repository improvement plan](repository-improvement-plan.md) for implementation evidence.
 
+## September 30 facility announcement review follow-up
+
+**Implemented on `feature/facility-announcements` / [PR #80](https://github.com/GregStephen/RunawayChimps/pull/80), unmerged:** Greg requested repeated review and correction of the optional announcement prototype. Playback now stops when its reserved slot expires and refuses to begin speech that cannot finish in the remaining slot; an incoming event cannot orphan an existing source or resurrect disabled captions. Failed event sends no longer consume repeat history, send-time authority is refreshed, and a Photon timestamp rollover retires the old visit and rearms a quiet wait rather than retaining an unreachable deadline. Local readiness follows the current active rig/camera; streaming or zero-weight content cannot claim eligibility, and nonfinite audio/subtitle controls receive safe bounds. This is reliability work, not a new gameplay or lore decision.
+
+**Validated managed/source evidence:** the completed adapter harness links the five actual runtime feature files and existing `SectorPresence.cs`. Against the original `b3e508c7f19b93adb9cfd807bbea933cdbe3ba8a` runtime it reproduced 11 failing cases. Against the corrected runtime all **19 cases / 60 assertions pass**, as do **20,064 production-policy assertions** and **974 serialized asset/source assertions**. The initial review found nine failing diagnostic cases; the second found two more; the final review found no further actionable issue within the reviewed scope. These are not native integration passes. See [the review record](facility-announcements-review.md) for exact commands, limitations and publication evidence.
+
+**Preserved / pending:** all four prerecorded synthetic speech WAVs, two original cues, prefab/material references and proposed wording are unchanged. No existing scene, package, Unity 2022.3.62f3, rendering, XR, player voice/reporting or other feature changes. Unity import/compilation, Editor checks, native audio/intelligibility, Photon transport, headset/Quest and real callback/timing acceptance remain pending. This optional atmosphere prototype still adds no launch requirement.
+
 ## September 30 optional facility announcement prototype
 
 **Confirmed choice:** Greg approved prototyping occasional prerecorded facility announcements as optional atmosphere, not a launch requirement. This work is independent of the toys, regeneration-lab art kit and security-console branches. It must not change objectives, rewards, monster hearing, player voice/reporting, surveillance-monitor silence or canonical staff/experiment/monster history.
