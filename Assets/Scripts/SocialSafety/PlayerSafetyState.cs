@@ -11,6 +11,7 @@ namespace RunawayChimps.SocialSafety
     {
         private readonly HashSet<int> mutedActors = new HashSet<int>();
         private readonly HashSet<string> sentTargets = new HashSet<string>(StringComparer.Ordinal);
+        private bool awaitingLateConfirmation;
         public int RoomGeneration { get; private set; }
         public int RequestGeneration { get; private set; }
         public bool IsSending { get; private set; }
@@ -38,19 +39,32 @@ namespace RunawayChimps.SocialSafety
         {
             if (room != RoomGeneration || IsSending || now < RetryAt || !ValidAccountId(id) || WasReported(id)) return 0;
             IsSending = true;
+            awaitingLateConfirmation = false;
             RetryAt = now + 3;
             return ++RequestGeneration;
         }
 
         public bool CompleteReport(int request, int room, string id, bool accepted)
         {
-            if (!IsSending || request != RequestGeneration || room != RoomGeneration) return false;
+            if (request != RequestGeneration || room != RoomGeneration) return false;
+            if (!IsSending && !(awaitingLateConfirmation && accepted)) return false;
             IsSending = false;
+            awaitingLateConfirmation = false;
             if (accepted) sentTargets.Add(id);
             return true;
         }
 
-        public void InvalidateRequest() { IsSending = false; RequestGeneration++; }
+        // The UI deadline does not cancel PlayFab's request. A late positive receipt
+        // is still useful until a new request or room/account change supersedes it.
+        public bool ExpireReport(int request, int room)
+        {
+            if (!IsSending || request != RequestGeneration || room != RoomGeneration) return false;
+            IsSending = false;
+            awaitingLateConfirmation = true;
+            return true;
+        }
+
+        public void InvalidateRequest() { IsSending = false; awaitingLateConfirmation = false; RequestGeneration++; }
         public static bool ShouldMute(bool originalMute, bool sameSector, bool playerMuted)
             => originalMute || !sameSector || playerMuted;
 

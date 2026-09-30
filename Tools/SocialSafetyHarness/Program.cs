@@ -114,6 +114,7 @@ static class Program
         board.Press(PlayerBoardAction.Report,0);PhotonNetwork.CurrentRoom=new Room();service.OnJoinedRoom();Call(board,"Refresh");
         Check(board.rosterPanel.activeSelf&&!board.reportPanel.activeSelf&&board.heading.text.Contains("0 IN ROOM"),"room change cancels stale report form");
         TestReportFeedback(service);
+        TestLateReportConfirmation(service);
         Console.WriteLine("PASS: "+assertions+" social-safety assertions; production service, state, voice integration compiled with diagnostic doubles.");
     }
     static TMPro.TMP_Text Label()=>new GameObject().AddComponent<TMPro.TMP_Text>();
@@ -176,6 +177,24 @@ static class Program
         var old=PlayFabClientAPI.Success;PhotonNetwork.CurrentRoom=new Room();service.OnJoinedRoom();old(new ReportPlayerClientResult {SubmissionsRemaining=2});
         Call(hub,"Refresh");Call(portable,"Refresh");
         Check(hub.rosterPanel.activeSelf&&portable.rosterPanel.activeSelf&&hub.status.text=="Mute only affects what you hear."&&portable.status.text==hub.status.text,"room change clears both forms and late feedback");
+    }
+    static void TestLateReportConfirmation(PlayerSafetyService service)
+    {
+        PhotonNetwork.CurrentRoom=new Room();
+        PhotonNetwork.CurrentRoom.Players[1]=PhotonNetwork.LocalPlayer;
+        PhotonNetwork.CurrentRoom.Players[2]=Person(2,"ABC");
+        service.OnJoinedRoom();Tick(200);
+        var board=Board();Call(board,"Refresh");
+        board.Press(PlayerBoardAction.Report,1);board.Press(PlayerBoardAction.Reason,2);board.Press(PlayerBoardAction.Submit,0);
+        int calls=PlayFabClientAPI.Calls;
+        Tick(221);Call(service,"Update");Call(board,"Refresh");
+        Check(!service.State.IsSending&&board.status.text.Contains("No confirmation"),"deadline unlocks the form while delivery is unknown");
+        PlayFabClientAPI.Success(new ReportPlayerClientResult {SubmissionsRemaining=4});Call(board,"Refresh");
+        Check(service.State.WasReported("ABC")&&board.status.text=="Report submitted. Thank you."&&board.submit.label.text=="SUBMITTED","late confirmation resolves an expired request when no retry superseded it");
+        board.Press(PlayerBoardAction.Submit,0);
+        Check(PlayFabClientAPI.Calls==calls,"late confirmed delivery suppresses duplicate submission");
+        PlayFabClientAPI.Failure(new PlayFabError());Call(board,"Refresh");
+        Check(board.status.text=="Report submitted. Thank you.","duplicate callback cannot revoke confirmed delivery");
     }
     static void TestHubPresenter()
     {

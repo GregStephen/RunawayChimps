@@ -95,9 +95,14 @@ namespace RunawayChimps.SocialSafety
         private void Update()
         {
             SyncRoom();
-            if (State.IsSending && Time.realtimeSinceStartup >= reportDeadline)
-                Finish(pendingRequest, pendingTarget, false,
+            if (pendingTarget != null && Time.realtimeSinceStartup >= reportDeadline &&
+                State.ExpireReport(pendingRequest, pendingTarget.RoomGeneration))
+            {
+                var expired = pendingTarget;
+                pendingTarget = null;
+                ShowReport(expired,
                     "No confirmation received. Wait, then retry; your report may have arrived.");
+            }
         }
 
         public static bool IsMuted(Player player) => player != null && !player.IsLocal &&
