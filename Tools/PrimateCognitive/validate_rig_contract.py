@@ -57,6 +57,11 @@ def main():
             pass
         else:
             raise AssertionError('Contact-filter regression escaped validation')
+    machine = (ROOT / 'Assets/Scripts/Toys/PrimateCognitive/CognitiveMachine.cs').read_text()
+    check('private static int localSerial;' in machine and 'localSerial = 0;' not in machine,
+          'Command numbering survives scene/component replacement')
+    check('if (game.Owner == 0) lastCommand.Clear();' in machine, 'Idle recovery discards old command floors')
+    check('if (session != game.Session ||' in machine, 'Every nonsync command requires the current session')
     settings = (ROOT / 'ProjectSettings/DynamicsManager.asset').read_text()
     matrix = re.search(r'm_LayerCollisionMatrix: ([0-9a-fA-F]+)', settings)
     check(matrix is not None, 'Serialized physics layer matrix exists')
