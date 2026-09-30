@@ -38,6 +38,7 @@ def run(root):
     trial('Trigger collider',lambda k:replace(k,'Prefabs/RGL_TreatmentTrolley.prefab','m_IsTrigger: 0','m_IsTrigger: 1'),'invalid collision')
     trial('Wrong importer fileID',lambda k:replace(k,'Meshes/RGL_TreatmentTrolley.asset.meta','mainObjectFileID: 4300000','mainObjectFileID: 0'),'invalid native importer')
     trial('Scene-save hook',lambda k:replace(k,'Editor/RegenerationLabPlacement.cs','// Also guarded','// SaveScene(\n        // Also guarded'),'forbidden automatic')
+    trial('Swallowed placement failure',lambda k:replace(k,'Editor/RegenerationLabPlacement.cs','                throw;\n            }','            }'),'must propagate placement failures')
     print('PASS: clean package plus '+str(len(tests))+' rejecting negative controls: '+', '.join(tests))
 
 
