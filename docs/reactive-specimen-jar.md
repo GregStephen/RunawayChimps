@@ -22,7 +22,7 @@ The command's initial offset is a test convenience, not an approved final Hub lo
 
 ## Desktop preview
 
-On a **scene instance**, use **Create desktop preview handles (Undoable)** in its Inspector. This creates EditorOnly head/left/right transforms and enables Editor Preview. Enter Play Mode and select the jar. Use its Scene-view position/rotation handles, or the child transforms, to move the hands and turn the head (+Z is gaze). Existing preview handles are preserved.
+On a **scene instance**, use **Create desktop preview handles (Undoable)** in its Inspector. This creates EditorOnly head/left/right transforms and enables Editor Preview. Enter Play Mode and select the jar. Use its Scene-view position/rotation handles, or the child transforms, to move the hands and turn the head (+Z is gaze). Existing preview handles are preserved. Creation is disabled for prefab assets and Prefab Mode/loaded prefab contents; Scene-view handles also reject prefab asset/contents transforms assigned manually. The corrected Undo operation records both the jar settings and the complete handle hierarchy, including Redo poses. Native Undo/Redo acceptance remains pending.
 
 The same sampled-hand and state logic runs. Ease a hand toward a pane, leave it at least 0.12 seconds fully withdrawn, then move inward briskly for a real tap test. A large one-frame Scene-view drag is deliberately rejected as a tracking jump. **Preview recoil** is explicitly a visual diagnostic that bypasses tap detection; it does not prove tapping works. The Inspector shows state, target, accepted-tap count and watch count since reset. **Reset preview state** restores the authored pose and disarms contact.
 
@@ -62,15 +62,17 @@ There are **569 vertices, 712 triangles, three renderers and five material slots
 
 `dotnet run --project Tools/SpecimenJarHarness/SpecimenJarHarness.csproj --configuration Release` executes the actual production `SpecimenJarState.cs`: target selection, 5,000 bounds samples, one-shot/rearm gates, cooldowns, recoil priority, gaze episodes, chance and resets. It does not substitute a port of the algorithm.
 
-`python Tools/validate_specimen_jar.py` checks serialized references, mesh/index data, normals/winding, whole-mesh containment at any rotation/breathing scale, material budgets and the local/tracking/lifecycle/authoring source boundaries. Seven negative source mutations must be rejected. The Source validation workflow runs both new checks alongside the unchanged existing suite and card harness.
+`python Tools/validate_specimen_jar.py` checks serialized references, mesh/index data, normals/winding, whole-mesh containment at any rotation/breathing scale, material budgets and the local/tracking/lifecycle/authoring source boundaries. Twelve negative source mutations must be rejected, including the preview creation/Undo ordering and prefab-contents/handle isolation guards added during review. The Source validation workflow runs both new checks alongside the unchanged existing suite and card harness.
 
 `Assets/Tests/SpecimenJar/SpecimenJarPlayModeTests.cs` contains **12 authored Unity cases** (including parameterized cases) using the actual prefab and native collider methods. They cover import/wiring/materials, full specimen bounds, both hands, compound-collider chatter, slow contact, discontinuities, resets, preview tracking and unrelated-hand hierarchy exclusion. Run the `RunawayChimps.SpecimenJar.PlayModeTests` assembly in the Editor's Play Mode Test Runner. It is not a live Photon two-client test.
+
+`Assets/Tests/SpecimenJar/Editor/SpecimenJarAuthoringTests.cs` adds **six authored native Editor cases** in `RunawayChimps.SpecimenJar.EditModeTests`. Run this assembly in the **Edit Mode** Test Runner. It checks Undo/Redo restoration of prior preview settings, references and all poses under a moved/rotated/scaled root; creation after Undo; preservation of existing handles; and prefab asset/contents rejection (including manually assigned handle transforms). It uses an additive temporary scene, never saves the prefab/Hub, and does not clear the user's pre-existing Undo history. These cases are authored, not executed by the Python checker or managed policy harness.
 
 Executed evidence is recorded in the maintained design/improvement documents and the PR. **Unity import/compilation, these Unity tests, real Photon behavior and headset performance are pending unless an explicit run is recorded.**
 
 ## Headset / two-client acceptance — not yet executed
 
-Use the published branch in Unity 2022.3.62f3; first check clean import/compile and run the new Unity test assembly. Then test Quest 3 and Quest 2 with Editor Preview disabled:
+Use the published branch in Unity 2022.3.62f3; first check clean import/compile and run both specimen Unity test assemblies (12 Play Mode and six Edit Mode cases). Then test Quest 3 and Quest 2 with Editor Preview disabled:
 
 - Each hand independently: approach from several sides/heights, verify smooth nearest-hand switching and full containment, withdraw beyond radius, then step beyond viewer distance. Jar stays fixed and grip does nothing.
 - Tap: deliberate gentle/firm inward taps each react once. Rest, slide, wiggle in contact, use both hands together and test duplicate fingertip colliders. Withdraw to rearm. Recenter, resume the headset, lose/reacquire controller tracking and begin with a hand intersecting glass; none should manufacture a tap.

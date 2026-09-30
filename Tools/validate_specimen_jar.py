@@ -65,6 +65,21 @@ def contracts(runtime, editor, prefab):
             'Undo and existing-placement preservation')
     require(not re.search(r'\b(SaveScene|SaveOpenScenes|SaveAssets|OpenScene)\s*\(',editor),
             'No implicit opening or forced saving')
+    require('!EditorSceneManager.IsPreviewScene(jar.gameObject.scene)' in editor and
+            'if (EditorApplication.isPlayingOrWillChangePlaymode || !IsSceneInstance(jar)) return;' in editor,
+            'Preview creation rejects prefab contents/stages and play transitions')
+    preview = editor[editor.index('private static void CreatePreviewHandles'):editor.index('private static Transform Handle')]
+    require(preview.index('Undo.RecordObject(jar,') > preview.rindex('Handle(root.transform,'),
+            'Record jar settings only AFTER every handle has been registered with Undo')
+    require('Undo.RegisterFullObjectHierarchyUndo(root,' in preview and
+            preview.index('Undo.RegisterFullObjectHierarchyUndo(root,') > preview.rindex('Handle(root.transform,') and
+            preview.index('Undo.RegisterFullObjectHierarchyUndo(root,') < preview.index('root.transform.localPosition'),
+            'Record the completed preview hierarchy before assigning any local poses')
+    require('if (!IsSceneInstance(handle)) return;' in editor,
+            'Scene handles cannot edit persistent prefab transforms or prefab contents')
+    require('Undo.FlushUndoRecordObjects();' in preview and
+            'PrefabUtility.RecordPrefabInstancePropertyModifications(handle);' in editor,
+            'Flush grouped preview edits and preserve handle prefab overrides')
     require('  editorPreview: 0\n' in prefab, 'Shipping prefab is not a desktop preview')
     require(prefab.count('\nBoxCollider:\n')==1 and prefab.count('\nMonoBehaviour:\n')==1,
             'One solid glass collider and only the local toy component')
@@ -108,11 +123,18 @@ def main():
                (runtime+'\nvoid OnTriggerStay(Collider c) {}',editor,prefab),
                (runtime.replace('Vector3.Lerp(specimen.localPosition, Bound(goal), blend)','goal'),editor,prefab),
                (runtime,editor+'\nSaveScene(scene);',prefab),
-               (runtime,editor,prefab.replace('editorPreview: 0','editorPreview: 1'))]
+               (runtime,editor,prefab.replace('editorPreview: 0','editorPreview: 1')),
+               (runtime,editor.replace('!EditorSceneManager.IsPreviewScene(jar.gameObject.scene)', 'true'),prefab),
+               (runtime,editor.replace('Undo.RecordObject(jar, "Assign specimen preview handles");', '')
+                   .replace('Transform head = Handle(root.transform,',
+                            'Undo.RecordObject(jar, "Assign specimen preview handles");\n        Transform head = Handle(root.transform,'),prefab),
+               (runtime,editor.replace('Undo.RegisterFullObjectHierarchyUndo(root,', 'IgnoredHierarchyUndo(root,'),prefab),
+               (runtime,editor.replace('Undo.FlushUndoRecordObjects();', ''),prefab),
+               (runtime,editor.replace('if (!IsSceneInstance(handle)) return;', ''),prefab)]
     for mutation in mutations: assert contracts(*mutation), 'Negative mutation escaped contracts'
     print('PASS: specimen prefab GUID/fileID wiring, 569 vertices / 712 triangles / 3 renderers / 5 material slots.')
     print('PASS: finite geometry, winding, normals, full-rotation/breath containment, assigned built-in materials.')
-    print('PASS: local ownership/tracking/lifecycle/tap/preview/authoring contracts; 7 negative mutations rejected.')
+    print('PASS: local ownership/tracking/lifecycle/tap/preview/authoring contracts; 12 negative mutations rejected.')
     print('Unity import/rendering, native query execution, actual XR/Photon and Quest acceptance remain separate.')
     return 0
 
