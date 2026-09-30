@@ -1,0 +1,41 @@
+name: Cognitive source inspection
+on:
+  push:
+    branches: [feature/primate-cognitive-test]
+    paths: [.github/workflows/cognitive-source-snapshot.yml]
+permissions:
+  contents: read
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            **/*.cs
+            **/*.meta
+            **/*.prefab
+            **/*.unity
+            **/*.mat
+            **/*.shader
+            **/*.asmdef
+            /AGENTS.md
+            /README.md
+            /ProjectSettings/
+            /Packages/
+            /Tools/
+            /docs/*.md
+            /.github/workflows/
+      - name: Package tracked inspection source only
+        run: |
+          git rev-parse HEAD > /tmp/cognitive-source-head.txt
+          tar --exclude=.git -czf /tmp/cognitive-source.tar.gz .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cognitive-source-inspection
+          path: |
+            /tmp/cognitive-source.tar.gz
+            /tmp/cognitive-source-head.txt
+          retention-days: 1
