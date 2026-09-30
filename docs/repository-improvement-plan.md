@@ -1,8 +1,20 @@
 # Runaway Chimps repository improvement plan
 
-Last updated: 2026-09-22. Maintained repository edition, migrated from `Runaway_Chimps_Repository_Review_and_Plan.docx`, Revision 2. The original review examined `main` at `4f6894141aa2b132d744cb2423c1ee227e0fc5be`; its evidence links remain pinned to that baseline. The Word document is a historical downloadable snapshot.
+Last updated: 2026-09-30. Maintained repository edition, migrated from `Runaway_Chimps_Repository_Review_and_Plan.docx`, Revision 2. The original review examined `main` at `4f6894141aa2b132d744cb2423c1ee227e0fc5be`; its evidence links remain pinned to that baseline. The Word document is a historical downloadable snapshot.
 
 Read the [design and lore](design-and-lore.md) for intended behavior and [AGENTS.md](../AGENTS.md) for update rules. A confirmed finding describes source evidence; it does not mean its fix is implemented or tested.
+
+## September 30 Reactive Specimen Jar optional prototype
+
+**Confirmed:** Greg chose the specimen jar as one independently testable atmospheric toy. One fixed, non-grabbable jar contains a small original eyeball-like growth: idle, interested in the nearest eligible local hand, recoiling once from a genuine tap, and occasionally watching the local face after a cooldown-controlled look-away. It never escapes, attacks, changes progression, gives rewards, or establishes a named subject/experiment history. This is prototype scope, not new lore canon or a release gate.
+
+**Confirmed multiplayer decision:** behavior is deliberately **LOCAL PER VIEWER**. Each client sees its own hand/head reactions, not one shared target. No PhotonView, RPC, shared objective or synchronization was added. Room-object/actor identity is read only for local reset. Remote hands must not affect the viewer's specimen.
+
+**Implemented, not merged:** `feature/reactive-specimen-jar`, independently based on main `930a8f830cae99e06dcaa0a78ab9edc968c42ae5`. The actual serialized movable prefab has original meshes, assigned built-in Standard materials, bounded smooth motion, per-hand sampled contact/rearm/discontinuity filters, and lifecycle/tracking resets. The feature-only **Tools > Runaway Chimps > Toys > Place Reactive Specimen Jar in Hub** command supports Undo, selects/preserves existing instances, and never opens or saves scenes automatically. Desktop preview input is Editor-only. Hub/Bootstrap, Unity 2022.3.62f3, Photon PUN, packages, rendering and XR settings stay unchanged. No sibling feature is required. See [setup, tuning and acceptance](reactive-specimen-jar.md).
+
+**Validated, 2026-09-30:** The production specimen-state executable passed 10,202 assertions, including 5,000 bounds samples. The unchanged card-state harness passed 18,015 assertions. All repository source/syntax, metadata, Level 1, spawn, keycard, interaction, PR15, boot, threat and launch checks passed on a complete GitHub checkout. The feature validator passed serialized reference/geometry/material/containment contracts and rejected seven negative mutations; the original asset generator reproduced the reviewed bytes. Python tools compile and the staged diff passed whitespace checks. These are managed/source/asset checks, not Unity compilation or headset evidence.
+
+**Pending validation:** Unity 2022.3.62f3 import/compilation, all 12 authored specimen Play Mode cases, real hand contact/target switching, head-turn watch behavior, tracking/recenter/pause/travel/room resets, placement Undo/Redo and Hub clearance, stereo transparency/readability and Quest 2/3 profiling. The documented live two-client test must show A unaffected by B's remote hands, then the reverse and simultaneous independent local targets. Pure state, serialized-asset and unrelated-hierarchy checks do not establish that live result. The PR must remain unmerged until separately approved; no pending runtime test is converted to a pass by publication.
 
 ## September 22 Unity 62f3 baseline adoption
 
