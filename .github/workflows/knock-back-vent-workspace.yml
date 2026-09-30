@@ -1,0 +1,46 @@
+name: Knock-back vent workspace export
+on:
+  push:
+    branches: [feature/knock-back-vent]
+    paths: [.github/workflows/knock-back-vent-workspace.yml]
+permissions:
+  contents: read
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Export tracked source and managed diagnostic compiler
+        shell: python
+        run: |
+          import os, pathlib, subprocess, zipfile
+          root = pathlib.Path.cwd()
+          suffixes = {'.cs', '.meta', '.unity', '.prefab', '.mat', '.asset', '.shader', '.cginc', '.md', '.py', '.yml', '.yaml', '.json', '.asmdef', '.asmref', '.txt', '.csproj', '.props', '.targets', '.xml', '.sh', '.config'}
+          paths = subprocess.check_output(['git', 'ls-files', '-z']).decode().split('\0')
+          with zipfile.ZipFile('/tmp/knock-workspace.zip', 'w', zipfile.ZIP_DEFLATED) as z:
+              for name in paths:
+                  p = root / name
+                  if name and p.is_file() and (p.suffix in suffixes or name in {'.gitignore', '.gitattributes'}):
+                      z.write(p, 'repository/' + name)
+              z.writestr('tracked-tree.txt', subprocess.check_output(['git', 'ls-tree', '-r', 'HEAD']))
+              z.writestr('base-commit.txt', '930a8f830cae99e06dcaa0a78ab9edc968c42ae5\n')
+              dotnet = pathlib.Path(os.environ['DOTNET_ROOT'])
+              z.write(dotnet / 'dotnet', 'dotnet/dotnet')
+              for pattern in ['shared/Microsoft.NETCore.App/8.*', 'host/fxr/8.*', 'packs/Microsoft.NETCore.App.Ref/8.*/ref/net8.0', 'sdk/8.*/Roslyn/bincore']:
+                  matches = sorted(dotnet.glob(pattern))
+                  if not matches:
+                      raise RuntimeError('Missing compiler dependency: ' + pattern)
+                  for p in matches[-1].rglob('*'):
+                      if p.is_file():
+                          z.write(p, 'dotnet/' + str(p.relative_to(dotnet)))
+      - uses: actions/upload-artifact@v4
+        with:
+          name: knock-workspace
+          path: /tmp/knock-workspace.zip
+          retention-days: 1
