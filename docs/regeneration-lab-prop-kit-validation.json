@@ -1,0 +1,139 @@
+{
+  "status": "PASS",
+  "errors": [],
+  "meshes": {
+    "RGL_TreatmentTrolley": {
+      "triangles": 3754,
+      "vertices": 7816,
+      "material_slots": 3,
+      "dimensions_m": [
+        0.8420000076293945,
+        1.0219999551773071,
+        0.5180000066757202
+      ],
+      "minimum_triangle_double_area": 1.7320341690404853e-06,
+      "normal_winding_failures": 0
+    },
+    "RGL_TreatmentTrolley_Label": {
+      "triangles": 2,
+      "vertices": 4,
+      "material_slots": 1,
+      "dimensions_m": [
+        0.42799997329711914,
+        0.05699998140335083,
+        0.0
+      ],
+      "minimum_triangle_double_area": 0.024395991367936354,
+      "normal_winding_failures": 0
+    },
+    "RGL_ChemicalDeliveryStand": {
+      "triangles": 3200,
+      "vertices": 6870,
+      "material_slots": 3,
+      "dimensions_m": [
+        0.5440000295639038,
+        1.6039999723434448,
+        0.5440000295639038
+      ],
+      "minimum_triangle_double_area": 5.656919324492135e-06,
+      "normal_winding_failures": 0
+    },
+    "RGL_ChemicalDeliveryStand_Label": {
+      "triangles": 2,
+      "vertices": 4,
+      "material_slots": 1,
+      "dimensions_m": [
+        0.20800000429153442,
+        0.04500001668930054,
+        0.0
+      ],
+      "minimum_triangle_double_area": 0.009360003664493632,
+      "normal_winding_failures": 0
+    },
+    "RGL_SpecimenColdCabinet": {
+      "triangles": 3588,
+      "vertices": 7534,
+      "material_slots": 3,
+      "dimensions_m": [
+        0.8240000009536743,
+        1.7044999599456787,
+        0.7319999933242798
+      ],
+      "minimum_triangle_double_area": 1.7320234151220469e-06,
+      "normal_winding_failures": 0
+    },
+    "RGL_SpecimenColdCabinet_Label": {
+      "triangles": 2,
+      "vertices": 4,
+      "material_slots": 1,
+      "dimensions_m": [
+        0.6380000114440918,
+        0.0690000057220459,
+        0.0
+      ],
+      "minimum_triangle_double_area": 0.04402200444030768,
+      "normal_winding_failures": 0
+    }
+  },
+  "metadata_guids": 24,
+  "total_triangles": 10548,
+  "unique_materials": 3,
+  "textures": {
+    "PaintWear.png": [
+      512,
+      512
+    ],
+    "SteelBrush.png": [
+      512,
+      512
+    ],
+    "PolymerLabels.png": [
+      1024,
+      1024
+    ]
+  },
+  "boundary": "Offline read-back only. No Unity compile/import, physics, headset, or Quest performance claim.",
+  "hashes": {
+    "Assets/RunawayChimps/Environment/RegenerationLab/Editor/RegenerationLabPlacement.cs": "bce647450b364c6b653251b1a8c1a3a8466231863c2b566cb0f97f5ffc390398",
+    "Assets/RunawayChimps/Environment/RegenerationLab/Editor/RegenerationLabPlacement.cs.meta": "b5f4c265483046af3598ba48557b397215951319fd5158f401ec1011a9da94ec",
+    "Assets/RunawayChimps/Environment/RegenerationLab/Editor.meta": "f60593dd2d396909dbdc903950035457265ac6c60d8fdf29e5d6d55ea60fd68d",
+    "Assets/RunawayChimps/Environment/RegenerationLab/Labels.json": "6452e8abb6881137799dc36f71788d691cdaa791d699a12fc183f83dc8b9af7d",
+    "Assets/RunawayChimps/Environment/RegenerationLab/Labels.json.meta": "89f46bc71c127d5f3347720000513c5462e11d8e52dc2404b32c28e7bdbcc941",
+    "Assets/RunawayChimps/Environment/RegenerationLab/Materials/RGL_DullSteel.mat": "833b4fdf5507589f27279053bf572f973dc1d2d104820090475dfb0fc6a03257",
+    "Assets/RunawayChimps/Environment/RegenerationLab/Materials/RGL_DullSteel.mat.meta": "d3885f22a8cae4783b8a4f8358c1a3dcd8f0d0946bc82e8f250b2cc5bde9bbf1",
+    "Assets/RunawayChimps/Environment/RegenerationLab/Materials/RGL_PaintedMetal.mat": "333e945f2a9e9ab1fa949d5964ee86de496a371d72f7c94f5cb85944138e7c8e",
+    "Assets/RunawayChimps/Environment/RegenerationLab/Materials/RGL_PaintedMetal.mat.meta": "5d1e9f7c6934e7a9eaede2aa8b4e8c8b1648e7c33ed3b29b2235ab933b0a7a5f",
+    "Assets/RunawayChimps/Environment/RegenerationLab/Materials/RGL_PolymerAndLabels.mat": "ee3b73583935038cbf4af291de5277b820d729e2f9dd8a41f887fcf4dcb3a0f2",
+    "Assets/RunawayChimps/Environment/RegenerationLab/Materials/RGL_PolymerAndLabels.mat.meta": "881fc032ca84eb19fb0254d8ba4c463194ca0289de2587bf9b694448db6aa194",
+    "Assets/RunawayChimps/Environment/RegenerationLab/Materials.meta": "15f2e6611ccd3bca7878b83a89517671bec581f2eff506eb27a5a8b47046d32d",
+    "Assets/RunawayChimps/Environment/RegenerationLab/Meshes/RGL_ChemicalDeliveryStand.asset": "712a421788d209f1e2c10f22b33213d0de8f81b647f6601a475315a0378d55a2",
+    "Assets/RunawayChimps/Environment/RegenerationLab/Meshes/RGL_ChemicalDeliveryStand.asset.meta": "ae58baa85e76ce6599362cc6f7947ce30892eff896206654e3a2817cf06de071",
+    "Assets/RunawayChimps/Environment/RegenerationLab/Meshes/RGL_ChemicalDeliveryStand_Label.asset": "c26dc9a6e10ca95e5a7a186df73fe0c868ef30c2d1889430866593c23c51c550",
+    "Assets/RunawayChimps/Environment/RegenerationLab/Meshes/RGL_ChemicalDeliveryStand_Label.asset.meta": "23773271e59c1c7592f7c39c706c2f73ad119c4854da49c83559f5f110876ecc",
+    "Assets/RunawayChimps/Environment/RegenerationLab/Meshes/RGL_SpecimenColdCabinet.asset": "2b9558f803a81d75cb76d20c488a54ed9eea500df446ef1bf4f4fd8ebc6fae70",
+    "Assets/RunawayChimps/Environment/RegenerationLab/Meshes/RGL_SpecimenColdCabinet.asset.meta": "e3eda2b4291dcbe8ea724547cd3d0f97466e9d8496f08b6a8172929aef18a3e7",
+    "Assets/RunawayChimps/Environment/RegenerationLab/Meshes/RGL_SpecimenColdCabinet_Label.asset": "707e54f23baac8e600d2782ec8318a10ef69052bc676db90268530b3dbf332ca",
+    "Assets/RunawayChimps/Environment/RegenerationLab/Meshes/RGL_SpecimenColdCabinet_Label.asset.meta": "0396b9f9e59bb9726ea31680abc650bc7ca927eb2c59f89b1dc63badc5794ca6",
+    "Assets/RunawayChimps/Environment/RegenerationLab/Meshes/RGL_TreatmentTrolley.asset": "2677659d507f387ba65ebfb9a317266ce144ca30a3b02a47beadf008d3a4246d",
+    "Assets/RunawayChimps/Environment/RegenerationLab/Meshes/RGL_TreatmentTrolley.asset.meta": "59d26ee655f58951ff0bada74c1c01fd923cb192c9434248a7406f67f354aad5",
+    "Assets/RunawayChimps/Environment/RegenerationLab/Meshes/RGL_TreatmentTrolley_Label.asset": "e52ba31cc18bd3fb16b2b27c8313dfc706ca15f316380ceb92177b386a377e89",
+    "Assets/RunawayChimps/Environment/RegenerationLab/Meshes/RGL_TreatmentTrolley_Label.asset.meta": "81fb36d0e55f7da137303ee02602ba22ef6a21cd193744d1f76226000b7e32f0",
+    "Assets/RunawayChimps/Environment/RegenerationLab/Meshes.meta": "12c6ba425b2fa101931c47654f0e1605c073c1b1cf7e598849841392ae5bfd6b",
+    "Assets/RunawayChimps/Environment/RegenerationLab/Prefabs/RGL_ChemicalDeliveryStand.prefab": "b634b25a1f67e4fd914f4eabcaefccdef59b48c7f69f4e48c05c5bd4ebfe03ba",
+    "Assets/RunawayChimps/Environment/RegenerationLab/Prefabs/RGL_ChemicalDeliveryStand.prefab.meta": "0bc4b4501c9e9127c106e76b8f419de140ed494f3581b610b4c529bb26c40c05",
+    "Assets/RunawayChimps/Environment/RegenerationLab/Prefabs/RGL_SpecimenColdCabinet.prefab": "5619750f7516c5ede72b914767bcee7042e81268a7e5ba6d7b5200a6b97fa630",
+    "Assets/RunawayChimps/Environment/RegenerationLab/Prefabs/RGL_SpecimenColdCabinet.prefab.meta": "b4e8083c3f4048307ffc92c03ceec41fe8398cba01d288f243c931ada80e8396",
+    "Assets/RunawayChimps/Environment/RegenerationLab/Prefabs/RGL_TreatmentTrolley.prefab": "f1afba2acb05b727a22637afb48a86f06480d92758ab51cdbcd7b00fdf635b32",
+    "Assets/RunawayChimps/Environment/RegenerationLab/Prefabs/RGL_TreatmentTrolley.prefab.meta": "c4ab81ca7f199a23262f6f9aa4d6f64263e92743ef61c462ec12cb72a7723cd5",
+    "Assets/RunawayChimps/Environment/RegenerationLab/Prefabs.meta": "555ce0ac344bc75390b51c4b205a8709f793f2239663cb06c6024c7eb67e9846",
+    "Assets/RunawayChimps/Environment/RegenerationLab/RegenerationLab.inventory.json": "5177ab05a1fd9ef6984f2bdb8c46230dc4de166b43338fa08a3aa845485ea5da",
+    "Assets/RunawayChimps/Environment/RegenerationLab/RegenerationLab.inventory.json.meta": "63c0ded28cd9b331e485053353ef51962435535830c9b5b7e694b4c5c15a9f61",
+    "Assets/RunawayChimps/Environment/RegenerationLab/Textures/PaintWear.png": "94225a32387151c8f29161b8f977715da26316f4e2cf075665c37178cf600c7a",
+    "Assets/RunawayChimps/Environment/RegenerationLab/Textures/PaintWear.png.meta": "f1b5c354bcaba3512d65fdaa81dff72e99cedf5c992883464b4907bf3b2de041",
+    "Assets/RunawayChimps/Environment/RegenerationLab/Textures/PolymerLabels.png": "62d4e21cacf2fc050dc0fc867767549dd88901b8fa2ebaf0c52b5e2f8e53a61a",
+    "Assets/RunawayChimps/Environment/RegenerationLab/Textures/PolymerLabels.png.meta": "c3d3cb67b85656468ca501b713f5678f7ad513dc4868bce615578a4713add41c",
+    "Assets/RunawayChimps/Environment/RegenerationLab/Textures/SteelBrush.png": "73df1b8df8198de4c07b7f0c79b8bb8cbf2127854e6119022fb8b43eeea115cd",
+    "Assets/RunawayChimps/Environment/RegenerationLab/Textures/SteelBrush.png.meta": "c6183ec9da6eeb6920597bcbd4b1877ffc9f478013aaed3efac99a8dd3bbb13d",
+    "Assets/RunawayChimps/Environment/RegenerationLab/Textures.meta": "90edea6753638bb701ebe6ade6568b871cf2aac5f58c43cd295cd2b01bcf3448"
+  }
+}

@@ -1,0 +1,33 @@
+name: Regeneration kit validation
+on:
+  pull_request:
+    paths:
+      - 'Assets/RunawayChimps/Environment/RegenerationLab/**'
+      - 'Assets/RunawayChimps/Environment/RegenerationLab.meta'
+      - 'Tools/RegenerationLab/**'
+      - '.github/workflows/regeneration-kit-validation.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    name: Regeneration asset integrity
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install offline read-back dependencies
+        run: python -m pip install 'numpy==2.3.5' 'Pillow==12.3.0'
+      - name: Validate baked assets and repository GUID boundaries
+        run: python Tools/RegenerationLab/validate.py --root . --baseline .
+      - name: Reject damaged-asset negative controls
+        run: python Tools/RegenerationLab/tests.py --root .
+      - name: Validate authoring tool syntax and Editor template consistency
+        run: |
+          python -m compileall -q Tools/RegenerationLab
+          diff -u Tools/RegenerationLab/RegenerationLabPlacement.cs.txt Assets/RunawayChimps/Environment/RegenerationLab/Editor/RegenerationLabPlacement.cs

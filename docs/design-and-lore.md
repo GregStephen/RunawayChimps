@@ -1,6 +1,16 @@
 # Runaway Chimps design and lore
 
-Last updated: 2026-09-22. Maintained repository edition, migrated from `Runaway_Chimps_Design_and_Lore.docx` version 0.9. The existing Word document is a downloadable snapshot; future edits belong here. See [AGENTS.md](../AGENTS.md) for the documentation workflow and the [repository improvement plan](repository-improvement-plan.md) for implementation evidence.
+Last updated: 2026-09-30. Maintained repository edition, migrated from `Runaway_Chimps_Design_and_Lore.docx` version 0.9. The existing Word document is a downloadable snapshot; future edits belong here. See [AGENTS.md](../AGENTS.md) for the documentation workflow and the [repository improvement plan](repository-improvement-plan.md) for implementation evidence.
+
+## September 30 regeneration lab prop kit — asset review, not final room dressing
+
+**Confirmed choice:** create a small cohesive modular art kit for the existing Level 1 regeneration/tissue-damage keycard safe room. The first kit specifically contains a treatment/utility trolley, a chemical-delivery stand and a specimen cold-storage cabinet. These three choices are now confirmed; the optional waste container and regeneration diagram are deferred. This is a working experimental laboratory, not another surveillance room or a conventional operating theater.
+
+**Implemented on `art/regeneration-lab-prop-kit`, pending review/merge:** three independently movable static prefabs, six baked native mesh assets (body plus editable label per prop), three shared opaque Built-in Standard materials and three original textures. An explicit **Tools > Runaway Chimps > Environment > Place Regeneration Lab Review...** window adds a new group of linked prefab instances to the chosen loaded scene with Undo; it never rebuilds existing placements, opens/saves scenes or runs on Editor startup. The actual Level 1 scene remains unchanged. See the [kit guide and measured inventory](regeneration-lab-prop-kit.md).
+
+**Proposed dressing, not new lore:** the short labels, inert sample forms, surface wear, delivery layout and preview arrangement are art proposals. No subject number, staff identity, exact treatment sequence or connection to the individual Crawler is established. There are no broken restraints, escape trails or second Crawler origin. Existing cards, readers, doors, safe boundaries, arrival markers and monster behavior are not modified.
+
+**Validation boundary:** the produced mesh data, UVs, normals, dimensions, pivots, material/texture bindings, simple collider bounds and GUIDs were inspected with offline tools; VTK previews render those actual serialized assets. These are not Unity screenshots. Unity import/Editor compilation, placement Undo/Redo, Gorilla-relative scale, Level 1 lighting/readability, both safe-room approaches, collision comfort and target Quest performance remain pending. Prefab availability does not mean the room is finished or its final placements are approved.
 
 ## September 22 Unity 62f3 baseline adoption
 
@@ -170,7 +180,7 @@ The same review also resolves the red Console error from Greg's prior log captur
 
 **Confirmed Crawler-lore direction:** the Crawler's almost-severed legs, exposed bone in the limbs, deep tissue loss, and exposed spinal area are consistent with repeated experimental tissue/nerve/bone damage and attempted regeneration rather than a single surgery whose goal was simply to remove its legs. The room can teach this broader experiment family without proving that this exact room, trial station, or subject number belonged specifically to the Crawler.
 
-**Proposed dressing, not yet locked:** a restraint/testing platform, chemical-delivery equipment, specimen cold storage, biological-waste containers, skeletal/regeneration diagrams, utility carts, treatment supplies, and a believable staff-owned card presentation such as a lab coat, clipboard, badge reel, or workstation dock. Exact props, labels, subject IDs, card placement, lighting, and room layout remain open for the environment-art pass.
+**September 30 refinement:** the treatment trolley, chemical-delivery stand and specimen cold-storage cabinet are confirmed first-kit choices and now have review assets; see the kit checkpoint above. Optional waste handling, diagrams and any further testing hardware remain proposals. Labels, wear and final arrangement still need review. The kit does not authorize card relocation, a restraint escape story, a subject ID or a specific Crawler treatment history; existing objective placement and safe-room layout are preserved.
 
 ## Decision and correction record
 

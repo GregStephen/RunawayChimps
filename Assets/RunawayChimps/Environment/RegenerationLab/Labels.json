@@ -1,0 +1,9 @@
+{
+  "treatment": "TREATMENT",
+  "delivery": "DELIVERY",
+  "cold_storage": "COLD STORAGE",
+  "tissue_label": "TISSUE",
+  "sealed": "SEALED",
+  "rinse": "RINSE",
+  "agent": "AGENT"
+}
