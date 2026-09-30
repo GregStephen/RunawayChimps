@@ -1,15 +1,25 @@
-name: Cognitive managed rules
+name: Cognitive rules and assets
 on:
   pull_request:
     paths:
       - Assets/Scripts/Toys/PrimateCognitive/**
+      - Assets/RunawayChimps/Toys/PrimateCognitive/**
+      - Assets/Scenes/Bootstrap.unity
+      - ProjectSettings/DynamicsManager.asset
+      - Tools/PrimateCognitive/**
       - Tools/PrimateCognitiveHarness/**
+      - docs/primate-cognitive-evaluation.md
       - .github/workflows/primate-cognitive-validation.yml
   push:
     branches: [feature/primate-cognitive-test]
     paths:
       - Assets/Scripts/Toys/PrimateCognitive/**
+      - Assets/RunawayChimps/Toys/PrimateCognitive/**
+      - Assets/Scenes/Bootstrap.unity
+      - ProjectSettings/DynamicsManager.asset
+      - Tools/PrimateCognitive/**
       - Tools/PrimateCognitiveHarness/**
+      - docs/primate-cognitive-evaluation.md
       - .github/workflows/primate-cognitive-validation.yml
 permissions:
   contents: read
@@ -23,5 +33,26 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 8.0.x
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install pinned asset parser
+        run: python -m pip install --disable-pip-version-check PyYAML==6.0.2
       - name: Run production rules, contact gate and replica tests
         run: dotnet run --project Tools/PrimateCognitiveHarness/PrimateCognitiveHarness.csproj --configuration Release
+      - name: Verify shipped prefab and audio without regenerating files
+        run: |
+          python Tools/PrimateCognitive/build_assets.py
+          python Tools/PrimateCognitive/validate_assets.py
+          python Tools/PrimateCognitive/validate_rig_contract.py
+      - name: Verify existing font and material identities
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+          font = Path('Assets/TextMesh Pro/Resources/Fonts & Materials/LiberationSans SDF.asset')
+          text = font.read_text(encoding='utf-8-sig')
+          assert re.search(r'^--- !u!114 &11400000$', text, re.M), 'Missing existing font asset identity'
+          assert re.search(r'^--- !u!21 &2180264$', text, re.M), 'Missing existing font material identity'
+          assert 'guid: 8f586378b4e144a9851e7b34d9b748ee' in Path(str(font) + '.meta').read_text()
+          print('PASS: shipped prefab references the real existing font and SDF material.')
