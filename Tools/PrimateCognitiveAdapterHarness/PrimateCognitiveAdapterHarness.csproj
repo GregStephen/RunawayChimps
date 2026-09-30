@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <DefineConstants>$(DefineConstants);UNITY_EDITOR</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../Assets/Scripts/Toys/PrimateCognitive/CognitiveGame.cs" Link="CognitiveGame.cs" />
+    <Compile Include="../../Assets/Scripts/Toys/PrimateCognitive/CognitiveContactGate.cs" Link="CognitiveContactGate.cs" />
+    <Compile Include="../../Assets/Scripts/Toys/PrimateCognitive/CognitiveMachine.cs" Link="CognitiveMachine.cs" />
+    <Compile Include="../../Assets/Scripts/Toys/PrimateCognitive/CognitivePad.cs" Link="CognitivePad.cs" />
+    <Compile Include="../../Assets/Scripts/Travel/SectorPresence.cs" Link="SectorPresence.cs" />
+  </ItemGroup>
+</Project>
