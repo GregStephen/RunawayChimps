@@ -41,6 +41,9 @@ jobs:
       - name: Execute production card-consumption state tests
         run: dotnet run --project Tools/CardSystemHarness/CardSystemHarness.csproj --configuration Release
 
+      - name: Execute production specimen-jar policy tests
+        run: dotnet run --project Tools/SpecimenJarHarness/SpecimenJarHarness.csproj --configuration Release
+
       - name: Install syntax-parser dependencies
         run: |
           python -m pip install --disable-pip-version-check \
@@ -93,6 +96,9 @@ jobs:
 
       - name: Validate launch presentation source contracts
         run: python Tools/validate_launch_presentation.py
+
+      - name: Validate reactive specimen jar assets and boundaries
+        run: python Tools/validate_specimen_jar.py
 
       - name: Compile Python validation tools
         run: python -m compileall -q Tools
