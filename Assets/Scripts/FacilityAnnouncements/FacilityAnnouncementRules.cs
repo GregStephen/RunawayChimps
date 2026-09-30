@@ -106,6 +106,21 @@ namespace RunawayChimps.FacilityAnnouncements
             return min + (max - min) * Math.Max(0, Math.Min(1, unit));
         }
 
+        public enum PlaybackCompletion { Waiting, Finished, Interrupted }
+
+        // AudioSource.isPlaying can begin and end between two rendered frames for
+        // very short cues. Speech must actually have been observed playing before
+        // it can complete normally or be accompanied by a caption.
+        public static PlaybackCompletion CompletedClip(bool speech, bool observedPlaying, double elapsed, double length)
+        {
+            if (!Finite(elapsed) || !Finite(length) || elapsed < 0 || length <= 0)
+                return PlaybackCompletion.Interrupted;
+            if (!observedPlaying && elapsed < 0.3) return PlaybackCompletion.Waiting;
+            if ((speech && !observedPlaying) || elapsed < length - Math.Min(0.05, length * 0.1))
+                return PlaybackCompletion.Interrupted;
+            return PlaybackCompletion.Finished;
+        }
+
         public sealed class Schedule
         {
             public double Due { get; private set; } = double.PositiveInfinity;

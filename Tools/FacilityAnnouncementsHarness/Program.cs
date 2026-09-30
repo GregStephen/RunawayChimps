@@ -17,6 +17,7 @@ internal static class Program
     {
         Selection();
         Scheduling();
+        PlaybackCompletion();
         AuthorityAndCancellation();
         Console.WriteLine("PASS: " + assertions + " production-policy assertions. Unity, native audio, Photon transport and XR are NOT exercised.");
     }
@@ -52,6 +53,25 @@ internal static class Program
         Check(Rules.Select(choices, null, 0.5, true) == -1, "pending duplicate also ambiguous");
         Check(!Rules.ValidId("../bad") && !Rules.ValidId(new string('a', 65)) && Rules.ValidId("facility-01"), "bounded IDs");
         Check(Rules.Select(new Rules.Choice[33], null, 0, false) == -1, "bounded collection");
+    }
+    private static void PlaybackCompletion()
+    {
+        Check(Rules.CompletedClip(false, false, 0.32, 0.22) == Rules.PlaybackCompletion.Finished,
+            "short cue completed between frames must not discard selected speech");
+        Check(Rules.CompletedClip(true, false, 0.32, 5) == Rules.PlaybackCompletion.Interrupted,
+            "unobserved speech cannot create caption-only playback");
+        Check(Rules.CompletedClip(true, false, 0.1, 5) == Rules.PlaybackCompletion.Waiting,
+            "bounded initial source-start grace");
+        Check(Rules.CompletedClip(true, true, 2, 5) == Rules.PlaybackCompletion.Interrupted,
+            "externally interrupted speech cancels instead of completing");
+        Check(Rules.CompletedClip(false, true, 0.1, 0.22) == Rules.PlaybackCompletion.Interrupted,
+            "externally interrupted cue cancels");
+        Check(Rules.CompletedClip(true, true, 5, 5) == Rules.PlaybackCompletion.Finished,
+            "observed natural speech completion");
+        Check(Rules.CompletedClip(true, true, double.NaN, 5) == Rules.PlaybackCompletion.Interrupted,
+            "invalid playback clock fails closed");
+        Check(Rules.CompletedClip(false, false, 1, 0) == Rules.PlaybackCompletion.Interrupted,
+            "empty cue cannot advance a caption");
     }
     private static void Scheduling()
     {

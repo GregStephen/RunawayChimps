@@ -45,6 +45,31 @@ def main():
             require(value == '0' or value in anchors, 'local reference: ' + str(path) + '/' + value)
         for value in re.findall(r'guid: ([0-9a-f]{32})', text):
             require(value in guids or value in allowed_external, 'asset reference: ' + value)
+    for path in ROOT.rglob('*'):
+        if path.suffix not in ('.prefab', '.asset', '.mat'):
+            continue
+        for object_id, asset_guid, asset_type in re.findall(r'fileID: (\d+), guid: ([0-9a-f]{32}), type: (\d+)', path.read_text()):
+            target = guids.get(asset_guid)
+            if target is None:
+                continue
+            expected_type = '3' if target.suffix in ('.cs', '.wav', '.prefab') else '2'
+            require(asset_type == expected_type, 'Unity imported/native PPtr type: ' + str(target))
+            if target.suffix == '.wav':
+                require(object_id == '8300000', 'AudioClip main object ID')
+            elif target.suffix in ('.asset', '.mat', '.prefab'):
+                anchors = re.findall(r'^--- !u!\d+ &(\d+)$', target.read_text(), re.M)
+                require(object_id in anchors, 'external object ID exists: ' + str(target))
+    director = (SCRIPTS / 'FacilityAnnouncementDirector.cs').read_text()
+    require('output.source.clip != expected' in director, 'clip replacement clears stale caption playback')
+    require('CompletedClip(stage == Stage.Speech' in director, 'runtime uses the tested completion policy')
+    for callback in ('OnApplicationPause', 'OnApplicationFocus', 'OnDisable'):
+        require(callback in director, 'lifecycle cancellation hook: ' + callback)
+    for path in Path('Assets/Scripts').rglob('*.cs'):
+        if SCRIPTS in path.parents:
+            continue
+        text = path.read_text(encoding='utf-8-sig')
+        require(not re.search(r'\bconst\s+(?:byte|int)\s+\w*(?:Event|Code)\w*\s*=\s*197\s*;|\bRaiseEvent\(\s*197\b', text),
+                'event 197 is not assigned by another first-party feature: ' + str(path))
     speaker = (ROOT / 'Prefabs/FacilitySpeaker.prefab').read_text()
     require(len(re.findall(r'^--- !u!82 ', speaker, re.M)) == 1, 'exactly one AudioSource')
     require(not re.search(r'^--- !u!(20|81|65|54|135|136) ', speaker, re.M), 'no camera/listener/collision/gameplay body')

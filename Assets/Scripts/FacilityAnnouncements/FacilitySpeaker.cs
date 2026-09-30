@@ -20,14 +20,23 @@ namespace RunawayChimps.FacilityAnnouncements
         public bool Ready => isActiveAndEnabled && source != null && source.isActiveAndEnabled &&
             collection != null && collection.Valid && gameObject.scene.isLoaded;
 
-        private void Awake() => ConfigureSource();
+        private bool registered;
+
+        private void Awake()
+        {
+            if (Application.isPlaying) ConfigureSource();
+        }
         private void OnEnable()
         {
+            if (!Application.isPlaying) return;
+            registered = true;
             ConfigureSource();
             FacilityAnnouncementDirector.Register(this);
         }
         private void OnDisable()
         {
+            if (!registered) return;
+            registered = false;
             StopPlayback();
             FacilityAnnouncementDirector.Unregister(this);
         }

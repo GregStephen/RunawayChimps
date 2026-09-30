@@ -121,7 +121,8 @@ namespace RunawayChimps.FacilityAnnouncements
             var travel = SectorTravelService.I;
             return PhotonNetwork.InRoom && PhotonNetwork.IsMessageQueueRunning && !paused && focused &&
                 Time.timeScale > 0 && !AudioListener.pause && travel != null && !travel.IsBusy &&
-                travel.CurrentSector != SectorId.None && (AppState.I == null || AppState.I.IsReady);
+                (int)travel.CurrentSector >= 1 && (int)travel.CurrentSector <= 3 &&
+                (AppState.I == null || AppState.I.IsReady);
         }
 
         private void Update()
@@ -389,8 +390,9 @@ namespace RunawayChimps.FacilityAnnouncements
             }
             if (captions != null) captions.Clear();
             float elapsed = Time.unscaledTime - stageStarted;
-            if (!observedPlaying && elapsed < 0.3f) return;
-            if ((stage == Stage.Speech && !observedPlaying) || elapsed < stageLength - 0.15f) { CancelPlayback(); return; }
+            var completion = FacilityAnnouncementRules.CompletedClip(stage == Stage.Speech, observedPlaying, elapsed, stageLength);
+            if (completion == FacilityAnnouncementRules.PlaybackCompletion.Waiting) return;
+            if (completion == FacilityAnnouncementRules.PlaybackCompletion.Interrupted) { CancelPlayback(); return; }
             if (stage == Stage.StartCue) PlayStage(speech, Stage.Speech, false);
             else if (stage == Stage.Speech && endCue != null) PlayStage(endCue, Stage.EndCue, true);
             else CancelPlayback();

@@ -31,7 +31,7 @@ COMMON = '  m_ObjectHideFlags: 0\n  m_CorrespondingSourceObject: {fileID: 0}\n  
 
 
 def guid(path):
-    return uuid.uuid5(uuid.NAMESPACE_URL, 'runaway-chimps/facility-announcements/' + str(path)).hex
+    return uuid.uuid5(uuid.NAMESPACE_URL, 'runaway-chimps/facility-announcements/' + Path(path).as_posix()).hex
 
 
 def ref(path, file_id=11400000):
