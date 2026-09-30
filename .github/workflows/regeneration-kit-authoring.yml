@@ -4,29 +4,139 @@ on:
     branches: [art/regeneration-lab-prop-kit]
     paths: [.github/workflows/regeneration-kit-authoring.yml]
 permissions:
-  contents: read
+  contents: write
 jobs:
-  inspect:
+  publish:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-      - name: Collect read-only authoring reference
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Restore checked original authoring sources
+        shell: python
+        run: |
+          from pathlib import Path
+          import base64, hashlib, json, lzma
+          payload = base64.b64decode(''.join(Path(f'.github/rgl-source.{i:02d}.b64').read_text() for i in range(5)), validate=True)
+          assert hashlib.sha256(payload).hexdigest() == 'b18eb2b24302890e9cb451e59015dc0f8e977adb78f7c0b788a6a9aa266c743f', 'Source transport checksum mismatch'
+          sources = json.loads(lzma.decompress(payload))
+          expected = {'RegenerationLabPlacement.cs.txt', 'ci-workflow.yml.txt', 'expected-assets.json', 'generate.py', 'geometry.py', 'kit-guide.md.txt', 'render.py', 'requirements.txt', 'tests.py', 'validate.py', 'write_docs.py'}
+          assert set(sources) == {f'Tools/RegenerationLab/{name}' for name in expected}
+          assert not Path('Tools/RegenerationLab').exists(), 'Do not overwrite existing authoring work'
+          for name, text in sources.items():
+              path = Path(name)
+              path.parent.mkdir(parents=True, exist_ok=True)
+              path.write_text(text, encoding='utf-8')
+          print('PASS: original source capsule checksum and new-path boundary')
+      - name: Install isolated offline authoring tools
+        run: python -m pip install -r Tools/RegenerationLab/requirements.txt
+      - name: Bake and independently validate original assets
+        run: |
+          set -euo pipefail
+          python Tools/RegenerationLab/generate.py --output "$RUNNER_TEMP/rgl-output"
+          python Tools/RegenerationLab/validate.py --root "$RUNNER_TEMP/rgl-output" --baseline . --report "$RUNNER_TEMP/rgl-validation.json"
+          python Tools/RegenerationLab/tests.py --root "$RUNNER_TEMP/rgl-output"
+      - name: Require identical bytes to visually inspected local assets
+        shell: python
+        run: |
+          from pathlib import Path
+          import hashlib, json, os
+          output = Path(os.environ['RUNNER_TEMP']) / 'rgl-output'
+          expected = json.loads(Path('Tools/RegenerationLab/expected-assets.json').read_text())
+          mismatches = [name for name, digest in expected.items() if not (output/name).is_file() or hashlib.sha256((output/name).read_bytes()).hexdigest() != digest]
+          assert not mismatches, f'Generated assets differ from inspected assets: {mismatches}'
+          print(f'PASS: all {len(expected)} inspected asset-file SHA256 values match')
+      - name: Stage only new kit assets and focused documentation
+        shell: python
+        run: |
+          from pathlib import Path
+          import os, shutil, subprocess
+          output = Path(os.environ['RUNNER_TEMP']) / 'rgl-output'
+          root = Path('Assets/RunawayChimps/Environment/RegenerationLab')
+          assert not root.exists() and not root.with_suffix('.meta').exists()
+          shutil.copytree(output/root, root)
+          shutil.copyfile(output/root.with_suffix('.meta'), root.with_suffix('.meta'))
+          exports = Path('Tools/RegenerationLab/Exports')
+          assert not exports.exists()
+          shutil.copytree(output/exports, exports)
+          subprocess.run(['python', 'Tools/RegenerationLab/write_docs.py', '--repo', '.'], check=True)
+          copies = {'Tools/RegenerationLab/kit-guide.md.txt': 'docs/regeneration-lab-prop-kit.md', 'Tools/RegenerationLab/ci-workflow.yml.txt': '.github/workflows/regeneration-kit-validation.yml', str(Path(os.environ['RUNNER_TEMP'])/'rgl-validation.json'): 'docs/regeneration-lab-prop-kit-validation.json'}
+          for src, dst in copies.items():
+              assert not Path(dst).exists()
+              shutil.copyfile(src, dst)
+      - name: Render actual serialized meshes and texture bindings
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+        run: python Tools/RegenerationLab/render.py --root . --out docs/images/regeneration-lab
+      - name: Verify previews and remove temporary publication transport
+        shell: python
+        run: |
+          from pathlib import Path
+          from PIL import Image
+          previews = Path('docs/images/regeneration-lab')
+          expected = {'kit-front.png', 'kit-rear.png', 'RGL_TreatmentTrolley.png', 'RGL_ChemicalDeliveryStand.png', 'RGL_SpecimenColdCabinet.png'}
+          assert {p.name for p in previews.iterdir()} == expected
+          for path in previews.iterdir():
+              with Image.open(path) as image:
+                  assert image.width >= 1000 and image.height >= 1000
+                  image.verify()
+          for i in range(5):
+              Path(f'.github/rgl-source.{i:02d}.b64').unlink()
+          Path('Tools/RegenerationLab/expected-assets.json').unlink()
+          Path('.github/workflows/regeneration-kit-authoring.yml').unlink()
+          print('PASS: five real modeling previews; temporary publication files removed')
+      - name: Validate final staged kit and source syntax
+        run: |
+          set -euo pipefail
+          python Tools/RegenerationLab/validate.py --root . --baseline .
+          python Tools/RegenerationLab/tests.py --root .
+          python -m compileall -q Tools/RegenerationLab
+          diff -u Tools/RegenerationLab/RegenerationLabPlacement.cs.txt Assets/RunawayChimps/Environment/RegenerationLab/Editor/RegenerationLabPlacement.cs
+          python -m pip install 'tree-sitter==0.25.2' 'tree-sitter-c-sharp==0.23.5'
+          python Tools/validate_source.py --syntax
+          python Tools/validate_repository_integrity.py
+      - name: Enforce complete diff boundary and fast-forward publish
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = 'refs/heads/art/regeneration-lab-prop-kit'
+          test "$(git ls-remote origin refs/heads/art/regeneration-lab-prop-kit | cut -f1)" = "$GITHUB_SHA"
+          git add -A
+          python - <<'PY'
+          import subprocess
+          base = '930a8f830cae99e06dcaa0a78ab9edc968c42ae5'
+          names = subprocess.check_output(['git', 'diff', '--cached', '--name-only', base], text=True).splitlines()
+          exact = {'Assets/RunawayChimps/Environment/RegenerationLab.meta', 'docs/design-and-lore.md', 'docs/repository-improvement-plan.md', 'docs/regeneration-lab-prop-kit.md', 'docs/regeneration-lab-prop-kit-validation.json', '.github/workflows/regeneration-kit-validation.yml'}
+          prefixes = ('Assets/RunawayChimps/Environment/RegenerationLab/', 'Tools/RegenerationLab/', 'docs/images/regeneration-lab/')
+          unexpected = [name for name in names if name not in exact and not name.startswith(prefixes)]
+          assert not unexpected, f'Out-of-scope changes: {unexpected}'
+          print(f'PASS: complete {len(names)}-file diff is limited to kit, tools, evidence and focused docs')
+          print('\n'.join(names))
+          PY
+          git diff --cached --check 930a8f830cae99e06dcaa0a78ab9edc968c42ae5 -- '*.cs' '*.py' '*.md' '*.json' '*.yml' '*.txt'
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'feat(art): add baked regeneration lab prop kit and review tooling'
+          git push origin HEAD:refs/heads/art/regeneration-lab-prop-kit
+          git rev-parse HEAD
+      - name: Package published evidence
         shell: python
         run: |
           from pathlib import Path
           import zipfile
-          extensions = {'.md', '.cs', '.py', '.unity', '.prefab', '.asset', '.meta', '.mat', '.asmdef', '.asmref', '.json', '.yml', '.txt', '.csproj', '.sh'}
-          with zipfile.ZipFile('regeneration-baseline.zip', 'w', zipfile.ZIP_DEFLATED) as archive:
-              for root in ('Assets', 'ProjectSettings', 'Packages', 'Tools', 'docs', '.github'):
+          with zipfile.ZipFile('regeneration-kit-evidence.zip', 'w', zipfile.ZIP_DEFLATED) as archive:
+              for root in ('Assets/RunawayChimps/Environment/RegenerationLab', 'Tools/RegenerationLab', 'docs/images/regeneration-lab'):
                   for path in sorted(Path(root).rglob('*')):
-                      if path.is_file() and path.suffix in extensions:
+                      if path.is_file() and '__pycache__' not in path.parts:
                           archive.write(path)
-              archive.write('AGENTS.md')
-              archive.write('README.md')
-          print('Collected textual reference only; no authored assets or scenes modified.')
+              for name in ('Assets/RunawayChimps/Environment/RegenerationLab.meta', 'docs/regeneration-lab-prop-kit.md', 'docs/regeneration-lab-prop-kit-validation.json'):
+                  archive.write(name)
       - uses: actions/upload-artifact@v4
         with:
-          name: regeneration-baseline
-          path: regeneration-baseline.zip
-          retention-days: 1
+          name: regeneration-kit-evidence
+          path: regeneration-kit-evidence.zip
+          retention-days: 7
