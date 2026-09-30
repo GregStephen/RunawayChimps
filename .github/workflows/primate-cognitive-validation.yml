@@ -1,0 +1,27 @@
+name: Cognitive managed rules
+on:
+  pull_request:
+    paths:
+      - Assets/Scripts/Toys/PrimateCognitive/**
+      - Tools/PrimateCognitiveHarness/**
+      - .github/workflows/primate-cognitive-validation.yml
+  push:
+    branches: [feature/primate-cognitive-test]
+    paths:
+      - Assets/Scripts/Toys/PrimateCognitive/**
+      - Tools/PrimateCognitiveHarness/**
+      - .github/workflows/primate-cognitive-validation.yml
+permissions:
+  contents: read
+jobs:
+  rules:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Run production rules, contact gate and replica tests
+        run: dotnet run --project Tools/PrimateCognitiveHarness/PrimateCognitiveHarness.csproj --configuration Release

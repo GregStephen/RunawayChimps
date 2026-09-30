@@ -1,0 +1,53 @@
+name: Finalize cognitive source draft
+on:
+  push:
+    branches: [feature/primate-cognitive-test]
+    paths: [.github/workflows/cognitive-source-finalize.yml]
+permissions:
+  contents: write
+jobs:
+  source-draft:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: feature/primate-cognitive-test
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Apply scoped source and maintained-document corrections
+        run: python Tools/PrimateCognitive/finalize_source.py
+      - name: Test production cognitive rules
+        run: dotnet run --project Tools/PrimateCognitiveHarness/PrimateCognitiveHarness.csproj --configuration Release
+      - name: Install pinned source parsers
+        run: python -m pip install tree-sitter==0.25.2 tree-sitter-c-sharp==0.23.5
+      - name: Validate source and repository metadata
+        run: |
+          python Tools/validate_source.py --syntax
+          python Tools/validate_repository_integrity.py
+          python -m compileall -q Tools
+      - name: Commit source draft and remove temporary delivery helpers
+        run: |
+          test "${GITHUB_REF}" = refs/heads/feature/primate-cognitive-test
+          git rm .github/workflows/cognitive-source-snapshot.yml .github/workflows/cognitive-source-finalize.yml Tools/PrimateCognitive/finalize_source.py
+          git add Assets/Scripts/Toys/PrimateCognitive/CognitiveMachine.cs docs/design-and-lore.md docs/repository-improvement-plan.md
+          git diff --cached --check
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'fix(cognitive): release Editor contacts and record incomplete asset delivery'
+          git push origin HEAD:feature/primate-cognitive-test
+      - name: Package reviewable source and test evidence
+        if: always()
+        run: |
+          git rev-parse HEAD > /tmp/cognitive-head.txt
+          tar -czf /tmp/cognitive-review.tar.gz Assets/Scripts/Toys Tools/PrimateCognitiveHarness docs/design-and-lore.md docs/repository-improvement-plan.md docs/primate-cognitive-evaluation.md .github/workflows
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cognitive-source-review
+          path: |
+            /tmp/cognitive-review.tar.gz
+            /tmp/cognitive-head.txt
+          retention-days: 1
