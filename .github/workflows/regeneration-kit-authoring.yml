@@ -44,8 +44,11 @@ jobs:
               hashes['Assets/RunawayChimps/Environment/RegenerationLab/Meshes/' + name] = digest
           path.write_text(json.dumps(hashes), encoding='utf-8')
           print('PASS: source checksum; reviewed canonical vertex precision patch; explicit expected hashes')
-      - name: Install isolated offline authoring tools
-        run: python -m pip install -r Tools/RegenerationLab/requirements.txt
+      - name: Install isolated offline authoring tools and software renderer
+        run: |
+          python -m pip install -r Tools/RegenerationLab/requirements.txt
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends libegl1 libegl-mesa0 libgl1-mesa-dri libosmesa6 xvfb xauth
       - name: Bake and independently validate original assets
         run: |
           set -euo pipefail
@@ -88,7 +91,7 @@ jobs:
       - name: Render actual serialized meshes and texture bindings
         env:
           LIBGL_ALWAYS_SOFTWARE: '1'
-        run: python Tools/RegenerationLab/render.py --root . --out docs/images/regeneration-lab
+        run: xvfb-run -a python Tools/RegenerationLab/render.py --root . --out docs/images/regeneration-lab
       - name: Verify previews and remove temporary publication transport
         shell: python
         run: |
