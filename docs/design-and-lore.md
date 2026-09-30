@@ -1,6 +1,18 @@
 # Runaway Chimps design and lore
 
-Last updated: 2026-09-22. Maintained repository edition, migrated from `Runaway_Chimps_Design_and_Lore.docx` version 0.9. The existing Word document is a downloadable snapshot; future edits belong here. See [AGENTS.md](../AGENTS.md) for the documentation workflow and the [repository improvement plan](repository-improvement-plan.md) for implementation evidence.
+Last updated: 2026-09-30. Maintained repository edition, migrated from `Runaway_Chimps_Design_and_Lore.docx` version 0.9. The existing Word document is a downloadable snapshot; future edits belong here. See [AGENTS.md](../AGENTS.md) for the documentation workflow and the [repository improvement plan](repository-improvement-plan.md) for implementation evidence.
+
+## September 30 Knock-Back Vent optional prototype
+
+**Confirmed direction:** Greg chose four small toys for independent exploration; this branch owns only the **Knock-Back Vent**. A panel marked **DO NOT COMMUNICATE WITH OCCUPANTS.** repeats a local player's short tapping rhythm after a pause. Reliable imitation is the default; an uncommon extra knock or one heavier final knock is chosen once by the interaction authority. Nothing emerges, attacks, grants a reward or changes an objective. No creature or new networking framework is part of this prototype.
+
+**Implemented, not merged:** `feature/knock-back-vent`, created from freshly fetched main `930a8f830cae99e06dcaa0a78ab9edc968c42ae5`, contains bounded Idle/Recording/Replying/Cooldown logic; release-gated local tracked-hand sampling; first-tapper ownership; live-only, sector-targeted PUN messages; shared timing/variation; cancellation on room/sector/authority/tapper/lifecycle changes; and no late-arrival backlog. The real serialized prefab at `Assets/RunawayChimps/KnockBackVent/KnockBackVent.prefab` includes assigned materials, warning text, three original PCM clips, spatial audio behind the panel and a small relative visual deflection. The existing hand-impact blocker prevents a second impact-audio path. Unity 2022.3.62f3, packages, Photon PUN, built-in rendering and XR settings are unchanged; no other unmerged toy is required.
+
+**Explicit setup only:** **Tools > Runaway Chimps > Toys > Place Knock-Back Vent in Hub** creates one Undo-supported instance or selects the existing placement without moving it. There is no editor-load installation, forced scene save, Hub/Bootstrap rewrite or automatic build-scene change. A separate offline Play Mode sample exercises the rhythm without a headset. See [Knock-Back Vent setup, tuning and acceptance](knock-back-vent.md) for exact commands, Inspector settings, asset provenance and limitations.
+
+**Validated managed/source diagnostics, 2026-09-30:** production core: **16 cases / 3,958 assertions**; production adapter and `SectorPresence` with Unity/Photon/XR/audio doubles: **14 cases / 90 assertions**; existing card-state harness: **18,015 assertions** unchanged. The feature's read-only serialized-asset/source checks and independent 84-object prefab YAML parse pass. Both new harnesses and the feature validator are added to the existing source workflow without removing other checks. The PR records full-checkout CI results against its published revision.
+
+**Pending validation:** actual Unity 62f3 import/compile and Test Runner; Editor placement/Undo/readability; audio listening and both-hand tracking/teleport/release behavior; two-client same-sector timing, simultaneous users, stale-packet cancellation and late arrivals; Quest 2/Quest 3 comfort/performance. Managed doubles/source checks are not Unity, native physics, real Photon or headset evidence. The prototype does not close existing MVP/runtime gates.
 
 ## September 22 Unity 62f3 baseline adoption
 
@@ -176,6 +188,7 @@ The same review also resolves the red Console error from Greg's prior log captur
 
 | Recorded | Decision or correction | Status |
 | --- | --- | --- |
+| 2026-09-30 | Explore the Knock-Back Vent independently: reliable rhythm imitation, uncommon authority-chosen extra/heavy knock, no creature/reward/objective consequence; real movable prefab and explicit Undo-supported Hub placement only. | Confirmed; implemented on `feature/knock-back-vent`, not merged; managed/source diagnostics passed, Unity/two-client/headset acceptance pending. |
 | 2026-09-22 | Greg explicitly requested the 62f3 compatibility branch now, lifting the prior hold. Create the isolated trial from main `9da4a1e`; pin `2022.3.62f3 (96770f904ca7)` without changing packages, Photon, rendering, XR settings, gameplay or assets. | Confirmed go-ahead; branch/configuration implemented; Unity/Android/Quest acceptance pending; not merged |
 | 2026-09-22 | Greg approved salvaging PR #49 onto current main while preserving newer documentation. Issue #25 owns live roadmap status. PRs #21/#23/#24/#54/#58 are merged; that does not close runtime acceptance. The hold recorded at that moment was subsequently lifted by Greg's explicit request to create the compatibility branch; see the later correction above. | Confirmed documentation reconciliation; no editor migration or new runtime pass |
 | 2026-09-22 | The VentRoom blower uses the validated centered `FanHub` / local-Y rotor rotation. Side trim sits outside the housing and visible industrial surfaces use serialized texture maps. | Greg runtime-validates the rotation as fixed/perfect and later approves the side-case clipping fix and textures. Inaudible blower audio is split to #56 and does not block #53/PR #54. |

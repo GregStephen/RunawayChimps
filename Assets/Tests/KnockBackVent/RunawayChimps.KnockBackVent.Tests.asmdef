@@ -1,0 +1,15 @@
+{
+  "name": "RunawayChimps.KnockBackVent.Tests",
+  "rootNamespace": "RunawayChimps.Tests.KnockBack",
+  "references": ["RunawayChimps.KnockBackVent.Core"],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": false,
+  "defineConstraints": ["UNITY_INCLUDE_TESTS"],
+  "versionDefines": [],
+  "noEngineReferences": false,
+  "optionalUnityReferences": ["TestAssemblies"]
+}

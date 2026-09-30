@@ -1,8 +1,20 @@
 # Runaway Chimps repository improvement plan
 
-Last updated: 2026-09-22. Maintained repository edition, migrated from `Runaway_Chimps_Repository_Review_and_Plan.docx`, Revision 2. The original review examined `main` at `4f6894141aa2b132d744cb2423c1ee227e0fc5be`; its evidence links remain pinned to that baseline. The Word document is a historical downloadable snapshot.
+Last updated: 2026-09-30. Maintained repository edition, migrated from `Runaway_Chimps_Repository_Review_and_Plan.docx`, Revision 2. The original review examined `main` at `4f6894141aa2b132d744cb2423c1ee227e0fc5be`; its evidence links remain pinned to that baseline. The Word document is a historical downloadable snapshot.
 
 Read the [design and lore](design-and-lore.md) for intended behavior and [AGENTS.md](../AGENTS.md) for update rules. A confirmed finding describes source evidence; it does not mean its fix is implemented or tested.
+
+## September 30 Knock-Back Vent optional prototype
+
+**Confirmed direction:** Greg chose four small toys for independent exploration; this branch owns only the **Knock-Back Vent**. A panel marked **DO NOT COMMUNICATE WITH OCCUPANTS.** repeats a local player's short tapping rhythm after a pause. Reliable imitation is the default; an uncommon extra knock or one heavier final knock is chosen once by the interaction authority. Nothing emerges, attacks, grants a reward or changes an objective. No creature or new networking framework is part of this prototype.
+
+**Implemented, not merged:** `feature/knock-back-vent`, created from freshly fetched main `930a8f830cae99e06dcaa0a78ab9edc968c42ae5`, contains bounded Idle/Recording/Replying/Cooldown logic; release-gated local tracked-hand sampling; first-tapper ownership; live-only, sector-targeted PUN messages; shared timing/variation; cancellation on room/sector/authority/tapper/lifecycle changes; and no late-arrival backlog. The real serialized prefab at `Assets/RunawayChimps/KnockBackVent/KnockBackVent.prefab` includes assigned materials, warning text, three original PCM clips, spatial audio behind the panel and a small relative visual deflection. The existing hand-impact blocker prevents a second impact-audio path. Unity 2022.3.62f3, packages, Photon PUN, built-in rendering and XR settings are unchanged; no other unmerged toy is required.
+
+**Explicit setup only:** **Tools > Runaway Chimps > Toys > Place Knock-Back Vent in Hub** creates one Undo-supported instance or selects the existing placement without moving it. There is no editor-load installation, forced scene save, Hub/Bootstrap rewrite or automatic build-scene change. A separate offline Play Mode sample exercises the rhythm without a headset. See [Knock-Back Vent setup, tuning and acceptance](knock-back-vent.md) for exact commands, Inspector settings, asset provenance and limitations.
+
+**Validated managed/source diagnostics, 2026-09-30:** production core: **16 cases / 3,958 assertions**; production adapter and `SectorPresence` with Unity/Photon/XR/audio doubles: **14 cases / 90 assertions**; existing card-state harness: **18,015 assertions** unchanged. The feature's read-only serialized-asset/source checks and independent 84-object prefab YAML parse pass. Both new harnesses and the feature validator are added to the existing source workflow without removing other checks. The PR records full-checkout CI results against its published revision.
+
+**Pending validation:** actual Unity 62f3 import/compile and Test Runner; Editor placement/Undo/readability; audio listening and both-hand tracking/teleport/release behavior; two-client same-sector timing, simultaneous users, stale-packet cancellation and late arrivals; Quest 2/Quest 3 comfort/performance. Managed doubles/source checks are not Unity, native physics, real Photon or headset evidence. The prototype does not close existing MVP/runtime gates.
 
 ## September 22 Unity 62f3 baseline adoption
 
