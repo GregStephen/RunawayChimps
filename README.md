@@ -163,3 +163,7 @@ Only the local hand/fingertip should activate it. A remote hand, local head/body
 **Source validated on PR #11, 2026-09-12:** both push and pull-request Source integrity runs passed after the check first exposed and prompted fixes for the broken Level 2 floorplan drawing script and whitespace in three new Unity metadata files. This automated evidence covers source/serialization/tool syntax and whitespace only.
 
 **Pending on the current branches:** Unity 2022.3.55f1 compile/import; both Editor validators; startup/live-service tests; Hub entrance button Play Mode/headset behavior; Level 1/2 routes; two-client Photon; capture/controller handover/reconnect; voice; headset pause/resume; repeated travel; Quest performance and comfort.
+
+## Player board prototype
+
+`feature/player-board-safety` adds an editable PLAYERS board beside the Hub computer, per-player local mute/unmute, and reason/confirmation reporting through PlayFab. Hold left **Y** for 0.6 seconds for a portable copy; **F4** is available in Editor/development builds. See [setup, reporting review path and required runtime checks](docs/player-board-and-reporting.md). This is an unmerged prototype with pending Unity/headset/live-service validation; trusted report identity and the rest of [#43](https://github.com/GregStephen/RunawayChimps/issues/43) remain release work.

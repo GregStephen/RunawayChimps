@@ -130,6 +130,7 @@ public class AuthOrchestrator : MonoBehaviour
 
     private void Complete(int attempt, string displayName)
     {
+        RunawayChimps.SocialSafety.PlayerSafetyService.Instance?.SetLocalAccount(_playFabId);
         PhotonVRManager.SetUsername(displayName);
         _readyMessage = "Signed in.";
         _hasRun = true;
