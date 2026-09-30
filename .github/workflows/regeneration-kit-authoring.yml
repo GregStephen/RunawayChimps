@@ -1,0 +1,32 @@
+name: Regeneration kit authoring
+on:
+  push:
+    branches: [art/regeneration-lab-prop-kit]
+    paths: [.github/workflows/regeneration-kit-authoring.yml]
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Collect read-only authoring reference
+        shell: python
+        run: |
+          from pathlib import Path
+          import zipfile
+          extensions = {'.md', '.cs', '.py', '.unity', '.prefab', '.asset', '.meta', '.mat', '.asmdef', '.asmref', '.json', '.yml', '.txt', '.csproj', '.sh'}
+          with zipfile.ZipFile('regeneration-baseline.zip', 'w', zipfile.ZIP_DEFLATED) as archive:
+              for root in ('Assets', 'ProjectSettings', 'Packages', 'Tools', 'docs', '.github'):
+                  for path in sorted(Path(root).rglob('*')):
+                      if path.is_file() and path.suffix in extensions:
+                          archive.write(path)
+              archive.write('AGENTS.md')
+              archive.write('README.md')
+          print('Collected textual reference only; no authored assets or scenes modified.')
+      - uses: actions/upload-artifact@v4
+        with:
+          name: regeneration-baseline
+          path: regeneration-baseline.zip
+          retention-days: 1
