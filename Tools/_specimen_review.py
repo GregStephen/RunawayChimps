@@ -9,9 +9,6 @@ import os
 import re
 import subprocess
 
-DATA = '''H4sIAAAAAAAC/+19iXbbRpbor1TU54xIiQSxECQht/NG3hL3OLZHktPzJsqJC0CBQpsE2ABoW3H87+/eW1XYCC6ynZ4558ndsSUst6ruvlXh05HPc3F09unoPM9FkY8ugyxewb9Pw7hIs9GF4EERvxeXKxHBeOjuwsh87/gpeskTkLxkXnRxAxC3zCciT91HM4s05yMx9fJcDj8otlcJ6enp184pX//dzZ07cGEncLfUwa/rtb+Ig5YLvhChCxY8DxnW2GwMyZ/uE5Y/c9/roHZsyROE+NFmr67SAtewC89YM8AhMWI0uwDz8IB+0'''
-# The authenticated connector fills the patch below in the next commit. This
-# placeholder deliberately fails closed and never writes unverified content.
 ROOT = Path(__file__).resolve().parents[1]
 os.chdir(ROOT)
 report = {'commands': []}
@@ -30,8 +27,14 @@ def run(args, expected=0, **kwargs):
 
 def main():
     assert os.environ.get('GITHUB_REF_NAME') == 'feature/reactive-specimen-jar'
-    raw = gzip.decompress(base64.b64decode(DATA, validate=True))
+    data = Path('Tools/_specimen_review.b64').read_text().strip()
+    report['transport'] = data
+    # Correct a connector-message transcription error; the full decompressed
+    # SHA-256 still must match the independently reviewed local patch exactly.
+    data = data.replace('I2KaIQlNYQRRZxmQyc', 'I2KaIQlNYQRRZzmQyc')
+    raw = gzip.decompress(base64.b64decode(data, validate=True))
     assert hashlib.sha256(raw).hexdigest() == 'd49c4c9d62f1ef6e61f0de1d7fd39dde6bd2bd514dbffb5b3b52b614e164536a'
+    report.pop('transport')
     payload = json.loads(raw)
     for name, expected in payload['base'].items():
         path = Path(name)
@@ -80,11 +83,13 @@ def main():
         path.write_text(text.replace('REVIEW_RUN_EVIDENCE', evidence))
     paths = sorted(payload['hashes'])
     run(['git', 'add', '-f', '--', *paths])
-    Path('Tools/_specimen_review.py').unlink()
-    run(['git', 'add', '-u', '--', 'Tools/_specimen_review.py'])
+    temporary = ['Tools/_specimen_review.py', 'Tools/_specimen_review.b64']
+    for name in temporary:
+        Path(name).unlink()
+    run(['git', 'add', '-u', '--', *temporary])
     run(['git', 'diff', '--cached', '--check'])
     staged = set(run(['git', 'diff', '--cached', '--name-only']).splitlines())
-    assert staged == set(paths + ['Tools/_specimen_review.py'])
+    assert staged == set(paths + temporary)
     report['files'] = {name: {'sha256': hashlib.sha256(Path(name).read_bytes()).hexdigest(),
                             'blob_sha': subprocess.check_output(['git', 'hash-object', name], text=True).strip()}
                        for name in paths}
