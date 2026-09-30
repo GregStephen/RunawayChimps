@@ -235,7 +235,10 @@ namespace RunawayChimps.Toys.KnockBack
             if (player == null || !player.isActiveAndEnabled || player.disableMovement ||
                 player.headCollider == null || marker == null)
             { ResetHands(); return; }
-            Transform rig = marker.transform;
+            // Bootstrap's marker belongs to the outer rig. Locomotion translates
+            // GorillaPlayer beneath it, along with the tracked controllers and head.
+            // Measure controller intent in that moving tracking frame, not its parent.
+            Transform rig = player.transform;
             Vector3 headLocal = rig.InverseTransformPoint(player.headCollider.transform.position);
             bool continuous = rigSeeded && sampledRig == rig &&
                 Vector3.Distance(rig.position, previousRigPosition) <= maximumFrameStep &&

@@ -115,6 +115,8 @@ def validate(root):
     require(runtime.count('PhotonNetwork.RaiseEvent(') == runtime.count('CachingOption = EventCaching.DoNotCache'), 'all event sends must explicitly avoid caching')
     require('GorillaLocomotion.Player.Instance' in runtime and 'GetComponentInParent<LocalRigMarker>()' in runtime,
             'input must originate in the local Bootstrap rig')
+    require('Transform rig = player.transform;' in runtime,
+            'hand intent must use the moving GorillaPlayer tracking frame, not the outer marker')
     for contract in ['CommonUsages.isTracked', 'CommonUsages.trackingState', 'InputTrackingState.Position',
                      'dt <= 0.12d', 'Vector3.Distance(world, previousWorld) <= maximumStep', 'gate.Sample',
                      'player.leftHandFollower', 'player.rightHandFollower', 'fromFront.magnitude <= contactRadius',

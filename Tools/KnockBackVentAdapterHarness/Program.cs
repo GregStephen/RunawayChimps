@@ -530,6 +530,44 @@ internal static class Program
                     Require(sampler.Sample(player,rig.transform,hand.transform,Vector3.zero,node,v.panelCollider,0.56,0.3f,7,0.22f,0.07f),"releasing both poses allows another physical tap");
                 }
             });
+            foreach (bool bodyOnly in new[] { false, true })
+                Run(bodyOnly ? "authored rig body translation cannot manufacture a tap" :
+                    "authored rig collision translation preserves deliberate hand velocity", () =>
+                {
+                    foreach (XRNode node in new[] { XRNode.LeftHand, XRNode.RightHand })
+                    {
+                        using var f = new Fixture(); var v = f.Vent;
+                        // Match Bootstrap, not the simplified sampler-only fixtures:
+                        // marker on outer rig; controllers/head on moving GorillaPlayer;
+                        // collision-resolved followers are siblings of GorillaPlayer.
+                        var outer = new GameObject(); outer.AddComponent<LocalRigMarker>();
+                        var body = new GameObject(); body.transform.parent = outer.transform;
+                        var player = body.AddComponent<GorillaLocomotion.Player>();
+                        GorillaLocomotion.Player.Instance = player;
+                        var head = new GameObject(); head.transform.parent = body.transform;
+                        head.transform.localPosition = new Vector3(0, 0, 0.7f);
+                        player.headCollider = head.AddComponent<SphereCollider>();
+                        var hand = new GameObject(); hand.transform.parent = body.transform;
+                        var follower = new GameObject(); follower.transform.parent = outer.transform;
+                        if (node == XRNode.LeftHand)
+                        { player.leftHandTransform = hand.transform; player.leftHandFollower = follower.transform; }
+                        else
+                        { player.rightHandTransform = hand.transform; player.rightHandFollower = follower.transform; }
+                        hand.transform.localPosition = follower.transform.position = new Vector3(0, 0, 0.2f);
+                        Step(v, 100.2); // seed, then continuously release both poses
+                        hand.transform.localPosition = follower.transform.position =
+                            new Vector3(0, 0, bodyOnly ? 0.15f : 0.11f);
+                        Step(v, 100.24);
+                        body.transform.localPosition = new Vector3(0, 0, bodyOnly ? -0.05f : 0.05f);
+                        if (!bodyOnly) hand.transform.localPosition = new Vector3(0, 0, 0.05f);
+                        follower.transform.position = new Vector3(0, 0, 0.1f);
+                        Step(v, 100.28);
+                        int taps = PhotonNetwork.Sent.Count(p => (byte)p.data[3] == 1);
+                        Require(taps == (bodyOnly ? 0 : 1), bodyOnly ?
+                            "locomotion carrying a stationary controller is not intentional hand velocity" :
+                            "collision-driven body movement must not cancel deliberate tracked hand velocity");
+                    }
+                });
             if (cases == 0) throw new ArgumentException("No adapter cases matched: " + filter);
             Console.WriteLine($"PASS: {cases} managed adapter cases / {assertions} assertions. Production adapter/core/election linked against instrumented doubles; NOT Unity, native physics, Photon or headset validation.");
             return 0;

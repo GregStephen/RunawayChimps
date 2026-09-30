@@ -72,6 +72,9 @@ namespace RunawayChimps.Toys.KnockBack
         public readonly VentSettings Settings;
         private readonly float[] offsets = new float[HardTapLimit];
         private double firstInput, lastInput, lastReceived;
+        // Inspector floats can widen slightly above exact PUN millisecond intervals
+        // (for example 0.1f). Absorb representation error, not a whole network tick.
+        private const double IntervalTolerance = 0.000001d;
 
         public VentModel(VentSettings settings) { Settings = (settings ?? new VentSettings()).Bounded(); }
         public static bool Finite(double value) => !double.IsNaN(value) && !double.IsInfinity(value);
@@ -94,7 +97,7 @@ namespace RunawayChimps.Toys.KnockBack
             if (Phase != VentPhase.Recording || actor != Owner || Count >= Settings.maxTaps ||
                 now < lastReceived || now - lastReceived >= Settings.quietInterval ||
                 now - Cycle >= Settings.maximumRecording ||
-                inputTime - lastInput < Settings.minimumInterval ||
+                inputTime - lastInput < Settings.minimumInterval - IntervalTolerance ||
                 inputTime - lastInput >= Settings.quietInterval ||
                 inputTime - firstInput > Settings.maximumRecording) return false;
             offsets[Count++] = (float)(inputTime - firstInput);

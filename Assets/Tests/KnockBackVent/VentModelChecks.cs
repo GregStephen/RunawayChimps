@@ -7,7 +7,7 @@ namespace RunawayChimps.Tests.KnockBack
     public static class VentModelChecks
     {
         public static readonly string[] Cases = {
-            "Timing", "QuietDeadline", "Bounded", "SimultaneousUsers", "Variations", "Cooldown",
+            "Timing", "ExactMinimumInterval", "QuietDeadline", "Bounded", "SimultaneousUsers", "Variations", "Cooldown",
             "CancelEveryPhase", "FreshRelease", "RestingContact", "CompoundContact", "TrackingReset",
             "DeliveryOrdering", "ContextCancellation", "SameTickRetirement", "InclusiveCooldownFloor", "MalformedReply", "InvalidInput", "Stress"
         };
@@ -48,6 +48,26 @@ namespace RunawayChimps.Tests.KnockBack
                     Require(model.Advance(11.28, 0) == null, "plan emitted once; second roll does not change it");
                     Require(plan.Offsets.Length == 3, "immutable chosen variation");
                     Require(!model.TryTap(1, 11.3, 11.3), "no queue while replying");
+                    break;
+                }
+                case "ExactMinimumInterval":
+                {
+                    // PUN Time is uint ServerTimestamp / 1000.0; Inspector settings are
+                    // floats. Compare exact millisecond intervals, including late uptime.
+                    foreach (int milliseconds in new[] { 100, 120, 200, 300 })
+                    foreach (double origin in new[] { 1d, 100d, 4294000d })
+                    {
+                        double interval = milliseconds / 1000d;
+                        var model = new VentModel(new VentSettings { minimumInterval = (float)interval });
+                        Require(model.TryTap(1, origin, origin), "begin threshold case");
+                        Require(!model.TryTap(1, origin + interval - 0.001d, origin + interval - 0.001d),
+                            "a full millisecond before the threshold stays rejected");
+                        Require(model.TryTap(1, origin + interval, origin + interval),
+                            "exact configured millisecond interval must not be rejected by float widening");
+                        var reply = model.Advance(origin + interval + 0.7d, 1d);
+                        Require(reply != null && reply.Offsets.Length == 2, "both threshold taps are repeated");
+                        Near(reply.Offsets[1], interval, "threshold correction does not rewrite the input interval");
+                    }
                     break;
                 }
                 case "QuietDeadline":
