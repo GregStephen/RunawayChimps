@@ -1,8 +1,18 @@
 # Runaway Chimps repository improvement plan
 
-Last updated: 2026-09-22. Maintained repository edition, migrated from `Runaway_Chimps_Repository_Review_and_Plan.docx`, Revision 2. The original review examined `main` at `4f6894141aa2b132d744cb2423c1ee227e0fc5be`; its evidence links remain pinned to that baseline. The Word document is a historical downloadable snapshot.
+Last updated: 2026-09-30. Maintained repository edition, migrated from `Runaway_Chimps_Repository_Review_and_Plan.docx`, Revision 2. The original review examined `main` at `4f6894141aa2b132d744cb2423c1ee227e0fc5be`; its evidence links remain pinned to that baseline. The Word document is a historical downloadable snapshot.
 
 Read the [design and lore](design-and-lore.md) for intended behavior and [AGENTS.md](../AGENTS.md) for update rules. A confirmed finding describes source evidence; it does not mean its fix is implemented or tested.
+
+## September 30 Primate Cognitive Evaluation optional toy
+
+**Confirmed decision:** Greg requested a small optional facility memory-test machine, separate from the strength tester and all other toy branches. Four numbered/position-distinct, differently toned physical pads demonstrate an extending sequence; either hand repeats it. Start at one step, append one per successful round, show dry facility assessments/round reached, and provide physical restart with a bounded end. No rewards, progression, persistent leaderboard, voice acting or general minigame framework.
+
+**Implemented source, unmerged draft:** `feature/primate-cognitive-test` starts from freshly fetched main `930a8f830cae99e06dcaa0a78ab9edc968c42ae5`. Feature-scoped rules, all-contact-clear debouncing, local-rig filtering, phase/session token checks, one operator per machine, sector-controller arbitration, recoverable heartbeat/input/result deadlines, stale-authority handshakes and Editor held-contact controls are present. Existing PhysicalButton, Hub/Bootstrap, packages, Unity 2022.3.62f3, PUN, built-in rendering and XR configuration remain untouched. A pure managed harness exercises production rules/contact/replica code; the PR records executed source-check results separately from runtime acceptance.
+
+**Incomplete asset delivery:** the serialized machine prefab, materials and audio clips were not created because the asset-generation write was blocked by the authoring tool. This branch is NOT a playable delivered feature. Editor placement/validation commands name the intended prefab but currently report its absence. Keep the PR draft and do not treat source implementation or CI as feature completion.
+
+**Pending validation:** complete authored assets, confirm exact local-rig seated/standing reach, run Unity 62f3 import/compile and Editor authoring checks, then solo desktop, two-client Photon and headset acceptance. Shared sequence/audio, physical trigger behavior, sector/authority/pause recovery and placement clearance remain unexecuted. [Feature notes](primate-cognitive-evaluation.md) distinguish source evidence, intended setup/tuning and the full pending checklist.
 
 ## September 22 Unity 62f3 baseline adoption
 

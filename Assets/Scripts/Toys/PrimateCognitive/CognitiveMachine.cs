@@ -149,6 +149,7 @@ namespace RunawayChimps.Toys.PrimateCognitive
             }
             int elected = LocalSectorAvailable() ? (PhotonNetwork.InRoom ?
                 SectorPresence.ElectController(PhotonNetwork.PlayerList, sector) : LocalActor) : 0;
+            if (elected == replica.Authority) return;
             if (!replica.Elect(elected, Guid.NewGuid().ToString("N"))) return;
             RequireAllReleased();
             audioSource.Stop();
@@ -333,7 +334,8 @@ namespace RunawayChimps.Toys.PrimateCognitive
                 return;
             }
             string instructions = state.Owner == 0 ? "PRESS START" : state.Phase == CognitivePhase.Demonstrating ? "WATCH - HANDS CLEAR" :
-                state.Phase == CognitivePhase.Input ? "YOUR TURN  " + state.InputIndex + " / " + state.Round : "PRESS RESTART TO TRY AGAIN";
+                state.Phase == CognitivePhase.Input ? "YOUR TURN  " + state.InputIndex + " / " + state.Round :
+                state.Phase == CognitivePhase.Success ? "ROUND PASSED - NEXT TEST" : "PRESS RESTART TO TRY AGAIN";
             string owner = state.Owner == 0 ? "AVAILABLE" : "SUBJECT " + state.Owner + (state.Owner == LocalActor ? " (YOU)" : " - OBSERVE ONLY");
             display.text = "ROUND " + state.Round + " / " + state.Maximum + "   " + state.Phase.ToString().ToUpperInvariant() +
                 "\n" + state.Assessment + "\n" + instructions + "\n" + owner;
@@ -363,7 +365,7 @@ namespace RunawayChimps.Toys.PrimateCognitive
 #if UNITY_EDITOR
         public void EditorContact(int index, bool held)
         {
-            if (!editorControls || pads == null || index < 0 || index >= pads.Length) return;
+            if (pads == null || index < 0 || index >= pads.Length || (held && !editorControls)) return;
             pads[index].EditorContact(held);
         }
 #endif
