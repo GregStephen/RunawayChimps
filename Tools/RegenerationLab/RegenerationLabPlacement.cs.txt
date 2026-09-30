@@ -136,8 +136,11 @@ namespace RunawayChimps.EditorEnvironment
             }
             catch (Exception exception)
             {
+                // Roll back every object created by this placement, then propagate the failure.
+                // Swallowing here made programmatic callers/tests observe an apparent success.
                 Undo.RevertAllDownToGroup(group);
                 Debug.LogException(exception);
+                throw;
             }
         }
 
