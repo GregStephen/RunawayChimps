@@ -1,0 +1,32 @@
+name: Facility review snapshot (temporary)
+on:
+  push:
+    branches: ['feature/facility-announcements']
+    paths: ['.github/workflows/facility-review-snapshot.yml']
+permissions:
+  contents: read
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Bundle review sources and managed diagnostic runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/facility-review
+          git archive --format=tar.gz HEAD AGENTS.md README.md Assets/Scripts Assets/Scenes Assets/Photon/PhotonUnityNetworking/Code Assets/Photon/PhotonRealtime/Code Assets/RunawayChimps/FacilityAnnouncements Assets/RunawayChimps/FacilityAnnouncements.meta 'Assets/TextMesh Pro/Resources/Fonts & Materials' Tools docs ProjectSettings Packages .github/workflows > /tmp/facility-review/source.tar.gz
+          git rev-parse HEAD > /tmp/facility-review/HEAD.txt
+          cd /usr/share/dotnet
+          tar -czf /tmp/facility-review/dotnet8.tar.gz dotnet host/fxr/8.* sdk/8.* packs/Microsoft.NETCore.App.Ref/8.* packs/Microsoft.NETCore.App.Host.linux-x64/8.* shared/Microsoft.NETCore.App/8.*
+      - uses: actions/upload-artifact@v4
+        with:
+          name: facility-review-current
+          path: /tmp/facility-review/
+          retention-days: 2
