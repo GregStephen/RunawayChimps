@@ -17,7 +17,6 @@ namespace RunawayChimps.Toys.PrimateCognitive
         [Range(.03f, .3f)] public float releaseSeconds = .08f;
         [Range(.005f, .025f)] public float pressDepth = .012f;
         private CognitiveContactGate gate;
-        private int fingertipLayer;
         private readonly Dictionary<int, Collider> colliders = new Dictionary<int, Collider>();
         private readonly List<int> expired = new List<int>();
         private MaterialPropertyBlock properties;
@@ -28,12 +27,11 @@ namespace RunawayChimps.Toys.PrimateCognitive
 
         private void Awake()
         {
-            fingertipLayer = LayerMask.NameToLayer("FingerTip");
             gate = new CognitiveContactGate(releaseSeconds);
             properties = new MaterialPropertyBlock();
-            if (cap == null || capRenderer == null || machine == null || fingertipLayer < 0)
+            if (cap == null || capRenderer == null || machine == null)
             {
-                Debug.LogError("Cognitive pad requires its authored cap, renderer, machine and existing FingerTip layer.", this);
+                Debug.LogError("Cognitive pad requires its authored cap, renderer and machine.", this);
                 enabled = false;
                 return;
             }
@@ -49,14 +47,21 @@ namespace RunawayChimps.Toys.PrimateCognitive
         private bool LocalHand(Collider other)
         {
             if (other == null || !other.enabled || !other.gameObject.activeInHierarchy || !other.CompareTag("HandTag")) return false;
-            // HandTag also marks the 8 cm XR pickup spheres. They are grab volumes,
-            // not button contacts, and can overlap several controls at once.
-            if (other.gameObject.layer != fingertipLayer) return false;
             var marker = other.GetComponentInParent<LocalRigMarker>();
             var rig = GorillaLocomotion.Player.Instance;
             if (marker == null || rig == null || rig.GetComponentInParent<LocalRigMarker>() != marker) return false;
+            // HandTag also marks the controller-root 8 cm grab spheres. Use only
+            // child contacts of the actual tracked hands, not those root volumes.
+            // This follows the authored rig even when layer names and indices differ.
+            if (!IsHandContact(other.transform, rig.leftHandTransform) &&
+                !IsHandContact(other.transform, rig.rightHandTransform)) return false;
             var view = other.GetComponentInParent<PhotonView>();
             return view == null || view.IsMine;
+        }
+
+        private static bool IsHandContact(Transform contact, Transform hand)
+        {
+            return hand != null && contact != hand && contact.IsChildOf(hand);
         }
 
         private void Track(Collider other, bool fresh)
