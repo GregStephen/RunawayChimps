@@ -29,4 +29,6 @@ jobs:
         with:
           python-version: '3.11'
       - run: dotnet run --project Tools/FacilityAnnouncementsHarness/FacilityAnnouncementsHarness.csproj --configuration Release
+      - name: Exercise production adapters with instrumented managed doubles
+        run: dotnet run --project Tools/FacilityAnnouncementsAdapterHarness/FacilityAnnouncementsAdapterHarness.csproj --configuration Release
       - run: python Tools/FacilityAnnouncements/validate_assets.py
